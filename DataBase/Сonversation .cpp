@@ -36,7 +36,7 @@ int main() {
 		std::cerr << "Clound`t open the file. :(\n";
 		return 1;
 	}
-	std::cout << "Õóèëà: ";
+	std::cout << "> ";
 	std::string text;
 	std::getline(std::cin, text);
 

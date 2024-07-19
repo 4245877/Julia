@@ -1,4 +1,4 @@
-/*#version 330 core
+version 330 core
 
 uniform vec2 resolution;
 uniform float time;
@@ -15,4 +15,3 @@ void main()
     // Output to screen
     theColor = vec4(col, 1.0);
 }
-*/

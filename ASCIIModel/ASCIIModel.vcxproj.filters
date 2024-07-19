@@ -18,7 +18,7 @@
     <ClCompile Include="ASCIIRenderer.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="ModelData.cpp">
+    <ClCompile Include="glad.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
   </ItemGroup>

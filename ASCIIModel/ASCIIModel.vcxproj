@@ -135,7 +135,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="ASCIIRenderer.cpp" />
-    <ClCompile Include="ModelData.cpp" />
+    <ClCompile Include="glad.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ASCIIRenderer.h" />
