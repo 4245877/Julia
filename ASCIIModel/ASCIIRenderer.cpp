@@ -4,8 +4,6 @@
 #include <fstream>
 #include <filesystem>
 
-
-
 std::string readFile(std::filesystem::path path)
 {
     std::ifstream in(path, std::ios::binary);

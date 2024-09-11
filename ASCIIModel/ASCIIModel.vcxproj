@@ -104,14 +104,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>D:\РОТОТА\Code\C++\Julia\libraries\glad\include;D:\РОТОТА\Code\C++\Julia\libraries\glfw\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)libraries\glad\include;$(SolutionDir)libraries\glfw\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>D:\РОТОТА\Code\C++\Julia\libraries\glfw\lib-vc2022</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opengl32.lib;glfw3.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)libraries\glfw\lib-vc2022</AdditionalLibraryDirectories>
+      <AdditionalDependencies>opengl32.lib;glfw3.lib;user32.lib;gdi32.lib;shell32.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -122,15 +122,15 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>D:\РОТОТА\Code\C++\Julia\libraries\glad\include;D:\РОТОТА\Code\C++\Julia\libraries\glfw\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)libraries\glad\include;$(SolutionDir)libraries\glfw\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>D:\РОТОТА\Code\C++\Julia\libraries\glfw\lib-vc2022</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opengl32.lib;glfw3.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)libraries\glfw\lib-vc2022</AdditionalLibraryDirectories>
+      <AdditionalDependencies>opengl32.lib;glfw3.lib;user32.lib;gdi32.lib;shell32.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -142,6 +142,7 @@
     <ClInclude Include="ModelData.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="cpp.hint" />
     <None Include="fragment.shader" />
     <None Include="vertex.shader" />
   </ItemGroup>
