@@ -1,17 +1,16 @@
-﻿#include <iostream>
-#include <string>
-#include "AICore.h"
+﻿#include "LoadWindow.h"
+#include <iostream>
 
-int main() {
-    AICore ai;
-
-    std::string input;
-    while (true) {
-        std::cout << "> ";
-        std::getline(std::cin, input);
-        if (input == "выход") break;
-
-        std::cout << ai.processInput(input) << std::endl;
+int main()
+{
+    try {
+        CustomWindow customWindow;
+        customWindow.run();
+    }
+    catch (const std::exception& e) {
+        // Обробка помилок
+        std::cerr << "Error: " << e.what() << std::endl;
+        return 1;
     }
 
     return 0;

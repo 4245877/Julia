@@ -18,9 +18,6 @@
     <ClCompile Include="ASCIIRenderer.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="glad.c">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ASCIIRenderer.h">
@@ -31,8 +28,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="fragment.shader" />
-    <None Include="vertex.shader" />
     <None Include="cpp.hint" />
   </ItemGroup>
 </Project>
