@@ -1,14 +1,22 @@
+#include <SFML/Graphics.hpp>
+#include <cstdlib>
+#include <ctime>
+#include <string>
+#include <thread>
 #include "LoadWindow.h"
-
-CustomWindow::CustomWindow() :
+LoadWindow::LoadWindow() :
     gradient(sf::TrianglesStrip, 4)
 {
     initializeWindow();
     initializeText();
     initializeGradient();
 }
-
-void CustomWindow::initializeWindow()
+// Деструктор нужно доделать!!!
+LoadWindow:: ~LoadWindow()
+{
+    LoadSound();
+}
+void LoadWindow::initializeWindow()
 {
     // Отримуємо розміри екрану
     sf::VideoMode desktop = sf::VideoMode::getDesktopMode();
@@ -16,8 +24,8 @@ void CustomWindow::initializeWindow()
     int screenHeight = desktop.height;
 
     // Обчислюємо розміри вікна (35% від площі екрану)
-    int windowWidth = static_cast<int>(screenWidth * 0.35f);
-    int windowHeight = static_cast<int>(screenHeight * 0.35f);
+    int windowWidth = static_cast<int>(screenWidth * 0.45f);
+    int windowHeight = static_cast<int>(screenHeight * 0.45f);
 
     // Створюємо вікно без рамки і заголовку
     window.create(sf::VideoMode(windowWidth, windowHeight), "", sf::Style::None);
@@ -25,42 +33,132 @@ void CustomWindow::initializeWindow()
     // Центруємо вікно по середині екрану
     window.setPosition(sf::Vector2i((screenWidth - windowWidth) / 2, (screenHeight - windowHeight) / 2));
 }
-
-void CustomWindow::initializeText()
+void LoadWindow::initializeText()
 {
-    // Завантажуємо шрифт Bebas Neue з папки Fonts
-    if (!font.loadFromFile("../Utilities/Fonts/BebasNeue-Regular.ttf")) {
+    std::string arrFonts[] = {"oldtimer-GOPpg", "bebasNeue-Regular", "reading Regular", "mattoa Demo", "quan-BlackItalic", "sacramento", "baystarScriptLight-PERSONAL_USE_ONLY", "FleurDeLeah-Regular"};
+    srand(static_cast<unsigned>(time(0) + 1));
+    short FontChoice = rand() % 8;
+    std::string FontName = "../Utilities/Fonts/" + arrFonts[FontChoice] + ".ttf";
+    // шрифт з папки
+    if (!font.loadFromFile(FontName)) {
         throw std::runtime_error("Failed to load font");
     }
 
-    // Створюємо текст "Julia"
+    //текст
     text.setFont(font);
     text.setString("Julia");
-    text.setCharacterSize(100);
+    text.setCharacterSize(250);
 
     // Позиція тексту в центрі вікна
     sf::FloatRect textRect = text.getLocalBounds();
     text.setOrigin(textRect.left + textRect.width / 2.0f, textRect.top + textRect.height / 2.0f);
     text.setPosition(window.getSize().x / 2.0f, window.getSize().y / 2.0f);
 }
-
-void CustomWindow::initializeGradient()
+void LoadWindow::initializeGradient()
 {
-    // Створюємо градієнт кольорів
-    gradient[0].position = sf::Vector2f(0, 0);
-    gradient[0].color = sf::Color(0xff, 0x8e, 0x44);
+    // Инициализация генератора случайных чисел
+    srand(static_cast<unsigned>(time(0)));
 
-    gradient[1].position = sf::Vector2f(window.getSize().x, 0);
-    gradient[1].color = sf::Color(0xf9, 0x13, 0x62);
+    int gradientChoice = rand() % 5;
 
-    gradient[2].position = sf::Vector2f(0, window.getSize().y);
-    gradient[2].color = sf::Color(0x35, 0x12, 0x6a);
+    // Получаем размер окна
+    sf::Vector2f windowSize(window.getSize().x, window.getSize().y);
 
-    gradient[3].position = sf::Vector2f(window.getSize().x, window.getSize().y);
-    gradient[3].color = sf::Color(0x35, 0x12, 0x6a);
+    // В зависимости от выбранного варианта задаём градиент
+    if (gradientChoice == 0)
+    {
+        // Градиент 1: #f6bf75, #d77185, #8766ac, #4150b1
+        gradient[0].position = sf::Vector2f(0, 0);
+        gradient[0].color = sf::Color(0xf6, 0xbf, 0x75); // светло-оранжевый
+
+        gradient[1].position = sf::Vector2f(windowSize.x, 0);
+        gradient[1].color = sf::Color(0xd7, 0x71, 0x85); // розово-красный
+
+        gradient[2].position = sf::Vector2f(0, windowSize.y);
+        gradient[2].color = sf::Color(0x87, 0x66, 0xac); // фиолетовый
+
+        gradient[3].position = sf::Vector2f(windowSize.x, windowSize.y);
+        gradient[3].color = sf::Color(0x41, 0x50, 0xb1); // синий
+    }
+    else if (gradientChoice == 1)
+    {
+        // Градиент 2: #4facfe, #00f2fe
+        gradient[0].position = sf::Vector2f(0, 0);
+        gradient[0].color = sf::Color(0x4f, 0xac, 0xfe); // голубой
+
+        gradient[1].position = sf::Vector2f(windowSize.x, 0);
+        gradient[1].color = sf::Color(0x00, 0xf2, 0xfe); // бирюзовый
+
+        gradient[2].position = sf::Vector2f(0, windowSize.y);
+        gradient[2].color = sf::Color(0x4f, 0xac, 0xfe); // повтор голубого
+
+        gradient[3].position = sf::Vector2f(windowSize.x, windowSize.y);
+        gradient[3].color = sf::Color(0x00, 0xf2, 0xfe); // повтор бирюзового
+    }
+    else if (gradientChoice == 2)
+    {
+        // Градиент 2: #b3b6eb, #e98a98
+        gradient[0].position = sf::Vector2f(0, 0);
+        gradient[0].color = sf::Color(0xb3, 0xb6, 0xeb); // светло-фиолетовый
+
+        gradient[1].position = sf::Vector2f(windowSize.x, 0);
+        gradient[1].color = sf::Color(0xe9, 0x8a, 0x98); // розовый
+
+        gradient[2].position = sf::Vector2f(0, windowSize.y);
+        gradient[2].color = sf::Color(0xb3, 0xb6, 0xeb); // повтор светло-фиолетового
+
+        gradient[3].position = sf::Vector2f(windowSize.x, windowSize.y);
+        gradient[3].color = sf::Color(0xe9, 0x8a, 0x98); // повтор розового
+    }
+
+    else if (gradientChoice == 3)
+    {
+        // Градиент 2: #f6bf9f, #db8ade
+        gradient[0].position = sf::Vector2f(0, 0);
+        gradient[0].color = sf::Color(0xf6, 0xbf, 0x9f); // светло-оранжевый
+
+        gradient[1].position = sf::Vector2f(windowSize.x, 0);
+        gradient[1].color = sf::Color(0xdb, 0x8a, 0xde); // светло-фиолетовый
+
+        gradient[2].position = sf::Vector2f(0, windowSize.y);
+        gradient[2].color = sf::Color(0xf6, 0xbf, 0x9f); // повтор светло-оранжевого
+
+        gradient[3].position = sf::Vector2f(windowSize.x, windowSize.y);
+        gradient[3].color = sf::Color(0xdb, 0x8a, 0xde); // повтор светло-фиолетового
+    }
+    else if (gradientChoice == 4)
+    {
+        // Градиент 2: #0c2442, #4f7492
+        gradient[0].position = sf::Vector2f(0, 0);
+        gradient[0].color = sf::Color(0x0c, 0x24, 0x42); // тёмно-синий
+
+        gradient[1].position = sf::Vector2f(windowSize.x, 0);
+        gradient[1].color = sf::Color(0x4f, 0x74, 0x92); // голубовато-серый
+
+        gradient[2].position = sf::Vector2f(0, windowSize.y);
+        gradient[2].color = sf::Color(0x0c, 0x24, 0x42); // повтор тёмно-синего
+
+        gradient[3].position = sf::Vector2f(windowSize.x, windowSize.y);
+        gradient[3].color = sf::Color(0x4f, 0x74, 0x92); // повтор голубовато-серого
+    }
+
+    else
+    {
+        // Градиент 3: #d70a84, #51127f
+        gradient[0].position = sf::Vector2f(0, 0);
+        gradient[0].color = sf::Color(0xd7, 0x0a, 0x84); // розовый
+
+        gradient[1].position = sf::Vector2f(windowSize.x, 0);
+        gradient[1].color = sf::Color(0x51, 0x12, 0x7f); // темно-фиолетовый
+
+        gradient[2].position = sf::Vector2f(0, windowSize.y);
+        gradient[2].color = sf::Color(0xd7, 0x0a, 0x84); // повтор розового
+
+        gradient[3].position = sf::Vector2f(windowSize.x, windowSize.y);
+        gradient[3].color = sf::Color(0x51, 0x12, 0x7f); // повтор темно-фиолетового
+    }
 }
-
-void CustomWindow::handleEvents()
+void LoadWindow::handleEvents()
 {
     sf::Event event;
     while (window.pollEvent(event))
@@ -71,8 +169,7 @@ void CustomWindow::handleEvents()
             window.close();
     }
 }
-
-void CustomWindow::draw()
+void LoadWindow::draw()
 {
     // Очищуємо вікно білим кольором
     window.clear(sf::Color::White);
@@ -86,12 +183,40 @@ void CustomWindow::draw()
     // Відображаємо вміст вікна
     window.display();
 }
-
-void CustomWindow::run()
+void LoadWindow::run()
 {
     while (window.isOpen())
     {
         handleEvents();
         draw();
     }
+}
+void LoadWindow::LoadSound()
+{
+    std::srand(static_cast<unsigned short>(std::time(nullptr)));
+    short number = std::rand() % 10 + 1;
+    std::string filename = "D:/My works/С++/Julia/Utilities/Sound/" + std::to_string(number) + ".wav";
+
+    // Создаем буфер и звук
+    sf::SoundBuffer* buffer = new sf::SoundBuffer;
+    if (!buffer->loadFromFile(filename)) {
+        std::cerr << "Error loading sound file: " << filename << std::endl;
+        delete buffer;
+        return;
+    }
+
+    sf::Sound* sound = new sf::Sound;
+    sound->setBuffer(*buffer);
+
+    // Запуск звука в отдельном потоке
+    std::thread soundThread([sound]() {
+        sound->play();
+        while (sound->getStatus() == sf::Sound::Playing) {
+            sf::sleep(sf::milliseconds(100));
+        }
+        delete sound; // Удаляем объект после воспроизведения
+        });
+
+    // Отсоединяем поток, чтобы он продолжал работать независимо
+    soundThread.detach();
 }

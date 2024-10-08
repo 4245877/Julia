@@ -2,12 +2,17 @@
 #define CUSTOMWINDOW_H
 
 #include <SFML/Graphics.hpp>
-
-class CustomWindow
+#include <SFML/Audio.hpp>
+#include <iostream>
+#include <cstdlib>
+#include <ctime>
+class LoadWindow
 {
 public:
-    CustomWindow();
+    LoadWindow();
+    ~LoadWindow();
     void run();
+    void LoadSound();
 
 private:
     sf::RenderWindow window;
