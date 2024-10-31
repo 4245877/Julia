@@ -35,9 +35,9 @@ void LoadWindow::initializeWindow()
 }
 void LoadWindow::initializeText()
 {
-    std::string arrFonts[] = {"oldtimer-GOPpg", "bebasNeue-Regular", "reading Regular", "mattoa Demo", "quan-BlackItalic", "sacramento", "baystarScriptLight-PERSONAL_USE_ONLY", "FleurDeLeah-Regular"};
+    std::string arrFonts[] = {"oldtimer-GOPpg", "bebasNeue-Regular", "reading Regular", "mattoa Demo", "quan-BlackItalic", "sacramento", "Neonderthaw-Regular", "FleurDeLeah-Regular", "Futuristic-Regular", "Ninja District"};
     srand(static_cast<unsigned>(time(0) + 1));
-    short FontChoice = rand() % 8;
+    short FontChoice = rand() % 10;
     std::string FontName = "../Utilities/Fonts/" + arrFonts[FontChoice] + ".ttf";
     // шрифт з папки
     if (!font.loadFromFile(FontName)) {
@@ -47,7 +47,7 @@ void LoadWindow::initializeText()
     //текст
     text.setFont(font);
     text.setString("Julia");
-    text.setCharacterSize(250);
+    text.setCharacterSize(350);
 
     // Позиція тексту в центрі вікна
     sf::FloatRect textRect = text.getLocalBounds();
@@ -193,9 +193,7 @@ void LoadWindow::run()
 }
 void LoadWindow::LoadSound()
 {
-    std::srand(static_cast<unsigned short>(std::time(nullptr)));
-    short number = std::rand() % 10 + 1;
-    std::string filename = "D:/My works/С++/Julia/Utilities/Sound/" + std::to_string(number) + ".wav";
+    std::string filename = "D:/Julia/Utilities/Sound/1.mp3";
 
     // Создаем буфер и звук
     sf::SoundBuffer* buffer = new sf::SoundBuffer;

@@ -1,16 +1,12 @@
 ﻿#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
 #include <iostream>
-#include <vector>
 #include "LoadWindow.h"
 #include "ASCIIRenderer.h"
 
 
+
 int main() {
-    
+    EngineCheckInitializations();
     try {
         LoadWindow customWindow;
         customWindow.run();
@@ -19,10 +15,14 @@ int main() {
         std::cerr << "Error: " << e.what() << std::endl;
         return 1;
     }
-    OpenGLWindow window(800, 600, "OpenGL Window");
-    window.run();
 
 
+    int screenWidth, screenHeight;
+    getScreenResolution(screenWidth, screenHeight);
+
+    Engine engine(screenWidth * 0.15, screenHeight * 0.3);
+    engine.runWindow();
     return 0;
 }
+
 

@@ -30,4 +30,8 @@
       <Filter>Исходные файлы</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="vertex.shader" />
+    <None Include="fragment.shader" />
+  </ItemGroup>
 </Project>
