@@ -90,11 +90,11 @@ private:
 
     // Кости и риггинг
     //std::vector<Bone> bones;
-    //glm::mat4 globalInverseTransform;
+    glm::mat4 globalInverseTransform;
 
     // Внутренние методы
-    bool compileShader(const std::string& vertexSource, const std::string& fragmentSource);
     std::string loadShaderSource(const std::string& shaderName);
+    bool compileShader(const std::string& vertexSource, const std::string& fragmentSource);
     bool loadTextures();
     void loadModelData(const std::string& filepath);
     void updateAnimation(float deltaTime);
@@ -110,7 +110,6 @@ private:
 public:
     Engine(int width, int height);
     void runWindow();
-    bool initialize(); // инициализация GLFW и создание окна.
     bool loadModel(const std::string& filepath);
     void setAnimation(const std::string& animationName);
     void update(float deltaTime);

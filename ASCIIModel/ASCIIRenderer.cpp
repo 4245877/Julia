@@ -66,12 +66,11 @@ void getScreenResolution(int& width, int& height) {
 }
 
 
-
 //============================================================================
 // Реализация методов и прочего Класов OpenGLWindow и Engine==================
 //============================================================================
 
-
+//=================================OpenGLWindow===============================
 OpenGLWindow::OpenGLWindow(int width, int height, const char* title = nullptr)
     : windowWidth(width), windowHeight(height), windowTitle(title ? title : ""), window(nullptr)
 {
@@ -181,13 +180,11 @@ void OpenGLWindow::run()
 }
 
 
-//==================================================
-//======================Engine======================
-//==================================================
-
-
+//======================Engine=======================
 Engine::Engine(int width, int height)
     : window(width, height) {}
+
+//===================private часть===================
 std::string Engine::loadShaderSource(const std::string& shaderName) {
     std::string path = "../ASCIIModel/" + shaderName;
     std::ifstream shaderFile(path);
@@ -201,6 +198,58 @@ std::string Engine::loadShaderSource(const std::string& shaderName) {
         std::istreambuf_iterator<char>());
     return shaderSource;
 }
+
+bool Engine::compileShader(const std::string& vertexSource, const std::string& fragmentSource) 
+{
+    return false;
+}
 void Engine::runWindow() {
     window.run();
+}
+bool Engine::loadTextures() {
+    return false;
+}
+void Engine::loadModelData(const std::string& filepath) {
+
+}
+void Engine::updateAnimation(float deltaTime) {
+
+}
+void Engine::applyTransformations() {
+
+}
+void Engine::updateLights() {
+
+}
+void Engine::renderScene() {
+
+}
+void Engine::applyShaderUniforms() {
+
+}
+void Engine::cleanup() {
+
+}
+void Engine::finalization() {
+
+}
+int  Engine::initialization() {
+    return 1;
+}
+
+//===================public часть===================
+bool Engine::loadModel(const std::string& filepath) {
+    return false;
+}
+void Engine::setAnimation(const std::string& animationName) {
+
+}
+void Engine::update(float deltaTime) {
+
+}
+void Engine::render() {
+
+}
+void Engine::shutdown() {
+
 }

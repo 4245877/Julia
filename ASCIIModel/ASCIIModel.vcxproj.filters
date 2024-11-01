@@ -55,7 +55,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="cpp.hint" />
     <None Include="vertex.shader" />
     <None Include="fragment .shader" />
   </ItemGroup>
