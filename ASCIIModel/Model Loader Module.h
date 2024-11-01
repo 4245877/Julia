@@ -11,10 +11,3 @@ private:
 	short a;
 };
 
-Model::Model()
-{
-}
-
-Model::~Model()
-{
-}

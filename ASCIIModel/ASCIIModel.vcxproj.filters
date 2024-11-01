@@ -15,14 +15,17 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ASCIIRenderer.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
     <ClCompile Include="Audio.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="glad.c">
       <Filter>Файлы заголовков</Filter>
+    </ClCompile>
+    <ClCompile Include="ASCIIRenderer.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="Model Loader Module.cpp">
+      <Filter>Исходные файлы</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
