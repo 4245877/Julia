@@ -37,6 +37,7 @@ void getScreenResolution(int& width, int& height);
 // Класы OpenGLWindow и сам Engine==================
 //==================================================
 
+
 class Engine;
 class OpenGLWindow
 {
@@ -57,7 +58,33 @@ private:
     void processInput(); // Обработка ввода
     void render(); // Рендеринг кадра
 };
+class Camera
+{
+private:
+    // Метод для обновления векторов направления камеры на основе текущих значений yaw и pitch
+    void updateCameraVectors();
+public:
+    // Параметры камеры
+    glm::vec3 position;     // Позиция камеры
+    glm::vec3 front;        // Вектор направления камеры
+    glm::vec3 up;           // Вектор "вверх" для камеры
+    glm::vec3 right;        // Вектор "вправо", автоматически рассчитывается
+    glm::vec3 worldUp;      // Вектор "вверх" мира
 
+    float yaw;              // Угол поворота камеры по горизонтали
+    float pitch;            // Угол поворота камеры по вертикали
+    float fov;              // Угол обзора (Field of View)
+
+    // Конструктор камеры с начальными параметрами
+    Camera(glm::vec3 startPosition, glm::vec3 startUp, float startYaw, float startPitch, float startFov);
+
+    // Метод для получения матрицы вида (view matrix)
+    glm::mat4 getViewMatrix() const;
+
+    // Изменение масштаба (увеличение/уменьшение угла обзора)
+    void processMouseScroll(float yoffset);
+
+};
 
 class Engine{
 private:
@@ -75,6 +102,9 @@ private:
     unsigned int shaderProgram;
     unsigned int vertexShader;
     unsigned int fragmentShader;
+
+    // Камера
+    Camera Camera1;
 
     // Модель и анимации
     //std::unique_ptr<Model> model;
@@ -103,12 +133,14 @@ private:
     void renderScene();
     void applyShaderUniforms();
     void cleanup();
+
     static int initialization();
     static void finalization();
 
     SoundEngine soundEngine;
 public:
     Engine(int width, int height);
+
     void runWindow();
     bool loadModel(const std::string& filepath);
     void setAnimation(const std::string& animationName);
@@ -116,4 +148,5 @@ public:
     void render();
     void shutdown();
 };
+
 

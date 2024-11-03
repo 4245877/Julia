@@ -67,7 +67,7 @@ void getScreenResolution(int& width, int& height) {
 
 
 //============================================================================
-// Реализация методов и прочего Класов OpenGLWindow и Engine==================
+// Реализация методов и прочего класов OpenGLWindow и Engine==================
 //============================================================================
 
 //=================================OpenGLWindow===============================
@@ -182,7 +182,15 @@ void OpenGLWindow::run()
 
 //======================Engine=======================
 Engine::Engine(int width, int height)
-    : window(width, height) {}
+    : window(width, height),
+    Camera1(glm::vec3(0.0f, 0.0f, 3.0f), // начальная позиция камеры
+            glm::vec3(0.0f, 1.0f, 0.0f), // вектор "вверх" мира
+            -90.0f,                      // начальный yaw
+            0.0f,                        // начальный pitch
+            45.0f)                       // угол обзора
+
+{}
+
 
 //===================private часть===================
 std::string Engine::loadShaderSource(const std::string& shaderName) {
@@ -253,3 +261,42 @@ void Engine::render() {
 void Engine::shutdown() {
 
 }
+
+
+
+//======================Camera=======================
+Camera::Camera(glm::vec3 startPosition, glm::vec3 startUp, float startYaw, float startPitch, float startFov)
+    : position(startPosition), worldUp(startUp), yaw(startYaw), pitch(startPitch), fov(startFov), front(glm::vec3(0.0f, 0.0f, -1.0f)) {
+    updateCameraVectors();
+}
+
+void Camera::updateCameraVectors() {
+    glm::vec3 frontVec;
+    frontVec.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+    frontVec.y = sin(glm::radians(pitch));
+    frontVec.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+    front = glm::normalize(frontVec);
+
+    right = glm::normalize(glm::cross(front, worldUp));
+    up = glm::normalize(glm::cross(right, front));
+}
+void Camera::processMouseScroll(float yoffset) {
+    fov -= yoffset;
+    if (fov < 1.0f) fov = 1.0f;
+    if (fov > 45.0f) fov = 45.0f;
+}
+glm::mat4 Camera::getViewMatrix() const {
+    return glm::lookAt(position, position + front, up);
+}
+
+
+
+
+
+
+
+
+
+
+
+
