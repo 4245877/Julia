@@ -107,9 +107,9 @@ private:
     Camera Camera1;
 
     // Модель и анимации
-    //std::unique_ptr<Model> model;
-    //std::map<std::string, Animation> animations;
-    //Animation* currentAnimation;
+    std::unique_ptr<Model> model;
+    std::map<std::string, Animation> animations;
+    Animation* currentAnimation;
 
     // Состояние рендеринга
     glm::mat4 viewMatrix;

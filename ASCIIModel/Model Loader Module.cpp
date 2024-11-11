@@ -1,6 +1,18 @@
 #include "Model Loader Module.h"
 
 //===================public часть===================
+
+Model::Model() {
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
+}
+Model::~Model() {
+    glDeleteVertexArrays(1, &VAO);
+    glDeleteBuffers(1, &VBO);
+    glDeleteBuffers(1, &EBO);
+}
+
 bool Model::loadModel(const std::string& path) {
     Assimp::Importer importer;
     const aiScene* scene = importer.ReadFile(path,
@@ -30,15 +42,6 @@ void Model::animate(const std::string& animationName, float timeInSeconds) {
 }
 void Model::render(GLuint shaderProgram) {
     // Отправка матриц костей в шейдер
-    for (size_t i = 0; i < bones.size(); i++) {
-        std::string uniformName = "boneMatrices[" + std::to_string(i) + "]";
-        GLint location = glGetUniformLocation(shaderProgram, uniformName.c_str());
-        glUniformMatrix4fv(location, 1, GL_FALSE, &bones[i].finalTransformation[0][0]);
-    }
-
-    glBindVertexArray(VAO);
-    glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
-    glBindVertexArray(0);
 }
 
 
@@ -114,6 +117,9 @@ void Model::processMesh(aiMesh* mesh, const aiScene* scene)
 
         vertices.push_back(vertex);
     }
+
+}
+void Model::loadBones(aiMesh* mesh) {
 
 }
 void Model::loadAnimations(const aiScene* scene) {

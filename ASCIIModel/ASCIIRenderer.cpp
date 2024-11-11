@@ -181,6 +181,7 @@ void OpenGLWindow::run()
 
 
 //======================Engine=======================
+
 Engine::Engine(int width, int height)
     : window(width, height),
     Camera1(glm::vec3(0.0f, 0.0f, 3.0f), // начальная позиция камеры
@@ -190,7 +191,6 @@ Engine::Engine(int width, int height)
             45.0f)                       // угол обзора
 
 {}
-
 
 //===================private часть===================
 std::string Engine::loadShaderSource(const std::string& shaderName) {
@@ -288,15 +288,4 @@ void Camera::processMouseScroll(float yoffset) {
 glm::mat4 Camera::getViewMatrix() const {
     return glm::lookAt(position, position + front, up);
 }
-
-
-
-
-
-
-
-
-
-
-
 

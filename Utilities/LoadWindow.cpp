@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <string>
+#include <memory>
 #include <thread>
 #include "LoadWindow.h"
 LoadWindow::LoadWindow() :
@@ -191,30 +192,30 @@ void LoadWindow::run()
         draw();
     }
 }
-void LoadWindow::LoadSound()
-{
-    std::string filename = "D:/Julia/Utilities/Sound/1.mp3";
 
-    // Создаем буфер и звук
-    sf::SoundBuffer* buffer = new sf::SoundBuffer;
-    if (!buffer->loadFromFile(filename)) {
-        std::cerr << "Error loading sound file: " << filename << std::endl;
-        delete buffer;
+
+void LoadWindow::LoadSound() {
+    std::string filepath = "D:/Julia/Utilities/Sound/1.mp3";
+    // Используем умный указатель для управления объектом sf::SoundBuffer
+    auto buffer = std::make_shared<sf::SoundBuffer>();
+    if (!buffer->loadFromFile(filepath)) {
+        std::cerr << "Ошибка: Не удалось загрузить аудиофайл!" << std::endl;
         return;
     }
 
-    sf::Sound* sound = new sf::Sound;
-    sound->setBuffer(*buffer);
+    // Создаем звук и настраиваем его буфер
+    sf::Sound sound;
+    sound.setBuffer(*buffer);
 
-    // Запуск звука в отдельном потоке
-    std::thread soundThread([sound]() {
-        sound->play();
-        while (sound->getStatus() == sf::Sound::Playing) {
-            sf::sleep(sf::milliseconds(100));
+    // Функция для воспроизведения звука в отдельном потоке
+    std::thread soundThread([sound]() mutable {
+        sound.play();
+
+        // Ожидаем завершения воспроизведения звука
+        while (sound.getStatus() == sf::Sound::Playing) {
+            sf::sleep(sf::milliseconds(100)); // Немного подождем, чтобы не нагружать процессор
         }
-        delete sound; // Удаляем объект после воспроизведения
         });
 
-    // Отсоединяем поток, чтобы он продолжал работать независимо
-    soundThread.detach();
+    soundThread.detach(); // Отсоединяем поток, чтобы он завершился сам после воспроизведения
 }
