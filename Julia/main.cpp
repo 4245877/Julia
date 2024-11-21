@@ -3,7 +3,6 @@
 #include "ASCIIRenderer.h"
 
 
-
 int main() {
     EngineCheckInitializations();
     try {

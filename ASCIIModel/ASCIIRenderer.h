@@ -5,21 +5,12 @@
 //Model Rendering : отрисовка модели и применение анимаций.
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-#include <glm.hpp>
-#include <vec2.hpp>
-#include <vec3.hpp>
-#include <vec4.hpp>
-#include <mat4x4.hpp>
-#include <gtc/matrix_transform.hpp>
 #include <gtc/type_ptr.hpp>
 #include <iostream>
-#include <fstream>
 #include "Audio.h"
 #include "Mesh.h"
 #include "Model Loader Module.h"
+#include "shader.h"
 
 //==================================================
 // ‘ункциии дл€ проверки инициализации библиотек====
