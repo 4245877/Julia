@@ -5,6 +5,8 @@
 #include <memory>
 #include <thread>
 #include "LoadWindow.h"
+
+
 LoadWindow::LoadWindow() :
     gradient(sf::TrianglesStrip, 4)
 {
@@ -36,11 +38,16 @@ void LoadWindow::initializeWindow()
 }
 void LoadWindow::initializeText()
 {
+    // Отримуємо розміри екрану
+    sf::VideoMode desktop = sf::VideoMode::getDesktopMode();
+    short screenWidth = desktop.width;
+    short FontSize = static_cast<short>(screenWidth * 0.145f);
+
+
     std::string arrFonts[] = {"oldtimer-GOPpg", "bebasNeue-Regular", "reading Regular", "mattoa Demo", "quan-BlackItalic", "sacramento", "Neonderthaw-Regular", "FleurDeLeah-Regular", "Futuristic-Regular", "Ninja District"};
     srand(static_cast<unsigned>(time(0) + 1));
     short FontChoice = rand() % 10;
     std::string FontName = "../Utilities/Fonts/" + arrFonts[FontChoice] + ".ttf";
-    // шрифт з папки
     if (!font.loadFromFile(FontName)) {
         throw std::runtime_error("Failed to load font");
     }
@@ -48,7 +55,8 @@ void LoadWindow::initializeText()
     //текст
     text.setFont(font);
     text.setString("Julia");
-    text.setCharacterSize(350);
+
+    text.setCharacterSize(FontSize);
 
     // Позиція тексту в центрі вікна
     sf::FloatRect textRect = text.getLocalBounds();

@@ -58,11 +58,21 @@ private:
     void processInput(); // Обработка ввода
     void render(); // Рендеринг кадра
 };
+
+
+// Параметры камеры по умолчанию
+const float YAW = -90.0f;
+const float PITCH = 0.0f;
+const float SPEED = 2.5f;
+const float SENSITIVITY = 0.1f;
+const float ZOOM = 45.0f;
+
 class Camera
 {
 private:
     // Метод для обновления векторов направления камеры на основе текущих значений yaw и pitch
     void updateCameraVectors();
+
 public:
     // Параметры камеры
     glm::vec3 position;     // Позиция камеры

@@ -1,5 +1,4 @@
 ﻿#include <glad/glad.h>
-#include <iostream>
 #include "LoadWindow.h"
 #include "ASCIIRenderer.h"
 
@@ -22,8 +21,6 @@ int main() {
 
     Engine engine(screenWidth * 0.15, screenHeight * 0.3);
     engine.runWindow();
-
-
 
 
     return 0;
