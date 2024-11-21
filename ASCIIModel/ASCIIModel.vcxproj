@@ -138,6 +138,7 @@
     <ClCompile Include="Audio.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="Model Loader Module.cpp" />
+    <ClCompile Include="Shader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AI Control Interface.h" />
@@ -147,7 +148,7 @@
     <ClInclude Include="Lighting Module.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="Model Loader Module.h" />
-    <ClInclude Include="shader.h" />
+    <ClInclude Include="Shader.h" />
     <ClInclude Include="Utility Module.h" />
   </ItemGroup>
   <ItemGroup>
