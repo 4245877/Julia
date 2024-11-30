@@ -182,15 +182,14 @@ void OpenGLWindow::run()
 
 //======================Engine=======================
 
-Engine::Engine(int width, int height)
-    : window(width, height),
-    Camera1(glm::vec3(0.0f, 0.0f, 3.0f), // начальная позиция камеры
-            glm::vec3(0.0f, 1.0f, 0.0f), // вектор "вверх" мира
-            -90.0f,                      // начальный yaw
-            0.0f,                        // начальный pitch
-            45.0f)                       // угол обзора
-
-{}
+// Конструктор Engine с инициализацией объектов Camera и OpenGLWindow
+Engine::Engine(float cameraPosX, float cameraPosY, float cameraPosZ,
+    float upX, float upY, float upZ, float yaw, float pitch,
+    int windowWidth, int windowHeight, const char* windowTitle)
+    : camera(cameraPosX, cameraPosY, cameraPosZ, upX, upY, upZ, yaw, pitch),
+    window(windowWidth, windowHeight, windowTitle) {
+    // Здесь можно добавить дополнительную логику для Engine
+}
 
 //===================private часть===================
 std::string Engine::loadShaderSource(const std::string& shaderName) {
@@ -213,6 +212,7 @@ bool Engine::compileShader(const std::string& vertexSource, const std::string& f
 }
 void Engine::runWindow() {
     window.run();
+    render();
 }
 bool Engine::loadTextures() {
     return false;
@@ -256,7 +256,21 @@ void Engine::update(float deltaTime) {
 
 }
 void Engine::render() {
-    
+    // Цикл рендеринга
+
+    // Логическая часть работы со временем для каждого кадра
+
+
+    // Рендеринг
+
+    // Убеждаемся, что активировали шейдер прежде, чем настраивать uniform-переменные/объекты_рисования
+
+    // Преобразования Вида/Проекции
+
+    // Рендеринг загруженной модели
+
+
+
 }
 void Engine::shutdown() {
 
@@ -265,27 +279,68 @@ void Engine::shutdown() {
 
 
 //======================Camera=======================
-Camera::Camera(glm::vec3 startPosition, glm::vec3 startUp, float startYaw, float startPitch, float startFov)
-    : position(startPosition), worldUp(startUp), yaw(startYaw), pitch(startPitch), fov(startFov), front(glm::vec3(0.0f, 0.0f, -1.0f)) {
+
+    // Конструктор, использующий векторы
+Camera::Camera(glm::vec3 position, glm::vec3 up, float yaw, float pitch)
+    : Front(glm::vec3(0.0f, 0.0f, -1.0f)),
+    MovementSpeed(SPEED),
+    MouseSensitivity(SENSITIVITY),
+    Zoom(ZOOM)
+{
+    Position = position;
+    WorldUp = up;
+    Yaw = yaw;
+    Pitch = pitch;
     updateCameraVectors();
 }
 
-void Camera::updateCameraVectors() {
-    glm::vec3 frontVec;
-    frontVec.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-    frontVec.y = sin(glm::radians(pitch));
-    frontVec.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-    front = glm::normalize(frontVec);
+// Конструктор, использующий скаляры
+Camera::Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch)
+    : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM) {
+    Position = glm::vec3(posX, posY, posZ);
+    WorldUp = glm::vec3(upX, upY, upZ);
+    Yaw = yaw;
+    Pitch = pitch;
+    updateCameraVectors();
+}
 
-    right = glm::normalize(glm::cross(front, worldUp));
-    up = glm::normalize(glm::cross(right, front));
+//===================private часть===================
+
+void Camera::updateCameraVectors()
+{
+    // Вычисляем новый вектор-прямо
+    glm::vec3 front;
+    front.x = cos(glm::radians(Yaw)) * cos(glm::radians(Pitch));
+    front.y = sin(glm::radians(Pitch));
+    front.z = sin(glm::radians(Yaw)) * cos(glm::radians(Pitch));
+    Front = glm::normalize(front);
+
+    // Также пересчитываем вектор-вправо и вектор-вверх
+    Right = glm::normalize(glm::cross(Front, WorldUp)); // нормализуем векторы, потому что их длина стремится к 0 тем больше, чем больше вы смотрите вверх или вниз, что приводит к более медленному движению
+    Up = glm::normalize(glm::cross(Right, Front));
 }
-void Camera::processMouseScroll(float yoffset) {
-    fov -= yoffset;
-    if (fov < 1.0f) fov = 1.0f;
-    if (fov > 45.0f) fov = 45.0f;
+
+//===================public часть===================
+glm::mat4 Camera::GetViewMatrix()
+{
+    return glm::lookAt(Position, Position + Front, Up);
 }
-glm::mat4 Camera::getViewMatrix() const {
-    return glm::lookAt(position, position + front, up);
+
+
+void Camera::ProcessKeyboard(Camera_Movement direction, float deltaTime)
+{
+    float velocity = MovementSpeed * deltaTime;
+    if (direction == FORWARD)
+        Position += Front * velocity;
+    if (direction == BACKWARD)
+        Position -= Front * velocity;
+    if (direction == LEFT)
+        Position -= Right * velocity;
+    if (direction == RIGHT)
+        Position += Right * velocity;
 }
+
+
+
+
 

@@ -18,7 +18,7 @@ int main() {
     int screenWidth, screenHeight;
     getScreenResolution(screenWidth, screenHeight);
 
-    Engine engine(screenWidth * 0.15, screenHeight * 0.3);
+    Engine engine(0.0f, 0.0f, 3.0f, 0.0f, 1.0f, 0.0f, -90.0f, 0.0f, screenWidth * 0.15, screenHeight * 0.3, "");
     engine.runWindow();
 
 
