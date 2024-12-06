@@ -162,7 +162,7 @@ private:
 public:
     Engine(float cameraPosX, float cameraPosY, float cameraPosZ,
         float upX, float upY, float upZ, float yaw, float pitch,
-        int windowWidth, int windowHeight, const char* windowTitle);
+        int windowWidth, int windowHeight);
 
     void runWindow();
     bool loadModel(const std::string& filepath);

@@ -185,9 +185,9 @@ void OpenGLWindow::run()
 // Конструктор Engine с инициализацией объектов Camera и OpenGLWindow
 Engine::Engine(float cameraPosX, float cameraPosY, float cameraPosZ,
     float upX, float upY, float upZ, float yaw, float pitch,
-    int windowWidth, int windowHeight, const char* windowTitle)
+    int windowWidth, int windowHeight)
     : camera(cameraPosX, cameraPosY, cameraPosZ, upX, upY, upZ, yaw, pitch),
-    window(windowWidth, windowHeight, windowTitle) {
+    window(windowWidth, windowHeight) {
     // Здесь можно добавить дополнительную логику для Engine
 }
 

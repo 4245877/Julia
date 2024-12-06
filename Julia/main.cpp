@@ -2,6 +2,13 @@
 #include "LoadWindow.h"
 #include "ASCIIRenderer.h"
 
+// Тайминги
+float deltaTime = 0.0f;
+float lastFrame = 0.0f;
+
+// Освещение
+glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+
 
 int main() {
     EngineCheckInitializations();
@@ -18,8 +25,10 @@ int main() {
     int screenWidth, screenHeight;
     getScreenResolution(screenWidth, screenHeight);
 
-    Engine engine(0.0f, 0.0f, 3.0f, 0.0f, 1.0f, 0.0f, -90.0f, 0.0f, screenWidth * 0.15, screenHeight * 0.3, "");
+    Engine engine(0.0f, 0.0f, 3.0f, 0.0f, 1.0f, 0.0f, -90.0f, 0.0f, screenWidth * 0.25, screenHeight * 0.43);
     engine.runWindow();
+    engine.render();
+
 
 
     return 0;
