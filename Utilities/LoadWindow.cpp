@@ -174,9 +174,11 @@ void LoadWindow::handleEvents()
     while (window.pollEvent(event))
     {
         // Закриття вікна при натисканні на клавішу ESC або через подію закриття
-        if (event.type == sf::Event::Closed ||
-            (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape))
+        if (event.type == sf::Event::Closed || (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape))
+        {
             window.close();
+        }
+            
     }
 }
 void LoadWindow::draw()
@@ -195,12 +197,46 @@ void LoadWindow::draw()
 }
 void LoadWindow::run()
 {
-    while (window.isOpen())
-    {
+    while (window.isOpen()) {
         handleEvents();
+
+        // Обновляем этапы загрузки
+        if (currentStage < loadingStages.size()) {
+            updateLoadingStage();
+        }
+        else {
+            // Все этапы загрузки завершены - закрываем окно
+            window.close();
+        }
+
         draw();
     }
 }
+
+void LoadWindow::updateLoadingStage() {
+    // Проверяем, есть ли ещё этапы для отображения
+    if (currentStage < loadingStages.size()) {
+        // Обновляем текст на текущий этап
+        text.setString(loadingStages[currentStage]);
+
+        // Устанавливаем текст в левый нижний угол окна с небольшим отступом
+        float offsetX = 10.0f; // Отступ от левого края
+        float offsetY = 10.0f; // Отступ от нижнего края
+        sf::Vector2u windowSize = window.getSize();
+        sf::FloatRect textBounds = text.getLocalBounds();
+
+        text.setPosition(offsetX, windowSize.y - textBounds.height - offsetY - textBounds.top);
+
+        // Переходим к следующему этапу
+        currentStage++;
+    }
+    else {
+        // Если этапы закончились, можно закрыть окно загрузки
+        window.close();
+    }
+}
+
+
 
 
 void LoadWindow::LoadSound() {

@@ -17,7 +17,7 @@ int main() {
         customWindow.run();
     }
     catch (const std::exception& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
+        std::cerr << "\x1b[31mERROR:\x1b[0m " << e.what() << std::endl;
         return 1;
     }
 

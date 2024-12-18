@@ -7,7 +7,7 @@
 //Проверка OpenGL
 bool checkOpenGLInitialization() {
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-        std::cerr << "\x1b[31mFailed to initialize GLAD\x1b[0m" << std::endl;
+        std::cerr << "\x1b[31mERROR:\x1b[0m Failed to initialize GLAD" << std::endl;
         return false; // Возвращаем false, если произошла ошибка
     }
     return true; // Возвращаем true, если инициализация прошла успешно
@@ -20,7 +20,7 @@ bool checkAssimpInitialization() {
     const aiScene* scene = importer.ReadFile("non_existent_file.obj", 0);
 
     if (scene == nullptr) {
-        std::cerr << "\x1b[31mFailed to initialize Assimp: \x1b[0m" << importer.GetErrorString() << std::endl;
+        std::cerr << "\x1b[31mERROR:\x1b[0m Failed to initialize Assimp" << importer.GetErrorString() << std::endl;
         return false; // Возвращаем false, если произошла ошибка
     }
     return true; // Возвращаем true, если инициализация прошла успешно
@@ -34,7 +34,7 @@ bool checkGLMInitialization() {
 
     // Проверка значений вектора и матрицы (можно добавить более сложные проверки)
     if (testVector.x != 1.0f || testMatrix[0][0] != 1.0f) {
-        std::cerr << "\x1b[31mFailed to initialize GLM\x1b[0m" << std::endl;
+        std::cerr << "\x1b[31mERROR:\x1b[0m Failed to initialize GLM" << std::endl;
         return false; // Возвращаем false, если произошла ошибка
     }
     return true; // Возвращаем true, если инициализация прошла успешно
@@ -49,7 +49,7 @@ bool EngineCheckInitializations() {
 void getScreenResolution(int& width, int& height) {
     // Инициализация GLFW
     if (!glfwInit()) {
-        std::cerr << "Failed to initialize GLFW" << std::endl;
+        std::cerr << "\x1b[31mERORR:\x1b[0m Failed to initialize GLFW" << std::endl;
         return;
     }
 
@@ -60,7 +60,7 @@ void getScreenResolution(int& width, int& height) {
         height = mode->height;
     }
     else {
-        std::cerr << "Failed to get video mode" << std::endl;
+        std::cerr << "\x1b[31mERORR:\x1b[0m Failed to get video mode" << std::endl;
     }
 
 }
