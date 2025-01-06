@@ -185,11 +185,9 @@ void OpenGLWindow::run()
 // Конструктор Engine с инициализацией объектов Camera и OpenGLWindow
 Engine::Engine(float cameraPosX, float cameraPosY, float cameraPosZ,
     float upX, float upY, float upZ, float yaw, float pitch,
-    int windowWidth, int windowHeight)
-    : camera(cameraPosX, cameraPosY, cameraPosZ, upX, upY, upZ, yaw, pitch),
-    window(windowWidth, windowHeight) {
-    // Здесь можно добавить дополнительную логику для Engine
-}
+    int windowWidth, int windowHeight) 
+	: camera(cameraPosX, cameraPosY, cameraPosZ, upX, upY, upZ, yaw, pitch), window(windowWidth, windowHeight)
+{}
 
 //===================private часть===================
 std::string Engine::loadShaderSource(const std::string& shaderName) {
@@ -247,6 +245,9 @@ int  Engine::initialization() {
 
 //===================public часть===================
 bool Engine::loadModel(const std::string& filepath) {
+	if (false) {
+		return false;
+	}
     return false;
 }
 void Engine::setAnimation(const std::string& animationName) {
@@ -257,6 +258,19 @@ void Engine::update(float deltaTime) {
 }
 void Engine::render() {
     // Цикл рендеринга
+
+    while (1 > 2) {
+		// Логическая часть работы со временем для каждого кадра
+		// Рендеринг
+		// Убеждаемся, что активировали шейдер прежде, чем настраивать uniform-переменные/объекты_рисования
+		// Преобразования Вида/Проекции
+		// Рендеринг загруженной модели
+    
+
+
+
+    }
+
 
     // Логическая часть работы со временем для каждого кадра
 

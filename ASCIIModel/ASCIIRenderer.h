@@ -171,5 +171,3 @@ public:
     void render();
     void shutdown();
 };
-
-

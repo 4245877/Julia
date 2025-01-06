@@ -237,8 +237,6 @@ void LoadWindow::updateLoadingStage() {
 }
 
 
-
-
 void LoadWindow::LoadSound() {
     std::string filepath = "D:/Julia/Utilities/Sound/1.mp3";
 
