@@ -12,6 +12,11 @@ glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 
 int main() {
     EngineCheckInitializations();
+    std::ofstream logFile("console_history.txt");
+    if (!logFile.is_open()) {
+        std::cerr << "Ошибка: не удалось открыть файл для записи." << std::endl;
+        return 1;
+    }
     try {
         LoadWindow customWindow;
         customWindow.run();
@@ -21,7 +26,7 @@ int main() {
         std::cerr << "\x1b[31mERROR:\x1b[0m " << e.what() << std::endl;
         return 1;
     }
-
+    
 
     int screenWidth, screenHeight;
     getScreenResolution(screenWidth, screenHeight);
@@ -29,8 +34,6 @@ int main() {
     Engine engine(0.0f, 0.0f, 3.0f, 0.0f, 1.0f, 0.0f, -90.0f, 0.0f, screenWidth * 0.25, screenHeight * 0.43);
     engine.runWindow();
     engine.render();
-
-
 
     return 0;
 }
