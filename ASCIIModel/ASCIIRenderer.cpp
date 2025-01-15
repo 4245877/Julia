@@ -91,8 +91,8 @@ bool OpenGLWindow::initialize()
     // Инициализация GLFW
     if (!glfwInit())
     {
-        std::cerr << "Failed to initialize GLFW." << std::endl;
-        return false;
+        std::cerr << "\x1b[31mERROR:\x1b[0m failed to initialize GLFW." << std::endl;
+        return false; 
     }
 
     // Устанавливаем параметры GLFW

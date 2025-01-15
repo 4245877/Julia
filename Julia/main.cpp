@@ -1,6 +1,7 @@
 ﻿#include <glad/glad.h>
 #include "LoadWindow.h"
 #include "ASCIIRenderer.h"
+#include "Logger.h"
 
 // Тайминги
 float deltaTime = 0.0f;
@@ -12,11 +13,10 @@ glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 
 int main() {
     EngineCheckInitializations();
-    std::ofstream logFile("console_history.txt");
-    if (!logFile.is_open()) {
-        std::cerr << "Ошибка: не удалось открыть файл для записи." << std::endl;
-        return 1;
-    }
+    
+    ConsoleLogger logger("logs/console_output.log");
+
+
     try {
         LoadWindow customWindow;
         customWindow.run();
