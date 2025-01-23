@@ -1,3 +1,0 @@
-[31mERROR:[0m Failed to initialize GLAD
-[31mERROR:[0m Failed to initialize GLAD
-qwef

@@ -2,6 +2,8 @@
 #include <iostream>
 #include <fstream>
 #include <streambuf>
+#include <regex>
+#include <string>
 
 class ConsoleCapture {
 private:
@@ -15,6 +17,12 @@ private:
         std::ostream& targetStream;
         std::ofstream& outputFile;
 
+        // Удаление ANSI последовательностей
+        std::string stripAnsiCodes(const std::string& input) {
+            static const std::regex ansiRegex("\x1B\\[[0-9;]*[a-zA-Z]");
+            return std::regex_replace(input, ansiRegex, "");
+        }
+
     public:
         BufferRedirect(std::streambuf* origBuffer, std::ostream& stream, std::ofstream& file)
             : originalBuffer(origBuffer), targetStream(stream), outputFile(file) {
@@ -23,13 +31,34 @@ private:
         // Перегрузка для записи данных
         virtual int overflow(int c) override {
             if (c != EOF) {
-                // Пишем символы в файл
-                outputFile.put(static_cast<char>(c));
-                outputFile.flush();
-                // Передаём символы в оригинальный поток
-                originalBuffer->sputc(static_cast<char>(c));
+                char ch = static_cast<char>(c);
+                // Пишем символы в файл без ANSI последовательностей
+                std::string str(1, ch);
+                std::string strippedStr = stripAnsiCodes(str);
+
+                if (!strippedStr.empty()) {
+                    outputFile << strippedStr;
+                    outputFile.flush();
+                }
+
+                // Передаём символ в оригинальный поток
+                originalBuffer->sputc(ch);
             }
             return c;
+        }
+
+        virtual std::streamsize xsputn(const char* s, std::streamsize n) override {
+            // Пишем строку в файл без ANSI последовательностей
+            std::string input(s, n);
+            std::string strippedStr = stripAnsiCodes(input);
+
+            if (!strippedStr.empty()) {
+                outputFile << strippedStr;
+                outputFile.flush();
+            }
+
+            // Передаём строку в оригинальный поток
+            return originalBuffer->sputn(s, n);
         }
     };
 
@@ -57,7 +86,7 @@ public:
         std::cerr.rdbuf(redirectCerr);
     }
 
-    // Деструктор
+
     ~ConsoleCapture() {
         // Восстанавливаем оригинальные буферы
         std::cout.rdbuf(originalCout);
