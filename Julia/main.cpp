@@ -12,9 +12,10 @@ glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 
 
 int main() {
+    ConsoleCapture consoleCapture("log.txt");
     EngineCheckInitializations();
-    
-    ConsoleInterceptor logger("D:\\Julia\\Utilities\\console_output.txt");
+
+
 
     try {
         LoadWindow customWindow;
