@@ -48,7 +48,7 @@ void LoadWindow::initializeText()
     std::string arrFonts[] = {"oldtimer-GOPpg", "bebasNeue-Regular", "reading Regular", "mattoa Demo", "quan-BlackItalic", "sacramento", "Neonderthaw-Regular", "FleurDeLeah-Regular", "Futuristic-Regular", "Ninja District"};
     srand(static_cast<unsigned>(time(0) + 1));
     short FontChoice = rand() % 10;
-    std::string FontName = "../Utilities/Fonts/" + arrFonts[FontChoice] + ".ttf";
+    std::string FontName = "../Utilities/resources/Fonts/" + arrFonts[FontChoice] + ".ttf";
     if (!font.loadFromFile(FontName)) {
         throw std::runtime_error("Failed to load font");
     }
@@ -238,7 +238,7 @@ void LoadWindow::updateLoadingStage() {
 
 
 void LoadWindow::LoadSound() {
-    std::string filepath = "D:/Julia/Utilities/Sound/1.mp3";
+    std::string filepath = "D:/Julia/Utilities/resources/Sound/1.mp3";
 
     auto buffer = std::make_shared<sf::SoundBuffer>();
     if (!buffer->loadFromFile(filepath)) {

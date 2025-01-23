@@ -143,6 +143,7 @@
     <ClInclude Include="AICore.h" />
     <ClInclude Include="AIEngine.h" />
     <ClInclude Include="KnowledgeBase.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="ResponseGenerator.h" />
   </ItemGroup>
   <ItemGroup>
@@ -157,6 +158,12 @@
     <ProjectReference Include="..\Utilities\Utilities.vcxproj">
       <Project>{2e8a885f-d3f2-4ac7-ba70-9ac34d82c14a}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="AICore.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="C:\Users\alner\Downloads\Logo1 (1).ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
