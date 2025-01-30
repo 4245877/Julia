@@ -215,9 +215,6 @@ void Engine::runWindow() {
 bool Engine::loadTextures() {
     return false;
 }
-void Engine::loadModelData(const std::string& filepath) {
-
-}
 void Engine::updateAnimation(float deltaTime) {
 
 }
@@ -244,12 +241,7 @@ int  Engine::initialization() {
 }
 
 //===================public часть===================
-bool Engine::loadModel(const std::string& filepath) {
-	if (false) {
-		return false;
-	}
-    return false;
-}
+
 void Engine::setAnimation(const std::string& animationName) {
 
 }
@@ -259,17 +251,7 @@ void Engine::update(float deltaTime) {
 void Engine::render() {
     // Цикл рендеринга
 
-    while (1 > 2) {
-		// Логическая часть работы со временем для каждого кадра
-		// Рендеринг
-		// Убеждаемся, что активировали шейдер прежде, чем настраивать uniform-переменные/объекты_рисования
-		// Преобразования Вида/Проекции
-		// Рендеринг загруженной модели
-    
 
-
-
-    }
 
 
     // Логическая часть работы со временем для каждого кадра

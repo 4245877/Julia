@@ -147,7 +147,6 @@ private:
     std::string loadShaderSource(const std::string& shaderName);
     bool compileShader(const std::string& vertexSource, const std::string& fragmentSource);
     bool loadTextures();
-    void loadModelData(const std::string& filepath);
     void updateAnimation(float deltaTime);
     void applyTransformations();
     void updateLights();
@@ -165,7 +164,6 @@ public:
         int windowWidth, int windowHeight);
 
     void runWindow();
-    bool loadModel(const std::string& filepath);
     void setAnimation(const std::string& animationName);
     void update(float deltaTime);
     void render();

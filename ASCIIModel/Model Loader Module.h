@@ -16,6 +16,7 @@
 #include <string>
 #include <map>
 #include <unordered_map>
+#include <iostream>
 
 struct Vertex {
     glm::vec3 position;
@@ -50,7 +51,7 @@ public:
     Model();
     ~Model();
 
-    bool loadModel(const std::string& path);
+    void loadModel(const std::string& path);
     void animate(const std::string& animationName, float timeInSeconds);
     void render(GLuint shaderProgram);
 
@@ -63,6 +64,9 @@ private:
 
     GLuint VAO, VBO, EBO;
     static const int MAX_BONE_INFLUENCE = 4;
+
+
+
 
     void setupMesh();
     void processNode(aiNode* node, const aiScene* scene);

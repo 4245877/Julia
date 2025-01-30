@@ -13,23 +13,18 @@ Model::~Model() {
     glDeleteBuffers(1, &EBO);
 }
 
-bool Model::loadModel(const std::string& path) {
-    Assimp::Importer importer;
-    const aiScene* scene = importer.ReadFile(path,
-        aiProcess_Triangulate |
-        aiProcess_GenSmoothNormals |
-        aiProcess_FlipUVs |
-        aiProcess_CalcTangentSpace);
+void Model::loadModel(const std::string& path) {
+    Assimp::Importer import;
+    const aiScene* scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
 
-    if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
-        return false;
+    if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
+    {
+        std::cerr << "ERROR::ASSIMP::" << import.GetErrorString() << std::endl;
+        return;
     }
-
     directory = path.substr(0, path.find_last_of('/'));
+
     processNode(scene->mRootNode, scene);
-    loadAnimations(scene);
-    setupMesh();
-    return true;
 }
 void Model::animate(const std::string& animationName, float timeInSeconds) {
     if (animations.find(animationName) == animations.end()) return;
