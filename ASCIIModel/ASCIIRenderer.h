@@ -10,7 +10,7 @@
 #include "Audio.h"
 #include "Mesh.h"
 #include "Model Loader Module.h"
-#include "shader.h"
+
 
 //==================================================
 // Функциии для проверки инициализации библиотек====

@@ -18,13 +18,7 @@
 #include <unordered_map>
 #include <iostream>
 
-struct Vertex {
-    glm::vec3 position;
-    glm::vec3 normal;
-    glm::vec2 texCoords;
-    glm::vec4 boneWeights;
-    glm::ivec4 boneIDs;
-};
+
 class Bone {
     std::string name;
     glm::mat4 offsetMatrix;
@@ -56,7 +50,7 @@ public:
     void render(GLuint shaderProgram);
 
 private:
-    std::vector<Vertex> vertices;
+    //std::vector<Vertex> vertices;
     std::vector<unsigned int> indices;
     std::vector<Bone> bones;
     std::unordered_map<std::string, Animation> animations;

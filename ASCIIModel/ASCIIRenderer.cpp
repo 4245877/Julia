@@ -191,17 +191,8 @@ Engine::Engine(float cameraPosX, float cameraPosY, float cameraPosZ,
 
 //===================private часть===================
 std::string Engine::loadShaderSource(const std::string& shaderName) {
-    std::string path = "../ASCIIModel/" + shaderName;
-    std::ifstream shaderFile(path);
-    if (!shaderFile) {
-        std::cerr << "\x1b[31mFailed to open shader file: \x1b[0m" << path << std::endl;
-        return "";
-    }
-
-    // Чтение файла напрямую в строку
-    std::string shaderSource((std::istreambuf_iterator<char>(shaderFile)),
-        std::istreambuf_iterator<char>());
-    return shaderSource;
+   
+    return "1";
 }
 
 bool Engine::compileShader(const std::string& vertexSource, const std::string& fragmentSource) 

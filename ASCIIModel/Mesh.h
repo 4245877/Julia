@@ -6,13 +6,31 @@
 #include <glm.hpp>
 #include <gtc/matrix_transform.hpp>
 
-#include "shader.h" // shader.h идентичен файлу shader_s.h
+
 
 #include <string>
 #include <vector>
 using namespace std;
 
 struct Vertex {
+
+    // Позиция
+    glm::vec3 Position;
+
+    // Нормаль
+    glm::vec3 Normal;
+
+    // Текстурные координаты
+    glm::vec2 TexCoords;
+
+    // Касательный вектор
+    glm::vec3 Tangent;
+
+    // Вектор бинормали (вектор, перпендикулярный касательному вектору и вектору нормали)
+    glm::vec3 Bitangent;
+};
+
+struct vertex {
 
     // Позиция
     glm::vec3 Position;
@@ -56,43 +74,7 @@ public:
     }
 
     // Рендеринг меша
-    void Draw(Shader& shader)
-    {
-        // Связываем соответствующие текстуры
-        unsigned int diffuseNr = 1;
-        unsigned int specularNr = 1;
-        unsigned int normalNr = 1;
-        unsigned int heightNr = 1;
-        for (unsigned int i = 0; i < textures.size(); i++)
-        {
-            glActiveTexture(GL_TEXTURE0 + i); // перед связыванием активируем нужный текстурный юнит
-
-            // Получаем номер текстуры (номер N в diffuse_textureN)
-            string number;
-            string name = textures[i].type;
-            if (name == "texture_diffuse")
-                number = std::to_string(diffuseNr++);
-            else if (name == "texture_specular")
-                number = std::to_string(specularNr++); // конвертируем unsigned int в строку
-            else if (name == "texture_normal")
-                number = std::to_string(normalNr++); // конвертируем unsigned int в строку
-            else if (name == "texture_height")
-                number = std::to_string(heightNr++); // конвертируем unsigned int в строку
-
-            // Теперь устанавливаем сэмплер на нужный текстурный юнит
-            glUniform1i(glGetUniformLocation(shader.ID, (name + number).c_str()), i);
-            // и связываем текстуру
-            glBindTexture(GL_TEXTURE_2D, textures[i].id);
-        }
-
-        // Отрисовываем меш
-        glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
-        glBindVertexArray(0);
-
-        // Считается хорошей практикой возвращать значения переменных к их первоначальным значениям
-        glActiveTexture(GL_TEXTURE0);
-    }
+    //void Draw(Shader& shader);
 
 private:
     // Данные для рендеринга 
