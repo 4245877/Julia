@@ -114,13 +114,13 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)libraries\GLM\include;$(SolutionDir)libraries\glad\include;$(SolutionDir)libraries\assimp\include;$(SolutionDir)libraries\glfw\include;$(SolutionDir)libraries\SFML-2.6.1\include;$(SolutionDir)Utilities;$(SolutionDir)ASCIIModel;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)libraries\GLM\include;$(SolutionDir)libraries\glad\include;$(SolutionDir)libraries\assimp\include;$(SolutionDir)libraries\glfw\include;$(SolutionDir)libraries\SFML-2.6.1\include;$(SolutionDir)Utilities;$(SolutionDir)ASCIIModel;%(AdditionalIncludeDirectories);$(SolutionDir)libraries\PostgreSQL\17\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)libraries\assimp\lib;$(SolutionDir)libraries\glfw\lib-vc2022;$(SolutionDir)libraries\SFML-2.6.1\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>sfml-graphics-d.lib;sfml-window-d.lib;sfml-audio-d.lib;sfml-system-d.lib;sfml-network-d.lib;%(AdditionalDependencies);glfw3.lib;opengl32.lib;user32.lib;gdi32.lib;shell32.lib;assimp-vc143-mtd.lib;OpenAL32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)libraries\assimp\lib;$(SolutionDir)libraries\glfw\lib-vc2022;$(SolutionDir)libraries\SFML-2.6.1\lib;$(SolutionDir)libraries\PostgreSQL\17\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>sfml-graphics-d.lib;sfml-window-d.lib;sfml-audio-d.lib;sfml-system-d.lib;sfml-network-d.lib;%(AdditionalDependencies);glfw3.lib;opengl32.lib;user32.lib;gdi32.lib;shell32.lib;assimp-vc143-mtd.lib;OpenAL32.lib;libpq.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -131,7 +131,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)libraries\glad\include;$(SolutionDir)libraries\assimp\include;$(SolutionDir)libraries\glfw\include;$(SolutionDir)libraries\SFML-2.6.1\include;$(SolutionDir)Utilities;$(SolutionDir)ASCIIModel;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)libraries\glad\include;$(SolutionDir)libraries\assimp\include;$(SolutionDir)libraries\glfw\include;$(SolutionDir)libraries\SFML-2.6.1\include;$(SolutionDir)Utilities;$(SolutionDir)ASCIIModel;%(AdditionalIncludeDirectories);$(SolutionDir)libraries\PostgreSQL\17\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

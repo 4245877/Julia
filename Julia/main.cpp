@@ -1,6 +1,7 @@
 ﻿#include <glad/glad.h>
 #include "LoadWindow.h"
 #include "ASCIIRenderer.h"
+
 #include "Logger.h"
 
 // Константы
