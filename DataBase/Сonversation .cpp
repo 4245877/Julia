@@ -1,49 +1,41 @@
 #include <iostream>
-#include <vector>
-#include <fstream>
-#include <string>
-#include <locale.h>
+#include <libpq-fe.h> // Основной заголовочный файл PostgreSQL
 
-
-void Show(const std::vector<int>& vector) {
-	std::cout << "---VECTOR INFO---\n";
-	std::cout << "Elements: ";
-	if (vector.empty())
-	{
-		std::cout << "None";
-	}
-	else
-	{
-		for (size_t i = 0; i < vector.size(); i++)
-		{
-			std::cout << vector[i] << " ";
-		}
-	}
-	std::cout << std::endl;
-	std::cout << "Size: " << vector.size() << std::endl;
-	std::cout << "Capacity = " << vector.capacity() << std::endl;
-	std::cout << "-------------------\n";
+void checkConn(PGconn* conn) {
+    if (PQstatus(conn) != CONNECTION_OK) {
+        std::cerr << "Ошибка подключения: " << PQerrorMessage(conn) << std::endl;
+        PQfinish(conn);
+        exit(1);
+    }
 }
 
 int main() {
+    // Данные для подключения
+    const char* conninfo = "dbname=testdb user=postgres password=yourpassword hostaddr=127.0.0.1 port=5432";
+    
+    // Подключаемся к БД
+    PGconn* conn = PQconnectdb(conninfo);
+    checkConn(conn);
+    std::cout << "Подключение успешно!" << std::endl;
 
-	setlocale(LC_ALL, "Russian");
+    // Выполняем SQL-запрос
+    PGresult* res = PQexec(conn, "SELECT id, name FROM users");
+    if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+        std::cerr << "Ошибка выполнения запроса: " << PQerrorMessage(conn) << std::endl;
+        PQclear(res);
+        PQfinish(conn);
+        return 1;
+    }
 
-	std::string filename = "history.txt";
-	std::ofstream fileStream(filename, std::ios::out);
+    // Выводим результат
+    int rows = PQntuples(res);
+    for (int i = 0; i < rows; i++) {
+        std::cout << "ID: " << PQgetvalue(res, i, 0) << ", Name: " << PQgetvalue(res, i, 1) << std::endl;
+    }
 
-	if (!fileStream.is_open()) {
-		std::cerr << "Clound`t open the file. :(\n";
-		return 1;
-	}
-	std::cout << "> ";
-	std::string text;
-	std::getline(std::cin, text);
+    // Очистка ресурсов
+    PQclear(res);
+    PQfinish(conn);
 
-	size_t textLength = text.length();
-	for (size_t i = 0; i < textLength; i++) {
-		fileStream.put(text[i]);
-	}
-
-
+    return 0;
 }
