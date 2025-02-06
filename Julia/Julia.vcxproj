@@ -172,7 +172,7 @@
     <ResourceCompile Include="AICore.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="C:\Users\alner\Downloads\Logo1 (1).ico" />
+    <Image Include="Icon.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

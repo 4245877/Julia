@@ -56,7 +56,7 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="C:\Users\alner\Downloads\Logo1 (1).ico">
+    <Image Include="Icon.ico">
       <Filter>Файлы ресурсов</Filter>
     </Image>
   </ItemGroup>
