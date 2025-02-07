@@ -22,7 +22,7 @@ bool checkGLMInitialization();// Проверка GLM
 bool EngineCheckInitializations();// Проверка всех библиотек
 
 // Функция получения разрешения экрана для создания окна на разных мониторах
-void getScreenResolution(int& width, int& height);
+void getScreenResolution(float& width, float& height);
 
 //==================================================
 // Класы OpenGLWindow и сам Engine==================
@@ -33,16 +33,19 @@ class Engine;
 class OpenGLWindow
 {
 public:
-    OpenGLWindow(int width, int height, const char* title);
+    OpenGLWindow(float width, float height, const char* title);
     ~OpenGLWindow();
 
     void run(); // Запуск основного цикла
-
+    float GetWindowWidth() { return windowWidth; }
+    float GetWindowHeight() { return windowHeight; }
 private:
-    int windowWidth;
-    int windowHeight;
+    float windowWidth;
+    float windowHeight;
     const char* windowTitle;
     GLFWwindow* window;
+
+
 
     bool initialize(); // Инициализация GLFW и GLAD
     void setWindowPosition(); // Устанавливаем координаты окна
@@ -118,6 +121,8 @@ private:
 
     // Окно и контекст
     OpenGLWindow window;
+    
+
 
     // Шейдеры
     unsigned int shaderProgram;
@@ -126,6 +131,7 @@ private:
 
     // Камера
     Camera camera{};
+
 
     // Модель и анимации
     std::unique_ptr<Model> model;
@@ -154,6 +160,7 @@ private:
     void applyShaderUniforms();
     void cleanup();
 
+
     static int initialization();
     static void finalization();
 
@@ -161,7 +168,7 @@ private:
 public:
     Engine(float cameraPosX, float cameraPosY, float cameraPosZ,
         float upX, float upY, float upZ, float yaw, float pitch,
-        int windowWidth, int windowHeight);
+        float windowWidth, float windowHeight);
 
     void runWindow();
     void setAnimation(const std::string& animationName);

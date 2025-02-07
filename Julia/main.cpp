@@ -27,7 +27,6 @@ int main() {
     EngineCheckInitializations();
 
 
-
     try {
         LoadWindow customWindow;
         customWindow.run();
@@ -39,10 +38,13 @@ int main() {
     }
     
 
-    int screenWidth, screenHeight;
+    float screenWidth, screenHeight;
     getScreenResolution(screenWidth, screenHeight);
 
-    Engine engine(0.0f, 0.0f, 3.0f, 0.0f, 1.0f, 0.0f, -90.0f, 0.0f, screenWidth * 0.25, screenHeight * 0.43);
+    screenWidth = screenWidth * 0.25;
+	screenHeight = screenHeight * 0.43;
+
+    Engine engine(0.0f, 0.0f, 3.0f, 0.0f, 1.0f, 0.0f, -90.0f, 0.0f, screenWidth, screenHeight);
     engine.runWindow();
     engine.render();
 

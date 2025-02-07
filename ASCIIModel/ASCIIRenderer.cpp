@@ -46,7 +46,7 @@ bool EngineCheckInitializations() {
 }
 
 // Функция получения разрешения экрана для создания окна на разных мониторах
-void getScreenResolution(int& width, int& height) {
+void getScreenResolution(float& width, float& height) {
     // Инициализация GLFW
     if (!glfwInit()) {
         std::cerr << "\x1b[31mERORR:\x1b[0m Failed to initialize GLFW" << std::endl;
@@ -71,7 +71,7 @@ void getScreenResolution(int& width, int& height) {
 //============================================================================
 
 //=================================OpenGLWindow===============================
-OpenGLWindow::OpenGLWindow(int width, int height, const char* title = nullptr)
+OpenGLWindow::OpenGLWindow(float width, float height, const char* title = nullptr)
     : windowWidth(width), windowHeight(height), windowTitle(title ? title : ""), window(nullptr)
 {
     if (!initialize())
@@ -185,7 +185,7 @@ void OpenGLWindow::run()
 // Конструктор Engine с инициализацией объектов Camera и OpenGLWindow
 Engine::Engine(float cameraPosX, float cameraPosY, float cameraPosZ,
     float upX, float upY, float upZ, float yaw, float pitch,
-    int windowWidth, int windowHeight) 
+    float windowWidth, float windowHeight)
 	: camera(cameraPosX, cameraPosY, cameraPosZ, upX, upY, upZ, yaw, pitch), window(windowWidth, windowHeight)
 {}
 
@@ -240,24 +240,86 @@ void Engine::update(float deltaTime) {
 
 }
 void Engine::render() {
-    // Цикл рендеринга
+    static bool firstRun = true;
+    static GLuint shaderProgram, VAO, VBO;
 
+    if (firstRun) {
+        // Шейдеры
+        const char* vertexShaderSource = R"glsl(
+            #version 330 core
+            layout (location = 0) in vec3 aPos;
+            uniform mat4 projection;
+            uniform mat4 view;
+            void main() {
+                gl_Position = projection * view * vec4(aPos, 1.0);
+            }
+        )glsl";
 
+        const char* fragmentShaderSource = R"glsl(
+            #version 330 core
+            out vec4 FragColor;
+            void main() {
+                FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+            }
+        )glsl";
 
+        // Компиляция шейдеров
+        GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+        glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+        glCompileShader(vertexShader);
 
-    // Логическая часть работы со временем для каждого кадра
+        GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+        glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+        glCompileShader(fragmentShader);
 
+        // Линковка программы
+        shaderProgram = glCreateProgram();
+        glAttachShader(shaderProgram, vertexShader);
+        glAttachShader(shaderProgram, fragmentShader);
+        glLinkProgram(shaderProgram);
 
-    // Рендеринг
+        glDeleteShader(vertexShader);
+        glDeleteShader(fragmentShader);
 
-    // Убеждаемся, что активировали шейдер прежде, чем настраивать uniform-переменные/объекты_рисования
+        // Вершины треугольника
+        float vertices[] = {
+            -0.5f, -0.5f, 0.0f,
+             0.5f, -0.5f, 0.0f,
+             0.0f,  0.5f, 0.0f
+        };
 
-    // Преобразования Вида/Проекции
+        // Настройка VAO и VBO
+        glGenVertexArrays(1, &VAO);
+        glGenBuffers(1, &VBO);
 
-    // Рендеринг загруженной модели
+        glBindVertexArray(VAO);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
 
+        firstRun = false;
+    }
 
+    // Получаем матрицы вида и проекции
+    glm::mat4 view = camera.GetViewMatrix();
+    glm::mat4 projection = glm::perspective(
+        glm::radians(45.0f),
+        (float)window.GetWindowWidth() / (float)window.GetWindowHeight(),
+        0.1f, 100.0f
+    );
 
+    // Активируем шейдер и передаем uniform-переменные
+    glUseProgram(shaderProgram);
+    glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
+    glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+
+    // Отрисовка треугольника
+    glBindVertexArray(VAO);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+    glBindVertexArray(0);
 }
 void Engine::shutdown() {
 
