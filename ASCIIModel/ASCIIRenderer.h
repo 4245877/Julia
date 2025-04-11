@@ -122,18 +122,21 @@ private:
     // Окно и контекст
     OpenGLWindow window;
     
-
-
     // Шейдеры
     unsigned int shaderProgram;
     unsigned int vertexShader;
     unsigned int fragmentShader;
+    ShaderManager shaderMgr {};
+    Renderer renderer{};
+
 
     // Камера
-    Camera camera{};
+    Camera camera {};
 
 
     // Модель и анимации
+    ModelManager modelMgr {};
+
     std::unique_ptr<Model> model;
     std::map<std::string, Animation> animations;
     Animation* currentAnimation;
@@ -175,4 +178,32 @@ public:
     void update(float deltaTime);
     void render();
     void shutdown();
+};
+
+//=========Для загрузки, компиляции и применения шейдеров.=========
+class ShaderManager {
+public:
+    ShaderManager();
+    bool loadAndCompile(const std::string& vertexPath, const std::string& fragmentPath);
+    void use();
+    void setUniform(const std::string& name, const glm::mat4& value);
+private:
+    unsigned int programID;
+};
+
+//=========Для загрузки моделей и управления анимациями.=========
+class ModelManager {
+public:
+    ModelManager();
+    bool loadModel(const std::string& path);
+    void updateAnimation(float deltaTime);
+    std::unique_ptr<Model> model;
+    std::map<std::string, Animation> animations;
+};
+
+//=========Для управления процессом рендеринга (очистка буферов, настройка кадров, вызов отрисовки).=========
+class Renderer {
+public:
+    Renderer();
+    void render(const ModelManager& modelMgr, const ShaderManager& shaderMgr, const Camera& camera);
 };
