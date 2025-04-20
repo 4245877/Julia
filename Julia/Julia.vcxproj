@@ -122,6 +122,9 @@
       <AdditionalLibraryDirectories>$(SolutionDir)libraries\assimp\lib;$(SolutionDir)libraries\glfw\lib-vc2022;$(SolutionDir)libraries\SFML-2.6.1\lib;$(SolutionDir)libraries\PostgreSQL\17\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>sfml-graphics-d.lib;sfml-window-d.lib;sfml-audio-d.lib;sfml-system-d.lib;sfml-network-d.lib;%(AdditionalDependencies);glfw3.lib;opengl32.lib;user32.lib;gdi32.lib;shell32.lib;assimp-vc143-mtd.lib;OpenAL32.lib;libpq.lib</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /y /d "D:\Julia\Utilities\lib\assimp-vc143-mtd.dll" "$(OutDir)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>

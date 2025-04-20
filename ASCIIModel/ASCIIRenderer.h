@@ -30,6 +30,9 @@ void getScreenResolution(float& width, float& height);
 
 
 class Engine;
+class Renderer;
+class ModelManager;
+
 class OpenGLWindow
 {
 public:
@@ -126,16 +129,14 @@ private:
     unsigned int shaderProgram;
     unsigned int vertexShader;
     unsigned int fragmentShader;
-    ShaderManager shaderMgr {};
-    Renderer renderer{};
+
 
 
     // Камера
-    Camera camera {};
+    Camera camera;
 
 
     // Модель и анимации
-    ModelManager modelMgr {};
 
     std::unique_ptr<Model> model;
     std::map<std::string, Animation> animations;

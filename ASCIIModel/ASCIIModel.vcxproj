@@ -135,7 +135,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="ASCIIRenderer.cpp" />
-    <ClCompile Include="Audio.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="Model Loader Module.cpp" />
   </ItemGroup>
