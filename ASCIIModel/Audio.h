@@ -19,5 +19,4 @@ public:
     void SetListenerPosition(const glm::vec3& position); // Позиция слушателя (камера)
     void SetSoundPosition(int soundID, const glm::vec3& position); // Позиция источника звука
 
-
 };
