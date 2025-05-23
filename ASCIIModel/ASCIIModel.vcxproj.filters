@@ -18,7 +18,7 @@
     <ClCompile Include="glad.c">
       <Filter>Файлы заголовков</Filter>
     </ClCompile>
-    <ClCompile Include="ASCIIRenderer.cpp">
+    <ClCompile Include="Engine.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="Model Loader Module.cpp">
@@ -26,7 +26,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ASCIIRenderer.h">
+    <ClInclude Include="Engine.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="Animation Module.h">

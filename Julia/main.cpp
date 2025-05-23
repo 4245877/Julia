@@ -1,6 +1,6 @@
 ﻿#include <glad/glad.h>
 #include "LoadWindow.h"
-#include "ASCIIRenderer.h"
+#include "Engine.h"
 
 #include "Logger.h"
 

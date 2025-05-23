@@ -23,7 +23,7 @@
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{20fbb53b-86d2-4ace-94a3-7cb46d918f06}</ProjectGuid>
     <RootNamespace>ASCIIModel</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.22000.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.22621.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -134,14 +134,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="ASCIIRenderer.cpp" />
+    <ClCompile Include="Engine.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="Model Loader Module.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AI Control Interface.h" />
     <ClInclude Include="Animation Module.h" />
-    <ClInclude Include="ASCIIRenderer.h" />
+    <ClInclude Include="Engine.h" />
     <ClInclude Include="Audio.h" />
     <ClInclude Include="Lighting Module.h" />
     <ClInclude Include="Mesh.h" />
