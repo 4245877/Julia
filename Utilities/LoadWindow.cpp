@@ -45,7 +45,7 @@ LoadWindow::LoadWindow() :
     initializeWindow();
     initializeFont(); // Загрузка шрифта
     initializeInitialText(); // Инициализация главного текста ("Julia")
-    initializeLoadingStageText(); // Инициализация текста этапов загрузки
+    initializeLoadingStageText(); // Инициализация текста этапов загрузки 
     initializeGradient();
 }
 
