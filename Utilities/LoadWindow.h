@@ -23,7 +23,7 @@ private:
     struct GradientColors {
         sf::Color topLeft, topRight, bottomLeft, bottomRight;
     };
-     
+
     sf::RenderWindow window;
     sf::Font font;
     sf::Text text;

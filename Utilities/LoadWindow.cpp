@@ -234,4 +234,4 @@ void LoadWindow::playCompletionSound() {
     if (soundThread.joinable()) { // Убедимся что поток можно присоединить
         soundThread.join(); // Корректно завершаем поток
     }
-} 
+}
