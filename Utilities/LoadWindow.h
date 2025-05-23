@@ -31,11 +31,11 @@ private:
     sf::VertexArray gradient;
 
     std::vector<std::string> loadingStages = {
-        "Инициализация приложения...",
-        "Загрузка основных ресурсов...",
-        "Подключение к сервисам...",
-        "Настройка пользовательского интерфейса...",
-        "Последние штрихи..."
+        "Initializing the application...",
+        "Loading core resources...",
+        "Connecting to services...",
+        "Customizing the user interface...",
+        "The finishing touches..."
     };
     int currentStage = 0;
     bool allStagesComplete = false;

@@ -1,8 +1,8 @@
 ﻿#include "Engine.h"
 #include "Camera.h"
-//==================================================
-// Функциии для проверки инициализации библиотек====
-//==================================================
+// 
+// Функциии для проверки инициализации библиотек 
+// 
 
 //Проверка OpenGL
 bool checkOpenGLInitialization() {
@@ -10,10 +10,10 @@ bool checkOpenGLInitialization() {
         std::cerr << "\x1b[31mERROR:\x1b[0m Failed to initialize GLAD" << std::endl;
         return false; // Возвращаем false, если произошла ошибка
     }
-    return true; // Возвращаем true, если инициализация прошла успешно
+    return true; // Возвращаем true, если инициализация прошла успешно 31mERORR
 }
 
-//Проверка Assimp
+// Проверка Assimp
 bool checkAssimpInitialization() {
     Assimp::Importer importer;
     // Пробуем загрузить несуществующий файл для проверки
@@ -49,7 +49,7 @@ bool EngineCheckInitializations() {
 void getScreenResolution(float& width, float& height) {
     // Инициализация GLFW
     if (!glfwInit()) {
-        std::cerr << "\x1b[31mERORR:\x1b[0m Failed to initialize GLFW" << std::endl;
+        std::cerr << "\x1b[31mERROR:\x1b[0m Failed to initialize GLFW" << std::endl;
         return;
     }
 
@@ -60,136 +60,36 @@ void getScreenResolution(float& width, float& height) {
         height = mode->height;
     }
     else {
-        std::cerr << "\x1b[31mERORR:\x1b[0m Failed to get video mode" << std::endl;
+        std::cerr << "\x1b[31mERROR:\x1b[0m Failed to get video mode" << std::endl;
     }
 
 }
 
 
-//============================================================================
-// Реализация методов и прочего класов OpenGLWindow и Engine==================
-//============================================================================
-
-//=================================OpenGLWindow===============================
-OpenGLWindow::OpenGLWindow(float width, float height, const char* title = nullptr)
-    : windowWidth(width), windowHeight(height), windowTitle(title ? title : ""), window(nullptr)
-{
-    if (!initialize())
-    {
-        std::cerr << "Failed to initialize OpenGLWindow." << std::endl;
-        exit(EXIT_FAILURE);
-    }
-    setWindowPosition(); // Устанавливаем позицию окна после инициализации
-}
-OpenGLWindow::~OpenGLWindow()
-{
-    glfwTerminate();
-}
-
-bool OpenGLWindow::initialize()
-{
-    // Инициализация GLFW
-    if (!glfwInit())
-    {
-        std::cerr << "\x1b[31mERROR:\x1b[0m failed to initialize GLFW." << std::endl;
-        return false; 
-    }
-
-    // Устанавливаем параметры GLFW
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_DECORATED, GLFW_FALSE); // Убираем рамку и кнопки управления
-
-#ifdef __APPLE__
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // Для macOS
-#endif
-
-    // Создание окна
-    window = glfwCreateWindow(windowWidth, windowHeight, windowTitle, nullptr, nullptr);
-    if (window == nullptr)
-    {
-        std::cerr << "Failed to create GLFW window." << std::endl;
-        glfwTerminate();
-        return false;
-    }
-
-    // Устанавливаем контекст окна
-    glfwMakeContextCurrent(window);
-
-    // Инициализация GLAD
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-    {
-        std::cerr << "Failed to initialize GLAD." << std::endl;
-        return false;
-    }
-
-    // Задаем размеры области просмотра
-    glViewport(0, 0, windowWidth, windowHeight);
-
-    return true;
-}
-void OpenGLWindow::setWindowPosition()
-{
-    // Получаем размер экрана
-    const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-
-    if (mode)
-    {
-        // Рассчитываем координаты для правого нижнего угла
-        int posX = mode->width - windowWidth;
-        int posY = mode->height - windowHeight - 40; // Учитываем высоту панели задач (около 40 пикселей)
-
-        // Устанавливаем позицию окна
-        glfwSetWindowPos(window, posX, posY);
-    }
-}
-void OpenGLWindow::processInput()
-{
-    // Закрытие окна при нажатии ESC
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-    {
-        glfwSetWindowShouldClose(window, true);
-    }
-}
-void OpenGLWindow::render()
-{
-    // Очищаем экран (меняем цвет фона)
-    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+// 
+// Реализация методов и прочего в класе Engine 
+// 
 
 
-}
-void OpenGLWindow::run()
-{
-    // Основной цикл окна
-    while (!glfwWindowShouldClose(window))
-    {
-        // Обработка ввода
-        processInput();
-
-        // Рендеринг кадра
-        render();
-
-        // Меняем буферы
-        glfwSwapBuffers(window);
-
-        // Обрабатываем события
-        glfwPollEvents();
-    }
-}
 
 
-//======================Engine=======================
 
 // Конструктор Engine с инициализацией объектов Camera и OpenGLWindow
 Engine::Engine(float cameraPosX, float cameraPosY, float cameraPosZ,
     float upX, float upY, float upZ, float yaw, float pitch,
     float windowWidth, float windowHeight)
-	: camera(cameraPosX, cameraPosY, cameraPosZ, upX, upY, upZ, yaw, pitch), window(windowWidth, windowHeight)
-{}
+    : camera(cameraPosX, cameraPosY, cameraPosZ, upX, upY, upZ, yaw, pitch),
+    window(windowWidth, windowHeight),
+    shaderProgram(0), VAO(0), VBO(0) // Инициализируем нулями для безопасности
+{
+    // Предполагаем, что window уже создала контекст OpenGL
+    // Теперь можно инициализировать графические ресурсы
+    initializeGraphics();
+}
 
-//===================private часть===================
+
+// private часть 
+
 std::string Engine::loadShaderSource(const std::string& shaderName) {
    
     return "1";
@@ -231,7 +131,7 @@ int  Engine::initialization() {
     return 1;
 }
 
-//===================public часть===================
+// public часть 
 
 void Engine::setAnimation(const std::string& animationName) {
 
@@ -239,89 +139,119 @@ void Engine::setAnimation(const std::string& animationName) {
 void Engine::update(float deltaTime) {
 
 }
+
 void Engine::render() {
-    static bool firstRun = true;
-    static GLuint shaderProgram, VAO, VBO;
-
-    if (firstRun) {
-        // Шейдеры
-        const char* vertexShaderSource = R"glsl(
-            #version 330 core
-            layout (location = 0) in vec3 aPos;
-            uniform mat4 projection;
-            uniform mat4 view;
-            void main() {
-                gl_Position = projection * view * vec4(aPos, 1.0);
-            }
-        )glsl";
-
-        const char* fragmentShaderSource = R"glsl(
-            #version 330 core
-            out vec4 FragColor;
-            void main() {
-                FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-            }
-        )glsl";
-
-        // Компиляция шейдеров
-        GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-        glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-        glCompileShader(vertexShader);
-
-        GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-        glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-        glCompileShader(fragmentShader);
-
-        // Линковка программы
-        shaderProgram = glCreateProgram();
-        glAttachShader(shaderProgram, vertexShader);
-        glAttachShader(shaderProgram, fragmentShader);
-        glLinkProgram(shaderProgram);
-
-        glDeleteShader(vertexShader);
-        glDeleteShader(fragmentShader);
-
-        // Вершины треугольника
-        float vertices[] = {
-            -0.5f, -0.5f, 0.0f,
-             0.5f, -0.5f, 0.0f,
-             0.0f,  0.5f, 0.0f
-        };
-
-        // Настройка VAO и VBO
-        glGenVertexArrays(1, &VAO);
-        glGenBuffers(1, &VBO);
-
-        glBindVertexArray(VAO);
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-        glEnableVertexAttribArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindVertexArray(0);
-
-        firstRun = false;
-    }
 
     // Получаем матрицы вида и проекции
     glm::mat4 view = camera.GetViewMatrix();
     glm::mat4 projection = glm::perspective(
-        glm::radians(45.0f),
-        (float)window.GetWindowWidth() / (float)window.GetWindowHeight(),
-        0.1f, 100.0f
+        glm::radians(45.0f), // Угол обзора
+        (float)window.GetWindowWidth() / (float)window.GetWindowHeight(), // Соотношение сторон
+        0.1f,  // Ближняя плоскость отсечения
+        100.0f // Дальняя плоскость отсечения
     );
 
-    // Активируем шейдер и передаем uniform-переменные
-    glUseProgram(shaderProgram);
-    glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
-    glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+    // Активируем шейдерную программу
+    glUseProgram(this->shaderProgram);
+
+    // Передаем uniform-переменные (матрицы) в шейдер
+    glUniformMatrix4fv(glGetUniformLocation(this->shaderProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
+    glUniformMatrix4fv(glGetUniformLocation(this->shaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 
     // Отрисовка треугольника
-    glBindVertexArray(VAO);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
-    glBindVertexArray(0);
+    glBindVertexArray(this->VAO); // Активируем VAO
+    glDrawArrays(GL_TRIANGLES, 0, 3); // Рисуем треугольник
+    glBindVertexArray(0); // Отвязываем VAO
 }
 void Engine::shutdown() {
 
 }
+
+
+void Engine::initializeGraphics() {
+    // Шейдеры
+    const char* vertexShaderSource = R"glsl(
+        #version 330 core
+        layout (location = 0) in vec3 aPos;
+        uniform mat4 projection;
+        uniform mat4 view;
+        void main() {
+            gl_Position = projection * view * vec4(aPos, 1.0);
+        }
+    )glsl";
+
+    const char* fragmentShaderSource = R"glsl(
+        #version 330 core
+        out vec4 FragColor;
+        void main() {
+            FragColor = vec4(1.0, 0.0, 0.0, 1.0); // Красный цвет
+        }
+    )glsl";
+
+    // Компиляция вершинного шейдера
+    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+    glCompileShader(vertexShader);
+    // Проверка на ошибки компиляции вершинного шейдера
+    int success;
+    char infoLog[512];
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+        std::cerr << "\x1b[31mERROR::SHADER::VERTEX::COMPILATION_FAILED\x1b[0m\n" << infoLog << std::endl;
+    }
+
+    // Компиляция фрагментного шейдера
+    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+    glCompileShader(fragmentShader);
+    // Проверка на ошибки компиляции фрагментного шейдера
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
+        std::cerr << "\x1b[31mERROR::SHADER::FRAGMENT::COMPILATION_FAILED\x1b[0m\n" << infoLog << std::endl;
+    }
+
+    // Линковка шейдерной программы
+    this->shaderProgram = glCreateProgram();
+    glAttachShader(this->shaderProgram, vertexShader);
+    glAttachShader(this->shaderProgram, fragmentShader);
+    glLinkProgram(this->shaderProgram);
+    // Проверка на ошибки линковки
+    glGetProgramiv(this->shaderProgram, GL_LINK_STATUS, &success);
+    if (!success) {
+        glGetProgramInfoLog(this->shaderProgram, 512, NULL, infoLog);
+        std::cerr << "\x1b[31mERROR::SHADER::PROGRAM::LINKING_FAILED\x1b[0m\n" << infoLog << std::endl;
+    }
+
+    // После линковки шейдеры нам больше не нужны
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+
+    // Вершины треугольника
+    float vertices[] = {
+        -0.5f, -0.5f, 0.0f, // левая  
+         0.5f, -0.5f, 0.0f, // правая 
+         0.0f,  0.5f, 0.0f  // верхняя
+    };
+
+    // Настройка VAO и VBO
+    glGenVertexArrays(1, &this->VAO);
+    glGenBuffers(1, &this->VBO);
+
+    glBindVertexArray(this->VAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, this->VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    // Указываем OpenGL, как интерпретировать вершинные данные
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0); // Включаем атрибут вершины с location = 0
+
+    // Отвязываем VBO (VAO все еще активен и хранит ссылку на этот VBO)
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    // Отвязываем VAO
+    glBindVertexArray(0);
+}
+
 

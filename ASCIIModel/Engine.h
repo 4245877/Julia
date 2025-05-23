@@ -7,10 +7,16 @@
 #include <GLFW/glfw3.h>
 #include <gtc/type_ptr.hpp>
 #include <iostream>
+#include <fstream> // Для загрузки шейдеров из файлов
+#include <sstream> // Для чтения файлов в строку
+#include <vector> // Для логов ошибок
+#include <map>    // Если понадобится для анимаций или других ресурсов
+
 #include "Audio.h"
 #include "Mesh.h"
 #include "Model Loader Module.h"
 #include "Camera.h"
+#include "OpenGLWindow.h"
 
 //==================================================
 // Функциии для проверки инициализации библиотек====
@@ -33,29 +39,6 @@ class Engine;
 class Renderer;
 class ModelManager;
 
-class OpenGLWindow
-{
-public:
-    OpenGLWindow(float width, float height, const char* title);
-    ~OpenGLWindow();
-
-    void run(); // Запуск основного цикла
-    float GetWindowWidth() { return windowWidth; }
-    float GetWindowHeight() { return windowHeight; }
-private:
-    float windowWidth;
-    float windowHeight;
-    const char* windowTitle;
-    GLFWwindow* window;
-
-
-
-    bool initialize(); // Инициализация GLFW и GLAD
-    void setWindowPosition(); // Устанавливаем координаты окна
-    void processInput(); // Обработка ввода
-    void render(); // Рендеринг кадра
-};
-
 
  
 
@@ -77,6 +60,8 @@ private:
     unsigned int fragmentShader;
 
 
+    GLuint VAO; // Объект вершинного массива
+    GLuint VBO; // Объект вершинного буфера
 
     // Камера
     Camera camera;
@@ -99,6 +84,7 @@ private:
     //std::vector<Bone> bones;
     glm::mat4 globalInverseTransform;
 
+
     // Внутренние методы
     std::string loadShaderSource(const std::string& shaderName);
     bool compileShader(const std::string& vertexSource, const std::string& fragmentSource);
@@ -110,7 +96,7 @@ private:
     void applyShaderUniforms();
     void cleanup();
 
-
+    void initializeGraphics();
     static int initialization();
     static void finalization();
 

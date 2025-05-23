@@ -67,35 +67,3 @@ void Camera::updateCameraVectors() {
     Right = glm::normalize(glm::cross(Front, WorldUp)); // Нормализуем, т.к. их длина может меняться из-за округления
     Up = glm::normalize(glm::cross(Right, Front));
 }
-
-/*
-// Пример реализации ProcessMouseMovement (если решите добавить)
-void Camera::ProcessMouseMovement(float xoffset, float yoffset, bool constrainPitch) {
-    xoffset *= MouseSensitivity;
-    yoffset *= MouseSensitivity;
-
-    Yaw += xoffset;
-    Pitch += yoffset;
-
-    // Ограничиваем Pitch, чтобы избежать "переворота" экрана
-    if (constrainPitch) {
-        if (Pitch > 89.0f)
-            Pitch = 89.0f;
-        if (Pitch < -89.0f)
-            Pitch = -89.0f;
-    }
-    // Обновляем векторы Front, Right и Up на основе обновленных углов Эйлера
-    updateCameraVectors();
-}
-
-// Пример реализации ProcessMouseScroll (если решите добавить)
-void Camera::ProcessMouseScroll(float yoffset) {
-    Zoom -= (float)yoffset; // yoffset обычно представляет собой количество "шагов" колесика
-    if (Zoom < 1.0f)
-        Zoom = 1.0f;
-    if (Zoom > 45.0f) // Или другое максимальное значение
-        Zoom = 45.0f;
-    // Zoom обычно используется для изменения поля зрения (FOV) в матрице проекции,
-    // а не напрямую в GetViewMatrix, если это не камера с эффектом " dolly zoom".
-}
-*/
