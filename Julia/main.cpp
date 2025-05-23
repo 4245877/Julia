@@ -46,7 +46,6 @@ int main() {
 
     Engine engine(0.0f, 0.0f, 3.0f, 0.0f, 1.0f, 0.0f, -90.0f, 0.0f, screenWidth, screenHeight);
     engine.runWindow();
-    engine.render();
 
     return 0;
 }

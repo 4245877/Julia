@@ -79,11 +79,16 @@ Engine::Engine(float cameraPosX, float cameraPosY, float cameraPosZ,
     float upX, float upY, float upZ, float yaw, float pitch,
     float windowWidth, float windowHeight)
     : camera(cameraPosX, cameraPosY, cameraPosZ, upX, upY, upZ, yaw, pitch),
-    window(windowWidth, windowHeight),
-    shaderProgram(0), VAO(0), VBO(0) // Инициализируем нулями для безопасности
+    window(windowWidth, windowHeight), // OpenGLWindow создается здесь
+    shaderProgram(0), VAO(0), VBO(0)
 {
-    // Предполагаем, что window уже создала контекст OpenGL
-    // Теперь можно инициализировать графические ресурсы
+    //// Устанавливаем callback на метод render текущего объекта Engine
+    //this->window.setRenderCallback([this]() {
+    //    this->render();
+    //    });
+
+    // Инициализация графики после того, как окно и контекст созданы
+    // и callback установлен (хотя установка callback не зависит от initializeGraphics)
     initializeGraphics();
 }
 
@@ -117,8 +122,8 @@ bool Engine::compileShader(const std::string& vertexSource, const std::string& f
     return false;
 }
 void Engine::runWindow() {
-    window.run();
-    render();
+    //window.setRenderCallback([this]() { this->render(); }); // Можно и здесь, если не в конструкторе
+    window.run(); // Теперь window.run() будет вызывать Engine::render() в каждой итерации
 }
 bool Engine::loadTextures() {
     return false;
@@ -212,7 +217,6 @@ void Engine::render() {
 }
 void Engine::shutdown() {
     cleanup(); // Вызываем cleanup для освобождения ресурсов   
-    glfwTerminate(); // Завершение работы GLFW
     std::cout << "Engine shutdown complete." << std::endl;
 }
 
