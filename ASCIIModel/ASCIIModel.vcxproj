@@ -134,6 +134,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Engine.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="Model Loader Module.cpp" />
@@ -141,6 +142,7 @@
   <ItemGroup>
     <ClInclude Include="AI Control Interface.h" />
     <ClInclude Include="Animation Module.h" />
+    <ClInclude Include="Camera.h" />
     <ClInclude Include="Engine.h" />
     <ClInclude Include="Audio.h" />
     <ClInclude Include="Lighting Module.h" />
