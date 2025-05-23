@@ -164,6 +164,11 @@ void Engine::update(float deltaTime) {
 }
 
 void Engine::render() {
+    // Устанавливаем цвет для очистки экрана (например, темно-бирюзовый)
+    // Это можно делать один раз после создания контекста, но для теста можно и здесь
+    glClearColor(0.1f, 0.2f, 0.2f, 1.0f);
+    // Очищаем буфер цвета (и буфер глубины, если он используется)
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Если используешь тест глубины
 
     // Получаем матрицы вида и проекции
     glm::mat4 view = camera.GetViewMatrix();
@@ -174,17 +179,36 @@ void Engine::render() {
         1000.0f // Дальняя плоскость отсечения
     );
 
+    // Проверка валидности шейдерной программы (для отладки)
+    if (this->shaderProgram == 0) {
+        std::cerr << "\x1b[31mERROR::ENGINE::RENDER\x1b[0m: Используется невалидная шейдерная программа (ID 0). Рендеринг прерван." << std::endl;
+        return; // Выход, если шейдеры не скомпилированы/не слинкованы
+    }
+
     // Активируем шейдерную программу
     glUseProgram(this->shaderProgram);
 
     // Передаем uniform-переменные (матрицы) в шейдер
-    glUniformMatrix4fv(glGetUniformLocation(this->shaderProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
-    glUniformMatrix4fv(glGetUniformLocation(this->shaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+    // Желательно проверять результат glGetUniformLocation
+    GLint viewLoc = glGetUniformLocation(this->shaderProgram, "view");
+    GLint projLoc = glGetUniformLocation(this->shaderProgram, "projection");
+
+    if (viewLoc == -1 || projLoc == -1) {
+        std::cerr << "\x1b[31mERROR::ENGINE::RENDER\x1b[0m: Не удалось найти uniform-переменные 'view' или 'projection'." << std::endl;
+        // Можно добавить больше информации, например, ID программы
+    }
+
+    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+    glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
     // Отрисовка треугольника
     glBindVertexArray(this->VAO); // Активируем VAO
     glDrawArrays(GL_TRIANGLES, 0, 3); // Рисуем треугольник
     glBindVertexArray(0); // Отвязываем VAO
+
+    // ВАЖНО: glfwSwapBuffers(windowObject) должен вызываться в конце каждой итерации
+    // главного цикла, обычно в методе run() вашего класса окна (OpenGLWindow).
+    // Если его там нет, вы не увидите результат рендеринга.
 }
 void Engine::shutdown() {
     cleanup(); // Вызываем cleanup для освобождения ресурсов   
@@ -196,8 +220,8 @@ void Engine::shutdown() {
 
 void Engine::initializeGraphics() {
     // 1. Загрузка исходного кода шейдеров из файлов
-    std::string vertexShaderCode = loadShaderSource("vertex.shader");
-    std::string fragmentShaderCode = loadShaderSource("fragment.shader");
+    std::string vertexShaderCode = loadShaderSource("vertex_shader.glsl");
+    std::string fragmentShaderCode = loadShaderSource("fragment_shader.glsl");
 
     // Проверяем, успешно ли загружены шейдеры
     if (vertexShaderCode.empty() || fragmentShaderCode.empty()) {
@@ -273,6 +297,5 @@ void Engine::initializeGraphics() {
     glBindVertexArray(0);
 }
 
-// ... (остальной код Engine.cpp, включая render, cleanup, shutdown и т.д.) ...
 
 

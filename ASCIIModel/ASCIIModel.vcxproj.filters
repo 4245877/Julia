@@ -72,11 +72,11 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <CopyFileToFolders Include="fragment .shader">
+    <Text Include="fragment_shader.glsl">
       <Filter>Файлы ресурсов</Filter>
-    </CopyFileToFolders>
-    <CopyFileToFolders Include="vertex.shader">
+    </Text>
+    <Text Include="vertex_shader.glsl">
       <Filter>Файлы ресурсов</Filter>
-    </CopyFileToFolders>
+    </Text>
   </ItemGroup>
 </Project>

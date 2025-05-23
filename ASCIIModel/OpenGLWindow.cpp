@@ -151,3 +151,4 @@ void OpenGLWindow::run()
         glfwPollEvents();
     }
 }
+
