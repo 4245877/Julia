@@ -1,5 +1,7 @@
 // OpenGLWindow.cpp
 #include "OpenGLWindow.h" // Подключаем объявление нашего класса
+#include "Engine.h" // Подключаем Engine для проверки инициализации GLFW
+#include <stdexcept> // для std::runtime_error
 
 // Конструктор
 OpenGLWindow::OpenGLWindow(float width, float height, const char* title)
@@ -7,12 +9,9 @@ OpenGLWindow::OpenGLWindow(float width, float height, const char* title)
 {
     if (!initialize())
     {
-        std::cerr << "ОШИБКА: Не удалось инициализировать OpenGLWindow." << std::endl;
-        // Здесь можно бросить исключение или вызвать exit, в зависимости от твоей стратегии обработки ошибок
-        glfwTerminate(); // Очищаем GLFW ресурсы, если инициализация окна не удалась
-        exit(EXIT_FAILURE); // Пример завершения программы
+        throw std::runtime_error("Не удалось инициализировать OpenGLWindow.");
     }
-    setWindowPosition(); // Устанавливаем позицию окна после инициализации
+    setWindowPosition();
 }
 
 // Деструктор
@@ -25,12 +24,13 @@ OpenGLWindow::~OpenGLWindow()
 }
 
 // Инициализация GLFW, создание окна и инициализация GLAD
+// OpenGLWindow.cpp
+// ...
 bool OpenGLWindow::initialize()
 {
-    // Инициализация GLFW
-    if (!glfwInit())
-    {
-        std::cerr << "\x1b[31mОШИБКА:\x1b[0m не удалось инициализировать GLFW." << std::endl;
+    // Проверяем, был ли GLFW инициализирован (дополнительная защита)
+    if (!Engine::IsGLFWInitialized()) { // Предполагаем, что у вас есть Engine::IsGLFWInitialized()
+        std::cerr << "\x1b[31mКРИТИЧЕСКАЯ ОШИБКА:\x1b[0m Попытка инициализировать окно OpenGL без предварительной инициализации GLFW движком!" << std::endl;
         return false;
     }
 
@@ -38,10 +38,10 @@ bool OpenGLWindow::initialize()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_DECORATED, GLFW_FALSE); // Убираем рамку и кнопки управления
+    glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
 
 #ifdef __APPLE__
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // Для macOS
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
     // Создание окна
@@ -49,23 +49,22 @@ bool OpenGLWindow::initialize()
     if (window == nullptr)
     {
         std::cerr << "\x1b[31mОШИБКА:\x1b[0m Не удалось создать окно GLFW." << std::endl;
-        glfwTerminate(); // Очищаем ресурсы GLFW, так как окно не создано
+        // glfwTerminate() здесь не вызываем. Engine решит, что делать.
         return false;
     }
 
     // Устанавливаем контекст окна
     glfwMakeContextCurrent(window);
 
-    // Инициализация GLAD
+    // Инициализация GLAD (это правильно делать здесь, после создания контекста)
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
         std::cerr << "\x1b[31mОШИБКА:\x1b[0m Не удалось инициализировать GLAD." << std::endl;
-        // glfwDestroyWindow(window) не нужен здесь, т.к. если GLAD не инициализируется, контекст уже создан
-        glfwTerminate(); // Очищаем ресурсы GLFW
+        // glfwTerminate() здесь не вызываем.
+        // glfwDestroyWindow(window); // Окно можно уничтожить, если GLAD не загрузился.
         return false;
     }
 
-    // Задаем размеры области просмотра
     glViewport(0, 0, static_cast<int>(windowWidth), static_cast<int>(windowHeight));
 
     return true;

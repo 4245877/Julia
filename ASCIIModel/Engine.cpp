@@ -1,5 +1,44 @@
 ﻿#include "Engine.h"
 #include "Camera.h"
+
+// Инициализация статического члена
+bool Engine::glfwInitialized = false;
+
+
+bool Engine::InitializeGLFW() {
+    if (!glfwInitialized) {
+        if (!glfwInit()) {
+            std::cerr << "\x1b[31mERROR:\x1b[0m Failed to initialize GLFW" << std::endl;
+            return false;
+        }
+        glfwInitialized = true;
+        std::cout << "GLFW initialized successfully." << std::endl;
+        // Здесь можно добавить базовые GLFW window hints, если они глобальны для приложения
+        // glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        // glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+        // glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+        // #ifdef __APPLE__
+        // glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+        // #endif
+    }
+    return true;
+}
+
+// Статический метод для проверки, инициализирован ли GLFW
+bool Engine::IsGLFWInitialized() {
+    return glfwInitialized;
+}
+
+// Статический метод для завершения работы GLFW
+void Engine::TerminateGLFW() {
+    if (glfwInitialized) {
+        glfwTerminate();
+        glfwInitialized = false;
+        std::cout << "GLFW terminated successfully." << std::endl;
+    }
+}
+
+
 // 
 // Функциии для проверки инициализации библиотек 
 // 
@@ -47,22 +86,28 @@ bool EngineCheckInitializations() {
 
 // Функция получения разрешения экрана для создания окна на разных мониторах
 void getScreenResolution(float& width, float& height) {
-    // Инициализация GLFW
-    if (!glfwInit()) {
-        std::cerr << "\x1b[31mERROR:\x1b[0m Failed to initialize GLFW" << std::endl;
-        return;
+    // Важно: Эта функция теперь ожидает, что Engine::InitializeGLFW() уже был вызван!
+    if (!Engine::IsGLFWInitialized()) {
+        std::cerr << "\x1b[33mWARNING:\x1b[0m getScreenResolution called before GLFW was initialized by Engine! Attempting to initialize now..." << std::endl;
+        if (!Engine::InitializeGLFW()) { // Попытка инициализировать, если это не было сделано
+            std::cerr << "\x1b[31mERROR:\x1b[0m Failed to initialize GLFW in getScreenResolution. Using default resolution." << std::endl;
+            width = 800.0f; // Значения по умолчанию
+            height = 600.0f;
+            return;
+        }
     }
 
-    // Получение видеодрайвера
     const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
     if (mode) {
-        width = mode->width;
-        height = mode->height;
+        width = static_cast<float>(mode->width);
+        height = static_cast<float>(mode->height);
     }
     else {
-        std::cerr << "\x1b[31mERROR:\x1b[0m Failed to get video mode" << std::endl;
+        std::cerr << "\x1b[31mERROR:\x1b[0m Failed to get video mode. Using default resolution." << std::endl;
+        width = 800.0f; // Значения по умолчанию
+        height = 600.0f;
     }
-
+    // glfwTerminate() здесь НЕ вызывается
 }
 
 
@@ -217,6 +262,7 @@ void Engine::render() {
 }
 void Engine::shutdown() {
     cleanup(); // Вызываем cleanup для освобождения ресурсов   
+    Engine::TerminateGLFW(); // Завершение работы GLFW
     std::cout << "Engine shutdown complete." << std::endl;
 }
 

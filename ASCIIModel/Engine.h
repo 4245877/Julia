@@ -63,6 +63,9 @@ private:
     GLuint VAO; // Объект вершинного массива
     GLuint VBO; // Объект вершинного буфера
 
+    // Статический флаг для отслеживания состояния инициализации GLFW
+    static bool glfwInitialized;
+
     // Камера
     Camera camera;
 
@@ -98,15 +101,24 @@ private:
     void cleanup();
 
 
-    void initializeGraphics();
+
     static int initialization();
     static void finalization();
+    void initializeGraphics();
 
     SoundEngine soundEngine;
+
 public:
+    // Статические методы для управления GLFW
+    static bool InitializeGLFW();
+    static void TerminateGLFW();
+    static bool IsGLFWInitialized(); // Полезно для проверок
+
+
     Engine(float cameraPosX, float cameraPosY, float cameraPosZ,
         float upX, float upY, float upZ, float yaw, float pitch,
         float windowWidth, float windowHeight);
+
 
     void runWindow();
     void setAnimation(const std::string& animationName);
