@@ -155,8 +155,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="C:\Users\alner\OneDrive\Documents\untitled.fbx" />
-    <None Include="fragment .shader" />
-    <None Include="vertex.shader" />
+    <CopyFileToFolders Include="fragment .shader">
+      <FileType>Document</FileType>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="vertex.shader">
+      <FileType>Document</FileType>
+    </CopyFileToFolders>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

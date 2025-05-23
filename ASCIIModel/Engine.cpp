@@ -90,9 +90,26 @@ Engine::Engine(float cameraPosX, float cameraPosY, float cameraPosZ,
 
 // private часть 
 
-std::string Engine::loadShaderSource(const std::string& shaderName) {
-   
-    return "1";
+std::string Engine::loadShaderSource(const std::string& filePath) {
+    std::ifstream shaderFile;
+    // Устанавливаем исключения для ifstream, чтобы он выбрасывал их при ошибках
+    shaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+    try {
+        // Открываем файл
+        shaderFile.open(filePath);
+        std::stringstream shaderStream;
+        // Читаем содержимое файла в строковый поток
+        shaderStream << shaderFile.rdbuf();
+        // Закрываем файл
+        shaderFile.close();
+        // Преобразуем строковый поток в std::string
+        return shaderStream.str();
+    }
+    catch (const std::ifstream::failure& e) {
+        // Используем \x1b[31m для красного цвета ошибки в консоли, если она поддерживает ANSI-последовательности
+        std::cerr << "\x1b[31mERROR::SHADER::FILE_NOT_SUCCESSFULLY_READ\x1b[0m: " << filePath << "\n" << e.what() << std::endl;
+        return ""; // Возвращаем пустую строку в случае ошибки
+    }
 }
 
 bool Engine::compileShader(const std::string& vertexSource, const std::string& fragmentSource) 
@@ -122,7 +139,13 @@ void Engine::applyShaderUniforms() {
 
 }
 void Engine::cleanup() {
+    // Освобождаем ресурсы VAO, VBO и шейдерной программы
+    glDeleteVertexArrays(1, &this->VAO);
+    glDeleteBuffers(1, &this->VBO);
+    glDeleteProgram(this->shaderProgram);
 
+    // Здесь также может быть другая логика очистки, если необходимо
+    std::cout << "Engine cleanup: VAO, VBO, Shader Program deleted." << std::endl;
 }
 void Engine::finalization() {
 
@@ -148,7 +171,7 @@ void Engine::render() {
         glm::radians(45.0f), // Угол обзора
         (float)window.GetWindowWidth() / (float)window.GetWindowHeight(), // Соотношение сторон
         0.1f,  // Ближняя плоскость отсечения
-        100.0f // Дальняя плоскость отсечения
+        1000.0f // Дальняя плоскость отсечения
     );
 
     // Активируем шейдерную программу
@@ -164,78 +187,77 @@ void Engine::render() {
     glBindVertexArray(0); // Отвязываем VAO
 }
 void Engine::shutdown() {
-
+    cleanup(); // Вызываем cleanup для освобождения ресурсов   
+    glfwTerminate(); // Завершение работы GLFW
+    std::cout << "Engine shutdown complete." << std::endl;
 }
 
 
+
 void Engine::initializeGraphics() {
-    // Шейдеры
-    const char* vertexShaderSource = R"glsl(
-        #version 330 core
-        layout (location = 0) in vec3 aPos;
-        uniform mat4 projection;
-        uniform mat4 view;
-        void main() {
-            gl_Position = projection * view * vec4(aPos, 1.0);
-        }
-    )glsl";
+    // 1. Загрузка исходного кода шейдеров из файлов
+    std::string vertexShaderCode = loadShaderSource("vertex.shader");
+    std::string fragmentShaderCode = loadShaderSource("fragment.shader");
 
-    const char* fragmentShaderSource = R"glsl(
-        #version 330 core
-        out vec4 FragColor;
-        void main() {
-            FragColor = vec4(1.0, 0.0, 0.0, 1.0); // Красный цвет
-        }
-    )glsl";
+    // Проверяем, успешно ли загружены шейдеры
+    if (vertexShaderCode.empty() || fragmentShaderCode.empty()) {
+        std::cerr << "\x1b[31mERROR::ENGINE::INITIALIZE_GRAPHICS\x1b[0m: Failed to load one or more shader sources. Graphics initialization aborted." << std::endl;
+        // Здесь можно предпринять более серьезные действия, например, выбросить исключение
+        // или установить флаг ошибки в движке, чтобы предотвратить дальнейшие операции рендеринга.
+        return; // Прерываем инициализацию, если шейдеры не загружены
+    }
 
-    // Компиляция вершинного шейдера
-    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-    glCompileShader(vertexShader);
-    // Проверка на ошибки компиляции вершинного шейдера
+    // Преобразуем std::string в const char* для OpenGL функций
+    const char* cVertexShaderSource = vertexShaderCode.c_str();
+    const char* cFragmentShaderSource = fragmentShaderCode.c_str();
+
+    // 2. Компиляция шейдеров
+    GLuint vertexShader, fragmentShader;
     int success;
     char infoLog[512];
+
+    // Вершинный шейдер
+    vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertexShader, 1, &cVertexShaderSource, NULL);
+    glCompileShader(vertexShader);
     glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
     if (!success) {
         glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
         std::cerr << "\x1b[31mERROR::SHADER::VERTEX::COMPILATION_FAILED\x1b[0m\n" << infoLog << std::endl;
     }
 
-    // Компиляция фрагментного шейдера
-    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+    // Фрагментный шейдер
+    fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragmentShader, 1, &cFragmentShaderSource, NULL);
     glCompileShader(fragmentShader);
-    // Проверка на ошибки компиляции фрагментного шейдера
     glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
     if (!success) {
         glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
         std::cerr << "\x1b[31mERROR::SHADER::FRAGMENT::COMPILATION_FAILED\x1b[0m\n" << infoLog << std::endl;
     }
 
-    // Линковка шейдерной программы
+    // 3. Линковка шейдерной программы
     this->shaderProgram = glCreateProgram();
     glAttachShader(this->shaderProgram, vertexShader);
     glAttachShader(this->shaderProgram, fragmentShader);
     glLinkProgram(this->shaderProgram);
-    // Проверка на ошибки линковки
     glGetProgramiv(this->shaderProgram, GL_LINK_STATUS, &success);
     if (!success) {
         glGetProgramInfoLog(this->shaderProgram, 512, NULL, infoLog);
         std::cerr << "\x1b[31mERROR::SHADER::PROGRAM::LINKING_FAILED\x1b[0m\n" << infoLog << std::endl;
     }
 
-    // После линковки шейдеры нам больше не нужны
+    // Удаляем объекты шейдеров после линковки, они больше не нужны
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
-    // Вершины треугольника
+    // 4. Настройка вершинных данных, VAO и VBO (остается как было)
     float vertices[] = {
         -0.5f, -0.5f, 0.0f, // левая  
          0.5f, -0.5f, 0.0f, // правая 
          0.0f,  0.5f, 0.0f  // верхняя
     };
 
-    // Настройка VAO и VBO
     glGenVertexArrays(1, &this->VAO);
     glGenBuffers(1, &this->VBO);
 
@@ -244,14 +266,13 @@ void Engine::initializeGraphics() {
     glBindBuffer(GL_ARRAY_BUFFER, this->VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    // Указываем OpenGL, как интерпретировать вершинные данные
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0); // Включаем атрибут вершины с location = 0
+    glEnableVertexAttribArray(0);
 
-    // Отвязываем VBO (VAO все еще активен и хранит ссылку на этот VBO)
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-    // Отвязываем VAO
     glBindVertexArray(0);
 }
+
+// ... (остальной код Engine.cpp, включая render, cleanup, shutdown и т.д.) ...
 
 

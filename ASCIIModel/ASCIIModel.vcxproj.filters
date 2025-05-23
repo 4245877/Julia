@@ -70,11 +70,13 @@
     <None Include="C:\Users\alner\OneDrive\Documents\untitled.fbx">
       <Filter>Файлы ресурсов</Filter>
     </None>
-    <None Include="fragment .shader">
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="fragment .shader">
       <Filter>Файлы ресурсов</Filter>
-    </None>
-    <None Include="vertex.shader">
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="vertex.shader">
       <Filter>Файлы ресурсов</Filter>
-    </None>
+    </CopyFileToFolders>
   </ItemGroup>
 </Project>

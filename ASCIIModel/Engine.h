@@ -87,6 +87,7 @@ private:
 
     // Внутренние методы
     std::string loadShaderSource(const std::string& shaderName);
+
     bool compileShader(const std::string& vertexSource, const std::string& fragmentSource);
     bool loadTextures();
     void updateAnimation(float deltaTime);
@@ -95,6 +96,7 @@ private:
     void renderScene();
     void applyShaderUniforms();
     void cleanup();
+
 
     void initializeGraphics();
     static int initialization();

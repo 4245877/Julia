@@ -1,1 +1,6 @@
 ERROR: Failed to initialize GLAD
+ERROR::SHADER::FILE_NOT_SUCCESSFULLY_READ: vertex.shader
+ios_base::failbit set: iostream stream error
+ERROR::SHADER::FILE_NOT_SUCCESSFULLY_READ: fragment.shader
+ios_base::failbit set: iostream stream error
+ERROR::ENGINE::INITIALIZE_GRAPHICS: Failed to load one or more shader sources. Graphics initialization aborted.
