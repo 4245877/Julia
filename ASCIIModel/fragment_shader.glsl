@@ -1,6 +1,7 @@
 #version 330 core
 out vec4 FragColor;
 
-void main() {
-    FragColor = vec4(1.0, 1.0, 1.0, 1.0); // Изменил цвет на зеленый для наглядности
+void main()
+{
+    FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f); // Яркий оранжевый цвет для теста
 }

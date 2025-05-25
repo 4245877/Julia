@@ -10,10 +10,12 @@
 class OpenGLWindow
 {
 private:
-    float windowWidth;
-    float windowHeight;
+    int windowWidth;
+    int windowHeight;
     const char* windowTitle;
     GLFWwindow* window; // Указатель на окно GLFW
+
+    std::function<void()> renderCallback;
 
     bool initialize();        // Инициализация GLFW и GLAD
     void setWindowPosition(); // Установка позиции окна
@@ -21,12 +23,13 @@ private:
     void renderClear();       // Очистка экрана (переименовано из render для ясности, т.к. основная логика рендера будет в Engine)
 
 public:
-    OpenGLWindow(float width, float height, const char* title = "OpenGL Window");
+    OpenGLWindow(int width, int height, const char* title = "OpenGL Window");
     ~OpenGLWindow();
 
+
     void run(); // Запуск основного цикла окна
-    float GetWindowWidth() const { return windowWidth; }   // Получить ширину окна
-    float GetWindowHeight() const { return windowHeight; } // Получить высоту окна
+    int GetWindowWidth() const { return windowWidth; }   // Получить ширину окна
+    int GetWindowHeight() const { return windowHeight; } // Получить высоту окна
     GLFWwindow* getGLFWwindow() const { return window; } // Получить указатель на окно GLFW (может понадобиться для Engine)
 
     // Метод для установки callback-функции

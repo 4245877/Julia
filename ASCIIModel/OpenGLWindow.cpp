@@ -4,7 +4,7 @@
 #include <stdexcept> // для std::runtime_error
 
 // Конструктор
-OpenGLWindow::OpenGLWindow(float width, float height, const char* title)
+OpenGLWindow::OpenGLWindow(int width, int height, const char* title)
     : windowWidth(width), windowHeight(height), windowTitle(title ? title : "OpenGL Window"), window(nullptr)
 {
     if (!initialize())
@@ -23,9 +23,7 @@ OpenGLWindow::~OpenGLWindow()
     glfwTerminate(); // Завершаем работу GLFW, освобождая все ресурсы
 }
 
-// Инициализация GLFW, создание окна и инициализация GLAD
-// OpenGLWindow.cpp
-// ...
+ 
 bool OpenGLWindow::initialize()
 {
     // Проверяем, был ли GLFW инициализирован (дополнительная защита)
@@ -110,8 +108,8 @@ void OpenGLWindow::processInput()
 void OpenGLWindow::renderClear()
 {
     // Очищаем экран (меняем цвет фона)
-    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Также добавил очистку буфера глубины, это стандартная практика
+    glClearColor(0.4f, 0.4f, 0.9f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);  
 }
 
 // Основной цикл окна
@@ -121,22 +119,24 @@ void OpenGLWindow::run()
         std::cerr << "ОШИБКА: Окно не инициализировано. Запуск невозможен." << std::endl;
         return;
     }
-    // Основной цикл окна
+
     while (!glfwWindowShouldClose(window))
     {
-        // Обработка ввода
         processInput();
 
-        // Очистка экрана (вызывается из OpenGLWindow, если нужно)
-        //renderClear(); 
+        // Вызываем функцию рендеринга, если она установлена
+        if (renderCallback) {
+            renderCallback(); // << ДОБАВИТЬ ЭТОТ ВЫЗОВ
+        }
+        // Закомментированная строка renderClear() больше не нужна здесь,
+        // так как очистка экрана должна происходить в Engine::render()
+        // // renderClear(); 
 
-
-
-        // Меняем буферы
         glfwSwapBuffers(window);
-
-        // Обрабатываем события (ввод, изменение размера окна и т.д.)
         glfwPollEvents();
     }
 }
 
+void OpenGLWindow::setRenderCallback(std::function<void()> callback) {
+    this->renderCallback = callback;
+}

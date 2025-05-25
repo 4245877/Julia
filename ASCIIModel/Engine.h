@@ -5,6 +5,7 @@
 //Model Rendering : отрисовка модели и применение анимаций.
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+
 #include <gtc/type_ptr.hpp>
 #include <iostream>
 #include <fstream> // Для загрузки шейдеров из файлов

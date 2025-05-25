@@ -49,7 +49,7 @@ bool checkOpenGLInitialization() {
         std::cerr << "\x1b[31mERROR:\x1b[0m Failed to initialize GLAD" << std::endl;
         return false; // Возвращаем false, если произошла ошибка
     }
-    return true; // Возвращаем true, если инициализация прошла успешно 31mERORR
+    return true; // Возвращаем true, если инициализация прошла успешно 
 }
 
 // Проверка Assimp
@@ -107,7 +107,6 @@ void getScreenResolution(float& width, float& height) {
         width = 800.0f; // Значения по умолчанию
         height = 600.0f;
     }
-    // glfwTerminate() здесь НЕ вызывается
 }
 
 
@@ -127,11 +126,7 @@ Engine::Engine(float cameraPosX, float cameraPosY, float cameraPosZ,
     window(windowWidth, windowHeight), // OpenGLWindow создается здесь
     shaderProgram(0), VAO(0), VBO(0)
 {
-    //// Устанавливаем callback на метод render текущего объекта Engine
-    //this->window.setRenderCallback([this]() {
-    //    this->render();
-    //    });
-
+ 
     // Инициализация графики после того, как окно и контекст созданы
     // и callback установлен (хотя установка callback не зависит от initializeGraphics)
     initializeGraphics();
@@ -167,7 +162,8 @@ bool Engine::compileShader(const std::string& vertexSource, const std::string& f
     return false;
 }
 void Engine::runWindow() {
-    //window.setRenderCallback([this]() { this->render(); }); // Можно и здесь, если не в конструкторе
+    // Устанавливаем коллбэк перед запуском цикла окна
+    window.setRenderCallback([this]() { this->render(); }); // << РАСКОММЕНТИРОВАТЬ И ИСПОЛЬЗОВАТЬ
     window.run(); // Теперь window.run() будет вызывать Engine::render() в каждой итерации
 }
 bool Engine::loadTextures() {
