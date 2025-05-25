@@ -3,6 +3,7 @@
 //Shader Management : компил€ци€ и применение шейдеров(vertex, fragment, и других).
 //Frame Management : управление кадрами(буферы, очищение экрана и т.д.).
 //Model Rendering : отрисовка модели и применение анимаций.
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
@@ -40,8 +41,6 @@ class Engine;
 class Renderer;
 class ModelManager;
 
-
- 
 
 class Engine{
 private:
