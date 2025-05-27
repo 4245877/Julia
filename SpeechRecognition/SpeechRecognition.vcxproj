@@ -127,9 +127,29 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AcousticModel.cpp" />
+    <ClCompile Include="ASRConfig.cpp" />
+    <ClCompile Include="ASRResourceManager.cpp" />
+    <ClCompile Include="AudioInput.cpp" />
+    <ClCompile Include="Decoder.cpp" />
+    <ClCompile Include="DecodingGraph.cpp" />
+    <ClCompile Include="FeatureExtractor.cpp" />
+    <ClCompile Include="LanguageModel.cpp" />
+    <ClCompile Include="Lexicon.cpp" />
+    <ClCompile Include="NeuralNetAcousticModel.cpp" />
     <ClCompile Include="SpeechRecognizer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AcousticModel.h" />
+    <ClInclude Include="ASRConfig.h" />
+    <ClInclude Include="ASRResourceManager.h" />
+    <ClInclude Include="AudioInput.h" />
+    <ClInclude Include="Decoder.h" />
+    <ClInclude Include="DecodingGraph.h" />
+    <ClInclude Include="FeatureExtractor.h" />
+    <ClInclude Include="LanguageModel.h" />
+    <ClInclude Include="Lexicon.h" />
+    <ClInclude Include="NeuralNetAcousticModel.h" />
     <ClInclude Include="SpeechRecognizer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

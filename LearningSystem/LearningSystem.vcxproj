@@ -131,12 +131,44 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ActiveLearningModule.cpp" />
+    <ClCompile Include="AdvancedReinforcementLearningSuite.cpp" />
+    <ClCompile Include="CausalInferenceLearner.cpp" />
+    <ClCompile Include="ConceptFormationSystem.cpp" />
+    <ClCompile Include="ContinualLearningEngine.cpp" />
+    <ClCompile Include="GenerativeWorldModelLearner.cpp" />
+    <ClCompile Include="GoalGenerationLearner.cpp" />
+    <ClCompile Include="HybridNeuralSymbolicArchitecture.cpp" />
+    <ClCompile Include="IExplainableLearning.cpp" />
+    <ClCompile Include="IntrinsicMotivationEngine.cpp" />
+    <ClCompile Include="KnowledgeEvolutionManager.cpp" />
     <ClCompile Include="LearningData.cpp" />
     <ClCompile Include="LearningManager.cpp" />
+    <ClCompile Include="LearningStrategyController.cpp" />
+    <ClCompile Include="MemoryConsolidationEngine.cpp" />
+    <ClCompile Include="MetaLearningEngine.cpp" />
+    <ClCompile Include="SelfSupervisedLearningFramework.cpp" />
+    <ClCompile Include="UnsupervisedDiscoveryEngine.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ActiveLearningModule.h" />
+    <ClInclude Include="AdvancedReinforcementLearningSuite.h" />
+    <ClInclude Include="CausalInferenceLearner.h" />
+    <ClInclude Include="ConceptFormationSystem.h" />
+    <ClInclude Include="ContinualLearningEngine.h" />
+    <ClInclude Include="GenerativeWorldModelLearner.h" />
+    <ClInclude Include="GoalGenerationLearner.h" />
+    <ClInclude Include="HybridNeuralSymbolicArchitecture.h" />
+    <ClInclude Include="IExplainableLearning.h" />
+    <ClInclude Include="IntrinsicMotivationEngine.h" />
+    <ClInclude Include="KnowledgeEvolutionManager.h" />
     <ClInclude Include="LearningData.h" />
     <ClInclude Include="LearningManager.h" />
+    <ClInclude Include="LearningStrategyController.h" />
+    <ClInclude Include="MemoryConsolidationEngine.h" />
+    <ClInclude Include="MetaLearningEngine.h" />
+    <ClInclude Include="SelfSupervisedLearningFramework.h" />
+    <ClInclude Include="UnsupervisedDiscoveryEngine.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

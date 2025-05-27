@@ -130,7 +130,37 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AIStateSnapshotModel.cpp" />
+    <ClCompile Include="AnnotatedDataModel.cpp" />
+    <ClCompile Include="APIMetadataModel.cpp" />
+    <ClCompile Include="DatabaseInitializer.cpp" />
+    <ClCompile Include="DatabaseManager.cpp" />
+    <ClCompile Include="DatabaseUtils.cpp" />
+    <ClCompile Include="FactModel.cpp" />
+    <ClCompile Include="FeedbackModel.cpp" />
+    <ClCompile Include="KnowledgeModel.cpp" />
+    <ClCompile Include="MessageModel.cpp" />
+    <ClCompile Include="OntologySchemaModel.cpp" />
+    <ClCompile Include="RuleModel.cpp" />
+    <ClCompile Include="TrainingSampleModel.cpp" />
+    <ClCompile Include="UserProfileModel.cpp" />
     <ClCompile Include="Сonversation .cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="AIStateSnapshotModel.h" />
+    <ClInclude Include="AnnotatedDataModel.h" />
+    <ClInclude Include="APIMetadataModel.h" />
+    <ClInclude Include="DatabaseInitializer.h" />
+    <ClInclude Include="DatabaseManager.h" />
+    <ClInclude Include="DatabaseUtils.h" />
+    <ClInclude Include="FactModel.h" />
+    <ClInclude Include="FeedbackModel.h" />
+    <ClInclude Include="KnowledgeModel.h" />
+    <ClInclude Include="MessageModel.h" />
+    <ClInclude Include="OntologySchemaModel.h" />
+    <ClInclude Include="RuleModel.h" />
+    <ClInclude Include="TrainingSampleModel.h" />
+    <ClInclude Include="UserProfileModel.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

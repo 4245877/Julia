@@ -148,12 +148,14 @@
   <ItemGroup>
     <ClCompile Include="AICore.cpp" />
     <ClCompile Include="AIEngine.cpp" />
+    <ClCompile Include="ConfigManager.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AICore.h" />
     <ClInclude Include="AIEngine.h" />
+    <ClInclude Include="ConfigManager.h" />
     <ClInclude Include="KnowledgeBase.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="ResponseGenerator.h" />

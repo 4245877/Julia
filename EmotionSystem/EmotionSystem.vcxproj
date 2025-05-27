@@ -133,16 +133,30 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="CognitiveAppraisalEngine.h" />
+    <ClInclude Include="EmotionalExpressionController.h" />
+    <ClInclude Include="EmotionalLearningModule.h" />
+    <ClInclude Include="EmotionalState.h" />
+    <ClInclude Include="EmotionAnalyzer.h" />
     <ClInclude Include="EmotionData.h" />
+    <ClInclude Include="EmotionGenerator.h" />
+    <ClInclude Include="EmotionInfluenceInterface.h" />
     <ClInclude Include="EmotionManager.h" />
+    <ClInclude Include="EmotionRegulationModule.h" />
+    <ClInclude Include="EmotionUtils.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CognitiveAppraisalEngine.cpp" />
+    <ClCompile Include="EmotionalExpressionController.cpp" />
+    <ClCompile Include="EmotionalLearningModule.cpp" />
+    <ClCompile Include="EmotionalState.cpp" />
+    <ClCompile Include="EmotionAnalyzer.cpp" />
     <ClCompile Include="EmotionData.cpp" />
+    <ClCompile Include="EmotionGenerator.cpp" />
+    <ClCompile Include="EmotionInfluenceInterface.cpp" />
     <ClCompile Include="EmotionManager.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="fragment.shader" />
-    <None Include="vertex.shader" />
+    <ClCompile Include="EmotionRegulationModule.cpp" />
+    <ClCompile Include="EmotionUtils.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
