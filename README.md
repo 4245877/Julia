@@ -13,7 +13,7 @@ Julia — это полностью открытый проект с откры�
 | **Процессор**  | AMD Ryzen 7 7900 / Intel Core Ultra 9 285K                                                                             | AMD Ryzen Threadripper 7970X / Intel Xeon 6741P                                                                        |
 | **Видеокарта** | NVIDIA RTX 2060 Super / AMD RX 6600 XT                                                                                 | NVIDIA RTX 5070 / AMD RX 9070                                                                                          |
 | **ОЗУ**        | 256 GB DDR4‑3600 MHz (CL16‑19‑19‑39)                                                                                   | 256 GB DDR5‑7200 MHz (CL32‑40‑40‑96)                                                                                   |
-| **Хранилище**  | Goodram PX700 512 GB NVMe PCIe Gen4 M.2<br>• Послед. чтение: до 5 000 МБ/с<br>• Запись: до 4 400 МБ/с<br>• TBW: 600 TB | Goodram PX700 2 TB NVMe PCIe Gen4 M.2<br>• Послед. чтение: до 5 000 МБ/с<br>• Запись: до 4 400 МБ/с<br>• TBW: 2 400 TB |
+| **Хранилище**  | 512 GB NVMe PCIe Gen4 M.2<br>• Послед. чтение: до 5 000 МБ/с<br>• Запись: до 4 400 МБ/с<br>• TBW: 600 TB               | 2 TB NVMe PCIe Gen4 M.2<br>• Послед. чтение: до 9 000 МБ/с<br>• Запись: до 4 400 МБ/с<br>• TBW: 2 400 TB |
 
 
 **Системные требования (приоритет — видеокарта)**
@@ -22,4 +22,4 @@ Julia — это полностью открытый проект с откры�
 | **Процессор**  | AMD Ryzen 7 5700X / Intel Core i5‑13600KF                                                                              | AMD Ryzen 7 7900 / Intel Core Ultra 9 285K                                                                             |
 | **Видеокарта** | NVIDIA RTX 5080 / 2 × Tesla V100 / 2 × AMD RX 7900 XTX                                                                 | 2 × NVIDIA H200 / ≥ 6 × AMD RX 9070                                                                                    |
 | **ОЗУ**        | 256 GB DDR4‑3600 MHz (CL16‑19‑19‑39)                                                                                   | 256 GB DDR5‑7200 MHz (CL32‑40‑40‑96)                                                                                   |
-| **Хранилище**  | Goodram PX700 512 GB NVMe PCIe Gen4 M.2<br>• Послед. чтение: до 5 000 МБ/с<br>• Запись: до 4 400 МБ/с<br>• TBW: 600 TB | Goodram PX700 2 TB NVMe PCIe Gen4 M.2<br>• Послед. чтение: до 5 000 МБ/с<br>• Запись: до 4 400 МБ/с<br>• TBW: 2 400 TB |
+| **Хранилище**  | 512 GB NVMe PCIe Gen4 M.2<br>• Послед. чтение: до 5 000 МБ/с<br>• Запись: до 4 400 МБ/с<br>• TBW: 600 TB               | 2 TB NVMe PCIe Gen4 M.2<br>• Послед. чтение: до 9 000 МБ/с<br>• Запись: до 4 400 МБ/с<br>• TBW: 2 400 TB |
