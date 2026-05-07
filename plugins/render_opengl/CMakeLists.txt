@@ -5,6 +5,7 @@ target_sources(julia_render_opengl
         src/OpenGLRenderer.cpp
         src/GLShader.cpp
         src/GLMesh.cpp
+        src/GLModel.cpp
         src/GLTexture.cpp
         src/GLModelLoader.cpp
 )
@@ -12,6 +13,11 @@ target_sources(julia_render_opengl
 target_include_directories(julia_render_opengl
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+target_compile_features(julia_render_opengl
+    PUBLIC
+        cxx_std_20
 )
 
 find_package(OpenGL REQUIRED)
