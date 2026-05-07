@@ -1,0 +1,4 @@
+﻿add_subdirectory(julia_desktop)
+add_subdirectory(julia_server)
+add_subdirectory(julia_sandbox)
+add_subdirectory(julia_robot)
