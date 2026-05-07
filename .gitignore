@@ -1,22 +1,19 @@
-
 # Visual Studio
 .vs/
+*.user
+*.suo
 
-# CMake build folders
-out/
+# CMake build
 build/
+out/
 cmake-build-*/
-
-# CMake generated files
-CMakeCache.txt
 CMakeFiles/
+CMakeCache.txt
 cmake_install.cmake
 compile_commands.json
 
 # Visual Studio / MSVC generated files
 *.sln
-*.suo
-*.user
 *.vcxproj
 *.vcxproj.filters
 *.vcxproj.user
@@ -24,8 +21,14 @@ compile_commands.json
 # Build outputs
 bin/
 obj/
+
+# Binaries
 *.exe
 *.dll
 *.lib
 *.pdb
+*.obj
 *.ilk
+
+# Logs
+*.log
