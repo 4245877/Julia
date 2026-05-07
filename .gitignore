@@ -3,24 +3,16 @@
 *.user
 *.suo
 
-# CMake build
+# CMake / build
 build/
 out/
 cmake-build-*/
 CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
-compile_commands.json
 
-# Visual Studio / MSVC generated files
-*.sln
-*.vcxproj
-*.vcxproj.filters
-*.vcxproj.user
-
-# Build outputs
-bin/
-obj/
+# vcpkg generated
+vcpkg_installed/
 
 # Binaries
 *.exe
