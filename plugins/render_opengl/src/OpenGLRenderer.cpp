@@ -95,6 +95,48 @@ void main()
     FragColor = vec4(finalColor, 1.0);
 }
 )GLSL";
+
+        constexpr const char* BackgroundVertexShaderSource = R"GLSL(
+#version 460 core
+
+out vec2 vUv;
+
+vec2 positions[3] = vec2[](
+    vec2(-1.0, -1.0),
+    vec2( 3.0, -1.0),
+    vec2(-1.0,  3.0)
+);
+
+void main()
+{
+    vec2 p = positions[gl_VertexID];
+    vUv = p * 0.5 + 0.5;
+    gl_Position = vec4(p, 0.0, 1.0);
+}
+)GLSL";
+
+        constexpr const char* BackgroundFragmentShaderSource = R"GLSL(
+#version 460 core
+
+in vec2 vUv;
+
+uniform vec3 uTopColor;
+uniform vec3 uBottomColor;
+
+out vec4 FragColor;
+
+void main()
+{
+    float t = smoothstep(0.0, 1.0, clamp(vUv.y, 0.0, 1.0));
+    vec3 color = mix(uBottomColor, uTopColor, t);
+    FragColor = vec4(color, 1.0);
+}
+)GLSL";
+    }
+
+    OpenGLRenderer::~OpenGLRenderer()
+    {
+        releaseBackground();
     }
 
     void OpenGLRenderer::initialize(int width, int height)
@@ -110,6 +152,13 @@ void main()
         glDisable(GL_CULL_FACE);
 
         shader_.createFromSource(VertexShaderSource, FragmentShaderSource);
+
+        backgroundShader_.createFromSource(
+            BackgroundVertexShaderSource,
+            BackgroundFragmentShaderSource
+        );
+
+        glGenVertexArrays(1, &backgroundVao_);
 
         resize(width_, height_);
     }
@@ -128,6 +177,20 @@ void main()
     {
         glClearColor(clearColor.r, clearColor.g, clearColor.b, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glDisable(GL_DEPTH_TEST);
+        glDepthMask(GL_FALSE);
+
+        backgroundShader_.bind();
+        backgroundShader_.setVec3("uTopColor", glm::vec3{ 0.80f, 0.72f, 0.64f });
+        backgroundShader_.setVec3("uBottomColor", glm::vec3{ 0.47f, 0.37f, 0.30f });
+
+        glBindVertexArray(backgroundVao_);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glBindVertexArray(0);
+
+        glDepthMask(GL_TRUE);
+        glEnable(GL_DEPTH_TEST);
     }
 
     void OpenGLRenderer::renderModel(
@@ -168,10 +231,19 @@ void main()
             100.0f
         );
 
-        const glm::vec3 cameraPosition{0.0f, 1.35f, 4.0f};
-        const glm::vec3 cameraTarget{0.0f, 1.1f, 0.0f};
-        const glm::vec3 cameraUp{0.0f, 1.0f, 0.0f};
+        const glm::vec3 cameraPosition{ 0.0f, 1.25f, 3.6f };
+        const glm::vec3 cameraTarget{ 0.0f, 1.15f, 0.0f };
+        const glm::vec3 cameraUp{ 0.0f, 1.0f, 0.0f };
 
         view_ = glm::lookAt(cameraPosition, cameraTarget, cameraUp);
+    }
+
+    void OpenGLRenderer::releaseBackground()
+    {
+        if (backgroundVao_ != 0)
+        {
+            glDeleteVertexArrays(1, &backgroundVao_);
+            backgroundVao_ = 0;
+        }
     }
 }

@@ -104,14 +104,13 @@ int main()
 
             renderer.beginFrame();
 
-            const float time = static_cast<float>(glfwGetTime());
-
             glm::mat4 modelMatrix{1.0f};
 
-            // Медленный поворот, чтобы сразу было понятно, что это 3D-модель.
+            // Если после фикса загрузчика модель всё ещё смотрит не в камеру,
+            // можно оставить разворот по Y на 180 градусов.
             modelMatrix = glm::rotate(
                 modelMatrix,
-                time * 0.35f,
+                glm::radians(180.0f),
                 glm::vec3{0.0f, 1.0f, 0.0f}
             );
 

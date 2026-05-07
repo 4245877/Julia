@@ -8,6 +8,7 @@
 #include <glm/glm.hpp>
 
 #include <algorithm>
+#include <cstdint>
 #include <filesystem>
 #include <stdexcept>
 #include <string>
@@ -121,30 +122,44 @@ namespace julia::render_opengl
             return result;
         }
 
-        GLMesh processMesh(const aiScene* scene, const aiMesh* mesh, LoadContext& context)
+        GLMesh processMesh(
+            const aiScene* scene,
+            const aiMesh* mesh,
+            const glm::mat4& globalTransform,
+            LoadContext& context
+        )
         {
             std::vector<GLVertex> vertices;
             std::vector<std::uint32_t> indices;
 
             vertices.resize(mesh->mNumVertices);
 
+            const glm::mat3 normalTransform =
+                glm::mat3(glm::transpose(glm::inverse(globalTransform)));
+
             for (unsigned int i = 0; i < mesh->mNumVertices; ++i)
             {
                 GLVertex vertex{};
 
-                vertex.position = glm::vec3{
+                glm::vec3 localPosition{
                     mesh->mVertices[i].x,
                     mesh->mVertices[i].y,
                     mesh->mVertices[i].z
                 };
 
+                vertex.position = glm::vec3(
+                    globalTransform * glm::vec4(localPosition, 1.0f)
+                );
+
                 if (mesh->HasNormals())
                 {
-                    vertex.normal = glm::vec3{
+                    glm::vec3 localNormal{
                         mesh->mNormals[i].x,
                         mesh->mNormals[i].y,
                         mesh->mNormals[i].z
                     };
+
+                    vertex.normal = glm::normalize(normalTransform * localNormal);
                 }
 
                 if (mesh->HasTextureCoords(0))
@@ -219,19 +234,34 @@ namespace julia::render_opengl
             };
         }
 
-        void processNode(const aiScene* scene, const aiNode* node, LoadContext& context)
+        void processNode(
+            const aiScene* scene,
+            const aiNode* node,
+            const glm::mat4& parentTransform,
+            LoadContext& context
+        )
         {
+            const glm::mat4 nodeTransform =
+                parentTransform * toGlm(node->mTransformation);
+
             for (unsigned int i = 0; i < node->mNumMeshes; ++i)
             {
                 const unsigned int meshIndex = node->mMeshes[i];
                 const aiMesh* mesh = scene->mMeshes[meshIndex];
 
-                context.model.addMesh(processMesh(scene, mesh, context));
+                context.model.addMesh(
+                    processMesh(scene, mesh, nodeTransform, context)
+                );
             }
 
             for (unsigned int i = 0; i < node->mNumChildren; ++i)
             {
-                processNode(scene, node->mChildren[i], context);
+                processNode(
+                    scene,
+                    node->mChildren[i],
+                    nodeTransform,
+                    context
+                );
             }
         }
     }
@@ -267,7 +297,7 @@ namespace julia::render_opengl
         }
 
         LoadContext context{};
-        processNode(scene, scene->mRootNode, context);
+        processNode(scene, scene->mRootNode, glm::mat4{1.0f}, context);
 
         if (context.model.empty())
         {

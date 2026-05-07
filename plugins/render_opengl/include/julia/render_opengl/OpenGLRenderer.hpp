@@ -12,6 +12,15 @@ namespace julia::render_opengl
     class OpenGLRenderer
     {
     public:
+        OpenGLRenderer() = default;
+        ~OpenGLRenderer();
+
+        OpenGLRenderer(const OpenGLRenderer&) = delete;
+        OpenGLRenderer& operator=(const OpenGLRenderer&) = delete;
+
+        OpenGLRenderer(OpenGLRenderer&&) = delete;
+        OpenGLRenderer& operator=(OpenGLRenderer&&) = delete;
+
         void initialize(int width, int height);
         void resize(int width, int height);
 
@@ -28,6 +37,10 @@ namespace julia::render_opengl
     private:
         GLShader shader_;
 
+        // Шейдер и VAO для фонового fullscreen triangle.
+        GLShader backgroundShader_;
+        unsigned int backgroundVao_ = 0;
+
         int width_ = 1280;
         int height_ = 720;
 
@@ -35,5 +48,6 @@ namespace julia::render_opengl
         glm::mat4 projection_{1.0f};
 
         void updateCamera();
+        void releaseBackground();
     };
 }
