@@ -23,12 +23,14 @@ layout (location = 3) in ivec4 aBoneIds;
 layout (location = 4) in vec4 aBoneWeights;
 
 const int MAX_BONES = 128;
+const float OUTLINE_WIDTH = 0.0065;
 
 uniform mat4 uModel;
 uniform mat4 uView;
 uniform mat4 uProjection;
 
 uniform bool uUseSkinning;
+uniform bool uOutlinePass;
 uniform mat4 uBoneMatrices[MAX_BONES];
 
 out vec3 vWorldPosition;
@@ -56,13 +58,25 @@ void main()
     }
 
     vec4 localPosition = skinMatrix * vec4(aPosition, 1.0);
+
+    vec3 localNormal = mat3(skinMatrix) * aNormal;
+    if (dot(localNormal, localNormal) < 0.000001)
+    {
+        localNormal = aNormal;
+    }
+
     vec4 worldPosition = uModel * localPosition;
 
-    vWorldPosition = worldPosition.xyz;
-
     mat3 normalMatrix = mat3(transpose(inverse(uModel)));
-    vNormal = normalize(normalMatrix * aNormal);
+    vec3 worldNormal = normalize(normalMatrix * localNormal);
 
+    if (uOutlinePass)
+    {
+        worldPosition.xyz += worldNormal * OUTLINE_WIDTH;
+    }
+
+    vWorldPosition = worldPosition.xyz;
+    vNormal = worldNormal;
     vTexCoord = aTexCoord;
 
     gl_Position = uProjection * uView * worldPosition;
@@ -76,23 +90,61 @@ in vec3 vWorldPosition;
 in vec3 vNormal;
 in vec2 vTexCoord;
 
+uniform mat4 uView;
 uniform vec3 uDiffuseColor;
+uniform bool uOutlinePass;
 
 out vec4 FragColor;
 
 void main()
 {
+    if (uOutlinePass)
+    {
+        vec3 outlineColor = vec3(0.18, 0.17, 0.24);
+        FragColor = vec4(outlineColor, 1.0);
+        return;
+    }
+
     vec3 normal = normalize(vNormal);
 
-    vec3 lightDirection = normalize(vec3(-0.4, -1.0, -0.3));
-    float diffuse = max(dot(normal, -lightDirection), 0.0);
+    vec3 lightDirection = normalize(vec3(-0.35, -0.90, -0.28));
+    vec3 viewPosition = inverse(uView)[3].xyz;
+    vec3 viewDirection = normalize(viewPosition - vWorldPosition);
 
-    vec3 ambientColor = uDiffuseColor * 0.28;
-    vec3 diffuseColor = uDiffuseColor * diffuse * 0.85;
+    float ndl = dot(normal, -lightDirection);
 
-    vec3 finalColor = ambientColor + diffuseColor;
+    // Мягкий anime-свет без резкой cel-границы.
+    float halfLambert = ndl * 0.5 + 0.5;
+    float softLight = smoothstep(0.18, 0.88, halfLambert);
 
-    FragColor = vec4(finalColor, 1.0);
+    // Нежные цветные тени: чуть холодные, сиренево-синие.
+    vec3 shadowTint = vec3(0.64, 0.66, 0.92);
+    vec3 lightTint = vec3(1.08, 1.03, 0.96);
+
+    vec3 shadowColor = uDiffuseColor * shadowTint * 0.72;
+    vec3 lightColor = uDiffuseColor * lightTint;
+
+    vec3 color = mix(shadowColor, lightColor, softLight);
+
+    // Очень мягкая дополнительная светлая зона.
+    float softBloomLight = smoothstep(0.68, 1.0, halfLambert);
+    color += uDiffuseColor * vec3(0.10, 0.08, 0.07) * softBloomLight;
+
+    // Чистый нежный rim-light по краям формы.
+    float rim = 1.0 - max(dot(normal, viewDirection), 0.0);
+    rim = pow(rim, 2.8);
+    rim *= smoothstep(0.05, 0.85, halfLambert);
+
+    vec3 rimColor = vec3(0.86, 0.82, 1.0);
+    color += rimColor * rim * 0.18;
+
+    // Лёгкое осветление, чтобы картинка была мягче и чище.
+    color = mix(color, vec3(1.0), 0.035);
+
+    // Аккуратная защита от пересвета.
+    color = clamp(color, 0.0, 1.0);
+
+    FragColor = vec4(color, 1.0);
 }
 )GLSL";
 
@@ -182,8 +234,8 @@ void main()
         glDepthMask(GL_FALSE);
 
         backgroundShader_.bind();
-        backgroundShader_.setVec3("uTopColor", glm::vec3{ 0.80f, 0.72f, 0.64f });
-        backgroundShader_.setVec3("uBottomColor", glm::vec3{ 0.47f, 0.37f, 0.30f });
+        backgroundShader_.setVec3("uTopColor", glm::vec3{ 0.96f, 0.90f, 0.95f });
+        backgroundShader_.setVec3("uBottomColor", glm::vec3{ 0.78f, 0.86f, 0.96f });
 
         glBindVertexArray(backgroundVao_);
         glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -214,6 +266,22 @@ void main()
             const std::size_t count = std::min<std::size_t>(boneMatrices.size(), MaxBones);
             shader_.setMat4Array("uBoneMatrices", boneMatrices.subspan(0, count));
         }
+
+        // 1) Тонкий контур: рисуем слегка расширенную оболочку.
+        shader_.setBool("uOutlinePass", true);
+
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_FRONT);
+        glDepthMask(GL_FALSE);
+
+        model.draw(shader_);
+
+        glDepthMask(GL_TRUE);
+        glCullFace(GL_BACK);
+        glDisable(GL_CULL_FACE);
+
+        // 2) Основная мягкая anime-заливка.
+        shader_.setBool("uOutlinePass", false);
 
         model.draw(shader_);
     }

@@ -106,14 +106,6 @@ int main()
 
             glm::mat4 modelMatrix{1.0f};
 
-            // Если после фикса загрузчика модель всё ещё смотрит не в камеру,
-            // можно оставить разворот по Y на 180 градусов.
-            modelMatrix = glm::rotate(
-                modelMatrix,
-                glm::radians(180.0f),
-                glm::vec3{0.0f, 1.0f, 0.0f}
-            );
-
             modelMatrix = modelMatrix * fitModel;
 
             renderer.renderModel(model, modelMatrix);

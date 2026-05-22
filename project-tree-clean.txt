@@ -1,0 +1,199 @@
+﻿Julia/
+├── apps
+│   ├── julia_desktop
+│   │   ├── CMakeLists.txt
+│   │   └── main.cpp
+│   ├── julia_robot
+│   ├── julia_sandbox
+│   │   ├── CMakeLists.txt
+│   │   └── main.cpp
+│   ├── julia_server
+│   └── CMakeLists.txt
+├── assets
+│   ├── animations
+│   │   └── .gitkeep
+│   ├── fonts
+│   │   └── .gitkeep
+│   ├── models
+│   │   ├── .gitkeep
+│   │   └── Raphtalia.fbx
+│   ├── shaders
+│   │   └── .gitkeep
+│   ├── sounds
+│   │   └── .gitkeep
+│   ├── textures
+│   │   └── .gitkeep
+│   └── voices
+│       └── .gitkeep
+├── cmake
+│   ├── JuliaCompilerOptions.cmake
+│   ├── JuliaDependencies.cmake
+│   ├── JuliaHelpers.cmake
+│   └── JuliaWarnings.cmake
+├── configs
+├── docs
+│   └── .gitkeep
+├── libs
+│   ├── affect
+│   │   ├── include
+│   │   │   └── julia
+│   │   │       └── affect
+│   │   ├── src
+│   │   └── CMakeLists.txt
+│   ├── cognition
+│   │   ├── include
+│   │   │   └── julia
+│   │   │       └── cognition
+│   │   ├── src
+│   │   └── CMakeLists.txt
+│   ├── communication
+│   │   ├── include
+│   │   │   └── julia
+│   │   │       └── communication
+│   │   ├── src
+│   │   └── CMakeLists.txt
+│   ├── core
+│   │   ├── include
+│   │   │   └── julia
+│   │   │       └── core
+│   │   │           ├── Id.hpp
+│   │   │           ├── Result.hpp
+│   │   │           ├── Time.hpp
+│   │   │           └── Types.hpp
+│   │   ├── src
+│   │   │   └── Time.cpp
+│   │   └── CMakeLists.txt
+│   ├── diagnostics
+│   │   ├── include
+│   │   │   └── julia
+│   │   │       └── diagnostics
+│   │   ├── src
+│   │   └── CMakeLists.txt
+│   ├── embodiment
+│   │   ├── include
+│   │   │   └── julia
+│   │   │       └── embodiment
+│   │   ├── src
+│   │   └── CMakeLists.txt
+│   ├── events
+│   │   ├── include
+│   │   │   └── julia
+│   │   │       └── events
+│   │   │           ├── Event.hpp
+│   │   │           ├── EventBus.hpp
+│   │   │           ├── EventQueue.hpp
+│   │   │           └── EventType.hpp
+│   │   ├── src
+│   │   │   ├── EventBus.cpp
+│   │   │   └── EventQueue.cpp
+│   │   └── CMakeLists.txt
+│   ├── generation
+│   │   ├── include
+│   │   │   └── julia
+│   │   │       └── generation
+│   │   ├── src
+│   │   └── CMakeLists.txt
+│   ├── learning
+│   │   ├── include
+│   │   │   └── julia
+│   │   │       └── learning
+│   │   ├── src
+│   │   └── CMakeLists.txt
+│   ├── memory
+│   │   ├── include
+│   │   │   └── julia
+│   │   │       └── memory
+│   │   ├── src
+│   │   └── CMakeLists.txt
+│   ├── perception
+│   │   ├── include
+│   │   │   └── julia
+│   │   │       └── perception
+│   │   ├── src
+│   │   └── CMakeLists.txt
+│   ├── physics
+│   │   ├── include
+│   │   │   └── julia
+│   │   │       └── physics
+│   │   ├── src
+│   │   └── CMakeLists.txt
+│   ├── platform
+│   │   ├── include
+│   │   │   └── julia
+│   │   │       └── platform
+│   │   ├── src
+│   │   └── CMakeLists.txt
+│   ├── render
+│   │   ├── include
+│   │   │   └── julia
+│   │   │       └── render
+│   │   ├── src
+│   │   │   └── RenderSystem.cpp
+│   │   └── CMakeLists.txt
+│   ├── runtime
+│   │   ├── include
+│   │   │   └── julia
+│   │   │       └── runtime
+│   │   ├── src
+│   │   └── CMakeLists.txt
+│   ├── safety
+│   │   ├── include
+│   │   │   └── julia
+│   │   │       └── safety
+│   │   ├── src
+│   │   └── CMakeLists.txt
+│   ├── storage
+│   │   ├── include
+│   │   │   └── julia
+│   │   │       └── storage
+│   │   ├── src
+│   │   └── CMakeLists.txt
+│   ├── voice
+│   │   ├── include
+│   │   │   └── julia
+│   │   │       └── voice
+│   │   ├── src
+│   │   └── CMakeLists.txt
+│   ├── world
+│   │   ├── include
+│   │   │   └── julia
+│   │   │       └── world
+│   │   ├── src
+│   │   └── CMakeLists.txt
+│   └── CMakeLists.txt
+├── plugins
+│   ├── asr_whisper
+│   ├── llm_llama_cpp
+│   ├── physics_bullet
+│   ├── render_opengl
+│   │   ├── include
+│   │   │   └── julia
+│   │   │       └── render_opengl
+│   │   │           ├── Bounds.hpp
+│   │   │           ├── GLMesh.hpp
+│   │   │           ├── GLModel.hpp
+│   │   │           ├── GLModelLoader.hpp
+│   │   │           ├── GLShader.hpp
+│   │   │           └── OpenGLRenderer.hpp
+│   │   ├── src
+│   │   │   ├── GLMesh.cpp
+│   │   │   ├── GLModel.cpp
+│   │   │   ├── GLModelLoader.cpp
+│   │   │   ├── GLShader.cpp
+│   │   │   ├── GLTexture.cpp
+│   │   │   └── OpenGLRenderer.cpp
+│   │   └── CMakeLists.txt
+│   ├── robot_bridge
+│   ├── tts_coqui
+│   ├── tts_piper
+│   ├── vision_opencv
+│   └── CMakeLists.txt
+├── tests
+│   └── .gitkeep
+├── tools
+│   └── .gitkeep
+├── .gitignore
+├── CMakeLists.txt
+├── CMakePresets.json
+├── README.md
+└── vcpkg.json
