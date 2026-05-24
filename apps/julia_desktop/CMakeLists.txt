@@ -12,6 +12,10 @@ target_compile_definitions(julia_desktop
         JULIA_ASSET_DIR="${CMAKE_SOURCE_DIR}/assets"
 )
 
+set_property(TARGET julia_desktop PROPERTY
+    VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+)
+
 target_link_libraries(julia_desktop
     PRIVATE
         julia_core

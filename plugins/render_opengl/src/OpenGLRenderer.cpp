@@ -4,6 +4,11 @@
 
 #include <algorithm>
 #include <array>
+#include <filesystem>
+#include <fstream>
+#include <sstream>
+#include <stdexcept>
+#include <string>
 
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -13,177 +18,49 @@ namespace julia::render_opengl
     {
         constexpr int MaxBones = 128;
 
-        constexpr const char* VertexShaderSource = R"GLSL(
-#version 460 core
-
-layout (location = 0) in vec3 aPosition;
-layout (location = 1) in vec3 aNormal;
-layout (location = 2) in vec2 aTexCoord;
-layout (location = 3) in ivec4 aBoneIds;
-layout (location = 4) in vec4 aBoneWeights;
-
-const int MAX_BONES = 128;
-const float OUTLINE_WIDTH = 0.0065;
-
-uniform mat4 uModel;
-uniform mat4 uView;
-uniform mat4 uProjection;
-
-uniform bool uUseSkinning;
-uniform bool uOutlinePass;
-uniform mat4 uBoneMatrices[MAX_BONES];
-
-out vec3 vWorldPosition;
-out vec3 vNormal;
-out vec2 vTexCoord;
-
-void main()
-{
-    mat4 skinMatrix = mat4(1.0);
-
-    if (uUseSkinning)
-    {
-        skinMatrix = mat4(0.0);
-
-        for (int i = 0; i < 4; ++i)
+        std::filesystem::path getAssetDir()
         {
-            int boneId = aBoneIds[i];
-            float weight = aBoneWeights[i];
+#ifdef JULIA_ASSET_DIR
+            const std::filesystem::path assetDir = JULIA_ASSET_DIR;
 
-            if (boneId >= 0 && boneId < MAX_BONES && weight > 0.0)
+            if (std::filesystem::exists(assetDir / "shaders"))
             {
-                skinMatrix += uBoneMatrices[boneId] * weight;
+                return assetDir;
             }
+
+            throw std::runtime_error(
+                "Invalid JULIA_ASSET_DIR: " + assetDir.string() +
+                ". Expected directory: shaders"
+            );
+#else
+            throw std::runtime_error(
+                "JULIA_ASSET_DIR is not defined. Cannot locate assets directory."
+            );
+#endif
         }
-    }
 
-    vec4 localPosition = skinMatrix * vec4(aPosition, 1.0);
+        std::string readTextFile(const std::filesystem::path& path)
+        {
+            std::ifstream file(path, std::ios::in);
 
-    vec3 localNormal = mat3(skinMatrix) * aNormal;
-    if (dot(localNormal, localNormal) < 0.000001)
-    {
-        localNormal = aNormal;
-    }
+            if (!file.is_open())
+            {
+                throw std::runtime_error("Failed to open file: " + path.string());
+            }
 
-    vec4 worldPosition = uModel * localPosition;
+            std::stringstream buffer;
+            buffer << file.rdbuf();
 
-    mat3 normalMatrix = mat3(transpose(inverse(uModel)));
-    vec3 worldNormal = normalize(normalMatrix * localNormal);
+            return buffer.str();
+        }
 
-    if (uOutlinePass)
-    {
-        worldPosition.xyz += worldNormal * OUTLINE_WIDTH;
-    }
+        std::string readShaderFile(const std::filesystem::path& shaderFileName)
+        {
+            const std::filesystem::path fullPath =
+                getAssetDir() / "shaders" / shaderFileName;
 
-    vWorldPosition = worldPosition.xyz;
-    vNormal = worldNormal;
-    vTexCoord = aTexCoord;
-
-    gl_Position = uProjection * uView * worldPosition;
-}
-)GLSL";
-
-        constexpr const char* FragmentShaderSource = R"GLSL(
-#version 460 core
-
-in vec3 vWorldPosition;
-in vec3 vNormal;
-in vec2 vTexCoord;
-
-uniform mat4 uView;
-uniform vec3 uDiffuseColor;
-uniform bool uOutlinePass;
-
-out vec4 FragColor;
-
-void main()
-{
-    if (uOutlinePass)
-    {
-        vec3 outlineColor = vec3(0.18, 0.17, 0.24);
-        FragColor = vec4(outlineColor, 1.0);
-        return;
-    }
-
-    vec3 normal = normalize(vNormal);
-
-    vec3 lightDirection = normalize(vec3(-0.35, -0.90, -0.28));
-    vec3 viewPosition = inverse(uView)[3].xyz;
-    vec3 viewDirection = normalize(viewPosition - vWorldPosition);
-
-    float ndl = dot(normal, -lightDirection);
-
-    // Мягкий anime-свет без резкой cel-границы.
-    float halfLambert = ndl * 0.5 + 0.5;
-    float softLight = smoothstep(0.18, 0.88, halfLambert);
-
-    // Нежные цветные тени: чуть холодные, сиренево-синие.
-    vec3 shadowTint = vec3(0.64, 0.66, 0.92);
-    vec3 lightTint = vec3(1.08, 1.03, 0.96);
-
-    vec3 shadowColor = uDiffuseColor * shadowTint * 0.72;
-    vec3 lightColor = uDiffuseColor * lightTint;
-
-    vec3 color = mix(shadowColor, lightColor, softLight);
-
-    // Очень мягкая дополнительная светлая зона.
-    float softBloomLight = smoothstep(0.68, 1.0, halfLambert);
-    color += uDiffuseColor * vec3(0.10, 0.08, 0.07) * softBloomLight;
-
-    // Чистый нежный rim-light по краям формы.
-    float rim = 1.0 - max(dot(normal, viewDirection), 0.0);
-    rim = pow(rim, 2.8);
-    rim *= smoothstep(0.05, 0.85, halfLambert);
-
-    vec3 rimColor = vec3(0.86, 0.82, 1.0);
-    color += rimColor * rim * 0.18;
-
-    // Лёгкое осветление, чтобы картинка была мягче и чище.
-    color = mix(color, vec3(1.0), 0.035);
-
-    // Аккуратная защита от пересвета.
-    color = clamp(color, 0.0, 1.0);
-
-    FragColor = vec4(color, 1.0);
-}
-)GLSL";
-
-        constexpr const char* BackgroundVertexShaderSource = R"GLSL(
-#version 460 core
-
-out vec2 vUv;
-
-vec2 positions[3] = vec2[](
-    vec2(-1.0, -1.0),
-    vec2( 3.0, -1.0),
-    vec2(-1.0,  3.0)
-);
-
-void main()
-{
-    vec2 p = positions[gl_VertexID];
-    vUv = p * 0.5 + 0.5;
-    gl_Position = vec4(p, 0.0, 1.0);
-}
-)GLSL";
-
-        constexpr const char* BackgroundFragmentShaderSource = R"GLSL(
-#version 460 core
-
-in vec2 vUv;
-
-uniform vec3 uTopColor;
-uniform vec3 uBottomColor;
-
-out vec4 FragColor;
-
-void main()
-{
-    float t = smoothstep(0.0, 1.0, clamp(vUv.y, 0.0, 1.0));
-    vec3 color = mix(uBottomColor, uTopColor, t);
-    FragColor = vec4(color, 1.0);
-}
-)GLSL";
+            return readTextFile(fullPath);
+        }
     }
 
     OpenGLRenderer::~OpenGLRenderer()
@@ -203,11 +80,26 @@ void main()
         // у некоторых FBX бывают неожиданные winding/axis.
         glDisable(GL_CULL_FACE);
 
-        shader_.createFromSource(VertexShaderSource, FragmentShaderSource);
+        const std::string modelVertexShaderSource =
+            readShaderFile("model.vert");
+
+        const std::string modelFragmentShaderSource =
+            readShaderFile("model.frag");
+
+        const std::string backgroundVertexShaderSource =
+            readShaderFile("background.vert");
+
+        const std::string backgroundFragmentShaderSource =
+            readShaderFile("background.frag");
+
+        shader_.createFromSource(
+            modelVertexShaderSource.c_str(),
+            modelFragmentShaderSource.c_str()
+        );
 
         backgroundShader_.createFromSource(
-            BackgroundVertexShaderSource,
-            BackgroundFragmentShaderSource
+            backgroundVertexShaderSource.c_str(),
+            backgroundFragmentShaderSource.c_str()
         );
 
         glGenVertexArrays(1, &backgroundVao_);
@@ -234,8 +126,35 @@ void main()
         glDepthMask(GL_FALSE);
 
         backgroundShader_.bind();
-        backgroundShader_.setVec3("uTopColor", glm::vec3{ 0.96f, 0.90f, 0.95f });
-        backgroundShader_.setVec3("uBottomColor", glm::vec3{ 0.78f, 0.86f, 0.96f });
+
+        // Палитра Рафталии:
+        //
+        // 40% — мягкая светлая основа:
+        // Soft Linen:      #E8D8C4  светлый фон, воздух, мягкость
+        // Warm Sand:       #BFA38A  спокойная основа, ткань, приглушённый свет
+        //
+        // 25% — волосы, тепло, живая энергия:
+        // Amber Hair:      #C28A5A  волосы, тепло, живость
+        //
+        // 20% — кожа, ремни, земля, стойкость:
+        // Earth Leather:   #A66A3F  кожа, ремни, земляная устойчивость
+        // Deep Bark:       #6B4632  плотная земля, кожа, броня
+        //
+        // 10% — эмоциональный центр:
+        // Heart Chestnut:  #7B3F32  сердце, воля, внутреннее тепло
+        //
+        // 5% — тени, контур, серьёзность:
+        // Dark Umber:      #2B1B15  глубокий контур, серьёзная тень
+        // Shadow Bark:     #4A2E24  мягкая тень, глубина, объём
+
+        backgroundShader_.setVec3("uPrimaryColor", glm::vec3{ 0.761f, 0.541f, 0.353f }); // Amber Hair      #C28A5A
+        backgroundShader_.setVec3("uForestColor", glm::vec3{ 0.290f, 0.180f, 0.141f }); // Shadow Bark     #4A2E24
+        backgroundShader_.setVec3("uGoldColor", glm::vec3{ 0.651f, 0.416f, 0.247f }); // Earth Leather   #A66A3F
+        backgroundShader_.setVec3("uAccentColor", glm::vec3{ 0.482f, 0.247f, 0.196f }); // Heart Chestnut  #7B3F32
+        backgroundShader_.setVec3("uSkyColor", glm::vec3{ 0.749f, 0.639f, 0.541f }); // Warm Sand       #BFA38A
+        backgroundShader_.setVec3("uBgColor", glm::vec3{ 0.910f, 0.847f, 0.769f }); // Soft Linen      #E8D8C4
+        backgroundShader_.setVec3("uSurfaceColor", glm::vec3{ 0.420f, 0.275f, 0.196f }); // Deep Bark       #6B4632
+        backgroundShader_.setVec3("uBorderColor", glm::vec3{ 0.169f, 0.106f, 0.082f }); // Dark Umber      #2B1B15
 
         glBindVertexArray(backgroundVao_);
         glDrawArrays(GL_TRIANGLES, 0, 3);

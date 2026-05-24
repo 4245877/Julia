@@ -20,6 +20,11 @@ target_compile_features(julia_render_opengl
         cxx_std_20
 )
 
+target_compile_definitions(julia_render_opengl
+    PRIVATE
+        JULIA_ASSET_DIR="${CMAKE_SOURCE_DIR}/assets"
+)
+
 find_package(OpenGL REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(glad CONFIG REQUIRED)
