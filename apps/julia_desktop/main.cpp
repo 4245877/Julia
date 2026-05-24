@@ -50,7 +50,10 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow* window = glfwCreateWindow(1280, 720, "Julia", nullptr, nullptr);
+    // Сглаживание краёв модели и обводки.
+    glfwWindowHint(GLFW_SAMPLES, 8);
+
+    GLFWwindow* window = glfwCreateWindow(1920, 1080, "Julia", nullptr, nullptr);
     if (!window)
     {
         std::cerr << "Failed to create GLFW window\n";
@@ -70,6 +73,10 @@ int main()
     }
 
     std::cout << "OpenGL version: " << glGetString(GL_VERSION) << "\n";
+
+    GLint samples = 0;
+    glGetIntegerv(GL_SAMPLES, &samples);
+    std::cout << "MSAA samples: " << samples << "\n";
 
     int framebufferWidth = 0;
     int framebufferHeight = 0;

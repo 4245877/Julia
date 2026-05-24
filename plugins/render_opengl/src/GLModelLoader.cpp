@@ -1,6 +1,7 @@
 #include "julia/render_opengl/GLModelLoader.hpp"
 
 #include <assimp/Importer.hpp>
+#include <assimp/config.h>
 #include <assimp/material.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
@@ -282,7 +283,12 @@ namespace julia::render_opengl
             aiProcess_LimitBoneWeights |
             aiProcess_CalcTangentSpace |
             aiProcess_GlobalScale |
-            aiProcess_FlipUVs;
+            aiProcess_FlipUVs |
+            aiProcess_FindInvalidData |
+            aiProcess_FindDegenerates |
+            aiProcess_ImproveCacheLocality;
+
+        importer.SetPropertyFloat(AI_CONFIG_PP_GSN_MAX_SMOOTHING_ANGLE, 80.0f);
 
         const aiScene* scene = importer.ReadFile(path.string(), flags);
 

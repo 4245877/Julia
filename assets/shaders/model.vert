@@ -7,7 +7,7 @@ layout (location = 3) in ivec4 aBoneIds;
 layout (location = 4) in vec4 aBoneWeights;
 
 const int MAX_BONES = 128;
-const float OUTLINE_WIDTH = 0.0065;
+const float OUTLINE_WIDTH = 0.0045;
 
 uniform mat4 uModel;
 uniform mat4 uView;

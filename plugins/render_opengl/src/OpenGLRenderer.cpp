@@ -76,6 +76,9 @@ namespace julia::render_opengl
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LESS);
 
+        glEnable(GL_MULTISAMPLE);
+        glEnable(GL_DITHER);
+
         // Пока culling лучше не включать:
         // у некоторых FBX бывают неожиданные winding/axis.
         glDisable(GL_CULL_FACE);
@@ -127,26 +130,6 @@ namespace julia::render_opengl
 
         backgroundShader_.bind();
 
-        // Палитра Рафталии:
-        //
-        // 40% — мягкая светлая основа:
-        // Soft Linen:      #E8D8C4  светлый фон, воздух, мягкость
-        // Warm Sand:       #BFA38A  спокойная основа, ткань, приглушённый свет
-        //
-        // 25% — волосы, тепло, живая энергия:
-        // Amber Hair:      #C28A5A  волосы, тепло, живость
-        //
-        // 20% — кожа, ремни, земля, стойкость:
-        // Earth Leather:   #A66A3F  кожа, ремни, земляная устойчивость
-        // Deep Bark:       #6B4632  плотная земля, кожа, броня
-        //
-        // 10% — эмоциональный центр:
-        // Heart Chestnut:  #7B3F32  сердце, воля, внутреннее тепло
-        //
-        // 5% — тени, контур, серьёзность:
-        // Dark Umber:      #2B1B15  глубокий контур, серьёзная тень
-        // Shadow Bark:     #4A2E24  мягкая тень, глубина, объём
-
         backgroundShader_.setVec3("uPrimaryColor", glm::vec3{ 0.761f, 0.541f, 0.353f }); // Amber Hair      #C28A5A
         backgroundShader_.setVec3("uForestColor", glm::vec3{ 0.290f, 0.180f, 0.141f }); // Shadow Bark     #4A2E24
         backgroundShader_.setVec3("uGoldColor", glm::vec3{ 0.651f, 0.416f, 0.247f }); // Earth Leather   #A66A3F
@@ -191,9 +174,15 @@ namespace julia::render_opengl
 
         glEnable(GL_CULL_FACE);
         glCullFace(GL_FRONT);
+
         glDepthMask(GL_FALSE);
 
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
         model.draw(shader_);
+
+        glDisable(GL_BLEND);
 
         glDepthMask(GL_TRUE);
         glCullFace(GL_BACK);
