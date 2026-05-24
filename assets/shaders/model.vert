@@ -43,15 +43,23 @@ void main()
 
     vec4 localPosition = skinMatrix * vec4(aPosition, 1.0);
 
-    vec3 localNormal = mat3(skinMatrix) * aNormal;
+    vec3 localNormal = aNormal;
+
+    if (uUseSkinning)
+    {
+        localNormal = mat3(skinMatrix) * aNormal;
+    }
+
     if (dot(localNormal, localNormal) < 0.000001)
     {
-        localNormal = aNormal;
+        localNormal = vec3(0.0, 1.0, 0.0);
     }
+
+    localNormal = normalize(localNormal);
 
     vec4 worldPosition = uModel * localPosition;
 
-    mat3 normalMatrix = mat3(transpose(inverse(uModel)));
+    mat3 normalMatrix = transpose(inverse(mat3(uModel)));
     vec3 worldNormal = normalize(normalMatrix * localNormal);
 
     if (uOutlinePass)

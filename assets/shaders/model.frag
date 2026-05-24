@@ -10,12 +10,17 @@ uniform bool uOutlinePass;
 
 out vec4 FragColor;
 
+float softCel(float value, float edge, float softness)
+{
+    return smoothstep(edge - softness, edge + softness, value);
+}
+
 void main()
 {
     if (uOutlinePass)
     {
-        vec3 outlineColor = vec3(0.135, 0.120, 0.165);
-        FragColor = vec4(outlineColor, 0.88);
+        vec3 outlineColor = vec3(0.105, 0.095, 0.135);
+        FragColor = vec4(outlineColor, 0.92);
         return;
     }
 
@@ -24,58 +29,66 @@ void main()
     vec3 viewPosition = inverse(uView)[3].xyz;
     vec3 viewDirection = normalize(viewPosition - vWorldPosition);
 
-    // Базовый цвет материала из FBX.
-    // Делаем защиту от слишком белых/плоских материалов.
     vec3 albedo = clamp(uDiffuseColor, vec3(0.04), vec3(1.0));
 
-    // Основной тёплый источник света спереди-сверху.
-    vec3 keyLightDirection = normalize(vec3(0.35, 0.90, 0.45));
+    vec3 keyLightDirection = normalize(vec3(0.35, 0.88, 0.42));
+    vec3 fillLightDirection = normalize(vec3(-0.70, 0.32, 0.22));
 
-    // Мягкий дополнительный заполняющий свет.
-    vec3 fillLightDirection = normalize(vec3(-0.75, 0.35, 0.20));
+    float keyNdl = dot(normal, keyLightDirection);
+    float fillNdl = dot(normal, fillLightDirection);
 
-    float keyNdl = max(dot(normal, keyLightDirection), 0.0);
-    float fillNdl = max(dot(normal, fillLightDirection), 0.0);
+    // Half-Lambert даёт более мягкое anime-освещение.
+    float keyWrapped = keyNdl * 0.5 + 0.5;
+    float fillWrapped = fillNdl * 0.5 + 0.5;
 
-    // Мягкая anime-градация без грязной резкой границы.
-    float keySoft = smoothstep(0.08, 0.78, keyNdl);
-    float fillSoft = smoothstep(0.00, 0.70, fillNdl);
+    // fwidth делает границу cel-тени стабильнее на экране.
+    float bandSoftness = max(0.045, fwidth(keyWrapped) * 2.5);
 
-    vec3 shadowTint = vec3(0.58, 0.60, 0.82);
-    vec3 midTint    = vec3(0.90, 0.86, 0.92);
+    float mainBand = softCel(keyWrapped, 0.54, bandSoftness);
+    float brightBand = softCel(keyWrapped, 0.84, bandSoftness * 1.35);
+    float fillBand = softCel(fillWrapped, 0.42, 0.16);
+
+    vec3 shadowTint = vec3(0.60, 0.61, 0.82);
+    vec3 midTint    = vec3(0.92, 0.88, 0.94);
     vec3 lightTint  = vec3(1.10, 1.04, 0.94);
 
-    vec3 shadowColor = albedo * shadowTint * 0.55;
-    vec3 midColor    = albedo * midTint    * 0.88;
-    vec3 lightColor  = albedo * lightTint  * 1.05;
+    vec3 shadowColor = albedo * shadowTint * 0.58;
+    vec3 midColor    = albedo * midTint    * 0.90;
+    vec3 lightColor  = albedo * lightTint  * 1.06;
 
-    vec3 color = mix(shadowColor, midColor, fillSoft * 0.55);
-    color = mix(color, lightColor, keySoft);
+    vec3 color = mix(shadowColor, midColor, mainBand);
+    color = mix(color, lightColor, brightBand * 0.55);
 
-    // Лёгкий верхний свет, чтобы лицо, волосы и плечи читались лучше.
-    float topLight = smoothstep(-0.20, 0.85, normal.y);
-    color += albedo * vec3(0.08, 0.065, 0.045) * topLight;
+    // Заполняющий свет не создаёт второй жёсткой тени,
+    // а только мягко вытаскивает форму из темноты.
+    color += albedo * vec3(0.13, 0.12, 0.18) * fillBand;
 
-    // Аккуратный блик, чтобы модель не была пластиковой, но имела объём.
+    // Мягкий верхний свет.
+    float topLight = smoothstep(-0.25, 0.85, normal.y);
+    color += albedo * vec3(0.075, 0.060, 0.045) * topLight;
+
+    // Аккуратный стилизованный блик.
     vec3 halfDirection = normalize(keyLightDirection + viewDirection);
-    float specular = pow(max(dot(normal, halfDirection), 0.0), 42.0);
-    specular *= smoothstep(0.30, 1.0, keyNdl);
+    float specularRaw = pow(max(dot(normal, halfDirection), 0.0), 56.0);
+    float specular = smoothstep(0.018, 0.070, specularRaw);
+    specular *= smoothstep(0.30, 0.95, keyWrapped);
+
     color += vec3(1.0, 0.92, 0.78) * specular * 0.055;
 
-    // Rim light помогает отделить волосы, руки и юбку от фона.
+    // Rim light мягкий, без грязного контура по всей модели.
     float rim = 1.0 - max(dot(normal, viewDirection), 0.0);
-    rim = pow(rim, 2.35);
-    rim *= smoothstep(0.05, 0.85, keyNdl + fillNdl * 0.35);
+    rim = smoothstep(0.42, 0.92, rim);
+    rim *= smoothstep(0.25, 0.95, keyWrapped + fillWrapped * 0.25);
 
-    vec3 rimColor = vec3(0.82, 0.78, 1.0);
-    color += rimColor * rim * 0.20;
+    color += vec3(0.78, 0.75, 1.0) * rim * 0.145;
 
-    // Небольшое усиление насыщенности, чтобы материалы меньше сливались.
+    // Немного насыщенности, но без кислотности.
     float luminance = dot(color, vec3(0.299, 0.587, 0.114));
-    color = mix(vec3(luminance), color, 1.10);
+    color = mix(vec3(luminance), color, 1.08);
 
-    // Не выбеливаем модель слишком сильно.
-    color = mix(color, vec3(1.0), 0.012);
+    // Мягкая защита от пересвета.
+    color = color / (color + vec3(0.18));
+    color = pow(color, vec3(0.92));
 
     color = clamp(color, 0.0, 1.0);
 

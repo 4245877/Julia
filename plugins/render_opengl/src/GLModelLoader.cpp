@@ -9,8 +9,10 @@
 #include <glm/glm.hpp>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <filesystem>
+#include <functional>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -25,6 +27,135 @@ namespace julia::render_opengl
             GLModel model;
             std::unordered_map<std::string, std::uint32_t> boneNameToIndex;
         };
+
+        struct NormalKey
+        {
+            int x = 0;
+            int y = 0;
+            int z = 0;
+
+            bool operator==(const NormalKey& other) const
+            {
+                return x == other.x && y == other.y && z == other.z;
+            }
+        };
+
+        struct NormalKeyHash
+        {
+            std::size_t operator()(const NormalKey& key) const noexcept
+            {
+                const std::size_t h1 = std::hash<int>{}(key.x);
+                const std::size_t h2 = std::hash<int>{}(key.y);
+                const std::size_t h3 = std::hash<int>{}(key.z);
+
+                return h1 ^ (h2 << 1u) ^ (h3 << 2u);
+            }
+        };
+
+        int quantizePosition(float value)
+        {
+            constexpr float Epsilon = 0.0001f;
+            return static_cast<int>(std::round(value / Epsilon));
+        }
+
+        NormalKey makeNormalKey(const glm::vec3& position)
+        {
+            return NormalKey{
+                quantizePosition(position.x),
+                quantizePosition(position.y),
+                quantizePosition(position.z)
+            };
+        }
+
+        void rebuildSmoothNormals(
+            std::vector<GLVertex>& vertices,
+            const std::vector<std::uint32_t>& indices
+        )
+        {
+            if (vertices.empty() || indices.size() < 3)
+            {
+                return;
+            }
+
+            std::vector<NormalKey> keys;
+            keys.resize(vertices.size());
+
+            std::unordered_map<NormalKey, glm::vec3, NormalKeyHash> normalSums;
+            normalSums.reserve(vertices.size());
+
+            for (std::size_t i = 0; i < vertices.size(); ++i)
+            {
+                keys[i] = makeNormalKey(vertices[i].position);
+                normalSums.try_emplace(keys[i], glm::vec3{0.0f});
+            }
+
+            for (std::size_t i = 0; i + 2 < indices.size(); i += 3)
+            {
+                const std::uint32_t i0 = indices[i + 0];
+                const std::uint32_t i1 = indices[i + 1];
+                const std::uint32_t i2 = indices[i + 2];
+
+                if (
+                    i0 >= vertices.size() ||
+                    i1 >= vertices.size() ||
+                    i2 >= vertices.size()
+                )
+                {
+                    continue;
+                }
+
+                const glm::vec3 p0 = vertices[i0].position;
+                const glm::vec3 p1 = vertices[i1].position;
+                const glm::vec3 p2 = vertices[i2].position;
+
+                glm::vec3 faceNormal = glm::cross(p1 - p0, p2 - p0);
+
+                if (glm::dot(faceNormal, faceNormal) < 0.000000000001f)
+                {
+                    continue;
+                }
+
+                // Если у FBX уже были нормали, используем их только как подсказку
+                // для направления, чтобы случайно не перевернуть освещение.
+                const glm::vec3 referenceNormal =
+                    vertices[i0].normal +
+                    vertices[i1].normal +
+                    vertices[i2].normal;
+
+                if (
+                    glm::dot(referenceNormal, referenceNormal) > 0.000001f &&
+                    glm::dot(faceNormal, referenceNormal) < 0.0f
+                )
+                {
+                    faceNormal = -faceNormal;
+                }
+
+                normalSums[keys[i0]] += faceNormal;
+                normalSums[keys[i1]] += faceNormal;
+                normalSums[keys[i2]] += faceNormal;
+            }
+
+            for (std::size_t i = 0; i < vertices.size(); ++i)
+            {
+                const auto found = normalSums.find(keys[i]);
+
+                if (
+                    found != normalSums.end() &&
+                    glm::dot(found->second, found->second) > 0.00000001f
+                )
+                {
+                    vertices[i].normal = glm::normalize(found->second);
+                }
+                else if (glm::dot(vertices[i].normal, vertices[i].normal) > 0.00000001f)
+                {
+                    vertices[i].normal = glm::normalize(vertices[i].normal);
+                }
+                else
+                {
+                    vertices[i].normal = glm::vec3{0.0f, 1.0f, 0.0f};
+                }
+            }
+        }
 
         glm::mat4 toGlm(const aiMatrix4x4& matrix)
         {
@@ -184,6 +315,8 @@ namespace julia::render_opengl
                 }
             }
 
+            rebuildSmoothNormals(vertices, indices);
+
             for (unsigned int boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex)
             {
                 const aiBone* bone = mesh->mBones[boneIndex];
@@ -278,6 +411,7 @@ namespace julia::render_opengl
 
         const unsigned int flags =
             aiProcess_Triangulate |
+            aiProcess_DropNormals |
             aiProcess_GenSmoothNormals |
             aiProcess_JoinIdenticalVertices |
             aiProcess_LimitBoneWeights |
@@ -288,7 +422,7 @@ namespace julia::render_opengl
             aiProcess_FindDegenerates |
             aiProcess_ImproveCacheLocality;
 
-        importer.SetPropertyFloat(AI_CONFIG_PP_GSN_MAX_SMOOTHING_ANGLE, 80.0f);
+        importer.SetPropertyFloat(AI_CONFIG_PP_GSN_MAX_SMOOTHING_ANGLE, 175.0f);
 
         const aiScene* scene = importer.ReadFile(path.string(), flags);
 
