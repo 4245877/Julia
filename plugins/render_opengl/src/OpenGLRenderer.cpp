@@ -139,6 +139,8 @@ namespace julia::render_opengl
         backgroundShader_.setVec3("uSurfaceColor", glm::vec3{ 0.420f, 0.275f, 0.196f }); // Deep Bark       #6B4632
         backgroundShader_.setVec3("uBorderColor", glm::vec3{ 0.169f, 0.106f, 0.082f }); // Dark Umber      #2B1B15
 
+
+
         glBindVertexArray(backgroundVao_);
         glDrawArrays(GL_TRIANGLES, 0, 3);
         glBindVertexArray(0);

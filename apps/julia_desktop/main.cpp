@@ -93,7 +93,7 @@ int main()
         glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
         const std::filesystem::path modelPath =
-            std::filesystem::path{JULIA_ASSET_DIR} / "models" / "Raphtalia.fbx";
+            std::filesystem::path{JULIA_ASSET_DIR} / "models" / "Raphtalia1.fbx";
 
         std::cout << "Loading model: " << modelPath.string() << "\n";
 

@@ -68,9 +68,26 @@ namespace julia::render_opengl
     {
         shader.setVec3("uDiffuseColor", material_.diffuseColor);
 
+        const bool hasDiffuseTexture =
+            material_.diffuseTexture &&
+            material_.diffuseTexture->valid();
+
+        shader.setBool("uHasDiffuseTexture", hasDiffuseTexture);
+
+        if (hasDiffuseTexture)
+        {
+            shader.setInt("uDiffuseTexture", 0);
+            material_.diffuseTexture->bind(0);
+        }
+
         glBindVertexArray(vao_);
         glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indexCount_), GL_UNSIGNED_INT, nullptr);
         glBindVertexArray(0);
+
+        if (hasDiffuseTexture)
+        {
+            glBindTexture(GL_TEXTURE_2D, 0);
+        }
     }
 
     void GLMesh::upload(

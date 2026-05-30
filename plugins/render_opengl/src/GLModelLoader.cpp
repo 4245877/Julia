@@ -1,4 +1,5 @@
 #include "julia/render_opengl/GLModelLoader.hpp"
+#include "julia/render_opengl/GLTexture.hpp"
 
 #include <assimp/Importer.hpp>
 #include <assimp/config.h>
@@ -11,8 +12,11 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <cctype>
 #include <filesystem>
 #include <functional>
+#include <iostream>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -25,7 +29,13 @@ namespace julia::render_opengl
         struct LoadContext
         {
             GLModel model;
+
             std::unordered_map<std::string, std::uint32_t> boneNameToIndex;
+
+            std::filesystem::path modelDirectory;
+            std::filesystem::path texturesDirectory;
+
+            std::unordered_map<std::string, std::shared_ptr<GLTexture>> textureCache;
         };
 
         struct NormalKey
@@ -230,7 +240,157 @@ namespace julia::render_opengl
             }
         }
 
-        GLMeshMaterial loadMaterial(const aiScene* scene, const aiMesh* mesh)
+        std::string toLower(std::string value)
+        {
+            std::transform(
+                value.begin(),
+                value.end(),
+                value.begin(),
+                [](unsigned char c)
+                {
+                    return static_cast<char>(std::tolower(c));
+                }
+            );
+
+            return value;
+        }
+
+        std::filesystem::path normalizeTexturePath(const aiString& value)
+        {
+            std::string raw = value.C_Str();
+
+            std::replace(raw.begin(), raw.end(), '\\', '/');
+
+            return std::filesystem::path{raw};
+        }
+
+        std::filesystem::path resolveTexturePath(
+            const std::filesystem::path& rawTexturePath,
+            const LoadContext& context
+        )
+        {
+            if (rawTexturePath.empty())
+            {
+                return {};
+            }
+
+            std::vector<std::filesystem::path> candidates;
+
+            if (rawTexturePath.is_absolute())
+            {
+                candidates.push_back(rawTexturePath);
+            }
+            else
+            {
+                candidates.push_back(context.modelDirectory / rawTexturePath);
+                candidates.push_back(context.modelDirectory / rawTexturePath.filename());
+
+                candidates.push_back(context.texturesDirectory / rawTexturePath);
+                candidates.push_back(context.texturesDirectory / rawTexturePath.filename());
+            }
+
+            for (const auto& candidate : candidates)
+            {
+                if (std::filesystem::exists(candidate))
+                {
+                    return candidate;
+                }
+            }
+
+            return {};
+        }
+
+        std::filesystem::path fallbackTexturePathForMaterial(
+            const aiMaterial* material,
+            const aiMesh* mesh,
+            const LoadContext& context
+        )
+        {
+            std::string name;
+
+            aiString materialName;
+            if (material->Get(AI_MATKEY_NAME, materialName) == AI_SUCCESS)
+            {
+                name += materialName.C_Str();
+                name += " ";
+            }
+
+            if (mesh && mesh->mName.length > 0)
+            {
+                name += mesh->mName.C_Str();
+            }
+
+            name = toLower(name);
+
+            std::filesystem::path fileName;
+
+            if (name.find("hair") != std::string::npos)
+            {
+                fileName = "hair_color.png";
+            }
+            else if (
+                name.find("body") != std::string::npos ||
+                name.find("skin") != std::string::npos ||
+                name.find("face") != std::string::npos
+            )
+            {
+                fileName = "body_color.png";
+            }
+            else if (name.find("shield") != std::string::npos)
+            {
+                fileName = "shield_color.png";
+            }
+
+            if (fileName.empty())
+            {
+                return {};
+            }
+
+            const std::filesystem::path candidate = context.texturesDirectory / fileName;
+
+            if (std::filesystem::exists(candidate))
+            {
+                return candidate;
+            }
+
+            return {};
+        }
+
+        std::shared_ptr<GLTexture> loadTextureCached(
+            const std::filesystem::path& path,
+            LoadContext& context
+        )
+        {
+            if (path.empty())
+            {
+                return nullptr;
+            }
+
+            const std::string key =
+                std::filesystem::absolute(path).lexically_normal().string();
+
+            const auto found = context.textureCache.find(key);
+            if (found != context.textureCache.end())
+            {
+                return found->second;
+            }
+
+            auto texture = std::make_shared<GLTexture>(
+                GLTexture::loadFromFile(path)
+            );
+
+            context.textureCache.emplace(key, texture);
+
+            std::cout << "Loaded texture: " << path.string() << "\n";
+
+            return texture;
+        }
+
+        GLMeshMaterial loadMaterial(
+            const aiScene* scene,
+            const aiMesh* mesh,
+            LoadContext& context
+        )
         {
             GLMeshMaterial result{};
 
@@ -249,6 +409,27 @@ namespace julia::render_opengl
                     diffuseColor.g,
                     diffuseColor.b
                 };
+            }
+
+            std::filesystem::path texturePath;
+
+            aiString diffuseTextureName;
+            if (material->GetTexture(aiTextureType_DIFFUSE, 0, &diffuseTextureName) == AI_SUCCESS)
+            {
+                texturePath = resolveTexturePath(
+                    normalizeTexturePath(diffuseTextureName),
+                    context
+                );
+            }
+
+            if (texturePath.empty())
+            {
+                texturePath = fallbackTexturePathForMaterial(material, mesh, context);
+            }
+
+            if (!texturePath.empty())
+            {
+                result.diffuseTexture = loadTextureCached(texturePath, context);
             }
 
             return result;
@@ -364,7 +545,7 @@ namespace julia::render_opengl
             return GLMesh{
                 std::move(vertices),
                 std::move(indices),
-                loadMaterial(scene, mesh)
+                loadMaterial(scene, mesh, context)
             };
         }
 
@@ -437,6 +618,9 @@ namespace julia::render_opengl
         }
 
         LoadContext context{};
+        context.modelDirectory = path.parent_path();
+        context.texturesDirectory = path.parent_path().parent_path() / "textures";
+
         processNode(scene, scene->mRootNode, glm::mat4{1.0f}, context);
 
         if (context.model.empty())

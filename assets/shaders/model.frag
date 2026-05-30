@@ -6,6 +6,8 @@ in vec2 vTexCoord;
 
 uniform mat4 uView;
 uniform vec3 uDiffuseColor;
+uniform sampler2D uDiffuseTexture;
+uniform bool uHasDiffuseTexture;
 uniform bool uOutlinePass;
 
 out vec4 FragColor;
@@ -29,7 +31,13 @@ void main()
     vec3 viewPosition = inverse(uView)[3].xyz;
     vec3 viewDirection = normalize(viewPosition - vWorldPosition);
 
-    vec3 albedo = clamp(uDiffuseColor, vec3(0.04), vec3(1.0));
+    vec3 textureColor = texture(uDiffuseTexture, vTexCoord).rgb;
+
+    vec3 albedo = uHasDiffuseTexture
+        ? textureColor * uDiffuseColor
+        : uDiffuseColor;
+
+    albedo = clamp(albedo, vec3(0.04), vec3(1.0));
 
     vec3 keyLightDirection = normalize(vec3(0.35, 0.88, 0.42));
     vec3 fillLightDirection = normalize(vec3(-0.70, 0.32, 0.22));

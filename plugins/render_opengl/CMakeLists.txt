@@ -13,6 +13,8 @@ target_sources(julia_render_opengl
 target_include_directories(julia_render_opengl
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+    PRIVATE
+        ${Stb_INCLUDE_DIR}
 )
 
 target_compile_features(julia_render_opengl
@@ -31,6 +33,7 @@ find_package(glad CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(assimp CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
+find_package(Stb REQUIRED)
 
 target_link_libraries(julia_render_opengl
     PUBLIC

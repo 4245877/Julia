@@ -1,11 +1,13 @@
 #pragma once
 
 #include "julia/render_opengl/Bounds.hpp"
+#include "julia/render_opengl/GLTexture.hpp"
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 
 #include <cstdint>
+#include <memory>
 #include <vector>
 
 namespace julia::render_opengl
@@ -27,6 +29,7 @@ namespace julia::render_opengl
     struct GLMeshMaterial
     {
         glm::vec3 diffuseColor{0.8f, 0.8f, 0.8f};
+        std::shared_ptr<GLTexture> diffuseTexture;
     };
 
     class GLMesh
