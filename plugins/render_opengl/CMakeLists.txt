@@ -44,4 +44,6 @@ target_link_libraries(julia_render_opengl
         glm::glm
         assimp::assimp
         spdlog::spdlog
+    PRIVATE
+        julia::warnings
 )

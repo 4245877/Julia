@@ -37,7 +37,19 @@ namespace julia::render_opengl
         release();
 
         const GLuint vertexShader = compileStage(GL_VERTEX_SHADER, vertexSource);
-        const GLuint fragmentShader = compileStage(GL_FRAGMENT_SHADER, fragmentSource);
+
+        GLuint fragmentShader = 0;
+        try
+        {
+            fragmentShader = compileStage(GL_FRAGMENT_SHADER, fragmentSource);
+        }
+        catch (...)
+        {
+            // compileStage already deleted the failed fragment shader; make
+            // sure the successfully compiled vertex shader does not leak.
+            glDeleteShader(vertexShader);
+            throw;
+        }
 
         program_ = glCreateProgram();
         glAttachShader(program_, vertexShader);

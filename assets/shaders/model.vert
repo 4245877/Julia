@@ -1,4 +1,4 @@
-#version 460 core
+#version 330 core
 
 layout (location = 0) in vec3 aPosition;
 layout (location = 1) in vec3 aNormal;
@@ -27,7 +27,8 @@ void main()
 
     if (uUseSkinning)
     {
-        skinMatrix = mat4(0.0);
+        mat4 accumulated = mat4(0.0);
+        float totalWeight = 0.0;
 
         for (int i = 0; i < 4; ++i)
         {
@@ -36,8 +37,19 @@ void main()
 
             if (boneId >= 0 && boneId < MAX_BONES && weight > 0.0)
             {
-                skinMatrix += uBoneMatrices[boneId] * weight;
+                accumulated += uBoneMatrices[boneId] * weight;
+                totalWeight += weight;
             }
+        }
+
+        // Renormalize by the weight that actually contributed, so vertices
+        // whose influences were dropped (e.g. bone index >= MAX_BONES) are
+        // still placed correctly instead of being scaled down. Vertices with
+        // no valid influence fall back to identity instead of collapsing to
+        // the origin (mat4(0.0) * position == 0).
+        if (totalWeight > 0.0)
+        {
+            skinMatrix = accumulated / totalWeight;
         }
     }
 

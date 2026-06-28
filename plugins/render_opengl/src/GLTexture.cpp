@@ -5,6 +5,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -108,6 +109,16 @@ namespace julia::render_opengl
             );
         }
 
+        // RAII guard: frees the stb buffer on every exit path, including the
+        // exceptions thrown by the format lookups for unsupported channel counts.
+        const std::unique_ptr<unsigned char, void (*)(void*)> pixelGuard(
+            pixels,
+            &stbi_image_free
+        );
+
+        const GLint internalFormat = internalFormatForChannels(channels);
+        const GLenum sourceFormat = sourceFormatForChannels(channels);
+
         GLuint texture = 0;
         glGenTextures(1, &texture);
         glBindTexture(GL_TEXTURE_2D, texture);
@@ -123,11 +134,11 @@ namespace julia::render_opengl
         glTexImage2D(
             GL_TEXTURE_2D,
             0,
-            internalFormatForChannels(channels),
+            internalFormat,
             width,
             height,
             0,
-            sourceFormatForChannels(channels),
+            sourceFormat,
             GL_UNSIGNED_BYTE,
             pixels
         );
@@ -135,8 +146,6 @@ namespace julia::render_opengl
         glGenerateMipmap(GL_TEXTURE_2D);
 
         glBindTexture(GL_TEXTURE_2D, 0);
-
-        stbi_image_free(pixels);
 
         GLTexture result;
         result.texture_ = texture;

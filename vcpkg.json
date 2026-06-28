@@ -7,7 +7,6 @@
     "glm",
     "assimp",
     "spdlog",
-    "tomlplusplus",
     "stb"
   ]
 }

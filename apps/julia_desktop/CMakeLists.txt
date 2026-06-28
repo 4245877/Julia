@@ -21,4 +21,5 @@ target_link_libraries(julia_desktop
         julia_core
         julia_render
         julia_render_opengl
+        julia::warnings
 )

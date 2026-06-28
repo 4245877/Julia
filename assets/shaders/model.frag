@@ -1,4 +1,4 @@
-#version 460 core
+#version 330 core
 
 in vec3 vWorldPosition;
 in vec3 vNormal;
@@ -31,11 +31,14 @@ void main()
     vec3 viewPosition = inverse(uView)[3].xyz;
     vec3 viewDirection = normalize(viewPosition - vWorldPosition);
 
-    vec3 textureColor = texture(uDiffuseTexture, vTexCoord).rgb;
+    // Only sample the texture when one is actually bound. Sampling an
+    // unbound/incomplete texture is undefined, so guard it behind the flag.
+    vec3 albedo = uDiffuseColor;
 
-    vec3 albedo = uHasDiffuseTexture
-        ? textureColor * uDiffuseColor
-        : uDiffuseColor;
+    if (uHasDiffuseTexture)
+    {
+        albedo = texture(uDiffuseTexture, vTexCoord).rgb * uDiffuseColor;
+    }
 
     albedo = clamp(albedo, vec3(0.04), vec3(1.0));
 

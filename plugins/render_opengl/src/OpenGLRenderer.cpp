@@ -70,6 +70,11 @@ namespace julia::render_opengl
 
     void OpenGLRenderer::initialize(int width, int height)
     {
+        // initialize() может вызываться повторно (например, при пересоздании
+        // контекста). Старый VAO нужно освободить до glGenVertexArrays,
+        // иначе он утечёт. Шейдеры освобождаются внутри createFromSource().
+        releaseBackground();
+
         width_ = width;
         height_ = height;
 
@@ -110,6 +115,17 @@ namespace julia::render_opengl
         resize(width_, height_);
     }
 
+    void OpenGLRenderer::setCamera(const CameraConfig& camera)
+    {
+        camera_ = camera;
+        updateCamera();
+    }
+
+    void OpenGLRenderer::setBackgroundPalette(const BackgroundPalette& palette)
+    {
+        palette_ = palette;
+    }
+
     void OpenGLRenderer::resize(int width, int height)
     {
         width_ = std::max(width, 1);
@@ -130,15 +146,14 @@ namespace julia::render_opengl
 
         backgroundShader_.bind();
 
-        backgroundShader_.setVec3("uPrimaryColor", glm::vec3{ 0.761f, 0.541f, 0.353f }); // Amber Hair      #C28A5A
-        backgroundShader_.setVec3("uForestColor", glm::vec3{ 0.290f, 0.180f, 0.141f }); // Shadow Bark     #4A2E24
-        backgroundShader_.setVec3("uGoldColor", glm::vec3{ 0.651f, 0.416f, 0.247f }); // Earth Leather   #A66A3F
-        backgroundShader_.setVec3("uAccentColor", glm::vec3{ 0.482f, 0.247f, 0.196f }); // Heart Chestnut  #7B3F32
-        backgroundShader_.setVec3("uSkyColor", glm::vec3{ 0.749f, 0.639f, 0.541f }); // Warm Sand       #BFA38A
-        backgroundShader_.setVec3("uBgColor", glm::vec3{ 0.910f, 0.847f, 0.769f }); // Soft Linen      #E8D8C4
-        backgroundShader_.setVec3("uSurfaceColor", glm::vec3{ 0.420f, 0.275f, 0.196f }); // Deep Bark       #6B4632
-        backgroundShader_.setVec3("uBorderColor", glm::vec3{ 0.169f, 0.106f, 0.082f }); // Dark Umber      #2B1B15
-
+        backgroundShader_.setVec3("uPrimaryColor", palette_.primary);
+        backgroundShader_.setVec3("uForestColor", palette_.forest);
+        backgroundShader_.setVec3("uGoldColor", palette_.gold);
+        backgroundShader_.setVec3("uAccentColor", palette_.accent);
+        backgroundShader_.setVec3("uSkyColor", palette_.sky);
+        backgroundShader_.setVec3("uBgColor", palette_.background);
+        backgroundShader_.setVec3("uSurfaceColor", palette_.surface);
+        backgroundShader_.setVec3("uBorderColor", palette_.border);
 
 
         glBindVertexArray(backgroundVao_);
@@ -203,17 +218,13 @@ namespace julia::render_opengl
             static_cast<float>(std::max(height_, 1));
 
         projection_ = glm::perspective(
-            glm::radians(45.0f),
+            glm::radians(camera_.fovDegrees),
             aspect,
-            0.01f,
-            100.0f
+            camera_.nearPlane,
+            camera_.farPlane
         );
 
-        const glm::vec3 cameraPosition{ 0.0f, 1.25f, 3.6f };
-        const glm::vec3 cameraTarget{ 0.0f, 1.15f, 0.0f };
-        const glm::vec3 cameraUp{ 0.0f, 1.0f, 0.0f };
-
-        view_ = glm::lookAt(cameraPosition, cameraTarget, cameraUp);
+        view_ = glm::lookAt(camera_.position, camera_.target, camera_.up);
     }
 
     void OpenGLRenderer::releaseBackground()

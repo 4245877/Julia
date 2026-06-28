@@ -38,17 +38,25 @@ namespace
     }
 }
 
-int main()
+int main(int argc, char** argv)
 {
+    // Модель можно передать аргументом командной строки; иначе берётся
+    // ассет по умолчанию из каталога ресурсов.
+    const std::filesystem::path modelPath =
+        (argc > 1)
+            ? std::filesystem::path{argv[1]}
+            : std::filesystem::path{JULIA_ASSET_DIR} / "models" / "Raphtalia1.fbx";
+
     if (!glfwInit())
     {
         std::cerr << "Failed to initialize GLFW\n";
         return 1;
     }
 
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
 
     // Сглаживание краёв модели и обводки.
     glfwWindowHint(GLFW_SAMPLES, 8);
@@ -91,9 +99,6 @@ int main()
 
         glfwSetWindowUserPointer(window, &renderer);
         glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
-
-        const std::filesystem::path modelPath =
-            std::filesystem::path{JULIA_ASSET_DIR} / "models" / "Raphtalia1.fbx";
 
         std::cout << "Loading model: " << modelPath.string() << "\n";
 
