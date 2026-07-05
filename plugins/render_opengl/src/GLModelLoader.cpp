@@ -294,15 +294,15 @@ namespace julia::render_opengl
                 name.find("metal") != std::string::npos
             )
             {
-                material.lightResponse = 0.86f;
-                material.specularStrength = 0.032f;
-                material.rimStrength = 0.055f;
+                material.lightResponse = 0.90f;
+                material.specularStrength = 0.018f;
+                material.rimStrength = 0.038f;
             }
             else if (name.find("hair") != std::string::npos)
             {
-                material.lightResponse = 0.82f;
-                material.specularStrength = 0.014f;
-                material.rimStrength = 0.070f;
+                material.lightResponse = 0.84f;
+                material.specularStrength = 0.006f;
+                material.rimStrength = 0.042f;
             }
             else if (
                 name.find("skin") != std::string::npos ||
@@ -310,9 +310,9 @@ namespace julia::render_opengl
                 name.find("ear") != std::string::npos
             )
             {
-                material.lightResponse = 0.74f;
-                material.specularStrength = 0.010f;
-                material.rimStrength = 0.050f;
+                material.lightResponse = 0.78f;
+                material.specularStrength = 0.003f;
+                material.rimStrength = 0.030f;
             }
             else if (
                 name.find("shirt") != std::string::npos ||
@@ -323,9 +323,9 @@ namespace julia::render_opengl
                 name.find("body") != std::string::npos
             )
             {
-                material.lightResponse = 0.70f;
-                material.specularStrength = 0.006f;
-                material.rimStrength = 0.046f;
+                material.lightResponse = 0.74f;
+                material.specularStrength = 0.002f;
+                material.rimStrength = 0.026f;
             }
             else if (
                 name.find("belt") != std::string::npos ||
@@ -335,9 +335,9 @@ namespace julia::render_opengl
                 name.find("bow") != std::string::npos
             )
             {
-                material.lightResponse = 0.76f;
-                material.specularStrength = 0.012f;
-                material.rimStrength = 0.046f;
+                material.lightResponse = 0.78f;
+                material.specularStrength = 0.005f;
+                material.rimStrength = 0.030f;
             }
             else if (
                 name.find("eye") != std::string::npos ||
@@ -345,9 +345,9 @@ namespace julia::render_opengl
                 name.find("hightlight") != std::string::npos
             )
             {
-                material.lightResponse = 0.82f;
-                material.specularStrength = 0.040f;
-                material.rimStrength = 0.020f;
+                material.lightResponse = 0.88f;
+                material.specularStrength = 0.026f;
+                material.rimStrength = 0.015f;
             }
         }
 

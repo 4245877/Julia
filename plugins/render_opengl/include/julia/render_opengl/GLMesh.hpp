@@ -30,9 +30,9 @@ namespace julia::render_opengl
     {
         glm::vec3 diffuseColor{0.8f, 0.8f, 0.8f};
         std::shared_ptr<GLTexture> diffuseTexture;
-        float lightResponse = 0.78f;
-        float specularStrength = 0.012f;
-        float rimStrength = 0.060f;
+        float lightResponse = 0.80f;
+        float specularStrength = 0.004f;
+        float rimStrength = 0.032f;
     };
 
     class GLMesh

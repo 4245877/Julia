@@ -15,30 +15,24 @@ uniform float uRimStrength;
 
 out vec4 FragColor;
 
-float softCel(float value, float edge, float softness)
+float inkStep(float edge, float value)
 {
-    return smoothstep(edge - softness, edge + softness, value);
+    float width = max(fwidth(value) * 1.35, 0.006);
+    return smoothstep(edge - width, edge + width, value);
 }
 
-vec3 srgbToLinear(vec3 color)
+float inkLine(float value, float center, float width)
 {
-    return pow(clamp(color, 0.0, 1.0), vec3(2.2));
-}
-
-vec3 toneMap(vec3 color)
-{
-    color = max(color, vec3(0.0));
-    color *= 1.05;
-    color = color / (vec3(1.0) + color * 0.62);
-    return clamp(color, 0.0, 0.97);
+    float distanceToLine = abs(value - center);
+    float aa = max(fwidth(value) * 1.80, 0.006);
+    return 1.0 - smoothstep(width, width + aa, distanceToLine);
 }
 
 void main()
 {
     if (uOutlinePass)
     {
-        vec3 outlineColor = srgbToLinear(vec3(0.105, 0.095, 0.135));
-        FragColor = vec4(outlineColor, 0.92);
+        FragColor = vec4(0.012, 0.010, 0.018, 1.0);
         return;
     }
 
@@ -54,76 +48,64 @@ void main()
         albedo *= texture(uDiffuseTexture, vTexCoord).rgb;
     }
 
-    albedo = clamp(albedo, vec3(0.025), vec3(0.96));
+    albedo = clamp(albedo, vec3(0.025), vec3(0.98));
 
-    float albedoLuminance = dot(albedo, vec3(0.2126, 0.7152, 0.0722));
-    float brightAlbedo = smoothstep(0.56, 0.86, albedoLuminance);
-    float detailGuard = mix(1.0, 0.54, brightAlbedo);
-    float lightResponse = clamp(uLightResponse, 0.0, 1.25);
+    float response = clamp(uLightResponse, 0.0, 1.25);
 
-    vec3 keyLightDirection = normalize(vec3(0.28, 0.84, 0.38));
-    vec3 fillLightDirection = normalize(vec3(-0.62, 0.25, 0.18));
+    vec3 keyLightDirection = normalize(vec3(0.18, 0.86, 0.48));
+    vec3 fillLightDirection = normalize(vec3(-0.72, 0.18, 0.22));
 
     float keyNdl = dot(normal, keyLightDirection);
     float fillNdl = dot(normal, fillLightDirection);
 
-    // Half-Lambert даёт более мягкое anime-освещение.
-    float keyWrapped = keyNdl * 0.5 + 0.5;
-    float fillWrapped = fillNdl * 0.5 + 0.5;
+    // Thresholded value: no Lambert gradient, only large readable fields.
+    float celValue = keyNdl + normal.y * 0.14 + response * 0.16 - 0.14;
 
-    // fwidth делает границу cel-тени стабильнее на экране.
-    float bandSoftness = max(0.045, fwidth(keyWrapped) * 2.5);
+    // Keep only a narrow antialiasing fringe at each hard cut.
+    float midBand = inkStep(-0.28, celValue);
+    float lightBand = inkStep(0.24, celValue);
 
-    float mainBand = softCel(keyWrapped, 0.54, bandSoftness);
-    float brightBand = softCel(keyWrapped, 0.86, bandSoftness * 1.25);
-    float fillBand = softCel(fillWrapped, 0.43, 0.18);
+    vec3 shadowTint = vec3(0.46, 0.48, 0.66);
+    vec3 midTint = vec3(0.74, 0.72, 0.82);
+    vec3 lightTint = vec3(1.02, 0.94, 0.80);
 
-    vec3 shadowTint = vec3(0.58, 0.60, 0.78);
-    vec3 midTint    = vec3(0.88, 0.84, 0.90);
-    vec3 lightTint  = vec3(0.96, 0.91, 0.84);
+    vec3 shadowColor = albedo * shadowTint * 0.58;
+    vec3 midColor = albedo * midTint * 0.82;
+    vec3 lightColor = albedo * lightTint * 1.02;
 
-    vec3 shadowColor = albedo * shadowTint * 0.46;
-    vec3 midColor    = albedo * midTint    * 0.74;
-    vec3 lightColor  = albedo * lightTint  * 0.88;
+    vec3 color = mix(shadowColor, midColor, midBand);
+    color = mix(color, lightColor, lightBand);
 
-    vec3 color = mix(shadowColor, midColor, mainBand);
-    color = mix(color, lightColor, brightBand * 0.42 * lightResponse * detailGuard);
+    // The fill is a cel-shaped bounce patch, not a second smooth light.
+    float bounceBand = inkStep(0.10, fillNdl + 0.12) * (1.0 - lightBand);
+    color += albedo * vec3(0.025, 0.030, 0.052) * bounceBand * response;
 
-    // Заполняющий свет не создаёт второй жёсткой тени,
-    // а только мягко вытаскивает форму из темноты.
-    color += albedo * vec3(0.065, 0.058, 0.085) *
-        fillBand * lightResponse * detailGuard;
+    // A thin terminator and an inner contour sharpen the painted shadow mass.
+    float terminator = inkLine(celValue, -0.28, 0.020) * (1.0 - lightBand);
+    vec3 inkColor = vec3(0.018, 0.014, 0.026);
+    color = mix(color, inkColor, terminator * 0.14);
 
-    // Мягкий верхний свет.
-    float topLight = smoothstep(-0.20, 0.86, normal.y);
-    color += albedo * vec3(0.036, 0.030, 0.024) *
-        topLight * lightResponse * detailGuard;
+    float viewRim = 1.0 - max(dot(normal, viewDirection), 0.0);
+    float innerInk = inkStep(0.74, viewRim) * (1.0 - lightBand * 0.55);
+    color = mix(color, inkColor, innerInk * 0.20);
 
-    // Аккуратный стилизованный блик.
+    // Sparse blocky highlight. Most surfaces stay matte and illustrated.
     vec3 halfDirection = normalize(keyLightDirection + viewDirection);
-    float specularRaw = pow(max(dot(normal, halfDirection), 0.0), 64.0);
-    float specular = smoothstep(0.025, 0.110, specularRaw);
-    specular *= smoothstep(0.35, 0.95, keyWrapped);
+    float specularShape = pow(max(dot(normal, halfDirection), 0.0), 96.0);
+    float specular = inkStep(0.20, specularShape) * lightBand;
+    float specularStrength = max(uSpecularStrength, 0.0) * 0.58;
+    color += vec3(1.0, 0.86, 0.58) * specular * specularStrength;
 
-    float specularGuard = mix(1.0, 0.28, brightAlbedo);
-    color += vec3(1.0, 0.88, 0.68) *
-        specular * max(uSpecularStrength, 0.0) * specularGuard;
+    // Cool edge accent is weak; the black contour remains dominant.
+    float coolEdge = inkStep(0.82, viewRim) * inkStep(-0.10, fillNdl);
+    color += vec3(0.18, 0.22, 0.42) * coolEdge * max(uRimStrength, 0.0) * 0.46;
 
-    // Rim light мягкий, без грязного контура по всей модели.
-    float rim = 1.0 - max(dot(normal, viewDirection), 0.0);
-    rim = smoothstep(0.48, 0.94, rim);
-    rim *= smoothstep(0.32, 0.96, keyWrapped + fillWrapped * 0.20);
-
-    float rimGuard = mix(1.0, 0.45, brightAlbedo);
-    color += vec3(0.58, 0.56, 0.84) *
-        rim * max(uRimStrength, 0.0) * rimGuard;
-
-    // Немного насыщенности, но без кислотности.
+    // Slight saturation lift after the cel ramp.
     float luminance = dot(color, vec3(0.299, 0.587, 0.114));
-    color = mix(vec3(luminance), color, 1.02);
+    color = mix(vec3(luminance), color, 1.08);
 
-    // Мягкая защита от пересвета.
-    color = toneMap(color);
+    // Final clamp instead of tone mapping keeps the posterized bands intact.
+    color = clamp(color, 0.0, 1.0);
 
     FragColor = vec4(color, 1.0);
 }

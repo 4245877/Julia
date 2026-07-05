@@ -7,7 +7,7 @@ layout (location = 3) in ivec4 aBoneIds;
 layout (location = 4) in vec4 aBoneWeights;
 
 const int MAX_BONES = 128;
-const float OUTLINE_WIDTH = 0.0045;
+const float OUTLINE_WIDTH = 0.0075;
 
 uniform mat4 uModel;
 uniform mat4 uView;
@@ -76,7 +76,12 @@ void main()
 
     if (uOutlinePass)
     {
-        worldPosition.xyz += worldNormal * OUTLINE_WIDTH;
+        vec3 viewPosition = inverse(uView)[3].xyz;
+        vec3 viewDirection = normalize(viewPosition - worldPosition.xyz);
+        float silhouette = 1.0 - abs(dot(worldNormal, viewDirection));
+        float outlineScale = mix(0.58, 1.32, smoothstep(0.12, 0.88, silhouette));
+
+        worldPosition.xyz += worldNormal * OUTLINE_WIDTH * outlineScale;
     }
 
     vWorldPosition = worldPosition.xyz;
