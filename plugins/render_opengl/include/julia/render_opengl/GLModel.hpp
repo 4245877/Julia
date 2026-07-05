@@ -12,6 +12,11 @@ namespace julia::render_opengl
 {
     class GLShader;
 
+    // Upper bound on skinning palette size. Must stay in sync with MAX_BONES in
+    // assets/shaders/model.vert; influences referencing a bone at or above this
+    // index are dropped by the vertex shader.
+    inline constexpr std::uint32_t MaxBones = 128;
+
     struct GLBoneInfo
     {
         std::string name;

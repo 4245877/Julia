@@ -17,6 +17,32 @@
 
 namespace
 {
+    void glfwErrorCallback(int error, const char* description)
+    {
+        std::cerr << "GLFW error " << error << ": "
+                  << (description ? description : "(no description)") << "\n";
+    }
+
+    void APIENTRY glDebugCallback(
+        GLenum /*source*/,
+        GLenum type,
+        GLuint /*id*/,
+        GLenum severity,
+        GLsizei /*length*/,
+        const GLchar* message,
+        const void* /*userParam*/
+    )
+    {
+        // Notification-level chatter (buffer hints, etc.) is not actionable.
+        if (severity == GL_DEBUG_SEVERITY_NOTIFICATION)
+        {
+            return;
+        }
+
+        std::cerr << "[GL]" << (type == GL_DEBUG_TYPE_ERROR ? " ERROR:" : "")
+                  << " " << (message ? message : "") << "\n";
+    }
+
     void framebufferSizeCallback(GLFWwindow* window, int width, int height)
     {
         auto* renderer = static_cast<julia::render_opengl::OpenGLRenderer*>(
@@ -47,6 +73,8 @@ int main(int argc, char** argv)
             ? std::filesystem::path{argv[1]}
             : std::filesystem::path{JULIA_ASSET_DIR} / "models" / "Raphtalia1.fbx";
 
+    glfwSetErrorCallback(glfwErrorCallback);
+
     if (!glfwInit())
     {
         std::cerr << "Failed to initialize GLFW\n";
@@ -56,8 +84,12 @@ int main(int argc, char** argv)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    // Required on macOS to get a core-profile context; harmless elsewhere.
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
     glfwWindowHint(GLFW_SRGB_CAPABLE, GLFW_TRUE);
+
+    // Ask for a debug context so GL_KHR_debug can report errors via callback.
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 
     // Сглаживание краёв модели и обводки.
     glfwWindowHint(GLFW_SAMPLES, 8);
@@ -82,6 +114,15 @@ int main(int argc, char** argv)
     }
 
     std::cout << "OpenGL version: " << glGetString(GL_VERSION) << "\n";
+
+    // Available when the driver exposes GL_KHR_debug (glad leaves the pointer
+    // null otherwise). Synchronous output keeps messages next to the call.
+    if (glDebugMessageCallback)
+    {
+        glEnable(GL_DEBUG_OUTPUT);
+        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+        glDebugMessageCallback(glDebugCallback, nullptr);
+    }
 
     GLint samples = 0;
     glGetIntegerv(GL_SAMPLES, &samples);

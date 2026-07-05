@@ -16,7 +16,9 @@ namespace julia::render_opengl
         glm::vec3 target{0.0f, 1.15f, 0.0f};
         glm::vec3 up{0.0f, 1.0f, 0.0f};
         float fovDegrees = 45.0f;
-        float nearPlane = 0.01f;
+        // Kept well away from far to preserve depth-buffer precision; the
+        // subject sits a few metres from the camera, so 0.1 clips nothing.
+        float nearPlane = 0.1f;
         float farPlane = 100.0f;
     };
 

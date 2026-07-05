@@ -33,7 +33,7 @@ namespace julia::render_opengl
           vbo_(other.vbo_),
           ebo_(other.ebo_),
           indexCount_(other.indexCount_),
-          material_(other.material_),
+          material_(std::move(other.material_)),
           bounds_(other.bounds_)
     {
         other.vao_ = 0;
@@ -52,7 +52,7 @@ namespace julia::render_opengl
             vbo_ = other.vbo_;
             ebo_ = other.ebo_;
             indexCount_ = other.indexCount_;
-            material_ = other.material_;
+            material_ = std::move(other.material_);
             bounds_ = other.bounds_;
 
             other.vao_ = 0;

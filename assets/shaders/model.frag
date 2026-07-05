@@ -4,7 +4,7 @@ in vec3 vWorldPosition;
 in vec3 vNormal;
 in vec2 vTexCoord;
 
-uniform mat4 uView;
+uniform vec3 uViewPos;
 uniform vec3 uDiffuseColor;
 uniform sampler2D uDiffuseTexture;
 uniform bool uHasDiffuseTexture;
@@ -31,7 +31,11 @@ vec3 adjustSaturation(vec3 color, float amount)
 
 vec3 sampleAlbedo()
 {
-    vec3 albedo = max(uDiffuseColor, vec3(0.0));
+    // The diffuse texture is an sRGB texture, so the sampler already returns
+    // linear values. The material's flat diffuse colour comes from the model
+    // file authored in sRGB, so linearise it here to keep both in the same
+    // colour space before they are multiplied.
+    vec3 albedo = pow(max(uDiffuseColor, vec3(0.0)), vec3(2.2));
 
     if (uHasDiffuseTexture)
     {
@@ -58,8 +62,7 @@ void main()
 
     vec3 normal = normalize(vNormal);
 
-    vec3 viewPosition = inverse(uView)[3].xyz;
-    vec3 viewDirection = normalize(viewPosition - vWorldPosition);
+    vec3 viewDirection = normalize(uViewPos - vWorldPosition);
 
     float response = clamp(uLightResponse, 0.0, 1.25);
 

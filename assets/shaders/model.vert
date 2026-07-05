@@ -6,6 +6,7 @@ layout (location = 2) in vec2 aTexCoord;
 layout (location = 3) in ivec4 aBoneIds;
 layout (location = 4) in vec4 aBoneWeights;
 
+// Must stay in sync with julia::render_opengl::MaxBones (GLModel.hpp).
 const int MAX_BONES = 128;
 
 // Толщина контура в NDC: даёт постоянную экранную ширину линии

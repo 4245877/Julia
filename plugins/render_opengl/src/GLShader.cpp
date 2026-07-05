@@ -2,12 +2,31 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
+#include <cassert>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
 namespace julia::render_opengl
 {
+    namespace
+    {
+        void assertProgramBound(GLuint program)
+        {
+#ifndef NDEBUG
+            GLint current = 0;
+            glGetIntegerv(GL_CURRENT_PROGRAM, &current);
+            assert(
+                static_cast<GLuint>(current) == program &&
+                "GLShader uniform set while a different program is bound; "
+                "call bind() on this shader first."
+            );
+#else
+            (void)program;
+#endif
+        }
+    }
+
     GLShader::~GLShader()
     {
         release();
@@ -85,28 +104,33 @@ namespace julia::render_opengl
 
     void GLShader::setBool(const std::string& name, bool value) const
     {
-        glUniform1i(glGetUniformLocation(program_, name.c_str()), value ? 1 : 0);
+        assertProgramBound(program_);
+        glUniform1i(uniformLocation(name), value ? 1 : 0);
     }
 
     void GLShader::setInt(const std::string& name, int value) const
     {
-        glUniform1i(glGetUniformLocation(program_, name.c_str()), value);
+        assertProgramBound(program_);
+        glUniform1i(uniformLocation(name), value);
     }
 
     void GLShader::setFloat(const std::string& name, float value) const
     {
-        glUniform1f(glGetUniformLocation(program_, name.c_str()), value);
+        assertProgramBound(program_);
+        glUniform1f(uniformLocation(name), value);
     }
 
     void GLShader::setVec3(const std::string& name, const glm::vec3& value) const
     {
-        glUniform3fv(glGetUniformLocation(program_, name.c_str()), 1, glm::value_ptr(value));
+        assertProgramBound(program_);
+        glUniform3fv(uniformLocation(name), 1, glm::value_ptr(value));
     }
 
     void GLShader::setMat4(const std::string& name, const glm::mat4& value) const
     {
+        assertProgramBound(program_);
         glUniformMatrix4fv(
-            glGetUniformLocation(program_, name.c_str()),
+            uniformLocation(name),
             1,
             GL_FALSE,
             glm::value_ptr(value)
@@ -120,8 +144,9 @@ namespace julia::render_opengl
             return;
         }
 
-        const std::string uniformName = name + "[0]";
-        const GLint location = glGetUniformLocation(program_, uniformName.c_str());
+        assertProgramBound(program_);
+
+        const GLint location = uniformLocation(name + "[0]");
 
         if (location < 0)
         {
@@ -134,6 +159,20 @@ namespace julia::render_opengl
             GL_FALSE,
             glm::value_ptr(values.front())
         );
+    }
+
+    GLint GLShader::uniformLocation(const std::string& name) const
+    {
+        const auto cached = uniformLocations_.find(name);
+        if (cached != uniformLocations_.end())
+        {
+            return cached->second;
+        }
+
+        const GLint location = glGetUniformLocation(program_, name.c_str());
+        uniformLocations_.emplace(name, location);
+
+        return location;
     }
 
     GLuint GLShader::compileStage(GLenum type, const char* source)
@@ -170,5 +209,8 @@ namespace julia::render_opengl
             glDeleteProgram(program_);
             program_ = 0;
         }
+
+        // Locations are only valid for the program that produced them.
+        uniformLocations_.clear();
     }
 }

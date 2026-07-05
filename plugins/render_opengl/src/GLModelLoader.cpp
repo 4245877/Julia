@@ -10,11 +10,9 @@
 #include <glm/glm.hpp>
 
 #include <algorithm>
-#include <cmath>
 #include <cstdint>
 #include <cctype>
 #include <filesystem>
-#include <functional>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
@@ -37,135 +35,6 @@ namespace julia::render_opengl
 
             std::unordered_map<std::string, std::shared_ptr<GLTexture>> textureCache;
         };
-
-        struct NormalKey
-        {
-            int x = 0;
-            int y = 0;
-            int z = 0;
-
-            bool operator==(const NormalKey& other) const
-            {
-                return x == other.x && y == other.y && z == other.z;
-            }
-        };
-
-        struct NormalKeyHash
-        {
-            std::size_t operator()(const NormalKey& key) const noexcept
-            {
-                const std::size_t h1 = std::hash<int>{}(key.x);
-                const std::size_t h2 = std::hash<int>{}(key.y);
-                const std::size_t h3 = std::hash<int>{}(key.z);
-
-                return h1 ^ (h2 << 1u) ^ (h3 << 2u);
-            }
-        };
-
-        int quantizePosition(float value)
-        {
-            constexpr float Epsilon = 0.0001f;
-            return static_cast<int>(std::round(value / Epsilon));
-        }
-
-        NormalKey makeNormalKey(const glm::vec3& position)
-        {
-            return NormalKey{
-                quantizePosition(position.x),
-                quantizePosition(position.y),
-                quantizePosition(position.z)
-            };
-        }
-
-        void rebuildSmoothNormals(
-            std::vector<GLVertex>& vertices,
-            const std::vector<std::uint32_t>& indices
-        )
-        {
-            if (vertices.empty() || indices.size() < 3)
-            {
-                return;
-            }
-
-            std::vector<NormalKey> keys;
-            keys.resize(vertices.size());
-
-            std::unordered_map<NormalKey, glm::vec3, NormalKeyHash> normalSums;
-            normalSums.reserve(vertices.size());
-
-            for (std::size_t i = 0; i < vertices.size(); ++i)
-            {
-                keys[i] = makeNormalKey(vertices[i].position);
-                normalSums.try_emplace(keys[i], glm::vec3{0.0f});
-            }
-
-            for (std::size_t i = 0; i + 2 < indices.size(); i += 3)
-            {
-                const std::uint32_t i0 = indices[i + 0];
-                const std::uint32_t i1 = indices[i + 1];
-                const std::uint32_t i2 = indices[i + 2];
-
-                if (
-                    i0 >= vertices.size() ||
-                    i1 >= vertices.size() ||
-                    i2 >= vertices.size()
-                )
-                {
-                    continue;
-                }
-
-                const glm::vec3 p0 = vertices[i0].position;
-                const glm::vec3 p1 = vertices[i1].position;
-                const glm::vec3 p2 = vertices[i2].position;
-
-                glm::vec3 faceNormal = glm::cross(p1 - p0, p2 - p0);
-
-                if (glm::dot(faceNormal, faceNormal) < 0.000000000001f)
-                {
-                    continue;
-                }
-
-                // Если у FBX уже были нормали, используем их только как подсказку
-                // для направления, чтобы случайно не перевернуть освещение.
-                const glm::vec3 referenceNormal =
-                    vertices[i0].normal +
-                    vertices[i1].normal +
-                    vertices[i2].normal;
-
-                if (
-                    glm::dot(referenceNormal, referenceNormal) > 0.000001f &&
-                    glm::dot(faceNormal, referenceNormal) < 0.0f
-                )
-                {
-                    faceNormal = -faceNormal;
-                }
-
-                normalSums[keys[i0]] += faceNormal;
-                normalSums[keys[i1]] += faceNormal;
-                normalSums[keys[i2]] += faceNormal;
-            }
-
-            for (std::size_t i = 0; i < vertices.size(); ++i)
-            {
-                const auto found = normalSums.find(keys[i]);
-
-                if (
-                    found != normalSums.end() &&
-                    glm::dot(found->second, found->second) > 0.00000001f
-                )
-                {
-                    vertices[i].normal = glm::normalize(found->second);
-                }
-                else if (glm::dot(vertices[i].normal, vertices[i].normal) > 0.00000001f)
-                {
-                    vertices[i].normal = glm::normalize(vertices[i].normal);
-                }
-                else
-                {
-                    vertices[i].normal = glm::vec3{0.0f, 1.0f, 0.0f};
-                }
-            }
-        }
 
         glm::mat4 toGlm(const aiMatrix4x4& matrix)
         {
@@ -342,6 +211,8 @@ namespace julia::render_opengl
             else if (
                 name.find("eye") != std::string::npos ||
                 name.find("highlight") != std::string::npos ||
+                // "hightlight" is a misspelling baked into the source asset's
+                // material names; matched intentionally, not a typo here.
                 name.find("hightlight") != std::string::npos
             )
             {
@@ -571,15 +442,18 @@ namespace julia::render_opengl
             {
                 const aiFace& face = mesh->mFaces[faceIndex];
 
-                for (unsigned int indexIndex = 0; indexIndex < face.mNumIndices; ++indexIndex)
+                // Draw calls use GL_TRIANGLES, so a non-triangle face (a line or
+                // point left behind by aiProcess_FindDegenerates) would shift the
+                // whole index stream and corrupt the rest of the mesh. Skip them;
+                // aiProcess_SortByPType also strips such primitives at import.
+                if (face.mNumIndices != 3)
                 {
-                    indices.push_back(static_cast<std::uint32_t>(face.mIndices[indexIndex]));
+                    continue;
                 }
-            }
 
-            if (!hasNormals)
-            {
-                rebuildSmoothNormals(vertices, indices);
+                indices.push_back(static_cast<std::uint32_t>(face.mIndices[0]));
+                indices.push_back(static_cast<std::uint32_t>(face.mIndices[1]));
+                indices.push_back(static_cast<std::uint32_t>(face.mIndices[2]));
             }
 
             for (unsigned int boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex)
@@ -598,7 +472,19 @@ namespace julia::render_opengl
                 {
                     GLBoneInfo boneInfo{};
                     boneInfo.name = boneName;
-                    boneInfo.offsetMatrix = toGlm(bone->mOffsetMatrix);
+
+                    // We bake the node's globalTransform into vertex positions
+                    // (see above), but the Assimp offset matrix expects vertices
+                    // in the mesh's original local space. Compose it with the
+                    // inverse transform so that later skinning,
+                    //   boneMatrix * offset' * bakedPos
+                    //     == boneMatrix * offset * (G^-1 * G * localPos)
+                    //     == boneMatrix * offset * localPos,
+                    // reproduces the correct result. (Assumes a bone shared
+                    // across meshes uses a consistent node transform, which
+                    // holds for typical rigged FBX exports.)
+                    boneInfo.offsetMatrix =
+                        toGlm(bone->mOffsetMatrix) * glm::inverse(globalTransform);
 
                     finalBoneIndex = context.model.addBone(std::move(boneInfo));
                     context.boneNameToIndex.emplace(boneName, finalBoneIndex);
@@ -679,14 +565,21 @@ namespace julia::render_opengl
             aiProcess_GenSmoothNormals |
             aiProcess_JoinIdenticalVertices |
             aiProcess_LimitBoneWeights |
-            aiProcess_CalcTangentSpace |
-            aiProcess_GlobalScale |
             aiProcess_FlipUVs |
             aiProcess_FindInvalidData |
             aiProcess_FindDegenerates |
+            aiProcess_SortByPType |
             aiProcess_ImproveCacheLocality;
 
         importer.SetPropertyFloat(AI_CONFIG_PP_GSN_MAX_SMOOTHING_ANGLE, 75.0f);
+
+        // FindDegenerates turns degenerate triangles into points/lines; ask
+        // SortByPType to drop those primitives outright so only real triangles
+        // reach the mesh processor.
+        importer.SetPropertyInteger(
+            AI_CONFIG_PP_SBP_REMOVE,
+            aiPrimitiveType_POINT | aiPrimitiveType_LINE
+        );
 
         const aiScene* scene = importer.ReadFile(path.string(), flags);
 
@@ -709,6 +602,15 @@ namespace julia::render_opengl
         if (context.model.empty())
         {
             throw std::runtime_error("Model contains no meshes: " + path.string());
+        }
+
+        if (context.model.boneCount() > MaxBones)
+        {
+            std::cerr
+                << "Warning: model '" << path.string() << "' has "
+                << context.model.boneCount() << " bones, but the skinning "
+                << "palette holds only " << MaxBones
+                << ". Influences beyond that index will not animate.\n";
         }
 
         return std::move(context.model);

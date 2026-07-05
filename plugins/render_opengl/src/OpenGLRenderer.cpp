@@ -16,8 +16,6 @@ namespace julia::render_opengl
 {
     namespace
     {
-        constexpr int MaxBones = 128;
-
         std::filesystem::path getAssetDir()
         {
 #ifdef JULIA_ASSET_DIR
@@ -176,6 +174,7 @@ namespace julia::render_opengl
         shader_.setMat4("uModel", modelMatrix);
         shader_.setMat4("uView", view_);
         shader_.setMat4("uProjection", projection_);
+        shader_.setVec3("uViewPos", camera_.position);
 
         const bool useSkinning = !boneMatrices.empty();
 
@@ -195,12 +194,9 @@ namespace julia::render_opengl
 
         glDepthMask(GL_FALSE);
 
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
+        // The outline fragment shader always writes alpha = 1.0, so blending
+        // would be a no-op; the inverted hull is a plain opaque draw.
         model.draw(shader_);
-
-        glDisable(GL_BLEND);
 
         glDepthMask(GL_TRUE);
         glCullFace(GL_BACK);

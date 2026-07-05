@@ -6,6 +6,11 @@
 
 namespace julia::render_opengl
 {
+    // Owns a GL texture object. Like the other GL wrappers, its destructor calls
+    // glDeleteTextures and therefore requires a current GL context. Because
+    // instances are handed out as shared_ptr via the loader's texture cache, keep
+    // every owner (models, caches) destroyed before the window/context is torn
+    // down.
     class GLTexture
     {
     public:
