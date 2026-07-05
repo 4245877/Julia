@@ -7,7 +7,10 @@ layout (location = 3) in ivec4 aBoneIds;
 layout (location = 4) in vec4 aBoneWeights;
 
 const int MAX_BONES = 128;
-const float OUTLINE_WIDTH = 0.0075;
+
+// Толщина контура в NDC: даёт постоянную экранную ширину линии
+// (~2.5 px на 1080p) независимо от дистанции до камеры.
+const float OUTLINE_WIDTH = 0.0045;
 
 uniform mat4 uModel;
 uniform mat4 uView;
@@ -74,19 +77,41 @@ void main()
     mat3 normalMatrix = transpose(inverse(mat3(uModel)));
     vec3 worldNormal = normalize(normalMatrix * localNormal);
 
-    if (uOutlinePass)
-    {
-        vec3 viewPosition = inverse(uView)[3].xyz;
-        vec3 viewDirection = normalize(viewPosition - worldPosition.xyz);
-        float silhouette = 1.0 - abs(dot(worldNormal, viewDirection));
-        float outlineScale = mix(0.58, 1.32, smoothstep(0.12, 0.88, silhouette));
-
-        worldPosition.xyz += worldNormal * OUTLINE_WIDTH * outlineScale;
-    }
-
     vWorldPosition = worldPosition.xyz;
     vNormal = worldNormal;
     vTexCoord = aTexCoord;
 
-    gl_Position = uProjection * uView * worldPosition;
+    vec4 clipPosition = uProjection * uView * worldPosition;
+
+    if (uOutlinePass)
+    {
+        // Раздуваем оболочку в экранной плоскости, а не в мировых
+        // координатах: линия остаётся одинаково тонкой и чёткой на любом
+        // расстоянии, как нарисованный тушью контур.
+        vec3 viewNormal = mat3(uView) * worldNormal;
+        vec2 screenDirection = viewNormal.xy;
+        float directionLength = length(screenDirection);
+
+        if (directionLength > 0.0001)
+        {
+            screenDirection /= directionLength;
+
+            // Компенсация аспекта, чтобы толщина в пикселях была
+            // одинаковой по горизонтали и вертикали.
+            float invAspect = uProjection[0][0] / uProjection[1][1];
+
+            // Лёгкое сужение там, где нормаль почти смотрит в камеру:
+            // линия слегка "дышит", как в ручной обводке.
+            float taper = mix(1.1, 0.65, abs(normalize(viewNormal).z));
+
+            clipPosition.xy +=
+                screenDirection *
+                vec2(invAspect, 1.0) *
+                OUTLINE_WIDTH *
+                taper *
+                clipPosition.w;
+        }
+    }
+
+    gl_Position = clipPosition;
 }

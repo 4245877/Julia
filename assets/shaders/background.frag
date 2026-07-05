@@ -18,22 +18,17 @@ float hash(vec2 p)
     return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
 }
 
-float softCircle(vec2 uv, vec2 center, float radius, float softness)
-{
-    float d = distance(uv, center);
-    return 1.0 - smoothstep(radius - softness, radius, d);
-}
-
-float softEllipse(vec2 uv, vec2 center, vec2 radius, float softness)
-{
-    vec2 p = (uv - center) / radius;
-    float d = length(p);
-    return 1.0 - smoothstep(1.0 - softness, 1.0, d);
-}
-
 vec3 srgbToLinear(vec3 color)
 {
     return pow(clamp(color, 0.0, 1.0), vec3(2.2));
+}
+
+// Постерный срез: плоские поля с узкой (~1 px) кромкой сглаживания.
+// Никаких мягких живописных переходов — фон собирается из чётких форм.
+float posterStep(float edge, float value)
+{
+    float aa = max(fwidth(value) * 1.5, 0.002);
+    return smoothstep(edge - aa, edge + aa, value);
 }
 
 void main()
@@ -49,132 +44,95 @@ void main()
     vec3 surfaceColor = srgbToLinear(uSurfaceColor);
     vec3 borderColor = srgbToLinear(uBorderColor);
 
-    vec3 color;
+    vec2 focus = vec2(0.50, 0.52);
 
-    // Тёплая пергаментная основа.
-    float vertical = smoothstep(0.0, 1.0, uv.y);
-    color = mix(surfaceColor, bgColor, vertical);
+    // 1) Три плоских диагональных поля вместо плавного градиента:
+    //    светлое внизу (под персонажем), среднее в центре, тёмное сверху.
+    float diagonal = uv.y - uv.x * 0.22;
+    vec3 topColor = mix(bgColor, forestColor, 0.35);
 
-    // Светлый портретный овал за персонажем.
-    // Он помогает Рафталии читаться на фоне и не спорит с моделью.
-    float portraitLight = softEllipse(
-        uv,
-        vec2(0.50, 0.55),
-        vec2(0.34, 0.48),
-        0.55
-    );
-    color = mix(color, surfaceColor, portraitLight * 0.34);
+    vec3 color = mix(surfaceColor, bgColor, posterStep(0.30, diagonal));
+    color = mix(color, topColor, posterStep(0.72, diagonal));
 
-    // Каштаново-медовое тепло снизу слева:
-    // связь с волосами, домом и живым человеческим теплом.
-    float chestnutGlow = softCircle(
-        uv,
-        vec2(0.14, 0.08),
-        0.88,
-        0.72
-    );
-    color = mix(color, primaryColor, chestnutGlow * 0.20);
+    // 2) Широкий винный луч по диагонали — графический акцент,
+    //    который позже частично перекроется диском.
+    float beamValue = uv.x * 0.62 - uv.y + 0.30;
+    float beam =
+        posterStep(-0.045, beamValue) *
+        (1.0 - posterStep(0.045, beamValue));
 
-    // Охристое заземление внизу:
-    // кожа, ремни, броня, телесность мечницы.
-    float ochreGround = 1.0 - smoothstep(0.0, 0.62, uv.y);
-    color = mix(color, goldColor, ochreGround * 0.12);
+    color = mix(color, accentColor, beam * 0.14);
 
-    // Винное сердечное свечение по центру.
-    // Оно должно быть заметным, но не агрессивным.
-    float heartGlow = softEllipse(
-        uv,
-        vec2(0.50, 0.46),
-        vec2(0.24, 0.32),
-        0.72
-    );
-    color = mix(color, accentColor, heartGlow * 0.13);
+    // 3) Группа косых полос в правом верхнем углу — намёк на спидлайны.
+    float stripeCoord = uv.x + uv.y * 0.35;
+    float stripePhase = fract(stripeCoord * 14.0);
+    float stripes =
+        smoothstep(0.53, 0.57, stripePhase) *
+        (1.0 - smoothstep(0.78, 0.82, stripePhase));
+    float stripeZone = posterStep(1.18, uv.x + uv.y);
 
-    // Пыльно-сливовая тень по краям:
-    // глубина, память о боли, взрослая сдержанность.
-    float vignette = smoothstep(
-        0.38,
-        0.92,
-        distance(uv, vec2(0.50, 0.54))
-    );
-    color = mix(color, forestColor, vignette * 0.19);
+    color = mix(color, skyColor, stripes * stripeZone * 0.16);
 
-    // Более мягкие боковые тени, как от тёмных панелей костюма.
-    float sideShadow =
-        (1.0 - smoothstep(0.00, 0.24, uv.x)) +
-        smoothstep(0.76, 1.00, uv.x);
-
-    color = mix(color, forestColor, sideShadow * 0.055);
-
-    // Небесно-стальной холодный воздух сверху справа.
-    // Нужен, чтобы тёплая гамма не стала слишком тяжёлой.
-    float dawnAir = softCircle(
-        uv,
-        vec2(0.82, 0.88),
-        0.74,
-        0.64
-    );
-    color = mix(color, skyColor, dawnAir * 0.24);
-
-    // Тонкий серебряный диагональный отблеск:
-    // намёк на клинок и позднюю броню, но без лишней резкости.
-    float bladeLine = exp(
-        -pow((uv.x - (0.18 + uv.y * 0.48)) * 8.2, 2.0)
-    );
-    bladeLine *= smoothstep(0.10, 0.46, uv.y);
-    bladeLine *= 1.0 - smoothstep(0.82, 1.0, uv.y);
-
-    color = mix(color, borderColor, bladeLine * 0.075);
-
-    // Очень мягкая розовая эмоция около верхней центральной зоны.
-    // Это отсылка к глазам, но без отдельного uniform.
-    vec3 irisRose = mix(accentColor, surfaceColor, 0.30);
-
-    float irisMist = softCircle(
-        uv,
-        vec2(0.36, 0.70),
-        0.42,
-        0.36
+    // 4) Растровая точечная сетка в левом нижнем углу:
+    //    классический полиграфический screen-tone, радиус точек
+    //    затухает от угла к центру.
+    vec2 dotGrid = uv * vec2(46.0, 26.0);
+    vec2 dotCell = fract(dotGrid) - 0.5;
+    float cornerFade =
+        1.0 - smoothstep(0.05, 0.55, distance(uv, vec2(0.06, 0.10)));
+    float dotRadius = 0.34 * cornerFade;
+    float dots = 1.0 - smoothstep(
+        max(dotRadius - 0.06, 0.0),
+        dotRadius + 0.02,
+        length(dotCell)
     );
 
-    color = mix(color, irisRose, irisMist * 0.055);
+    color = mix(color, forestColor, dots * step(0.02, dotRadius) * 0.30);
 
-    // Небольшие светлые частицы по краям.
-    // В центре их почти нет, чтобы они не мешали модели.
-    vec2 grid = uv * vec2(9.0, 6.0);
-    vec2 id = floor(grid);
-    vec2 cell = fract(grid) - 0.5;
+    // 5) Плоский диск за персонажем — большое читаемое пятно света
+    //    с жёсткой кромкой вместо мягкого портретного овала.
+    float focusDistance = distance(uv, focus);
+    float disc = 1.0 - posterStep(0.335, focusDistance);
 
-    float rnd = hash(id);
-    vec2 offset = vec2(
-        hash(id + vec2(17.31, 9.17)),
-        hash(id + vec2(3.11, 41.73))
-    ) - 0.5;
+    color = mix(color, mix(surfaceColor, skyColor, 0.18), disc * 0.50);
 
-    offset *= 0.52;
+    // Тонкое серебряное кольцо по краю диска.
+    float ring =
+        posterStep(0.355, focusDistance) *
+        (1.0 - posterStep(0.372, focusDistance));
 
-    float mote = 1.0 - smoothstep(
-        0.0,
-        0.030 + rnd * 0.020,
-        length(cell - offset)
-    );
+    color = mix(color, borderColor, ring * 0.55);
 
-    float moteVisibility = step(0.70, rnd);
-    float keepAwayFromFace = smoothstep(
-        0.26,
-        0.55,
-        distance(uv, vec2(0.50, 0.56))
-    );
+    // Второе кольцо — разорванная охристая дуга, чуть дальше от центра.
+    float arcAngle = atan(uv.y - focus.y, uv.x - focus.x);
+    float outerRing =
+        posterStep(0.408, focusDistance) *
+        (1.0 - posterStep(0.418, focusDistance));
+    float arcSector = smoothstep(0.10, 0.20, sin(arcAngle + 0.6));
 
-    color = mix(
-        color,
-        mix(borderColor, surfaceColor, 0.42),
-        mote * moteVisibility * keepAwayFromFace * 0.11
-    );
+    color = mix(color, goldColor, outerRing * arcSector * 0.45);
 
-    // Лёгкая текстура бумаги, чтобы фон не был пластиковым.
+    // 6) Плоская каштановая "плита" пола с серебряной линией сверху:
+    //    заземляет фигуру, как панель интерфейса.
+    float floorBand = 1.0 - posterStep(0.085, uv.y);
+    color = mix(color, mix(primaryColor, bgColor, 0.45), floorBand * 0.55);
+
+    float floorLine =
+        posterStep(0.085, uv.y) *
+        (1.0 - posterStep(0.094, uv.y));
+
+    color = mix(color, borderColor, floorLine * 0.40);
+
+    // 7) Постеризованная виньетка: два жёстких кольца затемнения
+    //    вместо плавного радиального градиента.
+    float vignetteInner = posterStep(0.58, focusDistance);
+    float vignetteOuter = posterStep(0.78, focusDistance);
+
+    color = mix(color, forestColor, vignetteInner * 0.12 + vignetteOuter * 0.14);
+
+    // Лёгкое печатное зерно, чтобы плоские поля не были пластиковыми.
     float grain = hash(floor(uv * vec2(720.0, 420.0))) - 0.5;
-    color += grain * 0.010;
+    color += grain * 0.008;
 
     color = clamp(color, 0.0, 1.0);
 

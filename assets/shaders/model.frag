@@ -15,24 +15,44 @@ uniform float uRimStrength;
 
 out vec4 FragColor;
 
-float inkStep(float edge, float value)
+// Жёсткий cel-срез: только узкая (~1 px) кромка сглаживания,
+// никакого плавного ламбертовского градиента.
+float celStep(float edge, float value)
 {
-    float width = max(fwidth(value) * 1.35, 0.006);
-    return smoothstep(edge - width, edge + width, value);
+    float aa = max(fwidth(value), 0.004);
+    return smoothstep(edge - aa, edge + aa, value);
 }
 
-float inkLine(float value, float center, float width)
+vec3 adjustSaturation(vec3 color, float amount)
 {
-    float distanceToLine = abs(value - center);
-    float aa = max(fwidth(value) * 1.80, 0.006);
-    return 1.0 - smoothstep(width, width + aa, distanceToLine);
+    float luminance = dot(color, vec3(0.299, 0.587, 0.114));
+    return mix(vec3(luminance), color, amount);
+}
+
+vec3 sampleAlbedo()
+{
+    vec3 albedo = max(uDiffuseColor, vec3(0.0));
+
+    if (uHasDiffuseTexture)
+    {
+        albedo *= texture(uDiffuseTexture, vTexCoord).rgb;
+    }
+
+    return clamp(albedo, vec3(0.02), vec3(1.0));
 }
 
 void main()
 {
+    vec3 albedo = sampleAlbedo();
+
     if (uOutlinePass)
     {
-        FragColor = vec4(0.012, 0.010, 0.018, 1.0);
+        // Контур не чисто чёрный: тёмная, чуть перенасыщенная версия
+        // базового цвета, как тушь поверх заливки в ZZZ.
+        vec3 inkBase = vec3(0.045, 0.035, 0.065);
+        vec3 lineColor = inkBase + adjustSaturation(albedo, 1.40) * albedo * 0.16;
+
+        FragColor = vec4(lineColor, 1.0);
         return;
     }
 
@@ -41,70 +61,53 @@ void main()
     vec3 viewPosition = inverse(uView)[3].xyz;
     vec3 viewDirection = normalize(viewPosition - vWorldPosition);
 
-    vec3 albedo = max(uDiffuseColor, vec3(0.0));
-
-    if (uHasDiffuseTexture)
-    {
-        albedo *= texture(uDiffuseTexture, vTexCoord).rgb;
-    }
-
-    albedo = clamp(albedo, vec3(0.025), vec3(0.98));
-
     float response = clamp(uLightResponse, 0.0, 1.25);
 
-    vec3 keyLightDirection = normalize(vec3(0.18, 0.86, 0.48));
-    vec3 fillLightDirection = normalize(vec3(-0.72, 0.18, 0.22));
+    vec3 keyLightDirection = normalize(vec3(0.34, 0.78, 0.52));
+    float ndl = dot(normal, keyLightDirection);
 
-    float keyNdl = dot(normal, keyLightDirection);
-    float fillNdl = dot(normal, fillLightDirection);
+    // Один жёсткий срез свет/тень плюс узкая зона глубокой тени.
+    // Материал с высоким lightResponse "открывается" свету раньше.
+    float litEdge = 0.10 - response * 0.18;
+    float lit = celStep(litEdge, ndl);
+    float core = 1.0 - celStep(litEdge - 0.52, ndl);
 
-    // Thresholded value: no Lambert gradient, only large readable fields.
-    float celValue = keyNdl + normal.y * 0.14 + response * 0.16 - 0.14;
+    // Тень уводится в холодный сиренево-синий с лёгким подъёмом
+    // насыщенности — фирменный приём ZZZ вместо простого затемнения.
+    vec3 litColor = albedo * vec3(1.05, 1.01, 0.94);
+    vec3 shadowColor = adjustSaturation(albedo, 1.15) * vec3(0.58, 0.55, 0.74);
+    vec3 coreColor = adjustSaturation(albedo, 1.20) * vec3(0.38, 0.33, 0.55);
 
-    // Keep only a narrow antialiasing fringe at each hard cut.
-    float midBand = inkStep(-0.28, celValue);
-    float lightBand = inkStep(0.24, celValue);
+    vec3 color = mix(shadowColor, litColor, lit);
+    color = mix(color, coreColor, core * (1.0 - lit));
 
-    vec3 shadowTint = vec3(0.46, 0.48, 0.66);
-    vec3 midTint = vec3(0.74, 0.72, 0.82);
-    vec3 lightTint = vec3(1.02, 0.94, 0.80);
+    // Ступенчатый отражённый свет снизу, чтобы теневая масса
+    // не превращалась в плоское пятно. Тоже жёсткий срез, не градиент.
+    vec3 bounceDirection = normalize(vec3(-0.60, -0.20, 0.35));
+    float bounce = celStep(0.25, dot(normal, bounceDirection)) * (1.0 - lit);
+    color += albedo * vec3(0.05, 0.06, 0.10) * bounce;
 
-    vec3 shadowColor = albedo * shadowTint * 0.58;
-    vec3 midColor = albedo * midTint * 0.82;
-    vec3 lightColor = albedo * lightTint * 1.02;
+    float rimStrength = clamp(uRimStrength, 0.0, 2.0);
+    float fresnel = 1.0 - max(dot(normal, viewDirection), 0.0);
 
-    vec3 color = mix(shadowColor, midColor, midBand);
-    color = mix(color, lightColor, lightBand);
+    // Яркий жёсткий рим по кромке на световой стороне —
+    // главный акцент вместо россыпи бликов.
+    float rimLit = celStep(0.68, fresnel) * celStep(-0.05, ndl);
+    color += vec3(1.0, 0.97, 0.90) * rimLit * rimStrength * 0.55;
 
-    // The fill is a cel-shaped bounce patch, not a second smooth light.
-    float bounceBand = inkStep(0.10, fillNdl + 0.12) * (1.0 - lightBand);
-    color += albedo * vec3(0.025, 0.030, 0.052) * bounceBand * response;
+    // Тонкий холодный отсвет на теневой кромке отделяет силуэт от фона.
+    float rimShadow = celStep(0.80, fresnel) * (1.0 - lit);
+    color += vec3(0.30, 0.38, 0.72) * rimShadow * rimStrength * 0.35;
 
-    // A thin terminator and an inner contour sharpen the painted shadow mass.
-    float terminator = inkLine(celValue, -0.28, 0.020) * (1.0 - lightBand);
-    vec3 inkColor = vec3(0.018, 0.014, 0.026);
-    color = mix(color, inkColor, terminator * 0.14);
-
-    float viewRim = 1.0 - max(dot(normal, viewDirection), 0.0);
-    float innerInk = inkStep(0.74, viewRim) * (1.0 - lightBand * 0.55);
-    color = mix(color, inkColor, innerInk * 0.20);
-
-    // Sparse blocky highlight. Most surfaces stay matte and illustrated.
+    // Единственный блик: маленький, ступенчатый, только в световой зоне.
     vec3 halfDirection = normalize(keyLightDirection + viewDirection);
-    float specularShape = pow(max(dot(normal, halfDirection), 0.0), 96.0);
-    float specular = inkStep(0.20, specularShape) * lightBand;
-    float specularStrength = max(uSpecularStrength, 0.0) * 0.58;
-    color += vec3(1.0, 0.86, 0.58) * specular * specularStrength;
+    float specularShape = pow(max(dot(normal, halfDirection), 0.0), 140.0);
+    float specular = celStep(0.5, specularShape) * lit;
+    color += vec3(1.0, 0.98, 0.92) * specular * clamp(uSpecularStrength, 0.0, 2.0) * 0.40;
 
-    // Cool edge accent is weak; the black contour remains dominant.
-    float coolEdge = inkStep(0.82, viewRim) * inkStep(-0.10, fillNdl);
-    color += vec3(0.18, 0.22, 0.42) * coolEdge * max(uRimStrength, 0.0) * 0.46;
-
-    // Slight saturation lift after the cel ramp.
-    float luminance = dot(color, vec3(0.299, 0.587, 0.114));
-    color = mix(vec3(luminance), color, 1.08);
-
-    // Final clamp instead of tone mapping keeps the posterized bands intact.
+    // Лёгкий подъём насыщенности после cel-рампы; клемп вместо
+    // тонмаппинга сохраняет плоские постеризованные поля.
+    color = adjustSaturation(color, 1.10);
     color = clamp(color, 0.0, 1.0);
 
     FragColor = vec4(color, 1.0);
