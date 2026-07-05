@@ -57,6 +57,7 @@ int main(int argc, char** argv)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
+    glfwWindowHint(GLFW_SRGB_CAPABLE, GLFW_TRUE);
 
     // Сглаживание краёв модели и обводки.
     glfwWindowHint(GLFW_SAMPLES, 8);

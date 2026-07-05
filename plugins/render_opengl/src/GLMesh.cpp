@@ -67,6 +67,9 @@ namespace julia::render_opengl
     void GLMesh::draw(const GLShader& shader) const
     {
         shader.setVec3("uDiffuseColor", material_.diffuseColor);
+        shader.setFloat("uLightResponse", material_.lightResponse);
+        shader.setFloat("uSpecularStrength", material_.specularStrength);
+        shader.setFloat("uRimStrength", material_.rimStrength);
 
         const bool hasDiffuseTexture =
             material_.diffuseTexture &&

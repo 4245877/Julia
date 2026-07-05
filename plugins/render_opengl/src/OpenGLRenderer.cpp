@@ -83,6 +83,7 @@ namespace julia::render_opengl
 
         glEnable(GL_MULTISAMPLE);
         glEnable(GL_DITHER);
+        glEnable(GL_FRAMEBUFFER_SRGB);
 
         // Пока culling лучше не включать:
         // у некоторых FBX бывают неожиданные winding/axis.

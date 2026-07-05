@@ -38,9 +38,9 @@ namespace julia::render_opengl
                 case 1:
                     return GL_R8;
                 case 3:
-                    return GL_RGB8;
+                    return GL_SRGB8;
                 case 4:
-                    return GL_RGBA8;
+                    return GL_SRGB8_ALPHA8;
                 default:
                     throw std::runtime_error(
                         "Unsupported texture channel count: " + std::to_string(channels)

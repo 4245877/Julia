@@ -264,6 +264,93 @@ namespace julia::render_opengl
             return std::filesystem::path{raw};
         }
 
+        std::string materialMeshName(const aiMaterial* material, const aiMesh* mesh)
+        {
+            std::string name;
+
+            aiString materialName;
+            if (material->Get(AI_MATKEY_NAME, materialName) == AI_SUCCESS)
+            {
+                name += materialName.C_Str();
+                name += " ";
+            }
+
+            if (mesh && mesh->mName.length > 0)
+            {
+                name += mesh->mName.C_Str();
+            }
+
+            return toLower(name);
+        }
+
+        void applyMaterialLightingProfile(
+            GLMeshMaterial& material,
+            const std::string& name
+        )
+        {
+            if (
+                name.find("shield") != std::string::npos ||
+                name.find("armor") != std::string::npos ||
+                name.find("metal") != std::string::npos
+            )
+            {
+                material.lightResponse = 0.86f;
+                material.specularStrength = 0.032f;
+                material.rimStrength = 0.055f;
+            }
+            else if (name.find("hair") != std::string::npos)
+            {
+                material.lightResponse = 0.82f;
+                material.specularStrength = 0.014f;
+                material.rimStrength = 0.070f;
+            }
+            else if (
+                name.find("skin") != std::string::npos ||
+                name.find("face") != std::string::npos ||
+                name.find("ear") != std::string::npos
+            )
+            {
+                material.lightResponse = 0.74f;
+                material.specularStrength = 0.010f;
+                material.rimStrength = 0.050f;
+            }
+            else if (
+                name.find("shirt") != std::string::npos ||
+                name.find("cloth") != std::string::npos ||
+                name.find("glove") != std::string::npos ||
+                name.find("sock") != std::string::npos ||
+                name.find("underwear") != std::string::npos ||
+                name.find("body") != std::string::npos
+            )
+            {
+                material.lightResponse = 0.70f;
+                material.specularStrength = 0.006f;
+                material.rimStrength = 0.046f;
+            }
+            else if (
+                name.find("belt") != std::string::npos ||
+                name.find("shoe") != std::string::npos ||
+                name.find("leather") != std::string::npos ||
+                name.find("cuff") != std::string::npos ||
+                name.find("bow") != std::string::npos
+            )
+            {
+                material.lightResponse = 0.76f;
+                material.specularStrength = 0.012f;
+                material.rimStrength = 0.046f;
+            }
+            else if (
+                name.find("eye") != std::string::npos ||
+                name.find("highlight") != std::string::npos ||
+                name.find("hightlight") != std::string::npos
+            )
+            {
+                material.lightResponse = 0.82f;
+                material.specularStrength = 0.040f;
+                material.rimStrength = 0.020f;
+            }
+        }
+
         std::filesystem::path resolveTexturePath(
             const std::filesystem::path& rawTexturePath,
             const LoadContext& context
@@ -306,22 +393,7 @@ namespace julia::render_opengl
             const LoadContext& context
         )
         {
-            std::string name;
-
-            aiString materialName;
-            if (material->Get(AI_MATKEY_NAME, materialName) == AI_SUCCESS)
-            {
-                name += materialName.C_Str();
-                name += " ";
-            }
-
-            if (mesh && mesh->mName.length > 0)
-            {
-                name += mesh->mName.C_Str();
-            }
-
-            name = toLower(name);
-
+            const std::string name = materialMeshName(material, mesh);
             std::filesystem::path fileName;
 
             if (name.find("hair") != std::string::npos)
@@ -400,6 +472,9 @@ namespace julia::render_opengl
             }
 
             const aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+            const std::string materialName = materialMeshName(material, mesh);
+
+            applyMaterialLightingProfile(result, materialName);
 
             aiColor3D diffuseColor{0.8f, 0.8f, 0.8f};
             if (material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor) == AI_SUCCESS)
@@ -449,6 +524,7 @@ namespace julia::render_opengl
 
             const glm::mat3 normalTransform =
                 glm::mat3(glm::transpose(glm::inverse(globalTransform)));
+            const bool hasNormals = mesh->HasNormals();
 
             for (unsigned int i = 0; i < mesh->mNumVertices; ++i)
             {
@@ -464,7 +540,7 @@ namespace julia::render_opengl
                     globalTransform * glm::vec4(localPosition, 1.0f)
                 );
 
-                if (mesh->HasNormals())
+                if (hasNormals)
                 {
                     glm::vec3 localNormal{
                         mesh->mNormals[i].x,
@@ -472,7 +548,12 @@ namespace julia::render_opengl
                         mesh->mNormals[i].z
                     };
 
-                    vertex.normal = glm::normalize(normalTransform * localNormal);
+                    const glm::vec3 transformedNormal = normalTransform * localNormal;
+
+                    if (glm::dot(transformedNormal, transformedNormal) > 0.00000001f)
+                    {
+                        vertex.normal = glm::normalize(transformedNormal);
+                    }
                 }
 
                 if (mesh->HasTextureCoords(0))
@@ -496,7 +577,10 @@ namespace julia::render_opengl
                 }
             }
 
-            rebuildSmoothNormals(vertices, indices);
+            if (!hasNormals)
+            {
+                rebuildSmoothNormals(vertices, indices);
+            }
 
             for (unsigned int boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex)
             {
@@ -592,7 +676,6 @@ namespace julia::render_opengl
 
         const unsigned int flags =
             aiProcess_Triangulate |
-            aiProcess_DropNormals |
             aiProcess_GenSmoothNormals |
             aiProcess_JoinIdenticalVertices |
             aiProcess_LimitBoneWeights |
@@ -603,7 +686,7 @@ namespace julia::render_opengl
             aiProcess_FindDegenerates |
             aiProcess_ImproveCacheLocality;
 
-        importer.SetPropertyFloat(AI_CONFIG_PP_GSN_MAX_SMOOTHING_ANGLE, 175.0f);
+        importer.SetPropertyFloat(AI_CONFIG_PP_GSN_MAX_SMOOTHING_ANGLE, 75.0f);
 
         const aiScene* scene = importer.ReadFile(path.string(), flags);
 

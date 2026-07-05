@@ -31,16 +31,29 @@ float softEllipse(vec2 uv, vec2 center, vec2 radius, float softness)
     return 1.0 - smoothstep(1.0 - softness, 1.0, d);
 }
 
+vec3 srgbToLinear(vec3 color)
+{
+    return pow(clamp(color, 0.0, 1.0), vec3(2.2));
+}
+
 void main()
 {
     vec2 uv = clamp(vUv, 0.0, 1.0);
 
+    vec3 primaryColor = srgbToLinear(uPrimaryColor);
+    vec3 forestColor = srgbToLinear(uForestColor);
+    vec3 goldColor = srgbToLinear(uGoldColor);
+    vec3 accentColor = srgbToLinear(uAccentColor);
+    vec3 skyColor = srgbToLinear(uSkyColor);
+    vec3 bgColor = srgbToLinear(uBgColor);
+    vec3 surfaceColor = srgbToLinear(uSurfaceColor);
+    vec3 borderColor = srgbToLinear(uBorderColor);
 
     vec3 color;
 
     // Тёплая пергаментная основа.
     float vertical = smoothstep(0.0, 1.0, uv.y);
-    color = mix(uSurfaceColor, uBgColor, vertical);
+    color = mix(surfaceColor, bgColor, vertical);
 
     // Светлый портретный овал за персонажем.
     // Он помогает Рафталии читаться на фоне и не спорит с моделью.
@@ -50,7 +63,7 @@ void main()
         vec2(0.34, 0.48),
         0.55
     );
-    color = mix(color, uSurfaceColor, portraitLight * 0.34);
+    color = mix(color, surfaceColor, portraitLight * 0.34);
 
     // Каштаново-медовое тепло снизу слева:
     // связь с волосами, домом и живым человеческим теплом.
@@ -60,12 +73,12 @@ void main()
         0.88,
         0.72
     );
-    color = mix(color, uPrimaryColor, chestnutGlow * 0.20);
+    color = mix(color, primaryColor, chestnutGlow * 0.20);
 
     // Охристое заземление внизу:
     // кожа, ремни, броня, телесность мечницы.
     float ochreGround = 1.0 - smoothstep(0.0, 0.62, uv.y);
-    color = mix(color, uGoldColor, ochreGround * 0.12);
+    color = mix(color, goldColor, ochreGround * 0.12);
 
     // Винное сердечное свечение по центру.
     // Оно должно быть заметным, но не агрессивным.
@@ -75,7 +88,7 @@ void main()
         vec2(0.24, 0.32),
         0.72
     );
-    color = mix(color, uAccentColor, heartGlow * 0.13);
+    color = mix(color, accentColor, heartGlow * 0.13);
 
     // Пыльно-сливовая тень по краям:
     // глубина, память о боли, взрослая сдержанность.
@@ -84,14 +97,14 @@ void main()
         0.92,
         distance(uv, vec2(0.50, 0.54))
     );
-    color = mix(color, uForestColor, vignette * 0.19);
+    color = mix(color, forestColor, vignette * 0.19);
 
     // Более мягкие боковые тени, как от тёмных панелей костюма.
     float sideShadow =
         (1.0 - smoothstep(0.00, 0.24, uv.x)) +
         smoothstep(0.76, 1.00, uv.x);
 
-    color = mix(color, uForestColor, sideShadow * 0.055);
+    color = mix(color, forestColor, sideShadow * 0.055);
 
     // Небесно-стальной холодный воздух сверху справа.
     // Нужен, чтобы тёплая гамма не стала слишком тяжёлой.
@@ -101,7 +114,7 @@ void main()
         0.74,
         0.64
     );
-    color = mix(color, uSkyColor, dawnAir * 0.24);
+    color = mix(color, skyColor, dawnAir * 0.24);
 
     // Тонкий серебряный диагональный отблеск:
     // намёк на клинок и позднюю броню, но без лишней резкости.
@@ -111,11 +124,11 @@ void main()
     bladeLine *= smoothstep(0.10, 0.46, uv.y);
     bladeLine *= 1.0 - smoothstep(0.82, 1.0, uv.y);
 
-    color = mix(color, uBorderColor, bladeLine * 0.075);
+    color = mix(color, borderColor, bladeLine * 0.075);
 
     // Очень мягкая розовая эмоция около верхней центральной зоны.
     // Это отсылка к глазам, но без отдельного uniform.
-    vec3 irisRose = mix(uAccentColor, uSurfaceColor, 0.30);
+    vec3 irisRose = mix(accentColor, surfaceColor, 0.30);
 
     float irisMist = softCircle(
         uv,
@@ -155,7 +168,7 @@ void main()
 
     color = mix(
         color,
-        mix(uBorderColor, uSurfaceColor, 0.42),
+        mix(borderColor, surfaceColor, 0.42),
         mote * moteVisibility * keepAwayFromFace * 0.11
     );
 
