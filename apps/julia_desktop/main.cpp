@@ -1,6 +1,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include "julia/render/OrbitCamera.hpp"
 #include "julia/render_opengl/GLModelLoader.hpp"
 #include "julia/render_opengl/OpenGLRenderer.hpp"
 
@@ -17,6 +18,35 @@
 
 namespace
 {
+    struct WindowState
+    {
+        julia::render_opengl::OpenGLRenderer* renderer = nullptr;
+        julia::render::OrbitCamera* orbitCamera = nullptr;
+        julia::render_opengl::CameraConfig cameraConfig{};
+        bool dragging = false;
+        double lastCursorX = 0.0;
+        double lastCursorY = 0.0;
+
+        void applyCamera() const
+        {
+            if (!renderer || !orbitCamera)
+            {
+                return;
+            }
+
+            auto updatedConfig = cameraConfig;
+            updatedConfig.position = orbitCamera->position();
+            updatedConfig.target = orbitCamera->target();
+            updatedConfig.up = orbitCamera->up();
+            renderer->setCamera(updatedConfig);
+        }
+    };
+
+    WindowState* getWindowState(GLFWwindow* window)
+    {
+        return static_cast<WindowState*>(glfwGetWindowUserPointer(window));
+    }
+
     void glfwErrorCallback(int error, const char* description)
     {
         std::cerr << "GLFW error " << error << ": "
@@ -45,14 +75,80 @@ namespace
 
     void framebufferSizeCallback(GLFWwindow* window, int width, int height)
     {
-        auto* renderer = static_cast<julia::render_opengl::OpenGLRenderer*>(
-            glfwGetWindowUserPointer(window)
-        );
+        const WindowState* state = getWindowState(window);
 
-        if (renderer)
+        if (state && state->renderer)
         {
-            renderer->resize(width, height);
+            state->renderer->resize(width, height);
         }
+    }
+
+    void mouseButtonCallback(
+        GLFWwindow* window,
+        int button,
+        int action,
+        int /*mods*/
+    )
+    {
+        WindowState* state = getWindowState(window);
+
+        if (!state || button != GLFW_MOUSE_BUTTON_LEFT)
+        {
+            return;
+        }
+
+        if (action == GLFW_PRESS)
+        {
+            state->dragging = true;
+            glfwGetCursorPos(
+                window,
+                &state->lastCursorX,
+                &state->lastCursorY
+            );
+        }
+        else if (action == GLFW_RELEASE)
+        {
+            state->dragging = false;
+        }
+    }
+
+    void cursorPositionCallback(GLFWwindow* window, double x, double y)
+    {
+        WindowState* state = getWindowState(window);
+
+        if (!state || !state->dragging || !state->orbitCamera)
+        {
+            return;
+        }
+
+        const double deltaX = x - state->lastCursorX;
+        const double deltaY = y - state->lastCursorY;
+
+        state->lastCursorX = x;
+        state->lastCursorY = y;
+
+        state->orbitCamera->orbit(
+            static_cast<float>(deltaX),
+            static_cast<float>(deltaY)
+        );
+        state->applyCamera();
+    }
+
+    void scrollCallback(
+        GLFWwindow* window,
+        double /*xOffset*/,
+        double yOffset
+    )
+    {
+        WindowState* state = getWindowState(window);
+
+        if (!state || !state->orbitCamera)
+        {
+            return;
+        }
+
+        state->orbitCamera->zoom(static_cast<float>(yOffset));
+        state->applyCamera();
     }
 
     void processInput(GLFWwindow* window)
@@ -139,9 +235,6 @@ int main(int argc, char** argv)
         julia::render_opengl::OpenGLRenderer renderer;
         renderer.initialize(framebufferWidth, framebufferHeight);
 
-        glfwSetWindowUserPointer(window, &renderer);
-        glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
-
         std::cout << "Loading model: " << modelPath.string() << "\n";
 
         auto model = julia::render_opengl::GLModelLoader::loadFromFile(modelPath);
@@ -151,6 +244,38 @@ int main(int argc, char** argv)
         std::cout << "Bones: " << model.boneCount() << "\n";
 
         const glm::mat4 fitModel = model.fitToHeightTransform(2.2f);
+
+        const glm::vec3 modelCenter{
+            fitModel * glm::vec4{model.bounds().center(), 1.0f}
+        };
+
+        julia::render_opengl::CameraConfig cameraConfig{};
+        const glm::vec3 initialOffset =
+            cameraConfig.position - cameraConfig.target;
+
+        cameraConfig.target = modelCenter;
+        cameraConfig.position = modelCenter + initialOffset;
+
+        julia::render::OrbitCamera orbitCamera{
+            modelCenter,
+            cameraConfig.position
+        };
+
+        WindowState windowState{};
+        windowState.renderer = &renderer;
+        windowState.orbitCamera = &orbitCamera;
+        windowState.cameraConfig = cameraConfig;
+
+        glfwSetWindowUserPointer(window, &windowState);
+        glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
+        glfwSetMouseButtonCallback(window, mouseButtonCallback);
+        glfwSetCursorPosCallback(window, cursorPositionCallback);
+        glfwSetScrollCallback(window, scrollCallback);
+
+        windowState.applyCamera();
+
+        std::cout
+            << "Camera controls: left mouse drag to orbit, mouse wheel to zoom\n";
 
         while (!glfwWindowShouldClose(window))
         {
