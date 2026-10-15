@@ -2,6 +2,7 @@
 
 #include <glad/glad.h>
 
+#include <cstddef>
 #include <filesystem>
 
 namespace julia::render_opengl
@@ -24,8 +25,18 @@ namespace julia::render_opengl
         GLTexture& operator=(GLTexture&& other) noexcept;
 
         static GLTexture loadFromFile(const std::filesystem::path& path);
+        static GLTexture loadFromMemory(const unsigned char* data, std::size_t size);
+        // Tightly packed unsigned bytes: gray, gray/alpha, RGB, or RGBA.
+        // Diffuse color is decoded from sRGB; alpha always remains linear.
+        static GLTexture loadFromPixels(
+            const unsigned char* pixels, int width, int height, int channels);
 
         void bind(unsigned int unit = 0) const;
+
+        bool hasTransparency() const
+        {
+            return hasTransparency_;
+        }
 
         GLuint id() const
         {
@@ -42,7 +53,9 @@ namespace julia::render_opengl
         int width_ = 0;
         int height_ = 0;
         int channels_ = 0;
+        bool hasTransparency_ = false;
 
+        static GLTexture uploadRgba(const unsigned char* pixels, int width, int height);
         void release();
     };
 }

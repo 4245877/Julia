@@ -3,15 +3,21 @@
 in vec3 vWorldPosition;
 in vec3 vNormal;
 in vec2 vTexCoord;
+flat in float vSkinOrientation;
 
 uniform vec3 uViewPos;
 uniform vec3 uDiffuseColor;
 uniform sampler2D uDiffuseTexture;
 uniform bool uHasDiffuseTexture;
 uniform bool uOutlinePass;
+uniform bool uUseSkinning;
 uniform float uLightResponse;
 uniform float uSpecularStrength;
 uniform float uRimStrength;
+uniform float uOpacity;
+uniform float uAlphaCutoff;
+// Must match AlphaMode in GLMesh.hpp: Opaque=0, Mask=1, Blend=2.
+uniform int uAlphaMode;
 
 out vec4 FragColor;
 
@@ -29,25 +35,29 @@ vec3 adjustSaturation(vec3 color, float amount)
     return mix(vec3(luminance), color, amount);
 }
 
-vec3 sampleAlbedo()
+vec4 sampleAlbedo()
 {
-    // The diffuse texture is an sRGB texture, so the sampler already returns
-    // linear values. The material's flat diffuse colour comes from the model
-    // file authored in sRGB, so linearise it here to keep both in the same
-    // colour space before they are multiplied.
-    vec3 albedo = pow(max(uDiffuseColor, vec3(0.0)), vec3(2.2));
+    // Material factors are linear; GL_SRGB8_ALPHA8 decodes texture RGB only.
+    vec4 albedo = vec4(max(uDiffuseColor, vec3(0.0)), clamp(uOpacity, 0.0, 1.0));
 
     if (uHasDiffuseTexture)
     {
-        albedo *= texture(uDiffuseTexture, vTexCoord).rgb;
+        albedo *= texture(uDiffuseTexture, vTexCoord);
     }
 
-    return clamp(albedo, vec3(0.02), vec3(1.0));
+    return clamp(albedo, 0.0, 1.0);
 }
 
 void main()
 {
-    vec3 albedo = sampleAlbedo();
+    // Skeletal reflections can reverse winding independently of uModel.
+    bool frontFacing = gl_FrontFacing == (vSkinOrientation >= 0.0);
+    if (uOutlinePass && uUseSkinning && frontFacing) discard;
+    vec4 base = sampleAlbedo();
+    if (uAlphaMode == 1 && base.a < uAlphaCutoff) discard;
+    if (uAlphaMode == 2 && base.a <= 0.0) discard;
+    float alpha = uAlphaMode == 2 ? base.a : 1.0;
+    vec3 albedo = base.rgb;
 
     if (uOutlinePass)
     {
@@ -56,13 +66,16 @@ void main()
         vec3 inkBase = vec3(0.045, 0.035, 0.065);
         vec3 lineColor = inkBase + adjustSaturation(albedo, 1.40) * albedo * 0.16;
 
-        FragColor = vec4(lineColor, 1.0);
+        FragColor = vec4(clamp(lineColor, 0.0, 1.0), alpha);
         return;
     }
 
-    vec3 normal = normalize(vNormal);
+    float normalLength = dot(vNormal, vNormal);
+    vec3 normal = normalLength > 1e-20 ? vNormal * inversesqrt(normalLength) : vec3(0.0, 1.0, 0.0);
+    if (!frontFacing) normal = -normal;
 
-    vec3 viewDirection = normalize(uViewPos - vWorldPosition);
+    vec3 toView = uViewPos - vWorldPosition;
+    vec3 viewDirection = dot(toView, toView) > 1e-20 ? normalize(toView) : normal;
 
     float response = clamp(uLightResponse, 0.0, 1.25);
 
@@ -103,7 +116,8 @@ void main()
     color += vec3(0.30, 0.38, 0.72) * rimShadow * rimStrength * 0.35;
 
     // Единственный блик: маленький, ступенчатый, только в световой зоне.
-    vec3 halfDirection = normalize(keyLightDirection + viewDirection);
+    vec3 halfSum = keyLightDirection + viewDirection;
+    vec3 halfDirection = dot(halfSum, halfSum) > 1e-20 ? normalize(halfSum) : normal;
     float specularShape = pow(max(dot(normal, halfDirection), 0.0), 140.0);
     float specular = celStep(0.5, specularShape) * lit;
     color += vec3(1.0, 0.98, 0.92) * specular * clamp(uSpecularStrength, 0.0, 2.0) * 0.40;
@@ -113,5 +127,5 @@ void main()
     color = adjustSaturation(color, 1.10);
     color = clamp(color, 0.0, 1.0);
 
-    FragColor = vec4(color, 1.0);
+    FragColor = vec4(color, alpha);
 }

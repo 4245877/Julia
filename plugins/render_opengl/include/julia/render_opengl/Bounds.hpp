@@ -3,7 +3,9 @@
 #include <glm/glm.hpp>
 
 #include <algorithm>
+#include <cmath>
 #include <limits>
+#include <numeric>
 
 namespace julia::render_opengl
 {
@@ -25,6 +27,9 @@ namespace julia::render_opengl
 
         void expand(const glm::vec3& point)
         {
+            // Invalid geometry must never poison camera fitting or depth sorting.
+            if (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z))
+                return;
             if (!valid)
             {
                 min = point;
@@ -65,7 +70,11 @@ namespace julia::render_opengl
                 return glm::vec3{0.0f};
             }
 
-            return (min + max) * 0.5f;
+            return glm::vec3{
+                std::midpoint(min.x, max.x),
+                std::midpoint(min.y, max.y),
+                std::midpoint(min.z, max.z)
+            };
         }
     };
 }

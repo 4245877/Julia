@@ -2,10 +2,13 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
+#include <algorithm>
 #include <cassert>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <utility>
 
 namespace julia::render_opengl
 {
@@ -33,9 +36,10 @@ namespace julia::render_opengl
     }
 
     GLShader::GLShader(GLShader&& other) noexcept
-        : program_(other.program_)
+        : program_(std::exchange(other.program_, 0)),
+          uniformLocations_(std::move(other.uniformLocations_))
     {
-        other.program_ = 0;
+        other.uniformLocations_.clear();
     }
 
     GLShader& GLShader::operator=(GLShader&& other) noexcept
@@ -44,8 +48,9 @@ namespace julia::render_opengl
         {
             release();
 
-            program_ = other.program_;
-            other.program_ = 0;
+            program_ = std::exchange(other.program_, 0);
+            uniformLocations_ = std::move(other.uniformLocations_);
+            other.uniformLocations_.clear();
         }
 
         return *this;
@@ -53,8 +58,6 @@ namespace julia::render_opengl
 
     void GLShader::createFromSource(const char* vertexSource, const char* fragmentSource)
     {
-        release();
-
         const GLuint vertexShader = compileStage(GL_VERTEX_SHADER, vertexSource);
 
         GLuint fragmentShader = 0;
@@ -70,13 +73,19 @@ namespace julia::render_opengl
             throw;
         }
 
-        program_ = glCreateProgram();
-        glAttachShader(program_, vertexShader);
-        glAttachShader(program_, fragmentShader);
-        glLinkProgram(program_);
+        const GLuint candidate = glCreateProgram();
+        if (!candidate)
+        {
+            glDeleteShader(vertexShader);
+            glDeleteShader(fragmentShader);
+            throw std::runtime_error("OpenGL failed to create a shader program");
+        }
+        glAttachShader(candidate, vertexShader);
+        glAttachShader(candidate, fragmentShader);
+        glLinkProgram(candidate);
 
         GLint success = 0;
-        glGetProgramiv(program_, GL_LINK_STATUS, &success);
+        glGetProgramiv(candidate, GL_LINK_STATUS, &success);
 
         glDeleteShader(vertexShader);
         glDeleteShader(fragmentShader);
@@ -84,21 +93,32 @@ namespace julia::render_opengl
         if (!success)
         {
             GLint logLength = 0;
-            glGetProgramiv(program_, GL_INFO_LOG_LENGTH, &logLength);
+            glGetProgramiv(candidate, GL_INFO_LOG_LENGTH, &logLength);
 
             std::string log;
-            log.resize(static_cast<std::size_t>(logLength));
+            log.resize(static_cast<std::size_t>(std::max(logLength, 1)));
 
-            glGetProgramInfoLog(program_, logLength, nullptr, log.data());
+            glGetProgramInfoLog(candidate, static_cast<GLsizei>(log.size()), nullptr, log.data());
 
-            release();
+            glDeleteProgram(candidate);
 
             throw std::runtime_error("OpenGL shader link error:\n" + log);
         }
+
+        // Commit only after successful linking; a failed reload keeps the
+        // working program and its location cache intact.
+        GLint current = 0;
+        glGetIntegerv(GL_CURRENT_PROGRAM, &current);
+        if (program_ && static_cast<GLuint>(current) == program_)
+            glUseProgram(candidate);
+        if (program_) glDeleteProgram(program_);
+        program_ = candidate;
+        uniformLocations_.clear();
     }
 
     void GLShader::bind() const
     {
+        if (!program_) throw std::logic_error("Cannot bind an empty GLShader");
         glUseProgram(program_);
     }
 
@@ -126,9 +146,16 @@ namespace julia::render_opengl
         glUniform3fv(uniformLocation(name), 1, glm::value_ptr(value));
     }
 
+    void GLShader::setMat3(const std::string& name, const glm::mat3& value) const
+    {
+        assertProgramBound(program_);
+        glUniformMatrix3fv(uniformLocation(name), 1, GL_FALSE, glm::value_ptr(value));
+    }
+
     void GLShader::setMat4(const std::string& name, const glm::mat4& value) const
     {
         assertProgramBound(program_);
+
         glUniformMatrix4fv(
             uniformLocation(name),
             1,
@@ -146,11 +173,28 @@ namespace julia::render_opengl
 
         assertProgramBound(program_);
 
+        if (values.size() > static_cast<std::size_t>(std::numeric_limits<GLsizei>::max()))
+            throw std::length_error("Matrix uniform array exceeds GLsizei");
+
         const GLint location = uniformLocation(name + "[0]");
 
         if (location < 0)
         {
             return;
+        }
+
+        const std::string arrayName = name + "[0]";
+        const char* uniformName = arrayName.c_str();
+        GLuint index = GL_INVALID_INDEX;
+        glGetUniformIndices(program_, 1, &uniformName, &index);
+        if (index != GL_INVALID_INDEX)
+        {
+            GLint count = 0;
+            GLint type = 0;
+            glGetActiveUniformsiv(program_, 1, &index, GL_UNIFORM_SIZE, &count);
+            glGetActiveUniformsiv(program_, 1, &index, GL_UNIFORM_TYPE, &type);
+            if (type != GL_FLOAT_MAT4 || values.size() > static_cast<std::size_t>(count))
+                throw std::invalid_argument("Matrix array does not match shader uniform: " + name);
         }
 
         glUniformMatrix4fv(
@@ -177,7 +221,10 @@ namespace julia::render_opengl
 
     GLuint GLShader::compileStage(GLenum type, const char* source)
     {
+        if (!source || !*source)
+            throw std::invalid_argument("Shader source must not be null or empty");
         const GLuint shader = glCreateShader(type);
+        if (!shader) throw std::runtime_error("OpenGL failed to create a shader stage");
 
         glShaderSource(shader, 1, &source, nullptr);
         glCompileShader(shader);
@@ -191,12 +238,14 @@ namespace julia::render_opengl
             glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &logLength);
 
             std::string log;
-            log.resize(static_cast<std::size_t>(logLength));
+            log.resize(static_cast<std::size_t>(std::max(logLength, 1)));
 
-            glGetShaderInfoLog(shader, logLength, nullptr, log.data());
+            glGetShaderInfoLog(shader, static_cast<GLsizei>(log.size()), nullptr, log.data());
             glDeleteShader(shader);
 
-            throw std::runtime_error("OpenGL shader compile error:\n" + log);
+            throw std::runtime_error(std::string("OpenGL ") +
+                (type == GL_VERTEX_SHADER ? "vertex" : "fragment") +
+                " shader compile error:\n" + log);
         }
 
         return shader;
@@ -206,6 +255,9 @@ namespace julia::render_opengl
     {
         if (program_ != 0)
         {
+            GLint current = 0;
+            glGetIntegerv(GL_CURRENT_PROGRAM, &current);
+            if (static_cast<GLuint>(current) == program_) glUseProgram(0);
             glDeleteProgram(program_);
             program_ = 0;
         }

@@ -2,6 +2,7 @@
 #include "julia/render_opengl/GLTexture.hpp"
 
 #include <assimp/Importer.hpp>
+#include <assimp/GltfMaterial.h>
 #include <assimp/config.h>
 #include <assimp/material.h>
 #include <assimp/postprocess.h>
@@ -12,9 +13,11 @@
 #include <algorithm>
 #include <cstdint>
 #include <cctype>
+#include <cmath>
 #include <filesystem>
 #include <iostream>
 #include <memory>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -28,13 +31,55 @@ namespace julia::render_opengl
         {
             GLModel model;
 
-            std::unordered_map<std::string, std::uint32_t> boneNameToIndex;
+            std::unordered_map<std::string, std::vector<std::uint32_t>> boneNameToIndices;
+            std::unordered_map<const aiNode*, std::uint32_t> nodeToIndex;
+            std::unordered_map<std::string, std::vector<std::uint32_t>> nodeNameToIndices;
 
             std::filesystem::path modelDirectory;
             std::filesystem::path texturesDirectory;
+            bool useLegacyMaterialTextureFallback = false;
 
             std::unordered_map<std::string, std::shared_ptr<GLTexture>> textureCache;
         };
+
+        std::string utf8Path(const std::filesystem::path& path)
+        {
+            const auto value = path.u8string();
+            return {value.begin(), value.end()};
+        }
+
+        bool finite(const glm::vec3& value)
+        {
+            return std::isfinite(value.x) && std::isfinite(value.y) && std::isfinite(value.z);
+        }
+
+        bool finite(const glm::mat4& matrix)
+        {
+            for (int column = 0; column < 4; ++column)
+                for (int row = 0; row < 4; ++row)
+                    if (!std::isfinite(matrix[column][row])) return false;
+            return true;
+        }
+
+        bool equivalent(const glm::mat4& a, const glm::mat4& b)
+        {
+            for (int column = 0; column < 4; ++column)
+                for (int row = 0; row < 4; ++row)
+                    if (a[column][row] != b[column][row]) return false;
+            return true;
+        }
+
+        GLenum textureWrap(aiTextureMapMode mode)
+        {
+            switch (mode)
+            {
+                case aiTextureMapMode_Wrap: return GL_REPEAT;
+                case aiTextureMapMode_Clamp: return GL_CLAMP_TO_EDGE;
+                case aiTextureMapMode_Mirror: return GL_MIRRORED_REPEAT;
+                case aiTextureMapMode_Decal: return GL_CLAMP_TO_BORDER;
+                default: throw std::runtime_error("Unsupported material texture wrap mode");
+            }
+        }
 
         glm::mat4 toGlm(const aiMatrix4x4& matrix)
         {
@@ -65,6 +110,19 @@ namespace julia::render_opengl
 
         void addBoneInfluence(GLVertex& vertex, int boneId, float weight)
         {
+            if (!std::isfinite(weight) || weight < 0.0f)
+                throw std::runtime_error("Model contains an invalid bone weight");
+            if (weight == 0.0f) return;
+            for (int i = 0; i < 4; ++i)
+            {
+                if (vertex.boneIds[i] == boneId)
+                {
+                    vertex.boneWeights[i] += weight;
+                    if (!std::isfinite(vertex.boneWeights[i]))
+                        throw std::runtime_error("Model bone weight sum overflows");
+                    return;
+                }
+            }
             for (int i = 0; i < 4; ++i)
             {
                 if (vertex.boneIds[i] < 0)
@@ -97,15 +155,16 @@ namespace julia::render_opengl
 
         void normalizeBoneWeights(GLVertex& vertex)
         {
-            const float sum =
-                vertex.boneWeights.x +
+            const double sum =
+                static_cast<double>(vertex.boneWeights.x) +
                 vertex.boneWeights.y +
                 vertex.boneWeights.z +
                 vertex.boneWeights.w;
 
-            if (sum > 0.0001f)
+            if (sum > 0.0)
             {
-                vertex.boneWeights /= sum;
+                for (int i = 0; i < 4; ++i)
+                    vertex.boneWeights[i] = static_cast<float>(vertex.boneWeights[i] / sum);
             }
         }
 
@@ -130,7 +189,7 @@ namespace julia::render_opengl
 
             std::replace(raw.begin(), raw.end(), '\\', '/');
 
-            return std::filesystem::path{raw};
+            return std::filesystem::path{std::u8string{raw.begin(), raw.end()}};
         }
 
         std::string materialMeshName(const aiMaterial* material, const aiMesh* mesh)
@@ -241,15 +300,17 @@ namespace julia::render_opengl
             else
             {
                 candidates.push_back(context.modelDirectory / rawTexturePath);
-                candidates.push_back(context.modelDirectory / rawTexturePath.filename());
-
                 candidates.push_back(context.texturesDirectory / rawTexturePath);
-                candidates.push_back(context.texturesDirectory / rawTexturePath.filename());
             }
+            // Exporters often preserve an artist's absolute source path. After
+            // relocation, the same file may live beside the model or in the
+            // adjacent textures directory.
+            candidates.push_back(context.modelDirectory / rawTexturePath.filename());
+            candidates.push_back(context.texturesDirectory / rawTexturePath.filename());
 
             for (const auto& candidate : candidates)
             {
-                if (std::filesystem::exists(candidate))
+                if (std::filesystem::is_regular_file(candidate))
                 {
                     return candidate;
                 }
@@ -310,7 +371,7 @@ namespace julia::render_opengl
             }
 
             const std::string key =
-                std::filesystem::absolute(path).lexically_normal().string();
+                utf8Path(std::filesystem::absolute(path).lexically_normal());
 
             const auto found = context.textureCache.find(key);
             if (found != context.textureCache.end())
@@ -324,15 +385,55 @@ namespace julia::render_opengl
 
             context.textureCache.emplace(key, texture);
 
-            std::cout << "Loaded texture: " << path.string() << "\n";
+            std::cout << "Loaded texture: " << utf8Path(path) << "\n";
 
             return texture;
+        }
+
+        std::shared_ptr<GLTexture> loadEmbeddedTextureCached(
+            const aiTexture& embedded, const std::string& name, LoadContext& context)
+        {
+            const std::string key = "embedded:" + name;
+            const auto found = context.textureCache.find(key);
+            if (found != context.textureCache.end()) return found->second;
+            if (!embedded.pcData || embedded.mWidth == 0)
+                throw std::runtime_error("Invalid embedded texture: " + name);
+
+            GLTexture texture;
+            if (embedded.mHeight == 0)
+            {
+                texture = GLTexture::loadFromMemory(
+                    reinterpret_cast<const unsigned char*>(embedded.pcData), embedded.mWidth);
+            }
+            else
+            {
+                if (embedded.mWidth > static_cast<unsigned int>(std::numeric_limits<int>::max()) ||
+                    embedded.mHeight > static_cast<unsigned int>(std::numeric_limits<int>::max()) ||
+                    static_cast<std::size_t>(embedded.mWidth) >
+                        std::numeric_limits<std::size_t>::max() / embedded.mHeight / 4)
+                    throw std::runtime_error("Embedded texture dimensions are too large: " + name);
+                const std::size_t pixelCount = static_cast<std::size_t>(embedded.mWidth) * embedded.mHeight;
+                std::vector<unsigned char> rgba(pixelCount * 4);
+                for (std::size_t i = 0; i < pixelCount; ++i)
+                {
+                    rgba[i * 4] = embedded.pcData[i].r;
+                    rgba[i * 4 + 1] = embedded.pcData[i].g;
+                    rgba[i * 4 + 2] = embedded.pcData[i].b;
+                    rgba[i * 4 + 3] = embedded.pcData[i].a;
+                }
+                texture = GLTexture::loadFromPixels(rgba.data(), static_cast<int>(embedded.mWidth),
+                    static_cast<int>(embedded.mHeight), 4);
+            }
+            auto result = std::make_shared<GLTexture>(std::move(texture));
+            context.textureCache.emplace(key, result);
+            return result;
         }
 
         GLMeshMaterial loadMaterial(
             const aiScene* scene,
             const aiMesh* mesh,
-            LoadContext& context
+            LoadContext& context,
+            unsigned int& textureCoordinateChannel
         )
         {
             GLMeshMaterial result{};
@@ -347,36 +448,98 @@ namespace julia::render_opengl
 
             applyMaterialLightingProfile(result, materialName);
 
-            aiColor3D diffuseColor{0.8f, 0.8f, 0.8f};
-            if (material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor) == AI_SUCCESS)
+            aiColor4D baseColor;
+            const bool hasBaseColor = material->Get(AI_MATKEY_BASE_COLOR, baseColor) == AI_SUCCESS;
+            if (hasBaseColor)
             {
-                result.diffuseColor = glm::vec3{
-                    diffuseColor.r,
-                    diffuseColor.g,
-                    diffuseColor.b
-                };
+                result.diffuseColor = glm::vec3{baseColor.r, baseColor.g, baseColor.b};
+                result.opacity = baseColor.a;
             }
+            else
+            {
+                aiColor3D diffuseColor;
+                if (material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor) == AI_SUCCESS)
+                    result.diffuseColor = glm::vec3{diffuseColor.r, diffuseColor.g, diffuseColor.b};
+                material->Get(AI_MATKEY_OPACITY, result.opacity);
+            }
+            if (!finite(result.diffuseColor) || !std::isfinite(result.opacity))
+                throw std::runtime_error("Material has non-finite color/opacity: " + materialName);
+            result.diffuseColor = glm::max(result.diffuseColor, glm::vec3{0.0f});
+            result.opacity = std::clamp(result.opacity, 0.0f, 1.0f);
+
+            aiString alphaMode;
+            const bool explicitAlphaMode = material->Get(AI_MATKEY_GLTF_ALPHAMODE, alphaMode) == AI_SUCCESS;
+            if (explicitAlphaMode)
+            {
+                const std::string mode = alphaMode.C_Str();
+                if (mode == "MASK") result.alphaMode = AlphaMode::Mask;
+                else if (mode == "BLEND") result.alphaMode = AlphaMode::Blend;
+                else if (mode != "OPAQUE")
+                    throw std::runtime_error("Unknown material alpha mode: " + mode);
+            }
+            else if (result.opacity < 1.0f)
+                result.alphaMode = AlphaMode::Blend;
+            material->Get(AI_MATKEY_GLTF_ALPHACUTOFF, result.alphaCutoff);
+            if (!std::isfinite(result.alphaCutoff))
+                throw std::runtime_error("Material has non-finite alpha cutoff: " + materialName);
+            result.alphaCutoff = std::clamp(result.alphaCutoff, 0.0f, 1.0f);
 
             std::filesystem::path texturePath;
 
             aiString diffuseTextureName;
-            if (material->GetTexture(aiTextureType_DIFFUSE, 0, &diffuseTextureName) == AI_SUCCESS)
+            aiTextureMapping mapping = aiTextureMapping_UV;
+            aiTextureMapMode mapModes[3]{aiTextureMapMode_Wrap, aiTextureMapMode_Wrap, aiTextureMapMode_Wrap};
+            aiTextureType textureType = aiTextureType_BASE_COLOR;
+            bool hasTexture = material->GetTexture(textureType, 0, &diffuseTextureName, &mapping,
+                &textureCoordinateChannel, nullptr, nullptr, mapModes) == AI_SUCCESS;
+            if (!hasTexture)
             {
-                texturePath = resolveTexturePath(
-                    normalizeTexturePath(diffuseTextureName),
-                    context
-                );
+                textureType = aiTextureType_DIFFUSE;
+                hasTexture = material->GetTexture(textureType, 0, &diffuseTextureName, &mapping,
+                    &textureCoordinateChannel, nullptr, nullptr, mapModes) == AI_SUCCESS;
+            }
+            if (hasTexture)
+            {
+                result.wrapS = textureWrap(mapModes[0]);
+                result.wrapT = textureWrap(mapModes[1]);
+                int minFilter = static_cast<int>(result.minFilter);
+                int magFilter = static_cast<int>(result.magFilter);
+                material->Get(AI_MATKEY_GLTF_MAPPINGFILTER_MIN(textureType, 0), minFilter);
+                material->Get(AI_MATKEY_GLTF_MAPPINGFILTER_MAG(textureType, 0), magFilter);
+                if (minFilter != GL_NEAREST && minFilter != GL_LINEAR &&
+                    minFilter != GL_NEAREST_MIPMAP_NEAREST && minFilter != GL_LINEAR_MIPMAP_NEAREST &&
+                    minFilter != GL_NEAREST_MIPMAP_LINEAR && minFilter != GL_LINEAR_MIPMAP_LINEAR)
+                    throw std::runtime_error("Material has an invalid minification filter: " + materialName);
+                if (magFilter != GL_NEAREST && magFilter != GL_LINEAR)
+                    throw std::runtime_error("Material has an invalid magnification filter: " + materialName);
+                result.minFilter = static_cast<GLenum>(minFilter);
+                result.magFilter = static_cast<GLenum>(magFilter);
+                if (mapping != aiTextureMapping_UV ||
+                    textureCoordinateChannel >= AI_MAX_NUMBER_OF_TEXTURECOORDS ||
+                    !mesh->HasTextureCoords(textureCoordinateChannel))
+                    throw std::runtime_error("Material references unavailable UV coordinates: " + materialName);
+                if (const auto* embedded = scene->GetEmbeddedTexture(diffuseTextureName.C_Str()))
+                    result.diffuseTexture = loadEmbeddedTextureCached(*embedded, diffuseTextureName.C_Str(), context);
+                else
+                    texturePath = resolveTexturePath(normalizeTexturePath(diffuseTextureName), context);
             }
 
-            if (texturePath.empty())
+            if (!result.diffuseTexture && texturePath.empty())
             {
-                texturePath = fallbackTexturePathForMaterial(material, mesh, context);
+                if (context.useLegacyMaterialTextureFallback)
+                    texturePath = fallbackTexturePathForMaterial(material, mesh, context);
+                if (hasTexture && texturePath.empty())
+                    std::cerr << "Warning: diffuse texture not found: " << diffuseTextureName.C_Str() << "\n";
             }
 
             if (!texturePath.empty())
             {
                 result.diffuseTexture = loadTextureCached(texturePath, context);
             }
+
+            if (!explicitAlphaMode && result.alphaMode != AlphaMode::Blend &&
+                result.diffuseTexture && result.diffuseTexture->hasTransparency())
+                result.alphaMode = AlphaMode::Mask;
 
             return result;
         }
@@ -391,10 +554,20 @@ namespace julia::render_opengl
             std::vector<GLVertex> vertices;
             std::vector<std::uint32_t> indices;
 
+            if (!mesh || !mesh->HasPositions())
+                throw std::runtime_error("Model mesh contains no positions");
+            const double determinant = glm::determinant(glm::dmat3{globalTransform});
+            const glm::mat4 inverseTransform{glm::inverse(glm::dmat4{globalTransform})};
+            if (!finite(globalTransform) || !std::isfinite(determinant) || determinant == 0.0f ||
+                !finite(inverseTransform))
+                throw std::runtime_error("Mesh has a singular or non-finite node transform: " + std::string{mesh->mName.C_Str()});
+            unsigned int textureCoordinateChannel = 0;
+            auto material = loadMaterial(scene, mesh, context, textureCoordinateChannel);
+
             vertices.resize(mesh->mNumVertices);
 
             const glm::mat3 normalTransform =
-                glm::mat3(glm::transpose(glm::inverse(globalTransform)));
+                glm::mat3(glm::transpose(inverseTransform));
             const bool hasNormals = mesh->HasNormals();
 
             for (unsigned int i = 0; i < mesh->mNumVertices; ++i)
@@ -410,6 +583,8 @@ namespace julia::render_opengl
                 vertex.position = glm::vec3(
                     globalTransform * glm::vec4(localPosition, 1.0f)
                 );
+                if (!finite(vertex.position))
+                    throw std::runtime_error("Model contains a non-finite position");
 
                 if (hasNormals)
                 {
@@ -421,18 +596,25 @@ namespace julia::render_opengl
 
                     const glm::vec3 transformedNormal = normalTransform * localNormal;
 
-                    if (glm::dot(transformedNormal, transformedNormal) > 0.00000001f)
+                    if (!finite(transformedNormal))
+                        throw std::runtime_error("Model contains a non-finite normal");
+
+                    const float normalScale = std::max({std::abs(transformedNormal.x),
+                        std::abs(transformedNormal.y), std::abs(transformedNormal.z)});
+                    if (normalScale > 0.0f)
                     {
-                        vertex.normal = glm::normalize(transformedNormal);
+                        vertex.normal = glm::normalize(transformedNormal / normalScale);
                     }
                 }
 
-                if (mesh->HasTextureCoords(0))
+                if (mesh->HasTextureCoords(textureCoordinateChannel))
                 {
                     vertex.texCoord = glm::vec2{
-                        mesh->mTextureCoords[0][i].x,
-                        mesh->mTextureCoords[0][i].y
+                        mesh->mTextureCoords[textureCoordinateChannel][i].x,
+                        mesh->mTextureCoords[textureCoordinateChannel][i].y
                     };
+                    if (!std::isfinite(vertex.texCoord.x) || !std::isfinite(vertex.texCoord.y))
+                        throw std::runtime_error("Model contains non-finite texture coordinates");
                 }
 
                 vertices[i] = vertex;
@@ -451,9 +633,15 @@ namespace julia::render_opengl
                     continue;
                 }
 
+                for (unsigned int i = 0; i < 3; ++i)
+                    if (face.mIndices[i] >= vertices.size())
+                        throw std::runtime_error("Model face references an invalid vertex");
+
                 indices.push_back(static_cast<std::uint32_t>(face.mIndices[0]));
-                indices.push_back(static_cast<std::uint32_t>(face.mIndices[1]));
-                indices.push_back(static_cast<std::uint32_t>(face.mIndices[2]));
+                // Baking a reflection reverses triangle orientation. Keep the
+                // original front faces aligned with inverse-transposed normals.
+                indices.push_back(static_cast<std::uint32_t>(face.mIndices[determinant < 0.0f ? 2 : 1]));
+                indices.push_back(static_cast<std::uint32_t>(face.mIndices[determinant < 0.0f ? 1 : 2]));
             }
 
             for (unsigned int boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex)
@@ -463,15 +651,35 @@ namespace julia::render_opengl
 
                 std::uint32_t finalBoneIndex = 0;
 
-                const auto existingBone = context.boneNameToIndex.find(boneName);
-                if (existingBone != context.boneNameToIndex.end())
+                std::uint32_t boneNode = NoModelNode;
+#ifndef ASSIMP_BUILD_NO_ARMATUREPOPULATE_PROCESS
+                if (bone->mNode)
                 {
-                    finalBoneIndex = existingBone->second;
+                    const auto node = context.nodeToIndex.find(bone->mNode);
+                    if (node != context.nodeToIndex.end()) boneNode = node->second;
                 }
+#endif
+                if (boneNode == NoModelNode)
+                {
+                    const auto nodes = context.nodeNameToIndices.find(boneName);
+                    if (nodes == context.nodeNameToIndices.end() || nodes->second.size() != 1)
+                        throw std::runtime_error("Bone has no unique corresponding model node: " + boneName);
+                    boneNode = nodes->second.front();
+                }
+                const glm::mat4 adjustedOffset = toGlm(bone->mOffsetMatrix) * inverseTransform;
+                if (!finite(adjustedOffset))
+                    throw std::runtime_error("Bone has a non-finite offset matrix: " + boneName);
+                auto& candidates = context.boneNameToIndices[boneName];
+                const auto existingBone = std::find_if(candidates.begin(), candidates.end(), [&](std::uint32_t index) {
+                    const auto& existing = context.model.bones()[index];
+                    return existing.nodeIndex == boneNode && equivalent(existing.offsetMatrix, adjustedOffset);
+                });
+                if (existingBone != candidates.end()) finalBoneIndex = *existingBone;
                 else
                 {
                     GLBoneInfo boneInfo{};
                     boneInfo.name = boneName;
+                    boneInfo.nodeIndex = boneNode;
 
                     // We bake the node's globalTransform into vertex positions
                     // (see above), but the Assimp offset matrix expects vertices
@@ -480,14 +688,13 @@ namespace julia::render_opengl
                     //   boneMatrix * offset' * bakedPos
                     //     == boneMatrix * offset * (G^-1 * G * localPos)
                     //     == boneMatrix * offset * localPos,
-                    // reproduces the correct result. (Assumes a bone shared
-                    // across meshes uses a consistent node transform, which
-                    // holds for typical rigged FBX exports.)
-                    boneInfo.offsetMatrix =
-                        toGlm(bone->mOffsetMatrix) * glm::inverse(globalTransform);
+                    // reproduces the correct result. One skeleton node may have
+                    // multiple palette entries when mesh instances require
+                    // different adjusted offsets; names alone are not a key.
+                    boneInfo.offsetMatrix = adjustedOffset;
 
                     finalBoneIndex = context.model.addBone(std::move(boneInfo));
-                    context.boneNameToIndex.emplace(boneName, finalBoneIndex);
+                    candidates.push_back(finalBoneIndex);
                 }
 
                 for (unsigned int weightIndex = 0; weightIndex < bone->mNumWeights; ++weightIndex)
@@ -496,7 +703,7 @@ namespace julia::render_opengl
 
                     if (weight.mVertexId >= vertices.size())
                     {
-                        continue;
+                        throw std::runtime_error("Bone weight references an invalid vertex: " + boneName);
                     }
 
                     addBoneInfluence(
@@ -515,24 +722,37 @@ namespace julia::render_opengl
             return GLMesh{
                 std::move(vertices),
                 std::move(indices),
-                loadMaterial(scene, mesh, context)
+                std::move(material)
             };
         }
 
-        void processNode(
-            const aiScene* scene,
-            const aiNode* node,
-            const glm::mat4& parentTransform,
-            LoadContext& context
-        )
+        void registerNodes(const aiNode* node, std::uint32_t parent, LoadContext& context)
         {
-            const glm::mat4 nodeTransform =
-                parentTransform * toGlm(node->mTransformation);
+            GLModelNode imported;
+            imported.name = node->mName.C_Str();
+            imported.parent = parent;
+            imported.localTransform = toGlm(node->mTransformation);
+            const auto index = context.model.addNode(std::move(imported));
+            context.nodeToIndex.emplace(node, index);
+            context.nodeNameToIndices[node->mName.C_Str()].push_back(index);
+            for (unsigned int i = 0; i < node->mNumChildren; ++i)
+                registerNodes(node->mChildren[i], index, context);
+        }
+
+        void processNode(const aiScene* scene, const aiNode* node, LoadContext& context)
+        {
+            const glm::mat4& nodeTransform =
+                context.model.nodes()[context.nodeToIndex.at(node)].globalBindTransform;
 
             for (unsigned int i = 0; i < node->mNumMeshes; ++i)
             {
                 const unsigned int meshIndex = node->mMeshes[i];
+                if (meshIndex >= scene->mNumMeshes)
+                    throw std::runtime_error("Model node references an invalid mesh");
                 const aiMesh* mesh = scene->mMeshes[meshIndex];
+
+                if ((mesh->mPrimitiveTypes & aiPrimitiveType_TRIANGLE) == 0 || mesh->mNumFaces == 0)
+                    continue;
 
                 context.model.addMesh(
                     processMesh(scene, mesh, nodeTransform, context)
@@ -544,34 +764,45 @@ namespace julia::render_opengl
                 processNode(
                     scene,
                     node->mChildren[i],
-                    nodeTransform,
                     context
                 );
             }
         }
     }
 
-    GLModel GLModelLoader::loadFromFile(const std::filesystem::path& path)
+    GLModel GLModelLoader::loadFromFile(const std::filesystem::path& path, GLModelLoadOptions options)
     {
-        if (!std::filesystem::exists(path))
+        if (!std::filesystem::is_regular_file(path))
         {
-            throw std::runtime_error("Model file does not exist: " + path.string());
+            throw std::runtime_error("Model file does not exist: " + utf8Path(path));
         }
 
         Assimp::Importer importer;
 
         const unsigned int flags =
             aiProcess_Triangulate |
+            aiProcess_ValidateDataStructure |
+            aiProcess_PopulateArmatureData |
             aiProcess_GenSmoothNormals |
             aiProcess_JoinIdenticalVertices |
             aiProcess_LimitBoneWeights |
             aiProcess_FlipUVs |
+            aiProcess_GenUVCoords |
+            aiProcess_TransformUVCoords |
             aiProcess_FindInvalidData |
             aiProcess_FindDegenerates |
             aiProcess_SortByPType |
             aiProcess_ImproveCacheLocality;
 
         importer.SetPropertyFloat(AI_CONFIG_PP_GSN_MAX_SMOOTHING_ANGLE, 75.0f);
+        importer.SetPropertyInteger(AI_CONFIG_PP_LBW_MAX_WEIGHTS, 4);
+        // Asset units are arbitrary: an absolute 1e-6 area cutoff can erase
+        // perfectly valid small triangles before model fitting scales them up.
+        importer.SetPropertyBool(AI_CONFIG_PP_FD_CHECKAREA, false);
+        // Constant UVs are valid (e.g. sampling a single atlas swatch). Assimp's
+        // invalid-data pass otherwise deletes the channel and leaves materials
+        // pointing at UV data that no longer exists. We validate finite UVs.
+        importer.SetPropertyBool(AI_CONFIG_PP_FID_IGNORE_TEXTURECOORDS, true);
 
         // FindDegenerates turns degenerate triangles into points/lines; ask
         // SortByPType to drop those primitives outright so only real triangles
@@ -581,13 +812,15 @@ namespace julia::render_opengl
             aiPrimitiveType_POINT | aiPrimitiveType_LINE
         );
 
-        const aiScene* scene = importer.ReadFile(path.string(), flags);
+        // Assimp's Windows IO system expects UTF-8 and converts to wide paths;
+        // path.string() uses the active code page and breaks Unicode filenames.
+        const aiScene* scene = importer.ReadFile(utf8Path(path), flags);
 
         if (!scene || !scene->mRootNode || (scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE))
         {
             throw std::runtime_error(
                 "Assimp failed to load model: " +
-                path.string() +
+                utf8Path(path) +
                 "\n" +
                 importer.GetErrorString()
             );
@@ -596,21 +829,14 @@ namespace julia::render_opengl
         LoadContext context{};
         context.modelDirectory = path.parent_path();
         context.texturesDirectory = path.parent_path().parent_path() / "textures";
+        context.useLegacyMaterialTextureFallback = options.useLegacyMaterialTextureFallback;
 
-        processNode(scene, scene->mRootNode, glm::mat4{1.0f}, context);
+        registerNodes(scene->mRootNode, NoModelNode, context);
+        processNode(scene, scene->mRootNode, context);
 
         if (context.model.empty())
         {
-            throw std::runtime_error("Model contains no meshes: " + path.string());
-        }
-
-        if (context.model.boneCount() > MaxBones)
-        {
-            std::cerr
-                << "Warning: model '" << path.string() << "' has "
-                << context.model.boneCount() << " bones, but the skinning "
-                << "palette holds only " << MaxBones
-                << ". Influences beyond that index will not animate.\n";
+            throw std::runtime_error("Model contains no meshes: " + utf8Path(path));
         }
 
         return std::move(context.model);

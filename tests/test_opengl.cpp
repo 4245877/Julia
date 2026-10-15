@@ -11,6 +11,7 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include <glm/gtc/matrix_transform.hpp>
 
 namespace
 {
@@ -119,6 +120,61 @@ int main(int argc, char** argv)
         renderer.resize(320, 240);
         renderer.resize(Width, Height);
         (void)render();
+
+        // Exercise the other shipped FBX too, including its imported skeleton.
+        auto rigged = julia::render_opengl::GLModelLoader::loadFromFile(
+            std::filesystem::path{JULIA_TEST_ASSET_DIR} / "models" / "Raphtalia.fbx");
+        const auto rigFit = rigged.fitToHeightTransform(2.2f);
+        const glm::vec3 rigCenter{rigFit * glm::vec4{rigged.bounds().center(), 1.0f}};
+        julia::render_opengl::CameraConfig rigCamera;
+        rigCamera.target = rigCenter;
+        rigCamera.position = rigCenter + glm::vec3{0.0f, 0.1f, 3.6f};
+        renderer.setCamera(rigCamera);
+        const auto bindPalette = rigged.skinningMatrices();
+        renderer.beginFrame();
+        renderer.renderModel(rigged, rigFit, bindPalette);
+        const auto rigPixels = readFrame();
+        JULIA_CHECK(changedBytes(background, rigPixels) > 10000);
+        saveFrame(rigPixels, output / "rig-bind.ppm");
+        if (!bindPalette.empty())
+        {
+            // A controlled pose delta tests actual uploaded vertex weights.
+            auto movedPalette = bindPalette;
+            for (auto& matrix : movedPalette)
+                matrix = glm::translate(glm::mat4{1.0f},
+                    glm::vec3{rigged.bounds().size().y * 0.08f, 0.0f, 0.0f}) * matrix;
+            renderer.beginFrame();
+            renderer.renderModel(rigged, rigFit, movedPalette);
+            JULIA_CHECK(changedBytes(rigPixels, readFrame()) > 1000);
+        }
+
+        // GPU timing excludes synchronous pixel readback and vsync. No fixed
+        // performance threshold: GPU/driver/load vary across machines.
+        GLuint timer = 0;
+        glGenQueries(1, &timer);
+        glFinish();
+        const double started = glfwGetTime();
+        glBeginQuery(GL_TIME_ELAPSED, timer);
+        constexpr int stressFrames = 360;
+        for (int frame = 0; frame < stressFrames; ++frame)
+        {
+            renderer.beginFrame();
+            const auto turn = glm::rotate(glm::mat4{1.0f},
+                static_cast<float>(frame) * 0.006f, glm::vec3{0.0f, 1.0f, 0.0f});
+            renderer.renderModel(rigged, turn * rigFit, bindPalette);
+        }
+        glEndQuery(GL_TIME_ELAPSED);
+        GLuint64 nanoseconds = 0;
+        glGetQueryObjectui64v(timer, GL_QUERY_RESULT, &nanoseconds);
+        const double elapsed = glfwGetTime() - started;
+        glDeleteQueries(1, &timer);
+        JULIA_CHECK(glGetError() == GL_NO_ERROR);
+        std::cout << "Stress: " << stressFrames << " frames at " << Width << "x" << Height
+                  << ", GPU average " << static_cast<double>(nanoseconds) / 1e6 / stressFrames
+                  << " ms, wall average " << elapsed * 1000.0 / stressFrames << " ms\n"
+                  << "Rigged FBX: " << rigged.meshCount() << " meshes, " << rigged.boneCount()
+                  << " palette entries, " << rigged.nodes().size() << " nodes\n"
+                  << "Renderer: " << glGetString(GL_RENDERER) << "\n";
         std::cout << "OpenGL: " << glGetString(GL_VERSION) << "\n"
                   << "Meshes: " << model.meshCount() << ", bones: " << model.boneCount()
                   << ", background RGB: " << static_cast<int>(background[0]) << "\n";

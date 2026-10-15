@@ -20,11 +20,12 @@ namespace julia::render_opengl
         glm::vec3 normal{0.0f, 1.0f, 0.0f};
         glm::vec2 texCoord{0.0f};
 
-        // Уже сейчас храним влияние костей.
-        // Рендер не управляет телом, он только принимает готовую позу.
+        // Four strongest normalized influences, shared with model.vert.
         glm::ivec4 boneIds{-1, -1, -1, -1};
         glm::vec4 boneWeights{0.0f};
     };
+
+    enum class AlphaMode { Opaque, Mask, Blend };
 
     struct GLMeshMaterial
     {
@@ -33,6 +34,15 @@ namespace julia::render_opengl
         float lightResponse = 0.80f;
         float specularStrength = 0.004f;
         float rimStrength = 0.032f;
+        float opacity = 1.0f;
+        float alphaCutoff = 0.5f;
+        AlphaMode alphaMode = AlphaMode::Opaque;
+        // Sampling belongs to the material: one cached image can be shared by
+        // materials with different wrap/filter settings.
+        GLenum wrapS = GL_REPEAT;
+        GLenum wrapT = GL_REPEAT;
+        GLenum minFilter = GL_LINEAR_MIPMAP_LINEAR;
+        GLenum magFilter = GL_LINEAR;
     };
 
     class GLMesh
@@ -66,10 +76,21 @@ namespace julia::render_opengl
             return indexCount_;
         }
 
+        const GLMeshMaterial& material() const
+        {
+            return material_;
+        }
+
+        bool transparent() const
+        {
+            return material_.alphaMode == AlphaMode::Blend;
+        }
+
     private:
         GLuint vao_ = 0;
         GLuint vbo_ = 0;
         GLuint ebo_ = 0;
+        GLuint sampler_ = 0;
 
         std::size_t indexCount_ = 0;
         GLMeshMaterial material_{};

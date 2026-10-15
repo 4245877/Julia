@@ -27,3 +27,13 @@ set_tests_properties(opengl PROPERTIES TIMEOUT 60)
 add_test(NAME desktop_launch COMMAND $<TARGET_FILE:julia_desktop> --verify)
 set_tests_properties(desktop_launch PROPERTIES
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}" TIMEOUT 60)
+
+foreach(suite model_math model_import gpu_resources shader_pipeline)
+    add_executable(julia_test_${suite} test_${suite}.cpp)
+    target_include_directories(julia_test_${suite} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_compile_definitions(julia_test_${suite} PRIVATE
+        JULIA_TEST_ASSET_DIR="${CMAKE_SOURCE_DIR}/assets")
+    target_link_libraries(julia_test_${suite} PRIVATE julia_render_opengl julia::warnings)
+    add_test(NAME ${suite} COMMAND julia_test_${suite} "${CMAKE_BINARY_DIR}/verification")
+    set_tests_properties(${suite} PROPERTIES TIMEOUT 60)
+endforeach()

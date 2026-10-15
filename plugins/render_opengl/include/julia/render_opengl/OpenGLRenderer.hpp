@@ -27,7 +27,7 @@ namespace julia::render_opengl
     {
     public:
         OpenGLRenderer() = default;
-        ~OpenGLRenderer() = default;
+        ~OpenGLRenderer();
 
         OpenGLRenderer(const OpenGLRenderer&) = delete;
         OpenGLRenderer& operator=(const OpenGLRenderer&) = delete;
@@ -42,8 +42,12 @@ namespace julia::render_opengl
         void setCamera(const CameraConfig& camera);
         void beginFrame();
 
-        // Рендер получает готовую позу в виде boneMatrices.
-        // Если boneMatrices пустой — модель рисуется в bind/static pose.
+        // Requires the initialized context to remain current through destruction.
+        // Empty palette draws baked static geometry. A nonempty palette contains
+        // final scene-space skinning transforms for every entry in model.bones()
+        // (e.g. model.skinningMatrices()). The device TBO limit is checked.
+        // Draw opaque models before models containing blended surfaces; sorting
+        // within one model is by mesh center, not per pixel or across models.
         void renderModel(
             const GLModel& model,
             const glm::mat4& modelMatrix,
@@ -52,6 +56,10 @@ namespace julia::render_opengl
 
     private:
         GLShader shader_;
+        GLuint boneBuffer_ = 0;
+        GLuint boneTexture_ = 0;
+        GLint maxBoneTexels_ = 0;
+        bool boneStorageInitialized_ = false;
 
         int width_ = 1280;
         int height_ = 720;
