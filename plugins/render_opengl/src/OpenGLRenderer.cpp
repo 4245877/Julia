@@ -1,9 +1,8 @@
-#include "julia/render_opengl/OpenGLRenderer.hpp"
+﻿#include "julia/render_opengl/OpenGLRenderer.hpp"
 
 #include <glad/glad.h>
 
 #include <algorithm>
-#include <array>
 #include <filesystem>
 #include <fstream>
 #include <sstream>
@@ -16,8 +15,10 @@ namespace julia::render_opengl
 {
     namespace
     {
-        std::filesystem::path getAssetDir()
+        std::filesystem::path getAssetDir(const std::filesystem::path& requested)
         {
+            if (!requested.empty())
+                return requested;
 #ifdef JULIA_ASSET_DIR
             const std::filesystem::path assetDir = JULIA_ASSET_DIR;
 
@@ -52,27 +53,19 @@ namespace julia::render_opengl
             return buffer.str();
         }
 
-        std::string readShaderFile(const std::filesystem::path& shaderFileName)
+        std::string readShaderFile(const std::filesystem::path& assetDir,
+                                  const std::filesystem::path& shaderFileName)
         {
             const std::filesystem::path fullPath =
-                getAssetDir() / "shaders" / shaderFileName;
+                assetDir / "shaders" / shaderFileName;
 
             return readTextFile(fullPath);
         }
     }
 
-    OpenGLRenderer::~OpenGLRenderer()
+    void OpenGLRenderer::initialize(int width, int height,
+                                   const std::filesystem::path& assetDirectory)
     {
-        releaseBackground();
-    }
-
-    void OpenGLRenderer::initialize(int width, int height)
-    {
-        // initialize() может вызываться повторно (например, при пересоздании
-        // контекста). Старый VAO нужно освободить до glGenVertexArrays,
-        // иначе он утечёт. Шейдеры освобождаются внутри createFromSource().
-        releaseBackground();
-
         width_ = width;
         height_ = height;
 
@@ -87,29 +80,17 @@ namespace julia::render_opengl
         // у некоторых FBX бывают неожиданные winding/axis.
         glDisable(GL_CULL_FACE);
 
+        const auto assetDir = getAssetDir(assetDirectory);
         const std::string modelVertexShaderSource =
-            readShaderFile("model.vert");
+            readShaderFile(assetDir, "model.vert");
 
         const std::string modelFragmentShaderSource =
-            readShaderFile("model.frag");
-
-        const std::string backgroundVertexShaderSource =
-            readShaderFile("background.vert");
-
-        const std::string backgroundFragmentShaderSource =
-            readShaderFile("background.frag");
+            readShaderFile(assetDir, "model.frag");
 
         shader_.createFromSource(
             modelVertexShaderSource.c_str(),
             modelFragmentShaderSource.c_str()
         );
-
-        backgroundShader_.createFromSource(
-            backgroundVertexShaderSource.c_str(),
-            backgroundFragmentShaderSource.c_str()
-        );
-
-        glGenVertexArrays(1, &backgroundVao_);
 
         resize(width_, height_);
     }
@@ -118,11 +99,6 @@ namespace julia::render_opengl
     {
         camera_ = camera;
         updateCamera();
-    }
-
-    void OpenGLRenderer::setBackgroundPalette(const BackgroundPalette& palette)
-    {
-        palette_ = palette;
     }
 
     void OpenGLRenderer::resize(int width, int height)
@@ -135,32 +111,12 @@ namespace julia::render_opengl
         updateCamera();
     }
 
-    void OpenGLRenderer::beginFrame(const glm::vec3& clearColor)
+    void OpenGLRenderer::beginFrame()
     {
-        glClearColor(clearColor.r, clearColor.g, clearColor.b, 1.0f);
+        // Linear 0.21586 maps to neutral sRGB #808080. Clearing a buffer needs
+        // no geometry, texture, shader, camera transform, or visual effects.
+        glClearColor(0.21586f, 0.21586f, 0.21586f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        glDisable(GL_DEPTH_TEST);
-        glDepthMask(GL_FALSE);
-
-        backgroundShader_.bind();
-
-        backgroundShader_.setVec3("uPrimaryColor", palette_.primary);
-        backgroundShader_.setVec3("uForestColor", palette_.forest);
-        backgroundShader_.setVec3("uGoldColor", palette_.gold);
-        backgroundShader_.setVec3("uAccentColor", palette_.accent);
-        backgroundShader_.setVec3("uSkyColor", palette_.sky);
-        backgroundShader_.setVec3("uBgColor", palette_.background);
-        backgroundShader_.setVec3("uSurfaceColor", palette_.surface);
-        backgroundShader_.setVec3("uBorderColor", palette_.border);
-
-
-        glBindVertexArray(backgroundVao_);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
-        glBindVertexArray(0);
-
-        glDepthMask(GL_TRUE);
-        glEnable(GL_DEPTH_TEST);
     }
 
     void OpenGLRenderer::renderModel(
@@ -224,12 +180,4 @@ namespace julia::render_opengl
         view_ = glm::lookAt(camera_.position, camera_.target, camera_.up);
     }
 
-    void OpenGLRenderer::releaseBackground()
-    {
-        if (backgroundVao_ != 0)
-        {
-            glDeleteVertexArrays(1, &backgroundVao_);
-            backgroundVao_ = 0;
-        }
-    }
 }

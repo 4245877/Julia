@@ -13,6 +13,7 @@ include(JuliaWarnings)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
 option(JULIA_BUILD_TESTS "Build Julia unit tests" ON)
 
@@ -24,7 +25,7 @@ add_subdirectory(libs/runtime)
 add_subdirectory(libs/render)
 add_subdirectory(plugins/render_opengl)
 
-add_subdirectory(apps/julia_desktop)
+add_subdirectory(apps)
 
 if(JULIA_BUILD_TESTS)
     enable_testing()

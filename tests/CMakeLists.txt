@@ -15,3 +15,15 @@ add_executable(julia_test_orbit_camera test_orbit_camera.cpp)
 target_include_directories(julia_test_orbit_camera PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(julia_test_orbit_camera PRIVATE julia_render julia::warnings)
 add_test(NAME orbit_camera COMMAND julia_test_orbit_camera)
+
+# A real hidden OpenGL window verifies shaders, FBX loading and rendered pixels.
+add_executable(julia_test_opengl test_opengl.cpp)
+target_include_directories(julia_test_opengl PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_definitions(julia_test_opengl PRIVATE
+    JULIA_TEST_ASSET_DIR="${CMAKE_SOURCE_DIR}/assets")
+target_link_libraries(julia_test_opengl PRIVATE julia_render_opengl julia::warnings)
+add_test(NAME opengl COMMAND julia_test_opengl "${CMAKE_BINARY_DIR}/verification")
+set_tests_properties(opengl PROPERTIES TIMEOUT 60)
+add_test(NAME desktop_launch COMMAND $<TARGET_FILE:julia_desktop> --verify)
+set_tests_properties(desktop_launch PROPERTIES
+    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}" TIMEOUT 60)

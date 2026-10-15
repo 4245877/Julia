@@ -9,8 +9,14 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <filesystem>
+#include <algorithm>
 #include <iostream>
 #include <stdexcept>
+#include <string_view>
+
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 #ifndef JULIA_ASSET_DIR
 #define JULIA_ASSET_DIR "assets"
@@ -18,12 +24,28 @@
 
 namespace
 {
+    std::filesystem::path assetDirectory(const char* executable)
+    {
+        std::filesystem::path executablePath{executable};
+#ifdef _WIN32
+        wchar_t buffer[32768]{};
+        const DWORD length = GetModuleFileNameW(nullptr, buffer, 32768);
+        if (length > 0 && length < 32768)
+            executablePath = std::filesystem::path{buffer};
+#endif
+        const auto bundledAssets = std::filesystem::absolute(executablePath)
+            .parent_path() / "assets";
+        return std::filesystem::is_directory(bundledAssets)
+            ? bundledAssets : std::filesystem::path{JULIA_ASSET_DIR};
+    }
+
     struct WindowState
     {
         julia::render_opengl::OpenGLRenderer* renderer = nullptr;
         julia::render::OrbitCamera* orbitCamera = nullptr;
         julia::render_opengl::CameraConfig cameraConfig{};
-        bool dragging = false;
+        int dragButton = -1;
+        bool panning = false;
         double lastCursorX = 0.0;
         double lastCursorY = 0.0;
 
@@ -87,28 +109,32 @@ namespace
         GLFWwindow* window,
         int button,
         int action,
-        int /*mods*/
+        int mods
     )
     {
         WindowState* state = getWindowState(window);
 
-        if (!state || button != GLFW_MOUSE_BUTTON_LEFT)
+        if (!state || (button != GLFW_MOUSE_BUTTON_LEFT &&
+                       button != GLFW_MOUSE_BUTTON_RIGHT &&
+                       button != GLFW_MOUSE_BUTTON_MIDDLE))
         {
             return;
         }
 
         if (action == GLFW_PRESS)
         {
-            state->dragging = true;
+            state->dragButton = button;
+            state->panning = button != GLFW_MOUSE_BUTTON_LEFT ||
+                             (mods & GLFW_MOD_SHIFT) != 0;
             glfwGetCursorPos(
                 window,
                 &state->lastCursorX,
                 &state->lastCursorY
             );
         }
-        else if (action == GLFW_RELEASE)
+        else if (action == GLFW_RELEASE && state->dragButton == button)
         {
-            state->dragging = false;
+            state->dragButton = -1;
         }
     }
 
@@ -116,7 +142,7 @@ namespace
     {
         WindowState* state = getWindowState(window);
 
-        if (!state || !state->dragging || !state->orbitCamera)
+        if (!state || state->dragButton < 0 || !state->orbitCamera)
         {
             return;
         }
@@ -127,11 +153,21 @@ namespace
         state->lastCursorX = x;
         state->lastCursorY = y;
 
-        state->orbitCamera->orbit(
-            static_cast<float>(deltaX),
-            static_cast<float>(deltaY)
-        );
-        state->applyCamera();
+        if (state->panning)
+        {
+            int width = 0;
+            int height = 0;
+            // Cursor deltas use logical window pixels, including on HiDPI.
+            glfwGetWindowSize(window, &width, &height);
+            state->orbitCamera->pan(static_cast<float>(deltaX),
+                static_cast<float>(deltaY), static_cast<float>(height),
+                state->cameraConfig.fovDegrees);
+        }
+        else
+        {
+            state->orbitCamera->orbit(
+                static_cast<float>(deltaX), static_cast<float>(deltaY));
+        }
     }
 
     void scrollCallback(
@@ -148,26 +184,54 @@ namespace
         }
 
         state->orbitCamera->zoom(static_cast<float>(yOffset));
-        state->applyCamera();
     }
 
-    void processInput(GLFWwindow* window)
+    void focusCallback(GLFWwindow* window, int focused)
+    {
+        if (!focused)
+        {
+            if (auto* state = getWindowState(window))
+                state->dragButton = -1;
+        }
+    }
+
+    void processInput(GLFWwindow* window, double deltaSeconds)
     {
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         {
             glfwSetWindowShouldClose(window, GLFW_TRUE);
+        }
+        auto* state = getWindowState(window);
+        if (!state || !state->orbitCamera || !glfwGetWindowAttrib(window, GLFW_FOCUSED))
+            return;
+        const auto pressed = [window](int key) {
+            return glfwGetKey(window, key) == GLFW_PRESS;
+        };
+        glm::vec3 direction{
+            static_cast<float>(pressed(GLFW_KEY_D) || pressed(GLFW_KEY_RIGHT)) -
+                static_cast<float>(pressed(GLFW_KEY_A) || pressed(GLFW_KEY_LEFT)),
+            static_cast<float>(pressed(GLFW_KEY_E) || pressed(GLFW_KEY_UP)) -
+                static_cast<float>(pressed(GLFW_KEY_Q) || pressed(GLFW_KEY_DOWN)),
+            static_cast<float>(pressed(GLFW_KEY_S)) - static_cast<float>(pressed(GLFW_KEY_W))
+        };
+        if (glm::length(direction) > 0.0f)
+        {
+            const float speed = state->orbitCamera->distance() * 0.8f;
+            state->orbitCamera->moveLocal(glm::normalize(direction) * speed *
+                static_cast<float>(deltaSeconds));
         }
     }
 }
 
 int main(int argc, char** argv)
 {
+    const bool verification = argc > 1 && std::string_view{argv[1]} == "--verify";
     // Модель можно передать аргументом командной строки; иначе берётся
     // ассет по умолчанию из каталога ресурсов.
     const std::filesystem::path modelPath =
-        (argc > 1)
+        (argc > 1 && !verification)
             ? std::filesystem::path{argv[1]}
-            : std::filesystem::path{JULIA_ASSET_DIR} / "models" / "Raphtalia1.fbx";
+            : assetDirectory(argv[0]) / "models" / "Raphtalia1.fbx";
 
     glfwSetErrorCallback(glfwErrorCallback);
 
@@ -190,7 +254,9 @@ int main(int argc, char** argv)
     // Сглаживание краёв модели и обводки.
     glfwWindowHint(GLFW_SAMPLES, 8);
 
-    GLFWwindow* window = glfwCreateWindow(1920, 1080, "Julia", nullptr, nullptr);
+    glfwWindowHint(GLFW_VISIBLE, verification ? GLFW_FALSE : GLFW_TRUE);
+    GLFWwindow* window = glfwCreateWindow(verification ? 640 : 1920,
+        verification ? 480 : 1080, "Julia", nullptr, nullptr);
     if (!window)
     {
         std::cerr << "Failed to create GLFW window\n";
@@ -199,7 +265,7 @@ int main(int argc, char** argv)
     }
 
     glfwMakeContextCurrent(window);
-    glfwSwapInterval(1);
+    glfwSwapInterval(verification ? 0 : 1);
 
     if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)))
     {
@@ -233,7 +299,7 @@ int main(int argc, char** argv)
     try
     {
         julia::render_opengl::OpenGLRenderer renderer;
-        renderer.initialize(framebufferWidth, framebufferHeight);
+        renderer.initialize(framebufferWidth, framebufferHeight, assetDirectory(argv[0]));
 
         std::cout << "Loading model: " << modelPath.string() << "\n";
 
@@ -271,15 +337,51 @@ int main(int argc, char** argv)
         glfwSetMouseButtonCallback(window, mouseButtonCallback);
         glfwSetCursorPosCallback(window, cursorPositionCallback);
         glfwSetScrollCallback(window, scrollCallback);
+        glfwSetWindowFocusCallback(window, focusCallback);
 
         windowState.applyCamera();
 
         std::cout
-            << "Camera controls: left mouse drag to orbit, mouse wheel to zoom\n";
+            << "Camera controls: left drag to orbit, wheel to zoom, right/middle\n"
+            << "or Shift+left drag to pan; WASD/QE or arrows to move; Esc to exit\n";
 
+        double previousTime = glfwGetTime();
+        int verificationFrame = 0;
         while (!glfwWindowShouldClose(window))
         {
-            processInput(window);
+            // Poll before updating to render the latest input in this frame.
+            glfwPollEvents();
+            const double now = glfwGetTime();
+            const double deltaSeconds = verification ? 1.0 / 120.0 : now - previousTime;
+            previousTime = now;
+            if (verification)
+            {
+                // Exercise the actual desktop input callbacks without depending
+                // on OS focus or synthetic global mouse/keyboard injection.
+                if (verificationFrame == 10 || verificationFrame == 70)
+                {
+                    const int button = verificationFrame == 10
+                        ? GLFW_MOUSE_BUTTON_LEFT : GLFW_MOUSE_BUTTON_RIGHT;
+                    mouseButtonCallback(window, button, GLFW_PRESS, 0);
+                    cursorPositionCallback(window, windowState.lastCursorX + 80.0,
+                                           windowState.lastCursorY + 30.0);
+                    mouseButtonCallback(window, button, GLFW_RELEASE, 0);
+                }
+                if (verificationFrame == 40) scrollCallback(window, 0.0, 2.0);
+                if (++verificationFrame >= 120)
+                    glfwSetWindowShouldClose(window, GLFW_TRUE);
+            }
+            if (glfwGetWindowAttrib(window, GLFW_ICONIFIED))
+            {
+                windowState.dragButton = -1;
+                glfwWaitEventsTimeout(0.05);
+                previousTime = glfwGetTime();
+                continue;
+            }
+            // A long OS pause must not turn held keys into a large jump.
+            processInput(window, deltaSeconds <= 0.25 ? deltaSeconds : 0.0);
+            orbitCamera.update(deltaSeconds);
+            windowState.applyCamera();
 
             renderer.beginFrame();
 
@@ -289,9 +391,13 @@ int main(int argc, char** argv)
 
             renderer.renderModel(model, modelMatrix);
 
+            if (verification && glGetError() != GL_NO_ERROR)
+                throw std::runtime_error("OpenGL error during desktop verification");
+
             glfwSwapBuffers(window);
-            glfwPollEvents();
         }
+        if (verification)
+            std::cout << "Desktop verification completed: orbit, zoom, pan, 120 frames\n";
     }
     catch (const std::exception& exception)
     {

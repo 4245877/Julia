@@ -5,6 +5,7 @@
 
 # CMake / build
 build/
+/julia_desktop/
 out/
 cmake-build-*/
 CMakeFiles/
