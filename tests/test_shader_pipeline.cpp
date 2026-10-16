@@ -491,6 +491,61 @@ namespace
         JULIA_CHECK(matches);
     }
 
+    void testToonTransition(GLShader& shader)
+    {
+        PixelTarget target;
+        const glm::mat4 identity{1.0f};
+        shader.bind();
+        shader.setMat4("uModel", identity);
+        shader.setMat4("uView", identity);
+        shader.setMat4("uProjection", identity);
+        shader.setMat3("uNormalMatrix", glm::mat3{1.0f});
+        shader.setBool("uUseSkinning", false);
+        shader.setInt("uBoneCount", 0);
+        shader.setInt("uBonePalette", 1);
+        shader.setBool("uOutlinePass", false);
+        shader.setVec3("uViewPos", {0.0f, 0.0f, 3.0f});
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_CULL_FACE);
+        glDisable(GL_BLEND);
+        const auto light = glm::normalize(glm::vec3{0.34f, 0.78f, 0.52f});
+        const auto tangent = glm::normalize(glm::cross(light, glm::vec3{0.0f, 1.0f, 0.0f}));
+        julia::render_opengl::GLMeshMaterial material;
+        material.diffuseColor = glm::vec3{0.4f};
+        material.lightResponse = 0.8f;
+        material.specularStrength = 0.0f;
+        material.rimStrength = 0.0f;
+        const auto sample = [&](float ndl) {
+            const auto n = light * ndl + tangent * std::sqrt(1.0f - ndl * ndl);
+            std::vector<GLVertex> vertices(3);
+            vertices[0].position = {-1.0f, -1.0f, 0.0f};
+            vertices[1].position = {3.0f, -1.0f, 0.0f};
+            vertices[2].position = {-1.0f, 3.0f, 0.0f};
+            for (auto& vertex : vertices) vertex.normal = n;
+            julia::render_opengl::GLMesh mesh{std::move(vertices), {0, 1, 2}, material};
+            target.clear(glm::vec4{0.0f});
+            mesh.draw(shader);
+            return target.read().r;
+        };
+        constexpr float edge = 0.10f - 0.8f * 0.18f;
+        const float shadow = sample(edge - 0.08f);
+        const float lit = sample(edge + 0.08f);
+        const float low = sample(edge - 0.0125f);
+        const float mid = sample(edge);
+        const float high = sample(edge + 0.0125f);
+        const float contrast = lit - shadow;
+        JULIA_CHECK(contrast > 0.10f);
+        // Constant normals give fwidth=0: the narrow lighting transition must
+        // still exist at close range instead of snapping between flat colors.
+        JULIA_CHECK(low > shadow + contrast * 0.05f);
+        JULIA_CHECK(low < mid && mid < high);
+        JULIA_CHECK(high < lit - contrast * 0.05f);
+        JULIA_CHECK(std::abs(mid - (lit + shadow) * 0.5f) < 0.01f);
+        // The broad toon fields remain flat outside the small transition.
+        JULIA_CHECK(std::abs(sample(edge + 0.12f) - lit) < 0.005f);
+        JULIA_CHECK(glGetError() == GL_NO_ERROR);
+    }
+
     void testFragmentAlpha(GLShader& shader)
     {
         PixelTarget target;
@@ -873,6 +928,7 @@ int main()
         JULIA_CHECK(actual.valid());
         testShaderLifetime();
         testVertexTransforms(vertex, fragment);
+        testToonTransition(actual);
         testFragmentAlpha(actual);
         testRendererValidationAndState(actual);
         testTransparentOrdering();

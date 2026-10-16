@@ -779,7 +779,7 @@ namespace julia::render_opengl
 
         Assimp::Importer importer;
 
-        const unsigned int flags =
+        unsigned int flags =
             aiProcess_Triangulate |
             aiProcess_ValidateDataStructure |
             aiProcess_PopulateArmatureData |
@@ -794,7 +794,11 @@ namespace julia::render_opengl
             aiProcess_SortByPType |
             aiProcess_ImproveCacheLocality;
 
-        importer.SetPropertyFloat(AI_CONFIG_PP_GSN_MAX_SMOOTHING_ANGLE, 75.0f);
+        // GenSmoothNormals alone keeps normals supplied by the asset, including
+        // an accidentally faceted export. Force regeneration only on request.
+        if (options.rebuildSmoothNormals) flags |= aiProcess_ForceGenNormals;
+        importer.SetPropertyFloat(AI_CONFIG_PP_GSN_MAX_SMOOTHING_ANGLE,
+            options.rebuildSmoothNormals ? 45.0f : 75.0f);
         importer.SetPropertyInteger(AI_CONFIG_PP_LBW_MAX_WEIGHTS, 4);
         // Asset units are arbitrary: an absolute 1e-6 area cutoff can erase
         // perfectly valid small triangles before model fitting scales them up.

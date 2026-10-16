@@ -13,6 +13,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <string_view>
+#include <system_error>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -231,7 +232,7 @@ int main(int argc, char** argv)
     const std::filesystem::path modelPath =
         (argc > 1 && !verification)
             ? std::filesystem::path{argv[1]}
-            : assetDirectory(argv[0]) / "models" / "Raphtalia1.fbx";
+            : assetDirectory(argv[0]) / "models" / "Raphtalia.fbx";
 
     glfwSetErrorCallback(glfwErrorCallback);
 
@@ -303,7 +304,16 @@ int main(int argc, char** argv)
 
         std::cout << "Loading model: " << modelPath.string() << "\n";
 
-        auto model = julia::render_opengl::GLModelLoader::loadFromFile(modelPath);
+        // This bundled export has face normals on every triangle. Keep the
+        // repair local to this asset; other models may have custom toon normals.
+        std::error_code assetComparisonError;
+        const bool repairFacetedNormals = std::filesystem::equivalent(modelPath,
+            assetDirectory(argv[0]) / "models" / "Raphtalia.fbx", assetComparisonError) ||
+            std::filesystem::equivalent(modelPath,
+                std::filesystem::path{JULIA_ASSET_DIR} / "models" / "Raphtalia.fbx",
+                assetComparisonError);
+        auto model = julia::render_opengl::GLModelLoader::loadFromFile(modelPath,
+            {.rebuildSmoothNormals = repairFacetedNormals});
 
         std::cout << "Model loaded\n";
         std::cout << "Meshes: " << model.meshCount() << "\n";

@@ -21,12 +21,18 @@ uniform int uAlphaMode;
 
 out vec4 FragColor;
 
-// Жёсткий cel-срез: только узкая (~1 px) кромка сглаживания,
-// никакого плавного ламбертовского градиента.
+// A small normal-space transition keeps the toon bands stable at close range;
+// screen-space derivatives still antialias them when the model is far away.
+// Only lighting is filtered, never albedo, UVs, geometry or material boundaries.
+float celStep(float edge, float value, float halfWidth)
+{
+    float aa = max(fwidth(value), halfWidth);
+    return smoothstep(edge - aa, edge + aa, value);
+}
+
 float celStep(float edge, float value)
 {
-    float aa = max(fwidth(value), 0.004);
-    return smoothstep(edge - aa, edge + aa, value);
+    return celStep(edge, value, 0.004);
 }
 
 vec3 adjustSaturation(vec3 color, float amount)
@@ -82,11 +88,11 @@ void main()
     vec3 keyLightDirection = normalize(vec3(0.34, 0.78, 0.52));
     float ndl = dot(normal, keyLightDirection);
 
-    // Один жёсткий срез свет/тень плюс узкая зона глубокой тени.
+    // Two toon bands with a narrow, resolution-independent light transition.
     // Материал с высоким lightResponse "открывается" свету раньше.
     float litEdge = 0.10 - response * 0.18;
-    float lit = celStep(litEdge, ndl);
-    float core = 1.0 - celStep(litEdge - 0.52, ndl);
+    float lit = celStep(litEdge, ndl, 0.025);
+    float core = 1.0 - celStep(litEdge - 0.52, ndl, 0.025);
 
     // Тень уводится в холодный сиренево-синий с лёгким подъёмом
     // насыщенности — фирменный приём ZZZ вместо простого затемнения.

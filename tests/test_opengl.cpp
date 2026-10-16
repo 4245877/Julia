@@ -123,7 +123,8 @@ int main(int argc, char** argv)
 
         // Exercise the other shipped FBX too, including its imported skeleton.
         auto rigged = julia::render_opengl::GLModelLoader::loadFromFile(
-            std::filesystem::path{JULIA_TEST_ASSET_DIR} / "models" / "Raphtalia.fbx");
+            std::filesystem::path{JULIA_TEST_ASSET_DIR} / "models" / "Raphtalia.fbx",
+            {.rebuildSmoothNormals = true});
         const auto rigFit = rigged.fitToHeightTransform(2.2f);
         const glm::vec3 rigCenter{rigFit * glm::vec4{rigged.bounds().center(), 1.0f}};
         julia::render_opengl::CameraConfig rigCamera;

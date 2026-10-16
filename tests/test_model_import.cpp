@@ -191,7 +191,7 @@ namespace
         return path;
     }
 
-    std::array<unsigned char, 3> drawPixel(const GLMesh& mesh, int mode)
+    std::array<unsigned char, 3> drawPixel(const GLMesh& mesh, int mode, int x = 32)
     {
         GLShader shader;
         shader.createFromSource(R"(#version 330 core
@@ -224,14 +224,56 @@ void main(){color=vec4(mode==0?vec3(1):mode==1?normal*.5+.5:mode==2?vec3(uv,0):t
         mesh.draw(shader);
         std::array<unsigned char, 3> pixel{};
         glPixelStorei(GL_PACK_ALIGNMENT, 1);
-        glReadPixels(32, 32, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, pixel.data());
+        glReadPixels(x, 32, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, pixel.data());
         JULIA_CHECK(glGetError() == GL_NO_ERROR);
         return pixel;
+    }
+
+    void testNormalRepair(const std::filesystem::path& directory)
+    {
+        // A shallow fold and a right-angle crease, both with deliberately flat
+        // authored normals and separate UVs at the shared geometric edge.
+        for (const float angle : {20.0f, 90.0f})
+        {
+            const float s = std::sin(glm::radians(angle));
+            const float c = std::cos(glm::radians(angle));
+            const auto path = directory / (angle < 45.0f ? "fold.obj" : "crease.obj");
+            std::ofstream file(path);
+            file << "v -0.8 0 0\nv 0 -0.8 0\nv 0 0.8 0\nv "
+                 << 0.8f * c << " 0 " << -0.8f * s << '\n'
+                 << "vt 0 0\nvt 0.4 0\nvt 0.4 1\nvt 0.6 0\nvt 1 0\nvt 0.6 1\n"
+                 << "vn 0 0 1\nvn " << s << " 0 " << c << '\n'
+                 << "f 1/1/1 2/2/1 3/3/1\nf 2/4/2 4/5/2 3/6/2\n";
+            file.close();
+
+            const auto original = GLModelLoader::loadFromFile(path);
+            const auto repaired = GLModelLoader::loadFromFile(path,
+                {.rebuildSmoothNormals = true});
+            JULIA_CHECK(original.meshCount() == 1 && repaired.meshCount() == 1);
+            const auto& a = original.meshes().at(0);
+            const auto& b = repaired.meshes().at(0);
+            JULIA_CHECK(a.indexCount() == 6 && b.indexCount() == 6);
+            JULIA_CHECK(original.bounds().min == repaired.bounds().min);
+            JULIA_CHECK(original.bounds().max == repaired.bounds().max);
+            JULIA_CHECK(drawPixel(a, 0, 16) == drawPixel(b, 0, 16));
+            JULIA_CHECK(drawPixel(a, 2, 16) == drawPixel(b, 2, 16));
+            const auto flat = drawPixel(a, 1, 16);
+            const auto smooth = drawPixel(b, 1, 16);
+            JULIA_CHECK(std::abs(static_cast<int>(flat[0]) - 128) <= 1);
+            if (angle < 45.0f)
+            {
+                JULIA_CHECK(smooth[0] > flat[0] + 5);
+                JULIA_CHECK(smooth[2] > 245);
+            }
+            else
+                JULIA_CHECK(flat == smooth);
+        }
     }
 
     void runTests(const std::filesystem::path& directory)
     {
         std::filesystem::create_directories(directory);
+        testNormalRepair(directory);
         const auto skin = GLModelLoader::loadFromFile(writeInstancedSkin(directory));
         JULIA_CHECK(skin.meshCount() == 2);
         JULIA_CHECK(skin.boneCount() == 2);
