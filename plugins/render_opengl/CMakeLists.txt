@@ -13,6 +13,7 @@ target_sources(julia_render_opengl
         src/OpenGLRenderer.cpp
         src/GLShader.cpp
         src/GLMesh.cpp
+        src/OutlineNormals.cpp
         src/GLModel.cpp
         src/GLTexture.cpp
         src/GLModelLoader.cpp

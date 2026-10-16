@@ -6,6 +6,7 @@
 #include <cmath>
 #include <filesystem>
 #include <fstream>
+#include <limits>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -109,13 +110,70 @@ namespace julia::render_opengl
                 throw std::invalid_argument("Model and bone transforms must be affine");
         }
 
+        struct ShadowFit
+        {
+            glm::mat4 matrix{1.0f};
+            glm::vec3 parameters{0.0f};
+            bool valid = false;
+        };
+
+        ShadowFit fitShadow(const Bounds& bounds, const glm::mat4& model,
+                            std::span<const glm::mat4> palette, const glm::vec3& light,
+                            int resolution)
+        {
+            if (!bounds.valid) return {};
+            const glm::dvec3 direction{light};
+            const glm::dvec3 up = std::abs(direction.y) > 0.95
+                ? glm::dvec3{1.0, 0.0, 0.0} : glm::dvec3{0.0, 1.0, 0.0};
+            // Rotation only: projection fitting never depends on the camera.
+            const glm::dmat4 orientation = glm::lookAt(glm::dvec3{0.0}, -direction, up);
+            glm::dvec3 low{std::numeric_limits<double>::max()};
+            glm::dvec3 high{std::numeric_limits<double>::lowest()};
+            const auto include = [&](const glm::dmat4& skin) {
+                const auto transform = orientation * glm::dmat4{model} * skin;
+                for (int corner = 0; corner < 8; ++corner)
+                {
+                    const glm::dvec4 point{(corner & 1) ? bounds.max.x : bounds.min.x,
+                        (corner & 2) ? bounds.max.y : bounds.min.y,
+                        (corner & 4) ? bounds.max.z : bounds.min.z, 1.0};
+                    const glm::dvec3 position{transform * point};
+                    low = glm::min(low, position);
+                    high = glm::max(high, position);
+                }
+            };
+            // Convex skin weights keep every deformed point inside this union.
+            // Identity also covers vertices with no valid bone influences.
+            include(glm::dmat4{1.0});
+            for (const auto& bone : palette) include(glm::dmat4{bone});
+            const auto span = high - low;
+            const double extent = std::max({span.x, span.y, span.z * 0.1, 1e-12}) * 1.03;
+            // Quantized scale avoids a continuously breathing texel grid while
+            // a pose changes. Center is snapped to texels in world light space.
+            const double size = std::exp2(std::ceil(std::log2(extent) * 8.0) / 8.0);
+            const double texel = size / resolution;
+            auto center = low * 0.5 + high * 0.5;
+            center.x = std::floor(center.x / texel + 0.5) * texel;
+            center.y = std::floor(center.y / texel + 0.5) * texel;
+            const double margin = std::max(size * 0.05, texel * 4.0);
+            const double nearPlane = -high.z - margin;
+            const double farPlane = -low.z + margin;
+            ShadowFit result;
+            result.matrix = glm::mat4{glm::ortho(center.x - size * 0.5, center.x + size * 0.5,
+                center.y - size * 0.5, center.y + size * 0.5, nearPlane, farPlane) * orientation};
+            result.parameters = {1.0f / resolution, static_cast<float>(texel),
+                static_cast<float>(1.0 / (farPlane - nearPlane))};
+            result.valid = finite(result.matrix) && finite(result.parameters);
+            return result;
+        }
+
         // Snapshot once at the renderer boundary, rather than per mesh.
         struct DrawState
         {
-            GLint program{}, vao{}, activeTexture{}, texture0{}, palette1{},
-                sampler0{}, sampler1{}, buffer{}, depthFunc{}, cullMode{}, frontFace{},
+            GLint program{}, vao{}, activeTexture{}, texture0{}, palette1{}, shadow2{},
+                sampler0{}, sampler1{}, sampler2{}, buffer{}, depthFunc{}, cullMode{}, frontFace{},
                 srcRGB{}, dstRGB{}, srcAlpha{}, dstAlpha{}, equationRGB{}, equationAlpha{};
-            GLboolean depthMask{}, depthTest{}, cull{}, blend{};
+            GLint framebuffer{}, viewport[4]{};
+            GLboolean depthMask{}, depthTest{}, cull{}, blend{}, scissor{}, polygonOffset{};
 
             DrawState()
             {
@@ -128,7 +186,12 @@ namespace julia::render_opengl
                 glActiveTexture(GL_TEXTURE1);
                 glGetIntegerv(GL_TEXTURE_BINDING_BUFFER, &palette1);
                 glGetIntegerv(GL_SAMPLER_BINDING, &sampler1);
+                glActiveTexture(GL_TEXTURE2);
+                glGetIntegerv(GL_TEXTURE_BINDING_2D, &shadow2);
+                glGetIntegerv(GL_SAMPLER_BINDING, &sampler2);
                 glGetIntegerv(GL_TEXTURE_BUFFER_BINDING, &buffer);
+                glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &framebuffer);
+                glGetIntegerv(GL_VIEWPORT, viewport);
                 glGetBooleanv(GL_DEPTH_WRITEMASK, &depthMask);
                 glGetIntegerv(GL_DEPTH_FUNC, &depthFunc);
                 glGetIntegerv(GL_CULL_FACE_MODE, &cullMode);
@@ -142,6 +205,8 @@ namespace julia::render_opengl
                 depthTest = glIsEnabled(GL_DEPTH_TEST);
                 cull = glIsEnabled(GL_CULL_FACE);
                 blend = glIsEnabled(GL_BLEND);
+                scissor = glIsEnabled(GL_SCISSOR_TEST);
+                polygonOffset = glIsEnabled(GL_POLYGON_OFFSET_FILL);
             }
 
             ~DrawState()
@@ -155,7 +220,12 @@ namespace julia::render_opengl
                 glActiveTexture(GL_TEXTURE1);
                 glBindTexture(GL_TEXTURE_BUFFER, static_cast<GLuint>(palette1));
                 glBindSampler(1, static_cast<GLuint>(sampler1));
+                glActiveTexture(GL_TEXTURE2);
+                glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(shadow2));
+                glBindSampler(2, static_cast<GLuint>(sampler2));
                 glActiveTexture(static_cast<GLenum>(activeTexture));
+                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, static_cast<GLuint>(framebuffer));
+                glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
                 glDepthMask(depthMask);
                 glDepthFunc(static_cast<GLenum>(depthFunc));
                 glCullFace(static_cast<GLenum>(cullMode));
@@ -166,6 +236,8 @@ namespace julia::render_opengl
                 setEnabled(GL_DEPTH_TEST, depthTest);
                 setEnabled(GL_CULL_FACE, cull);
                 setEnabled(GL_BLEND, blend);
+                setEnabled(GL_SCISSOR_TEST, scissor);
+                setEnabled(GL_POLYGON_OFFSET_FILL, polygonOffset);
             }
 
             static void setEnabled(GLenum cap, GLboolean enabled)
@@ -225,6 +297,8 @@ namespace julia::render_opengl
 
     OpenGLRenderer::~OpenGLRenderer()
     {
+        if (shadowFramebuffer_) glDeleteFramebuffers(1, &shadowFramebuffer_);
+        if (shadowTexture_) glDeleteTextures(1, &shadowTexture_);
         if (boneTexture_) glDeleteTextures(1, &boneTexture_);
         if (boneBuffer_) glDeleteBuffers(1, &boneBuffer_);
     }
@@ -273,6 +347,9 @@ namespace julia::render_opengl
         );
 
         glGetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &maxBoneTexels_);
+        GLint maxTextureSize = 0;
+        glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
+        shadowMapSize_ = std::min(ShadowMapSize, maxTextureSize);
         // Treat required inputs as a contract; a misspelled/optimized-away
         // input must fail initialization rather than silently take GL defaults.
         for (const auto& [name, expectedType] : {
@@ -284,6 +361,11 @@ namespace julia::render_opengl
              {"uDiffuseColor", GL_FLOAT_VEC3}, {"uHasDiffuseTexture", GL_BOOL},
              {"uViewPos", GL_FLOAT_VEC3}, {"uLightResponse", GL_FLOAT},
              {"uSpecularStrength", GL_FLOAT}, {"uRimStrength", GL_FLOAT},
+             {"uSpecularPower", GL_FLOAT}, {"uMaterialKind", GL_INT}, {"uOutlineScale", GL_FLOAT},
+             {"uKeyLightDirection", GL_FLOAT_VEC3}, {"uKeyLightColor", GL_FLOAT_VEC3},
+             {"uShadowTint", GL_FLOAT_VEC3}, {"uShadowPass", GL_BOOL}, {"uReceiveShadows", GL_BOOL},
+             {"uShadowMap", GL_SAMPLER_2D_SHADOW}, {"uLightViewProjection", GL_FLOAT_MAT4},
+             {"uShadowParams", GL_FLOAT_VEC3}, {"uShadowStrength", GL_FLOAT},
              {"uOpacity", GL_FLOAT}, {"uAlphaMode", GL_INT}, {"uAlphaCutoff", GL_FLOAT}})
         {
             GLuint index = GL_INVALID_INDEX;
@@ -297,11 +379,77 @@ namespace julia::render_opengl
                 throw std::runtime_error(std::string("Invalid model shader uniform type/size: ") + name);
         }
         for (const auto& [name, location] : {std::pair{"aPosition", 0}, {"aNormal", 1},
-             {"aTexCoord", 2}, {"aBoneIds", 3}, {"aBoneWeights", 4}})
+             {"aTexCoord", 2}, {"aBoneIds", 3}, {"aBoneWeights", 4}, {"aOutlineNormal", 5}})
             if (glGetAttribLocation(shader_.id(), name) != location)
                 throw std::runtime_error(std::string("Invalid vertex attribute: ") + name);
 
         resize(width_, height_);
+    }
+
+    void OpenGLRenderer::initializeShadowMap()
+    {
+        if (shadowFramebuffer_) return;
+        // Caller owns a DrawState guard. Use only the draw FBO binding so a
+        // separate caller read framebuffer remains completely untouched.
+        GLuint texture = 0, framebuffer = 0;
+        glGenTextures(1, &texture);
+        glGenFramebuffers(1, &framebuffer);
+        try
+        {
+            if (!texture || !framebuffer) throw std::runtime_error("Cannot allocate self-shadow resources");
+            glActiveTexture(GL_TEXTURE2);
+            glBindTexture(GL_TEXTURE_2D, texture);
+            // A caller pixel-unpack buffer must not turn nullptr into offset 0.
+            GLint unpackBuffer = 0;
+            glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &unpackBuffer);
+            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, shadowMapSize_, shadowMapSize_,
+                0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, nullptr);
+            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, static_cast<GLuint>(unpackBuffer));
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+            constexpr GLfloat border[]{1.0f, 1.0f, 1.0f, 1.0f};
+            glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, border);
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer);
+            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texture, 0);
+            glDrawBuffer(GL_NONE);
+            GLint readFramebuffer = 0;
+            glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &readFramebuffer);
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffer);
+            glReadBuffer(GL_NONE);
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, static_cast<GLuint>(readFramebuffer));
+            if (glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+                throw std::runtime_error("Self-shadow framebuffer is incomplete");
+        }
+        catch (...)
+        {
+            if (framebuffer) glDeleteFramebuffers(1, &framebuffer);
+            if (texture) glDeleteTextures(1, &texture);
+            throw;
+        }
+        shadowTexture_ = texture;
+        shadowFramebuffer_ = framebuffer;
+    }
+
+    void OpenGLRenderer::setStyleConfig(const ToonStyleConfig& style)
+    {
+        const glm::dvec3 direction{style.keyLightDirection};
+        const double length = glm::length(direction);
+        if (!finite(style.keyLightDirection) || !finite(style.keyLightColor) || !finite(style.shadowTint) ||
+            !std::isfinite(length) || length < 1e-12 ||
+            glm::any(glm::lessThan(style.keyLightColor, glm::vec3{0.0f})) ||
+            glm::any(glm::greaterThan(style.keyLightColor, glm::vec3{4.0f})) ||
+            glm::any(glm::lessThan(style.shadowTint, glm::vec3{0.0f})) ||
+            glm::any(glm::greaterThan(style.shadowTint, glm::vec3{1.0f})) ||
+            !std::isfinite(style.outlineWidthPixels) || style.outlineWidthPixels < 0.0f || style.outlineWidthPixels > 8.0f ||
+            !std::isfinite(style.shadowStrength) || style.shadowStrength < 0.0f || style.shadowStrength > 1.0f)
+            throw std::invalid_argument("Invalid toon lighting, shadow or outline parameters");
+        style_ = style;
+        style_.keyLightDirection = glm::vec3{direction / length};
     }
 
     void OpenGLRenderer::setCamera(const CameraConfig& camera)
@@ -375,6 +523,7 @@ namespace julia::render_opengl
         glDepthMask(GL_TRUE);
         glDisable(GL_BLEND);
         glDisable(GL_CULL_FACE);
+        glDisable(GL_POLYGON_OFFSET_FILL);
         glFrontFace(determinant < 0.0f ? GL_CW : GL_CCW);
         glBindSampler(0, 0);
         glBindSampler(1, 0);
@@ -384,11 +533,18 @@ namespace julia::render_opengl
         shader_.setMat4("uProjection", projection_);
         shader_.setMat3("uNormalMatrix", normalMatrix);
         shader_.setVec3("uViewport", glm::vec3{static_cast<float>(width_), static_cast<float>(height_), 0.0f});
-        shader_.setFloat("uOutlineWidthPixels", 2.4f);
+        shader_.setFloat("uOutlineWidthPixels", style_.outlineWidthPixels);
         shader_.setInt("uDiffuseTexture", 0);
         shader_.setInt("uBonePalette", 1);
+        shader_.setInt("uShadowMap", 2);
         shader_.setInt("uBoneCount", static_cast<int>(boneMatrices.size()));
         shader_.setVec3("uViewPos", camera_.position);
+        shader_.setVec3("uKeyLightDirection", style_.keyLightDirection);
+        shader_.setVec3("uKeyLightColor", style_.keyLightColor);
+        shader_.setVec3("uShadowTint", style_.shadowTint);
+        shader_.setFloat("uShadowStrength", style_.shadowStrength);
+        shader_.setBool("uShadowPass", false);
+        shader_.setBool("uReceiveShadows", false);
 
         const bool useSkinning = !boneMatrices.empty();
 
@@ -420,6 +576,38 @@ namespace julia::render_opengl
             boneStorageInitialized_ = true;
         }
 
+        const bool hasCasters = std::any_of(model.meshes().begin(), model.meshes().end(),
+            [](const GLMesh& mesh) { return !mesh.transparent() && mesh.indexCount() > 0; });
+        const auto shadow = style_.selfShadows && style_.shadowStrength > 0.0f && hasCasters
+            ? fitShadow(model.bounds(), modelMatrix, boneMatrices,
+                        glm::normalize(style_.keyLightDirection), shadowMapSize_) : ShadowFit{};
+        if (shadow.valid)
+        {
+            initializeShadowMap();
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, shadowFramebuffer_);
+            glViewport(0, 0, shadowMapSize_, shadowMapSize_);
+            glDisable(GL_SCISSOR_TEST);
+            glActiveTexture(GL_TEXTURE2);
+            glBindSampler(2, 0);
+            // Avoid sampling a texture while rendering into its attachment.
+            glBindTexture(GL_TEXTURE_2D, 0);
+            constexpr GLfloat depth = 1.0f;
+            glClearBufferfv(GL_DEPTH, 0, &depth);
+            shader_.setMat4("uLightViewProjection", shadow.matrix);
+            shader_.setVec3("uShadowParams", shadow.parameters);
+            shader_.setBool("uOutlinePass", false);
+            shader_.setBool("uShadowPass", true);
+            model.drawOpaque(shader_);
+            shader_.setBool("uShadowPass", false);
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, static_cast<GLuint>(previousState.framebuffer));
+            glViewport(previousState.viewport[0], previousState.viewport[1],
+                       previousState.viewport[2], previousState.viewport[3]);
+            DrawState::setEnabled(GL_SCISSOR_TEST, previousState.scissor);
+            glActiveTexture(GL_TEXTURE2);
+            glBindTexture(GL_TEXTURE_2D, shadowTexture_);
+            shader_.setBool("uReceiveShadows", true);
+        }
+
         // Write opaque/masked depth first, so hidden shells cannot overwrite
         // visible surfaces or one another according to mesh submission order.
         shader_.setBool("uOutlinePass", false);
@@ -434,7 +622,7 @@ namespace julia::render_opengl
 
         glDepthMask(GL_FALSE);
 
-        model.drawOpaque(shader_);
+        if (style_.outlineWidthPixels > 0.0f) model.drawOutline(shader_);
 
         glDepthMask(GL_TRUE);
         glCullFace(GL_BACK);

@@ -71,6 +71,12 @@ namespace julia::render_opengl
             if (!mesh.transparent()) mesh.draw(shader);
     }
 
+    void GLModel::drawOutline(const GLShader& shader) const
+    {
+        for (const auto& mesh : meshes_)
+            if (!mesh.transparent() && mesh.material().outlineScale > 0.0f) mesh.draw(shader);
+    }
+
     void GLModel::drawTransparent(const GLShader& shader, const glm::mat4& viewModel) const
     {
         struct Entry { const GLMesh* mesh; float depth; };

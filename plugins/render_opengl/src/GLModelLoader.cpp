@@ -16,11 +16,13 @@
 #include <cmath>
 #include <filesystem>
 #include <iostream>
+#include <initializer_list>
 #include <memory>
 #include <limits>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace julia::render_opengl
@@ -211,73 +213,126 @@ namespace julia::render_opengl
             return toLower(name);
         }
 
-        void applyMaterialLightingProfile(
-            GLMeshMaterial& material,
-            const std::string& name
-        )
+        std::vector<std::string> materialWords(const std::string& name)
         {
-            if (
-                name.find("shield") != std::string::npos ||
-                name.find("armor") != std::string::npos ||
-                name.find("metal") != std::string::npos
-            )
+            std::vector<std::string> words;
+            std::string word;
+            const auto flush = [&] {
+                if (!word.empty()) words.push_back(std::exchange(word, {}));
+            };
+            for (std::size_t i = 0; i < name.size(); ++i)
             {
-                material.lightResponse = 0.90f;
-                material.specularStrength = 0.018f;
-                material.rimStrength = 0.038f;
+                const auto c = static_cast<unsigned char>(name[i]);
+                if (!std::isalpha(c))
+                {
+                    flush();
+                    continue;
+                }
+                // Exporters use underscores, camelCase and numeric suffixes.
+                // Match complete words so "ear" does not capture underwear/pearl.
+                if (i > 0 && std::isupper(c) &&
+                    std::islower(static_cast<unsigned char>(name[i - 1])))
+                    flush();
+                word += static_cast<char>(std::tolower(c));
             }
-            else if (name.find("hair") != std::string::npos)
+            flush();
+            return words;
+        }
+
+        bool hasMaterialWord(const std::vector<std::string>& words,
+            std::initializer_list<const char*> names)
+        {
+            return std::any_of(words.begin(), words.end(), [&](const auto& word) {
+                return std::any_of(names.begin(), names.end(), [&](const char* name) { return word == name; });
+            });
+        }
+
+        ToonMaterialKind specificMaterialKind(const std::vector<std::string>& words)
+        {
+            if (hasMaterialWord(words, {"eyelash", "eyelashes", "eyebrow", "eyebrows", "brow", "brows", "lash", "lashes", "ink"}))
+                return ToonMaterialKind::Ink;
+            if (hasMaterialWord(words, {"eye", "eyes", "iris", "pupil", "cornea", "highlight", "hightlight"}))
+                return ToonMaterialKind::Eye;
+            if (hasMaterialWord(words, {"shield", "armor", "armour", "shoulderarmor", "metal", "sword", "blade"}))
+                return ToonMaterialKind::Metal;
+            // Accessories such as hair_band have fabric semantics despite "hair".
+            if (hasMaterialWord(words, {"shirt", "cloth", "clothes", "clothing", "glove", "gloves",
+                "sock", "socks", "stocking", "stockings", "underwear", "dress", "underdress",
+                "coat", "overcoat", "cape", "ribbon", "band"}))
+                return ToonMaterialKind::Fabric;
+            if (hasMaterialWord(words, {"skin", "face", "ear", "ears", "earinsides"}))
+                return ToonMaterialKind::Skin;
+            if (hasMaterialWord(words, {"belt", "shoe", "shoes", "boot", "boots", "leather", "cuff",
+                "bow", "scabbard", "scrabbard"}))
+                return ToonMaterialKind::Leather;
+            if (hasMaterialWord(words, {"hair", "facialhair", "strand", "strands", "tail", "fur"}))
+                return ToonMaterialKind::Hair;
+            return ToonMaterialKind::Generic;
+        }
+
+        void applyMaterialLightingProfile(GLMeshMaterial& material,
+            const aiMaterial* source, const aiMesh* mesh)
+        {
+            const auto meshWords = materialWords(mesh ? mesh->mName.C_Str() : "");
+            aiString sourceName;
+            source->Get(AI_MATKEY_NAME, sourceName);
+            const auto sourceWords = materialWords(sourceName.C_Str());
+            // A single body atlas is often shared by eyes, skin and clothing.
+            // Prefer the specific mesh semantics over a generic atlas name.
+            auto kind = specificMaterialKind(meshWords);
+            if (kind == ToonMaterialKind::Generic) kind = specificMaterialKind(sourceWords);
+            if (kind == ToonMaterialKind::Generic &&
+                (hasMaterialWord(meshWords, {"body"}) || hasMaterialWord(sourceWords, {"body"})))
+                kind = ToonMaterialKind::Fabric;
+            material.toonKind = kind;
+            switch (kind)
             {
-                material.lightResponse = 0.84f;
-                material.specularStrength = 0.006f;
-                material.rimStrength = 0.042f;
-            }
-            else if (
-                name.find("skin") != std::string::npos ||
-                name.find("face") != std::string::npos ||
-                name.find("ear") != std::string::npos
-            )
-            {
-                material.lightResponse = 0.78f;
-                material.specularStrength = 0.003f;
-                material.rimStrength = 0.030f;
-            }
-            else if (
-                name.find("shirt") != std::string::npos ||
-                name.find("cloth") != std::string::npos ||
-                name.find("glove") != std::string::npos ||
-                name.find("sock") != std::string::npos ||
-                name.find("underwear") != std::string::npos ||
-                name.find("body") != std::string::npos
-            )
-            {
-                material.lightResponse = 0.74f;
-                material.specularStrength = 0.002f;
-                material.rimStrength = 0.026f;
-            }
-            else if (
-                name.find("belt") != std::string::npos ||
-                name.find("shoe") != std::string::npos ||
-                name.find("leather") != std::string::npos ||
-                name.find("cuff") != std::string::npos ||
-                name.find("bow") != std::string::npos
-            )
-            {
-                material.lightResponse = 0.78f;
-                material.specularStrength = 0.005f;
-                material.rimStrength = 0.030f;
-            }
-            else if (
-                name.find("eye") != std::string::npos ||
-                name.find("highlight") != std::string::npos ||
-                // "hightlight" is a misspelling baked into the source asset's
-                // material names; matched intentionally, not a typo here.
-                name.find("hightlight") != std::string::npos
-            )
-            {
-                material.lightResponse = 0.88f;
-                material.specularStrength = 0.026f;
-                material.rimStrength = 0.015f;
+                case ToonMaterialKind::Skin:
+                    material.lightResponse = 0.78f;
+                    material.specularStrength = 0.035f;
+                    material.rimStrength = 0.030f;
+                    material.specularPower = 48.0f;
+                    material.outlineScale = 0.5f;
+                    break;
+                case ToonMaterialKind::Hair:
+                    material.lightResponse = 0.84f;
+                    material.specularStrength = 0.16f;
+                    material.rimStrength = 0.042f;
+                    material.specularPower = 64.0f;
+                    material.outlineScale = 0.85f;
+                    break;
+                case ToonMaterialKind::Eye:
+                    material.lightResponse = 0.88f;
+                    material.specularStrength = 0.65f;
+                    material.rimStrength = 0.015f;
+                    material.specularPower = 180.0f;
+                    material.outlineScale = 0.0f;
+                    break;
+                case ToonMaterialKind::Metal:
+                    material.lightResponse = 0.90f;
+                    material.specularStrength = 0.50f;
+                    material.rimStrength = 0.038f;
+                    material.specularPower = 100.0f;
+                    break;
+                case ToonMaterialKind::Fabric:
+                    material.lightResponse = 0.74f;
+                    material.specularStrength = 0.015f;
+                    material.rimStrength = 0.026f;
+                    material.specularPower = 32.0f;
+                    break;
+                case ToonMaterialKind::Leather:
+                    material.lightResponse = 0.78f;
+                    material.specularStrength = 0.10f;
+                    material.rimStrength = 0.030f;
+                    material.specularPower = 64.0f;
+                    break;
+                case ToonMaterialKind::Ink:
+                    material.specularStrength = 0.0f;
+                    material.rimStrength = 0.0f;
+                    material.outlineScale = 0.0f;
+                    break;
+                case ToonMaterialKind::Generic:
+                    break;
             }
         }
 
@@ -446,7 +501,7 @@ namespace julia::render_opengl
             const aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
             const std::string materialName = materialMeshName(material, mesh);
 
-            applyMaterialLightingProfile(result, materialName);
+            applyMaterialLightingProfile(result, material, mesh);
 
             aiColor4D baseColor;
             const bool hasBaseColor = material->Get(AI_MATKEY_BASE_COLOR, baseColor) == AI_SUCCESS;

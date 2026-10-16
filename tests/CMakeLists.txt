@@ -37,3 +37,22 @@ foreach(suite model_math model_import gpu_resources shader_pipeline)
     add_test(NAME ${suite} COMMAND julia_test_${suite} "${CMAKE_BINARY_DIR}/verification")
     set_tests_properties(${suite} PROPERTIES TIMEOUT 60)
 endforeach()
+
+# CPU geometry regression: separate hull normals leave surface shading intact.
+add_executable(julia_test_outline_normals test_outline_normals.cpp)
+target_include_directories(julia_test_outline_normals PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(julia_test_outline_normals PRIVATE julia_render_opengl julia::warnings)
+add_test(NAME outline_normals COMMAND julia_test_outline_normals)
+
+# Actual GLSL shadows, masked casters, directional lighting and material response.
+add_executable(julia_test_toon_render test_toon_render.cpp)
+target_include_directories(julia_test_toon_render PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(julia_test_toon_render PRIVATE julia_render_opengl julia::warnings)
+add_test(NAME toon_render COMMAND julia_test_toon_render)
+set_tests_properties(toon_render PROPERTIES TIMEOUT 60)
+
+# Developer audit tool: explicit invocation, since images/timings require review.
+add_executable(julia_shader_visual_audit ../tools/shader_visual_audit.cpp)
+target_compile_definitions(julia_shader_visual_audit PRIVATE
+    JULIA_AUDIT_ASSET_DIR="${CMAKE_SOURCE_DIR}/assets")
+target_link_libraries(julia_shader_visual_audit PRIVATE julia_render_opengl julia::warnings)

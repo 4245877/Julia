@@ -55,6 +55,7 @@ namespace julia::render_opengl
 
         void draw(const GLShader& shader) const;
         void drawOpaque(const GLShader& shader) const;
+        void drawOutline(const GLShader& shader) const;
         void drawTransparent(const GLShader& shader, const glm::mat4& viewModel) const;
 
         // Produce final matrices expected by renderModel(). An empty argument

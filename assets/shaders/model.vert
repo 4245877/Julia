@@ -5,23 +5,25 @@ layout (location = 1) in vec3 aNormal;
 layout (location = 2) in vec2 aTexCoord;
 layout (location = 3) in ivec4 aBoneIds;
 layout (location = 4) in vec4 aBoneWeights;
+layout (location = 5) in vec3 aOutlineNormal;
 
 uniform mat4 uModel;
 uniform mat4 uView;
 uniform mat4 uProjection;
-// Computed once per draw on the CPU, not inverted once per vertex.
 uniform mat3 uNormalMatrix;
 uniform bool uUseSkinning;
 uniform int uBoneCount;
-// Four RGBA32F texels are the four columns of a column-major GLM matrix.
-// Buffer textures are core in GL 3.3 and avoid the small default-uniform limit.
 uniform samplerBuffer uBonePalette;
 uniform bool uOutlinePass;
+uniform bool uShadowPass;
+uniform mat4 uLightViewProjection;
 uniform vec3 uViewport;
 uniform float uOutlineWidthPixels;
+uniform float uOutlineScale = 1.0;
 
 out vec3 vWorldPosition;
 out vec3 vNormal;
+out vec3 vMaterialTangent;
 out vec2 vTexCoord;
 flat out float vSkinOrientation;
 
@@ -61,46 +63,57 @@ void main()
         if (totalWeight > 0.0) skin = accumulated / totalWeight;
     }
 
+    vec4 worldPosition = uModel * skin * vec4(aPosition, 1.0);
+    vTexCoord = aTexCoord;
+    if (uShadowPass)
+    {
+        // Depth casters do not need normal cofactors, outline transforms or
+        // strand tangents. Keep the shared skinning/alpha path without paying
+        // for the fill's vertex lighting work in this additional pass.
+        gl_Position = uLightViewProjection * worldPosition;
+        return;
+    }
+
     vec3 localNormal = safeNormal(aNormal, vec3(0.0, 1.0, 0.0));
+    vec3 outlineNormal = safeNormal(aOutlineNormal, localNormal);
     vSkinOrientation = 1.0;
     if (uUseSkinning)
     {
-        // Cofactors give inverse-transpose direction without an inverse/divide.
-        // Multiplying by sign(det) handles reflections. For a collapsed blend,
-        // use the surviving cofactor direction, or the input normal if rank < 2.
         mat3 linearSkin = mat3(skin);
         mat3 cofactor = mat3(cross(linearSkin[1], linearSkin[2]),
                              cross(linearSkin[2], linearSkin[0]),
                              cross(linearSkin[0], linearSkin[1]));
         float det = dot(linearSkin[0], cofactor[0]);
         vSkinOrientation = det < 0.0 ? -1.0 : 1.0;
-        localNormal = safeNormal(cofactor * localNormal * (det < 0.0 ? -1.0 : 1.0),
-                                 localNormal);
+        cofactor *= vSkinOrientation;
+        localNormal = safeNormal(cofactor * localNormal, localNormal);
+        outlineNormal = safeNormal(cofactor * outlineNormal, outlineNormal);
     }
 
-    vec4 worldPosition = uModel * skin * vec4(aPosition, 1.0);
     vec3 worldNormal = safeNormal(uNormalMatrix * localNormal, vec3(0.0, 1.0, 0.0));
     vWorldPosition = worldPosition.xyz;
     vNormal = worldNormal;
-    vTexCoord = aTexCoord;
-
-    vec4 viewPosition = uView * worldPosition;
-    vec4 clipPosition = uProjection * viewPosition;
-    if (uOutlinePass && clipPosition.w > 0.0)
+    // An object-space strand axis follows model and skeletal motion. Assets can
+    // supply a dedicated groom/tangent map in a future material extension.
+    vMaterialTangent = safeNormal(mat3(uModel) * mat3(skin) * vec3(0.0, 1.0, 0.0),
+                                  vec3(0.0, 1.0, 0.0));
+    vec4 clipPosition = uProjection * uView * worldPosition;
+    if (uOutlinePass && uOutlineScale > 0.0 && clipPosition.w > 0.0)
     {
-        vec3 viewNormal = mat3(uView) * worldNormal;
+        vec3 worldOutline = safeNormal(uNormalMatrix * outlineNormal, worldNormal);
+        vec3 viewNormal = mat3(uView) * worldOutline;
         vec4 projectedNormal = uProjection * vec4(viewNormal, 0.0);
-        // Derivative of clip.xy / clip.w in the normal direction. This also
-        // accounts for off-axis perspective, unlike viewNormal.xy alone.
         vec2 pixelDirection = (projectedNormal.xy * clipPosition.w -
                                clipPosition.xy * projectedNormal.w) * uViewport.xy;
         float directionLength = length(pixelDirection);
         if (directionLength > 1e-8)
         {
-            float taper = mix(1.1, 0.65, abs(viewNormal.z));
+            // The same pixel width at every distance, FOV and aspect ratio.
+            // A mild taper avoids thick marks on surfaces facing the camera.
+            float taper = mix(1.0, 0.8, abs(viewNormal.z));
             clipPosition.xy += pixelDirection / directionLength *
-                (2.0 * uOutlineWidthPixels * taper / max(uViewport.xy, vec2(1.0))) *
-                clipPosition.w;
+                (2.0 * uOutlineWidthPixels * uOutlineScale * taper /
+                 max(uViewport.xy, vec2(1.0))) * clipPosition.w;
         }
     }
     gl_Position = clipPosition;

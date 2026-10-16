@@ -1,6 +1,7 @@
 #include "julia/render_opengl/GLMesh.hpp"
 
 #include "julia/render_opengl/GLShader.hpp"
+#include "julia/render_opengl/OutlineNormals.hpp"
 
 #include <cstddef>
 #include <cmath>
@@ -79,9 +80,17 @@ namespace julia::render_opengl
                 throw std::invalid_argument("Mesh material has a non-finite diffuse color");
         if (!std::isfinite(material_.opacity) || !std::isfinite(material_.alphaCutoff) ||
             !std::isfinite(material_.lightResponse) || !std::isfinite(material_.specularStrength) ||
-            !std::isfinite(material_.rimStrength))
+            !std::isfinite(material_.rimStrength) || !std::isfinite(material_.specularPower) ||
+            !std::isfinite(material_.outlineScale))
             throw std::invalid_argument("Mesh material has non-finite parameters");
+        if (material_.specularPower <= 0.0f || material_.outlineScale < 0.0f ||
+            static_cast<int>(material_.toonKind) < static_cast<int>(ToonMaterialKind::Generic) ||
+            static_cast<int>(material_.toonKind) > static_cast<int>(ToonMaterialKind::Ink))
+            throw std::invalid_argument("Mesh material has invalid toon parameters");
 
+        const auto outlineNormals = buildOutlineNormals(vertices, indices);
+        for (std::size_t i = 0; i < vertices.size(); ++i)
+            vertices[i].outlineNormal = outlineNormals[i];
         upload(vertices, indices);
     }
 
@@ -137,6 +146,9 @@ namespace julia::render_opengl
         shader.setFloat("uLightResponse", material_.lightResponse);
         shader.setFloat("uSpecularStrength", material_.specularStrength);
         shader.setFloat("uRimStrength", material_.rimStrength);
+        shader.setInt("uMaterialKind", static_cast<int>(material_.toonKind));
+        shader.setFloat("uSpecularPower", material_.specularPower);
+        shader.setFloat("uOutlineScale", material_.outlineScale);
         shader.setFloat("uOpacity", material_.opacity);
         shader.setFloat("uAlphaCutoff", material_.alphaCutoff);
         shader.setInt("uAlphaMode", static_cast<int>(material_.alphaMode));
@@ -291,6 +303,16 @@ namespace julia::render_opengl
                 GL_FALSE,
                 sizeof(GLVertex),
                 reinterpret_cast<void*>(offsetof(GLVertex, boneWeights))
+            );
+
+            glEnableVertexAttribArray(5);
+            glVertexAttribPointer(
+                5,
+                3,
+                GL_FLOAT,
+                GL_FALSE,
+                sizeof(GLVertex),
+                reinterpret_cast<void*>(offsetof(GLVertex, outlineNormal))
             );
 
         }

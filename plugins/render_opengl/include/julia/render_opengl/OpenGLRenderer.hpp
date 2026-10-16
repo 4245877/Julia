@@ -23,6 +23,17 @@ namespace julia::render_opengl
         float farPlane = 100.0f;
     };
 
+    struct ToonStyleConfig
+    {
+        // World-space direction towards the key light; independent of camera.
+        glm::vec3 keyLightDirection{0.34f, 0.78f, 0.52f};
+        glm::vec3 keyLightColor{1.05f, 1.01f, 0.94f};
+        glm::vec3 shadowTint{0.62f, 0.60f, 0.74f};
+        float outlineWidthPixels = 1.35f;
+        float shadowStrength = 0.75f;
+        bool selfShadows = true;
+    };
+
     class OpenGLRenderer
     {
     public:
@@ -40,6 +51,7 @@ namespace julia::render_opengl
         void resize(int width, int height);
 
         void setCamera(const CameraConfig& camera);
+        void setStyleConfig(const ToonStyleConfig& style);
         void beginFrame();
 
         // Requires the initialized context to remain current through destruction.
@@ -48,6 +60,7 @@ namespace julia::render_opengl
         // (e.g. model.skinningMatrices()). The device TBO limit is checked.
         // Draw opaque models before models containing blended surfaces; sorting
         // within one model is by mesh center, not per pixel or across models.
+        // Self-shadows include opaque/masked meshes in this model only.
         void renderModel(
             const GLModel& model,
             const glm::mat4& modelMatrix,
@@ -60,15 +73,21 @@ namespace julia::render_opengl
         GLuint boneTexture_ = 0;
         GLint maxBoneTexels_ = 0;
         bool boneStorageInitialized_ = false;
+        GLuint shadowFramebuffer_ = 0;
+        GLuint shadowTexture_ = 0;
+        static constexpr int ShadowMapSize = 2048;
+        int shadowMapSize_ = ShadowMapSize;
 
         int width_ = 1280;
         int height_ = 720;
 
         CameraConfig camera_{};
+        ToonStyleConfig style_{};
 
         glm::mat4 view_{1.0f};
         glm::mat4 projection_{1.0f};
 
         void updateCamera();
+        void initializeShadowMap();
     };
 }

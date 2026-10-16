@@ -6,6 +6,7 @@
 #include "julia_test.hpp"
 
 #include <array>
+#include <cmath>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -156,6 +157,17 @@ namespace
             GLMeshMaterial invalidMaterial;
             invalidMaterial.opacity = std::numeric_limits<float>::infinity();
             expectThrow<std::invalid_argument>([&] { GLMesh invalid(vertices, {0, 1, 2}, invalidMaterial); });
+            invalidMaterial = {};
+            invalidMaterial.specularPower = 0.0f;
+            expectThrow<std::invalid_argument>([&] { GLMesh invalid(vertices, {0, 1, 2}, invalidMaterial); });
+            invalidMaterial.specularPower = std::numeric_limits<float>::quiet_NaN();
+            expectThrow<std::invalid_argument>([&] { GLMesh invalid(vertices, {0, 1, 2}, invalidMaterial); });
+            invalidMaterial = {};
+            invalidMaterial.outlineScale = -0.1f;
+            expectThrow<std::invalid_argument>([&] { GLMesh invalid(vertices, {0, 1, 2}, invalidMaterial); });
+            invalidMaterial = {};
+            invalidMaterial.toonKind = static_cast<ToonMaterialKind>(-1);
+            expectThrow<std::invalid_argument>([&] { GLMesh invalid(vertices, {0, 1, 2}, invalidMaterial); });
             JULIA_CHECK(integer(GL_VERTEX_ARRAY_BINDING) == static_cast<GLint>(vao));
         }
         glBindVertexArray(0);
@@ -252,6 +264,68 @@ namespace
         glUseProgram(0);
         JULIA_CHECK(glGetError() == GL_NO_ERROR);
     }
+
+    void testToonInputs()
+    {
+        std::vector<GLVertex> vertices(3);
+        vertices[0].position = {-1.0f, -1.0f, 0.0f};
+        vertices[1].position = {1.0f, -1.0f, 0.0f};
+        vertices[2].position = {0.0f, 1.0f, 0.0f};
+        // Authored lighting normals intentionally disagree with geometry.
+        // The hull must use its own attribute while surface lighting keeps Y.
+        GLMeshMaterial material;
+        material.toonKind = ToonMaterialKind::Hair;
+        material.specularPower = 64.0f;
+        material.outlineScale = 0.5f;
+        GLMesh mesh(vertices, {0, 1, 2}, material);
+        GLShader shader;
+        shader.createFromSource(R"glsl(#version 330 core
+            layout(location=0) in vec3 aPosition;
+            layout(location=1) in vec3 aNormal;
+            layout(location=5) in vec3 aOutlineNormal;
+            out vec3 lightingNormal;
+            out vec3 outlineNormal;
+            void main() {
+                gl_Position = vec4(aPosition, 1.0);
+                lightingNormal = aNormal;
+                outlineNormal = aOutlineNormal;
+            }
+        )glsl", R"glsl(#version 330 core
+            in vec3 lightingNormal;
+            in vec3 outlineNormal;
+            uniform int mode;
+            uniform int uMaterialKind;
+            uniform float uSpecularPower;
+            uniform float uOutlineScale;
+            out vec4 color;
+            void main() {
+                vec3 value = mode == 0
+                    ? vec3(float(uMaterialKind)/7.0, uSpecularPower/256.0, uOutlineScale/2.0)
+                    : (mode == 1 ? lightingNormal : outlineNormal)*0.5+0.5;
+                color = vec4(value, 1.0);
+            }
+        )glsl");
+        shader.bind();
+        glViewport(0, 0, 64, 64);
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_CULL_FACE);
+        glDisable(GL_BLEND);
+        glDisable(GL_DITHER);
+        glDisable(GL_FRAMEBUFFER_SRGB);
+        glReadBuffer(GL_BACK);
+        const std::array<std::array<int, 3>, 3> expected{{{73, 64, 64}, {128, 255, 128}, {128, 128, 255}}};
+        for (int mode = 0; mode < 3; ++mode)
+        {
+            shader.setInt("mode", mode);
+            mesh.draw(shader);
+            std::array<unsigned char, 4> pixel{};
+            glReadPixels(32, 32, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel.data());
+            for (std::size_t channel = 0; channel < 3; ++channel)
+                JULIA_CHECK(std::abs(static_cast<int>(pixel[channel]) - expected[mode][channel]) <= 1);
+        }
+        glUseProgram(0);
+        JULIA_CHECK(glGetError() == GL_NO_ERROR);
+    }
 }
 
 int main(int argc, char** argv)
@@ -275,6 +349,7 @@ int main(int argc, char** argv)
         testTextures(argc > 1 ? std::filesystem::path(argv[1]) : "verification");
         testMeshes();
         testMaterialSamplers();
+        testToonInputs();
     }
     catch (const std::exception& error)
     {

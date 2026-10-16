@@ -291,6 +291,7 @@ namespace
             // Active samplers of different types must use distinct units even
             // when rasterizer discard prevents fragment shader execution.
             glUniform1i(location("uDiffuseTexture"), 1);
+            glUniform1i(location("uShadowMap"), 2);
             glUniform3f(location("uViewport"), viewport.x, viewport.y, 0.0f);
             glUniform1f(location("uOutlineWidthPixels"), 2.4f);
 
@@ -406,7 +407,7 @@ namespace
             JULIA_CHECK(glm::length(plain.clip - expected) < 0.0002f);
             const glm::vec2 plainPixel = glm::vec2{plain.clip} / plain.clip.w * viewport * 0.5f;
             const glm::vec2 outlinePixel = glm::vec2{outlined.clip} / outlined.clip.w * viewport * 0.5f;
-            const float taper = glm::mix(1.1f, 0.65f, std::abs((glm::mat3{view} * plain.normal).z));
+            const float taper = glm::mix(1.0f, 0.8f, std::abs((glm::mat3{view} * plain.normal).z));
             JULIA_CHECK(std::abs(glm::length(outlinePixel - plainPixel) - 2.4f * taper) < 0.002f);
         }
     }
@@ -681,6 +682,26 @@ namespace
         camera.position = {0.0f, 0.0f, 3.0f};
         camera.target = {0.0f, 0.0f, 0.0f};
         renderer.setCamera(camera);
+        ToonStyleConfig style;
+        const auto invalidStyle = [&](const ToonStyleConfig& value) {
+            expectException([&] { renderer.setStyleConfig(value); });
+            renderer.setStyleConfig(style);
+        };
+        auto badStyle = style;
+        badStyle.keyLightDirection = glm::vec3{0.0f};
+        invalidStyle(badStyle);
+        badStyle = style;
+        badStyle.keyLightColor.x = -1.0f;
+        invalidStyle(badStyle);
+        badStyle = style;
+        badStyle.shadowTint.y = 1.1f;
+        invalidStyle(badStyle);
+        badStyle = style;
+        badStyle.shadowStrength = 1.1f;
+        invalidStyle(badStyle);
+        badStyle = style;
+        badStyle.outlineWidthPixels = std::numeric_limits<float>::quiet_NaN();
+        invalidStyle(badStyle);
         GLMeshMaterial nearMaterial;
         nearMaterial.diffuseColor = {0.8f, 0.02f, 0.02f};
         nearMaterial.specularStrength = 0.0f;
@@ -867,6 +888,23 @@ namespace
         glEnable(GL_BLEND);
         glBlendEquationSeparate(GL_FUNC_REVERSE_SUBTRACT, GL_FUNC_SUBTRACT);
         glBlendFuncSeparate(GL_DST_COLOR, GL_SRC_COLOR, GL_DST_ALPHA, GL_SRC_ALPHA);
+        GLint expectedDrawFramebuffer = 0;
+        glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &expectedDrawFramebuffer);
+        GLuint readFramebuffer = 0, texture2 = 0, sampler2 = 0;
+        glGenFramebuffers(1, &readFramebuffer);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, readFramebuffer);
+        glReadBuffer(GL_NONE);
+        glGenTextures(1, &texture2);
+        glGenSamplers(1, &sampler2);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, texture2);
+        glBindSampler(2, sampler2);
+        glActiveTexture(GL_TEXTURE3);
+        glViewport(3, 4, 55, 52);
+        glEnable(GL_SCISSOR_TEST);
+        glScissor(0, 0, 64, 64);
+        glEnable(GL_POLYGON_OFFSET_FILL);
+        glPolygonOffset(100.0f, 100.0f);
         renderer.renderModel(model, glm::scale(identity, {-1.0f, 1.0f, 1.0f}));
         const auto integer = [](GLenum name) { GLint value = 0; glGetIntegerv(name, &value); return value; };
         JULIA_CHECK(glIsEnabled(GL_DEPTH_TEST) == GL_FALSE);
@@ -885,6 +923,24 @@ namespace
         JULIA_CHECK(integer(GL_CURRENT_PROGRAM) == static_cast<GLint>(previousShader.id()));
         JULIA_CHECK(integer(GL_VERTEX_ARRAY_BINDING) == static_cast<GLint>(previousVao));
         JULIA_CHECK(integer(GL_ACTIVE_TEXTURE) == GL_TEXTURE3);
+        JULIA_CHECK(integer(GL_DRAW_FRAMEBUFFER_BINDING) == expectedDrawFramebuffer);
+        JULIA_CHECK(integer(GL_READ_FRAMEBUFFER_BINDING) == static_cast<GLint>(readFramebuffer));
+        std::array<GLint, 4> viewport{};
+        glGetIntegerv(GL_VIEWPORT, viewport.data());
+        JULIA_CHECK((viewport == std::array<GLint, 4>{3, 4, 55, 52}));
+        JULIA_CHECK(glIsEnabled(GL_SCISSOR_TEST) == GL_TRUE);
+        JULIA_CHECK(glIsEnabled(GL_POLYGON_OFFSET_FILL) == GL_TRUE);
+        glActiveTexture(GL_TEXTURE2);
+        JULIA_CHECK(integer(GL_TEXTURE_BINDING_2D) == static_cast<GLint>(texture2));
+        JULIA_CHECK(integer(GL_SAMPLER_BINDING) == static_cast<GLint>(sampler2));
+        glBindSampler(2, 0);
+        glDeleteSamplers(1, &sampler2);
+        glDeleteTextures(1, &texture2);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, static_cast<GLuint>(expectedDrawFramebuffer));
+        glDeleteFramebuffers(1, &readFramebuffer);
+        glDisable(GL_SCISSOR_TEST);
+        glDisable(GL_POLYGON_OFFSET_FILL);
+        glViewport(0, 0, 64, 64);
         JULIA_CHECK(glm::length(glm::vec3{target.read()} - glm::vec3{128.0f / 255.0f}) > 0.05f);
         glBindVertexArray(0);
         glDeleteVertexArrays(1, &previousVao);
@@ -925,6 +981,8 @@ int main()
         const std::string fragment = readText(shaders / "model.frag");
         GLShader actual;
         actual.createFromSource(vertex.c_str(), fragment.c_str());
+        actual.bind();
+        actual.setInt("uShadowMap", 2);
         JULIA_CHECK(actual.valid());
         testShaderLifetime();
         testVertexTransforms(vertex, fragment);

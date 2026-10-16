@@ -270,10 +270,79 @@ void main(){color=vec4(mode==0?vec3(1):mode==1?normal*.5+.5:mode==2?vec3(uv,0):t
         }
     }
 
+    void testToonMaterialProfiles(const std::filesystem::path& directory)
+    {
+        struct ProfileCase
+        {
+            const char* mesh;
+            const char* material;
+            ToonMaterialKind expected;
+        };
+        const ProfileCase cases[]{
+            {"eyes_mesh", "body_material", ToonMaterialKind::Eye},
+            {"skin_mesh", "body_material", ToonMaterialKind::Skin},
+            {"sword_mesh", "body_material", ToonMaterialKind::Metal},
+            {"shieldBase_mesh", "body_material", ToonMaterialKind::Metal},
+            {"boots_mesh", "body_material", ToonMaterialKind::Leather},
+            {"underwear_tex_underwear_0", "tex_underwear", ToonMaterialKind::Fabric},
+            {"eyelashes_tex_eyelashes_0", "tex_eyelashes", ToonMaterialKind::Ink},
+            {"eyebrows_mesh", "body_material", ToonMaterialKind::Ink},
+            {"hair_band_tex_band_0", "tex_band", ToonMaterialKind::Fabric},
+            {"hair1_mesh", "body_material", ToonMaterialKind::Hair},
+            {"earInsides_mesh", "body_material", ToonMaterialKind::Skin},
+            {"NurbsPath.001_tex_hair3_0", "tex_hair3", ToonMaterialKind::Hair},
+            {"arbitrary_mesh", "eyes_material", ToonMaterialKind::Eye},
+            {"clear_mesh", "default_material", ToonMaterialKind::Generic},
+            {"teapot_mesh", "pearl_material", ToonMaterialKind::Generic},
+            {"skinned_mesh", "default_material", ToonMaterialKind::Generic},
+            {"body_mesh", "body_material", ToonMaterialKind::Fabric},
+            {"facialHair_mesh", "body_material", ToonMaterialKind::Hair}};
+        std::ofstream materials(directory / "toon_profiles.mtl");
+        std::ofstream model(directory / "toon_profiles.obj");
+        model << "mtllib toon_profiles.mtl\nv -0.5 -0.5 0\nv 0.5 -0.5 0\nv 0 0.5 0\n"
+              << "vn 0 0 1\n";
+        // Deliberately share one atlas material across skin, eyes, and clothing,
+        // as in Raphtalia1. Mesh semantics must survive that shared assignment.
+        std::vector<std::string> writtenMaterials;
+        for (const auto& entry : cases)
+        {
+            if (std::find(writtenMaterials.begin(), writtenMaterials.end(), entry.material) == writtenMaterials.end())
+            {
+                materials << "newmtl " << entry.material << "\nKd 0.5 0.6 0.7\n";
+                writtenMaterials.emplace_back(entry.material);
+            }
+            model << "o " << entry.mesh << "\nusemtl " << entry.material << "\nf 1//1 2//1 3//1\n";
+        }
+        model.close();
+        materials.close();
+        const auto imported = GLModelLoader::loadFromFile(directory / "toon_profiles.obj");
+        JULIA_CHECK(imported.meshCount() == std::size(cases));
+        for (std::size_t i = 0; i < std::min(imported.meshCount(), std::size(cases)); ++i)
+        {
+            const auto& material = imported.meshes()[i].material();
+            if (material.toonKind != cases[i].expected)
+                std::cerr << "Incorrect toon profile for " << cases[i].mesh << '\n';
+            JULIA_CHECK(material.toonKind == cases[i].expected);
+            JULIA_CHECK(material.diffuseColor == glm::vec3(0.5f, 0.6f, 0.7f));
+            if (material.toonKind == ToonMaterialKind::Eye)
+            {
+                JULIA_CHECK(material.specularStrength >= 0.5f);
+                JULIA_CHECK(material.specularPower >= 100.0f);
+                JULIA_CHECK(material.outlineScale == 0.0f);
+            }
+            if (material.toonKind == ToonMaterialKind::Ink)
+            {
+                JULIA_CHECK(material.specularStrength == 0.0f);
+                JULIA_CHECK(material.outlineScale == 0.0f);
+            }
+        }
+    }
+
     void runTests(const std::filesystem::path& directory)
     {
         std::filesystem::create_directories(directory);
         testNormalRepair(directory);
+        testToonMaterialProfiles(directory);
         const auto skin = GLModelLoader::loadFromFile(writeInstancedSkin(directory));
         JULIA_CHECK(skin.meshCount() == 2);
         JULIA_CHECK(skin.boneCount() == 2);

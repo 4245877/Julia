@@ -23,9 +23,20 @@ namespace julia::render_opengl
         // Four strongest normalized influences, shared with model.vert.
         glm::ivec4 boneIds{-1, -1, -1, -1};
         glm::vec4 boneWeights{0.0f};
+        // Geometric outline normal, welded across UV and shading-normal seams.
+        // Filled once by GLMesh; authored lighting normals remain untouched.
+        glm::vec3 outlineNormal{0.0f};
     };
 
     enum class AlphaMode { Opaque, Mask, Blend };
+
+    // Shader contract: Generic=0, Skin=1, Hair=2, Eye=3, Metal=4,
+    // Fabric=5, Leather=6, Ink=7. Profiles affect lighting, never base color.
+    enum class ToonMaterialKind
+    {
+        Generic = 0, Skin = 1, Hair = 2, Eye = 3,
+        Metal = 4, Fabric = 5, Leather = 6, Ink = 7
+    };
 
     struct GLMeshMaterial
     {
@@ -43,6 +54,10 @@ namespace julia::render_opengl
         GLenum wrapT = GL_REPEAT;
         GLenum minFilter = GL_LINEAR_MIPMAP_LINEAR;
         GLenum magFilter = GL_LINEAR;
+        ToonMaterialKind toonKind = ToonMaterialKind::Generic;
+        float specularPower = 80.0f;
+        // Inverted hull is unsuitable for thin eye/decal/ink layers.
+        float outlineScale = 1.0f;
     };
 
     class GLMesh
