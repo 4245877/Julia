@@ -8,5 +8,7 @@
     53
   ],
   "original_hash": "a602086ac9e580f2d265a489478922b75aae00410313b17a89bd846ad4f3b34c",
-  "manifest_hashes_verified": true
+  "manifest_hashes_verified": true,
+  "rollback_archive_verified": true,
+  "cleanup_verified": true
 }
