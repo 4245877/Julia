@@ -1,0 +1,747 @@
+{
+  "date": "2026-10-21",
+  "moves": [
+    {
+      "from": "docs/raphtalia/before_elbows_90.png",
+      "to": "docs/raphtalia/history/2026-10-20/before_elbows_90.png",
+      "sha256": "54922ca8e249bc3887d3fc6473c63781aeaeca8d8e667c875055ca699c7827c1",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/before_fingers_35.png",
+      "to": "docs/raphtalia/history/2026-10-20/before_fingers_35.png",
+      "sha256": "a51638d6bbffe2b04970cf06ef58150b81b22a370919a726c3ca58065d708e3f",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/before_fingers_detail.png",
+      "to": "docs/raphtalia/history/2026-10-20/before_fingers_detail.png",
+      "sha256": "48a7adbe57c989b59f688f0aa99e6f88462cb56befe7b07815f034da8516d355",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/before_hair_tail_cloth.png",
+      "to": "docs/raphtalia/history/2026-10-20/before_hair_tail_cloth.png",
+      "sha256": "eeef2f16bd91272fd618741c3b5ab244f0f01adc59d583f99d469c6a6bab3140",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/before_head_torso.png",
+      "to": "docs/raphtalia/history/2026-10-20/before_head_torso.png",
+      "sha256": "189924763f525e0ef25f025de4d3bbf5baeadad75103235790a406008ac724ac",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/before_knees_90.png",
+      "to": "docs/raphtalia/history/2026-10-20/before_knees_90.png",
+      "sha256": "1ceca0efa9186d6a4e1fbd7ff3062550ea1d6fa733f1bcba4b270b79664f2989",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/before_shoulders_hips_ankles.png",
+      "to": "docs/raphtalia/history/2026-10-20/before_shoulders_hips_ankles.png",
+      "sha256": "64b24ec9c96daf8c58c62b4217ab8a32a2ddf10dff44cd48a7727a8357455792",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/blender_comparison.png",
+      "to": "docs/raphtalia/history/2026-10-20/blender_comparison.png",
+      "sha256": "5fb5ecdc43254b49fb69b57c3e1d664b7a71c08527bc7744e92522cc09ae9935",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_0_Raphtalia_Rig_TEST_elbows_90_25_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_0_Raphtalia_Rig_TEST_elbows_90_25_back.png",
+      "sha256": "97a1cc422bf098e94a924834de463d65160225adbcd341adc72243fd05b2ed62",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_0_Raphtalia_Rig_TEST_elbows_90_25_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_0_Raphtalia_Rig_TEST_elbows_90_25_front.png",
+      "sha256": "3b9cb131c5d090f52fb8321a22416f1a9ab79ea91cae602a3b99945040463fb0",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_0_Raphtalia_Rig_TEST_elbows_90_50_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_0_Raphtalia_Rig_TEST_elbows_90_50_back.png",
+      "sha256": "b26d2d3fffd48bab536101542bd725db4a5de92e3d217ba8a381eaf71283b827",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_0_Raphtalia_Rig_TEST_elbows_90_50_face_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_0_Raphtalia_Rig_TEST_elbows_90_50_face_back.png",
+      "sha256": "3dcc5ac63f62c9d137b3ec5b568ec31e39e37d0a4dbea6c1357d028b5fc05094",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_0_Raphtalia_Rig_TEST_elbows_90_50_face_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_0_Raphtalia_Rig_TEST_elbows_90_50_face_front.png",
+      "sha256": "d090fb3670e79072436af55ae970383b4df0526d17c384931355d426ba9393db",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_0_Raphtalia_Rig_TEST_elbows_90_50_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_0_Raphtalia_Rig_TEST_elbows_90_50_front.png",
+      "sha256": "560a43e58e3a0849be19605f633b0d90e873412f7c238eb06770ee8006d1cf7b",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_0_Raphtalia_Rig_TEST_elbows_90_75_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_0_Raphtalia_Rig_TEST_elbows_90_75_back.png",
+      "sha256": "97a1cc422bf098e94a924834de463d65160225adbcd341adc72243fd05b2ed62",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_0_Raphtalia_Rig_TEST_elbows_90_75_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_0_Raphtalia_Rig_TEST_elbows_90_75_front.png",
+      "sha256": "3b9cb131c5d090f52fb8321a22416f1a9ab79ea91cae602a3b99945040463fb0",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_1_Raphtalia_Rig_TEST_eyes_ears_25_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_1_Raphtalia_Rig_TEST_eyes_ears_25_back.png",
+      "sha256": "b1bb401496aca9c2da9631487dddba59ec39f766daf3faf45617d181e71142ee",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_1_Raphtalia_Rig_TEST_eyes_ears_25_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_1_Raphtalia_Rig_TEST_eyes_ears_25_front.png",
+      "sha256": "00482aec1a6529b0b1e73d8ad2666f60215567b868b429ca4ea99f071163c32e",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_1_Raphtalia_Rig_TEST_eyes_ears_50_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_1_Raphtalia_Rig_TEST_eyes_ears_50_back.png",
+      "sha256": "f131aed0d1be3e521525aa21c4160be851d04427cef13548a7dd7662fe789d08",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_1_Raphtalia_Rig_TEST_eyes_ears_50_face_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_1_Raphtalia_Rig_TEST_eyes_ears_50_face_back.png",
+      "sha256": "b2b465cab35dad33df66c2d91320eb69e246468320292aa6aa3021bf378ddf71",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_1_Raphtalia_Rig_TEST_eyes_ears_50_face_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_1_Raphtalia_Rig_TEST_eyes_ears_50_face_front.png",
+      "sha256": "77f96ffaf2ff8193133081ec5f7f5b462fdc25e9d8a1bea651a47fecb0dfbc59",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_1_Raphtalia_Rig_TEST_eyes_ears_50_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_1_Raphtalia_Rig_TEST_eyes_ears_50_front.png",
+      "sha256": "c15a629f6414e04e98cd1bb26757e10b2c8a266aad3733962b752ca642771eaf",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_1_Raphtalia_Rig_TEST_eyes_ears_75_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_1_Raphtalia_Rig_TEST_eyes_ears_75_back.png",
+      "sha256": "b1bb401496aca9c2da9631487dddba59ec39f766daf3faf45617d181e71142ee",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_1_Raphtalia_Rig_TEST_eyes_ears_75_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_1_Raphtalia_Rig_TEST_eyes_ears_75_front.png",
+      "sha256": "00482aec1a6529b0b1e73d8ad2666f60215567b868b429ca4ea99f071163c32e",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_2_Raphtalia_Rig_TEST_fingers_35_25_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_2_Raphtalia_Rig_TEST_fingers_35_25_back.png",
+      "sha256": "715d4592a6bfb8c814384201fa1191825fd7a9657a2a6ef2cd072716934c82fb",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_2_Raphtalia_Rig_TEST_fingers_35_25_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_2_Raphtalia_Rig_TEST_fingers_35_25_front.png",
+      "sha256": "efdfdeab86b05ba1b9f2b57439a7c6b988b9ef05a92bbcc276d214f2230c53c0",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_2_Raphtalia_Rig_TEST_fingers_35_50_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_2_Raphtalia_Rig_TEST_fingers_35_50_back.png",
+      "sha256": "880fc9d61827e0cc252257ddb8079fac03c3559a49be66cde3e52fa1ecbed112",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_2_Raphtalia_Rig_TEST_fingers_35_50_face_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_2_Raphtalia_Rig_TEST_fingers_35_50_face_back.png",
+      "sha256": "216046692886913a0398349dd7d131141e7b8a9e01e092ecc41501432cc71c85",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_2_Raphtalia_Rig_TEST_fingers_35_50_face_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_2_Raphtalia_Rig_TEST_fingers_35_50_face_front.png",
+      "sha256": "a247e2b8db5808ddd2794a8d7e5869809b3253f908562db6a49e22594ad15d80",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_2_Raphtalia_Rig_TEST_fingers_35_50_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_2_Raphtalia_Rig_TEST_fingers_35_50_front.png",
+      "sha256": "2792adee64961c8b01f969fe715961bde824aa04bd0a851318e4e7364baac977",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_2_Raphtalia_Rig_TEST_fingers_35_75_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_2_Raphtalia_Rig_TEST_fingers_35_75_back.png",
+      "sha256": "715d4592a6bfb8c814384201fa1191825fd7a9657a2a6ef2cd072716934c82fb",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_2_Raphtalia_Rig_TEST_fingers_35_75_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_2_Raphtalia_Rig_TEST_fingers_35_75_front.png",
+      "sha256": "efdfdeab86b05ba1b9f2b57439a7c6b988b9ef05a92bbcc276d214f2230c53c0",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_3_Raphtalia_Rig_TEST_hair_tail_cloth_25_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_3_Raphtalia_Rig_TEST_hair_tail_cloth_25_back.png",
+      "sha256": "d64f945c8373f801943e0991b982c5cde86e2f9a1c27eac3e970a6bd3662b6c4",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_3_Raphtalia_Rig_TEST_hair_tail_cloth_25_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_3_Raphtalia_Rig_TEST_hair_tail_cloth_25_front.png",
+      "sha256": "96b130269ad4bee0da17ee04db38994a0cd8165b358f98730e523d2a36fc3777",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_3_Raphtalia_Rig_TEST_hair_tail_cloth_50_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_3_Raphtalia_Rig_TEST_hair_tail_cloth_50_back.png",
+      "sha256": "dabe410b78be6e6e7cfc5b5b1de83e0d9c0c92d158995e571bdd1cdb01d7f482",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_3_Raphtalia_Rig_TEST_hair_tail_cloth_50_face_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_3_Raphtalia_Rig_TEST_hair_tail_cloth_50_face_back.png",
+      "sha256": "4a6e7d61ea740b652b58d0b907a71485fda3af33fffb171d19aa15526449b575",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_3_Raphtalia_Rig_TEST_hair_tail_cloth_50_face_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_3_Raphtalia_Rig_TEST_hair_tail_cloth_50_face_front.png",
+      "sha256": "23cb93c47e322477cc275eb0a41f5ce107c89d263be8fdbcd4f0866499726b3e",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_3_Raphtalia_Rig_TEST_hair_tail_cloth_50_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_3_Raphtalia_Rig_TEST_hair_tail_cloth_50_front.png",
+      "sha256": "c04fb396a61676bc6c76a21c7da665895a07abdd68415f35375dc2e89f9d2450",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_3_Raphtalia_Rig_TEST_hair_tail_cloth_75_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_3_Raphtalia_Rig_TEST_hair_tail_cloth_75_back.png",
+      "sha256": "d64f945c8373f801943e0991b982c5cde86e2f9a1c27eac3e970a6bd3662b6c4",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_3_Raphtalia_Rig_TEST_hair_tail_cloth_75_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_3_Raphtalia_Rig_TEST_hair_tail_cloth_75_front.png",
+      "sha256": "96b130269ad4bee0da17ee04db38994a0cd8165b358f98730e523d2a36fc3777",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_4_Raphtalia_Rig_TEST_head_torso_25_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_4_Raphtalia_Rig_TEST_head_torso_25_back.png",
+      "sha256": "89fbbc9e1e1ccd07c6323cc8f8bb4e82037bb0abd5b019fee1133925fc8c6679",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_4_Raphtalia_Rig_TEST_head_torso_25_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_4_Raphtalia_Rig_TEST_head_torso_25_front.png",
+      "sha256": "783f921f3d59f59096814db7532c429ded9730bcdc8e1296621d122204ae9cac",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_4_Raphtalia_Rig_TEST_head_torso_50_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_4_Raphtalia_Rig_TEST_head_torso_50_back.png",
+      "sha256": "828b8953fc5cc515756d7a5a8afbef2ef483d04e50d3d88423ebd38c91ba44f4",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_4_Raphtalia_Rig_TEST_head_torso_50_face_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_4_Raphtalia_Rig_TEST_head_torso_50_face_back.png",
+      "sha256": "bc9e2ac85fe948b53c107960e92d5db9a1fb2f9d8d297f3e21f3d0b671cf6345",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_4_Raphtalia_Rig_TEST_head_torso_50_face_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_4_Raphtalia_Rig_TEST_head_torso_50_face_front.png",
+      "sha256": "cb691d4b99e39497aa109a5bd2ae6659e4ac7c2415a61e3b339784b91698b1bb",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_4_Raphtalia_Rig_TEST_head_torso_50_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_4_Raphtalia_Rig_TEST_head_torso_50_front.png",
+      "sha256": "4fe0225e8187f11f7816161da21b4bf41b315ea9f042104e862796856168721d",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_4_Raphtalia_Rig_TEST_head_torso_75_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_4_Raphtalia_Rig_TEST_head_torso_75_back.png",
+      "sha256": "89fbbc9e1e1ccd07c6323cc8f8bb4e82037bb0abd5b019fee1133925fc8c6679",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_4_Raphtalia_Rig_TEST_head_torso_75_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_4_Raphtalia_Rig_TEST_head_torso_75_front.png",
+      "sha256": "783f921f3d59f59096814db7532c429ded9730bcdc8e1296621d122204ae9cac",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_5_Raphtalia_Rig_TEST_knees_90_25_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_5_Raphtalia_Rig_TEST_knees_90_25_back.png",
+      "sha256": "25dff8be2c0c269e29c4ff7c91a6207ee48553e548908c55d35747aa101ae802",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_5_Raphtalia_Rig_TEST_knees_90_25_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_5_Raphtalia_Rig_TEST_knees_90_25_front.png",
+      "sha256": "62de585ed935d102c9ac5155d39e9bf2153ee55ed70de16ea7df2864c3aa97f5",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_5_Raphtalia_Rig_TEST_knees_90_50_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_5_Raphtalia_Rig_TEST_knees_90_50_back.png",
+      "sha256": "12712da938ad94b49db2f9ebef003e97568390f4bc2bf96a5de13b599317c3bf",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_5_Raphtalia_Rig_TEST_knees_90_50_face_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_5_Raphtalia_Rig_TEST_knees_90_50_face_back.png",
+      "sha256": "7a2cd69f5022740ca53e56f2e69b6626c3da4082457a08c973abec8de4d3cc1c",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_5_Raphtalia_Rig_TEST_knees_90_50_face_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_5_Raphtalia_Rig_TEST_knees_90_50_face_front.png",
+      "sha256": "9cbf60cf3a047a15d52a5e47abc0053c53bf02bf61ee2623c3654ab611018074",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_5_Raphtalia_Rig_TEST_knees_90_50_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_5_Raphtalia_Rig_TEST_knees_90_50_front.png",
+      "sha256": "70bae0e5a7d225bcea612670a7ed0484d79c5148d0d91f1a7e0ec487319fb2f0",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_5_Raphtalia_Rig_TEST_knees_90_75_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_5_Raphtalia_Rig_TEST_knees_90_75_back.png",
+      "sha256": "25dff8be2c0c269e29c4ff7c91a6207ee48553e548908c55d35747aa101ae802",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_5_Raphtalia_Rig_TEST_knees_90_75_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_5_Raphtalia_Rig_TEST_knees_90_75_front.png",
+      "sha256": "62de585ed935d102c9ac5155d39e9bf2153ee55ed70de16ea7df2864c3aa97f5",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_6_Raphtalia_Rig_TEST_shoulders_hips_ankles_25_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_6_Raphtalia_Rig_TEST_shoulders_hips_ankles_25_back.png",
+      "sha256": "8d566a4d4cc12e6f01c0d7540cc2c4237844764453a13b1850de871e4a446a62",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_6_Raphtalia_Rig_TEST_shoulders_hips_ankles_25_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_6_Raphtalia_Rig_TEST_shoulders_hips_ankles_25_front.png",
+      "sha256": "fe31773e9be15b59dd4e09e4e860917e7d82457c77bb002f53bdd20f51ca254d",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_6_Raphtalia_Rig_TEST_shoulders_hips_ankles_50_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_6_Raphtalia_Rig_TEST_shoulders_hips_ankles_50_back.png",
+      "sha256": "434a4ef6ff5092fdcf8729dd15a85608595f0a549f9d1eb3c480a36f6769d659",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_6_Raphtalia_Rig_TEST_shoulders_hips_ankles_50_face_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_6_Raphtalia_Rig_TEST_shoulders_hips_ankles_50_face_back.png",
+      "sha256": "2140e597be56478d9388f3565cbc525e2a8cd20a8114b11882cd65cb6613fe11",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_6_Raphtalia_Rig_TEST_shoulders_hips_ankles_50_face_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_6_Raphtalia_Rig_TEST_shoulders_hips_ankles_50_face_front.png",
+      "sha256": "eddb857c3e4c2e0e74e1a04f6ca64697d9756469748f02cb43b012b6ba31e357",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_6_Raphtalia_Rig_TEST_shoulders_hips_ankles_50_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_6_Raphtalia_Rig_TEST_shoulders_hips_ankles_50_front.png",
+      "sha256": "0475fd09c5fa23084ef7625201d4a2abbb7030aa4e2dcc6271d8c9f758d47179",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_6_Raphtalia_Rig_TEST_shoulders_hips_ankles_75_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_6_Raphtalia_Rig_TEST_shoulders_hips_ankles_75_back.png",
+      "sha256": "8d566a4d4cc12e6f01c0d7540cc2c4237844764453a13b1850de871e4a446a62",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_6_Raphtalia_Rig_TEST_shoulders_hips_ankles_75_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_6_Raphtalia_Rig_TEST_shoulders_hips_ankles_75_front.png",
+      "sha256": "fe31773e9be15b59dd4e09e4e860917e7d82457c77bb002f53bdd20f51ca254d",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_back_contact.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_back_contact.png",
+      "sha256": "277b2030a2e956fdfa19fb353c235823fe79266b19acc79a92ced0d8ee7611d2",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_face_contact.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_face_contact.png",
+      "sha256": "101eef2207ef14dce70ca405cd39f0fa671278bdbc0ba7f0f25de596308e66d0",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_front_contact.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_front_contact.png",
+      "sha256": "52b20698d5b3aa33e7b9adcc13a79efc4ba83b4c9e9b96a015831689ad3e216d",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_mix_combined_masks_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_mix_combined_masks_back.png",
+      "sha256": "cc5dc79a6fdeabff8e616efa28039e7fdc135bcc04c4c59fb41e24ca669df418",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_mix_combined_masks_face_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_mix_combined_masks_face_back.png",
+      "sha256": "6e9bdc7bab904c4582cd4a655c140a712eb46a7b08c7291fdb2c41aec70ad688",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_mix_combined_masks_face_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_mix_combined_masks_face_front.png",
+      "sha256": "7621a6ff9b2e8769eaf3cbf6333bc82d15956ff5831d040600f370568229bce6",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_mix_combined_masks_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_mix_combined_masks_front.png",
+      "sha256": "3c91c7a0e5d82882705ec1615392d4da5ee6d24a6be159243dd425cd8e3aab48",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_mix_contact.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_mix_contact.png",
+      "sha256": "e0a92ecf72440623a0f324a2798cb8424e3310db09fc7392d6407c4d2ac3e5f6",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_mix_crossfade_0_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_mix_crossfade_0_back.png",
+      "sha256": "dd4fb06fcc28a607b38a65a3a25e0ca2a0a468e06be0a33eeeaa1bc3060d6764",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_mix_crossfade_0_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_mix_crossfade_0_front.png",
+      "sha256": "dc59750c1958e7d9cbecd28c77645f7296176b95c4ca3b590b45db581471c73f",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_mix_crossfade_100_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_mix_crossfade_100_back.png",
+      "sha256": "a043a3281f3c2751888aa873e5d84f5fc90d5c12dd8de8de77614eadb5bac1a7",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_mix_crossfade_100_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_mix_crossfade_100_front.png",
+      "sha256": "0f7b6418b725d183ebc74cb0f01f25689b562e8a632f9224e20cde53031ec890",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_mix_crossfade_25_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_mix_crossfade_25_back.png",
+      "sha256": "138269c7002561f25e177aa00e9fc5034a3133a423f43460f9e23d46852921b7",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_mix_crossfade_25_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_mix_crossfade_25_front.png",
+      "sha256": "85e2e09ed724bd90e6204711f3762c21a0fa523f30891b73d2915602405a504e",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_mix_crossfade_50_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_mix_crossfade_50_back.png",
+      "sha256": "76f4fca6257aedfb69915961dd9339b660c2377e274bb24915b59087f13328f4",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_mix_crossfade_50_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_mix_crossfade_50_front.png",
+      "sha256": "42141860d9bd2641063aa8c03c3f93403d98fe9739a29ca03f27c7478e464870",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_mix_crossfade_75_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_mix_crossfade_75_back.png",
+      "sha256": "07c7dd202b3139fa24cebd9d569c117e15b149f20bed99f0540fb4e969414f23",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_mix_crossfade_75_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_mix_crossfade_75_front.png",
+      "sha256": "04c4ca86c56b1305d8eb47580e5b27d6cf66dab3ffcfea942d59f3e997a032fe",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_neutral_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_neutral_back.png",
+      "sha256": "603146ded3e0ace175fa838f1369990c6bba1916d3fca507425f8045330b0442",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_neutral_contact.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_neutral_contact.png",
+      "sha256": "0ecbdb452ae05d7d9f184aa53d247d8bf789275cbc57ff47ccf3500fda28c5cc",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_neutral_face_back.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_neutral_face_back.png",
+      "sha256": "5bd6b672cf1cb6835278d832a53b9ec1b1aed012d108d6f5f3e7bdc9e26ece0f",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_neutral_face_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_neutral_face_front.png",
+      "sha256": "f66b11c569803c6cd50e50d939eee14c7239784f1a995e758868844520c227dd",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_neutral_front.png",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_neutral_front.png",
+      "sha256": "0cd26af3c5836eef75e62ff8bc9158cda020892783beb4d534fa212d9c556d49",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/prepared_elbows_90.png",
+      "to": "docs/raphtalia/history/2026-10-20/prepared_elbows_90.png",
+      "sha256": "ff7f5bf04d86bc6c005b1d914031814fb6e6ad68403cba5defc7555b87186fd7",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/prepared_eyes_ears.png",
+      "to": "docs/raphtalia/history/2026-10-20/prepared_eyes_ears.png",
+      "sha256": "a10981353ce511326d1bd4c77c0ab26d6aa2c114789c11239b538a983db1b732",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/prepared_eyes_ears_detail.png",
+      "to": "docs/raphtalia/history/2026-10-20/prepared_eyes_ears_detail.png",
+      "sha256": "717773b6563aab21da6adf6ad4852ffa466492c90734df3c93a2cbff8ed58555",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/prepared_face.png",
+      "to": "docs/raphtalia/history/2026-10-20/prepared_face.png",
+      "sha256": "ba3f9e910138d5a2a386eed98b7ac5f391388812539acab06f73497e4242b87b",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/prepared_fingers_35.png",
+      "to": "docs/raphtalia/history/2026-10-20/prepared_fingers_35.png",
+      "sha256": "1a6bb47bc327d61c5d43d3d5002b14bcbb81ce0d057b13c20907f4e7df50cbb2",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/prepared_fingers_detail.png",
+      "to": "docs/raphtalia/history/2026-10-20/prepared_fingers_detail.png",
+      "sha256": "cd32611ee1900af1252a97cda59d6e36e184c675e9de2bc50cc0b12d7d9675d5",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/prepared_fingers_glove_weight_test.png",
+      "to": "docs/raphtalia/history/2026-10-20/prepared_fingers_glove_weight_test.png",
+      "sha256": "f363615165a508e6bfa295f0f2267008c73ddbf9872a3abbe016fd94d46e785c",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/prepared_hair_tail_cloth.png",
+      "to": "docs/raphtalia/history/2026-10-20/prepared_hair_tail_cloth.png",
+      "sha256": "99a67e1dce260636664e0677b6456c66a11fbad7114a39843f9658575ad724c6",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/prepared_head_torso.png",
+      "to": "docs/raphtalia/history/2026-10-20/prepared_head_torso.png",
+      "sha256": "d873630c7d5038650a640424d168ae8f819d53d3c4641d75269b2ac4eb548e4d",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/prepared_knees_90.png",
+      "to": "docs/raphtalia/history/2026-10-20/prepared_knees_90.png",
+      "sha256": "9829f81bac8229ff4a5a5fffc414cae6052c73c0d0556014dc49b1c9fb313fa7",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/prepared_neutral.png",
+      "to": "docs/raphtalia/history/2026-10-20/prepared_neutral.png",
+      "sha256": "c696743fbbad323cb4cb7b77d3acb8d25921047b0746341a54b1adf10074bab3",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/prepared_shoulders_hips_ankles.png",
+      "to": "docs/raphtalia/history/2026-10-20/prepared_shoulders_hips_ankles.png",
+      "sha256": "af10b0db316a5a2e5fc5f26a99c411b90dacbebc75e64375684f62f28f984bb0",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/assimp_prepared.json",
+      "to": "docs/raphtalia/history/2026-10-20/assimp_prepared.json",
+      "sha256": "6097ff5795f83c2e7a2765b23a08e388a027988085dfbaa9333f8b1e9f51adf7",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/cuff_transfer_applied.json",
+      "to": "docs/raphtalia/history/2026-10-20/cuff_transfer_applied.json",
+      "sha256": "d304066dd5239ff99bfffe7ce53464799170f1a8fcdbfb30234fba9837639c69",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/cuff_weight_patch.json",
+      "to": "docs/raphtalia/history/2026-10-20/cuff_weight_patch.json",
+      "sha256": "ab212e7ade8b52e550d489a1acd1157708763102326574ce55e2d137ecced3aa",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/deformation_diagnostics.json",
+      "to": "docs/raphtalia/history/2026-10-20/deformation_diagnostics.json",
+      "sha256": "44e1a321c92b60a5630747733a0115ea9b74bd9a1d0fd1c84c910595eeb12752",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/glove_transfer_applied.json",
+      "to": "docs/raphtalia/history/2026-10-20/glove_transfer_applied.json",
+      "sha256": "110f97856677ad6aa33ee6f1b0dbb2beb73fb5f2bc1fe53feed8bafe1ee768aa",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/rigid_parts_diagnostics.json",
+      "to": "docs/raphtalia/history/2026-10-20/rigid_parts_diagnostics.json",
+      "sha256": "1393acad1e58aee8f37035b117886af93095085ff25b156163f137b4d1fd51e4",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_audit.txt",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_audit.txt",
+      "sha256": "4604b737adcb2253324e576590814bcc94c8ae0cd9e41c5c34a5ba85de7a8383",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_samples.csv",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_samples.csv",
+      "sha256": "3c748ffb6b1938391f9bb9e007ddaed893ae7338a79bf9352ea349508fae7eb8",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_endpoints.csv",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_endpoints.csv",
+      "sha256": "a9ab6066cb115ec4e69f4da9e8606580a59e54926a6bd553f72329dc765c5f86",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    },
+    {
+      "from": "docs/raphtalia/gpu_mix.csv",
+      "to": "docs/raphtalia/history/2026-10-20/gpu_mix.csv",
+      "sha256": "e330f31eda60433a0a1d0b8a65a3d6ffb7f1a8817c80032b4adf22a55ee5d82c",
+      "reason": "Historical 239-bone / seven-clip evidence; preserved for comparison, not current validation."
+    }
+  ],
+  "deleted": [
+    {
+      "path": "docs/raphtalia/glove_weight_patch.json",
+      "sha256": "110f97856677ad6aa33ee6f1b0dbb2beb73fb5f2bc1fe53feed8bafe1ee768aa",
+      "reason": "Exact byte-for-byte duplicate of history/2026-10-20/glove_transfer_applied.json. No remaining consumers; old experimental script replaced by reaudit.py."
+    },
+    {
+      "path": "tools/raphtalia/deformation_diagnostics.py",
+      "sha256": "e860fd9a07a25ad855ce167a0efc0c23b64e923b0b789ae70bbc9323e9b4ac32",
+      "reason": "Obsolete glove-transfer experiment; superseded by non-mutating reaudit.py plus control_check.py. Cleared AnimationData, which would disable the new control drivers; no callers/imports remain."
+    }
+  ],
+  "retained": [
+    {
+      "path": "assets/models/Raphtalia1.fbx",
+      "reason": "Distinct model, referenced by tests/test_opengl.cpp; not a duplicate."
+    },
+    {
+      "path": "assets/models/backups/Raphtalia.original.fbx",
+      "reason": "Protected exact source backup."
+    },
+    {
+      "path": "assets/models/backups/Raphtalia_prepared.pre_reaudit_2026-10-21.zip",
+      "reason": "Verified rollback of prepared .blend/.fbx."
+    },
+    {
+      "path": "build/raphtalia_tools/bpy",
+      "reason": "Required local Blender runtime."
+    },
+    {
+      "path": "docs/raphtalia/history/2026-10-20",
+      "reason": "Historical intermediate/final evidence and provenance."
+    },
+    {
+      "path": "assets/textures",
+      "reason": "Existing renderer fallback textures; no changes."
+    }
+  ],
+  "generated_removed": [
+    {
+      "path": "build/raphtalia_tools/reaudit/gpu_candidate",
+      "files": 94,
+      "bytes": 159268107,
+      "reason": "Intermediate GPU run created during this audit; superseded by retained final 100-frame raw GPU run and canonical PNG/CSV evidence. Baseline GPU and backups retained."
+    },
+    {
+      "path": "build/raphtalia_tools/reaudit/gpu_candidate_v2",
+      "files": 96,
+      "bytes": 162807340,
+      "reason": "Intermediate GPU run created during this audit; superseded by retained final 100-frame raw GPU run and canonical PNG/CSV evidence. Baseline GPU and backups retained."
+    },
+    {
+      "path": "build/raphtalia_tools/reaudit/gpu_png",
+      "files": 99,
+      "bytes": 6377024,
+      "reason": "Intermediate GPU run created during this audit; superseded by retained final 100-frame raw GPU run and canonical PNG/CSV evidence. Baseline GPU and backups retained."
+    },
+    {
+      "path": "build/raphtalia_tools/reaudit/gpu_png_v2",
+      "files": 101,
+      "bytes": 6557029,
+      "reason": "Intermediate GPU run created during this audit; superseded by retained final 100-frame raw GPU run and canonical PNG/CSV evidence. Baseline GPU and backups retained."
+    },
+    {
+      "path": "build/raphtalia_tools/reaudit/candidate.blend",
+      "bytes": 25351720,
+      "sha256": "3cce06655feeaca59f87ffd0ddd0d930f4a7eaedc303e8396098e4a9866685b2",
+      "reason": "Temporary output is an exact duplicate of assets/models/Raphtalia_prepared.blend"
+    },
+    {
+      "path": "build/raphtalia_tools/reaudit/candidate.fbx",
+      "bytes": 31916460,
+      "sha256": "ab529e9874280aff5494f3e7261b42fe48fa4e0b1cdbf211eb2e8a5db5b62bbb",
+      "reason": "Temporary output is an exact duplicate of assets/models/Raphtalia_prepared.fbx"
+    },
+    {
+      "path": "build/raphtalia_tools/reaudit/candidate.weights.json",
+      "bytes": 4012110,
+      "sha256": "ed1835216ff5afcd865f487046fdbbe87a12be66cda66c700c37a8d9ae85f181",
+      "reason": "Temporary output is an exact duplicate of docs/raphtalia/reaudit/weight_patch.json"
+    },
+    {
+      "path": "build/raphtalia_tools/reaudit/candidate.controls.json",
+      "bytes": 2414,
+      "sha256": "c8b42d69c9bdb99746c5b276b94ce270bd3df808d24c27ce016178034b55f1cd",
+      "reason": "Temporary output is an exact duplicate of docs/raphtalia/reaudit/control_layout.json"
+    }
+  ]
+}

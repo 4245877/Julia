@@ -1,0 +1,32 @@
+input=C:\Julia\assets\models\Raphtalia_prepared.fbx
+GL_VENDOR=NVIDIA Corporation
+GL_RENDERER=NVIDIA GeForce RTX 4070 SUPER/PCIe/SSE2
+GL_VERSION=3.3.0 NVIDIA 617.42
+GLSL_VERSION=3.30 NVIDIA via Cg compiler
+GL_MAX_TEXTURE_BUFFER_SIZE=268435456
+max_palette_matrices=67108864
+resolution=768x768
+MSAA=4
+meshes=28
+nodes=269
+palette_entries=239
+animation_clips=7
+pose_sampler=linear_TRS_quaternion_slerp_endpoint_clamp
+clip=Raphtalia_Rig_TEST_elbows_90 ticks=60 tps=30 changed_pixels=YES endpoint_start_end_rgb_differences=0
+clip=Raphtalia_Rig_TEST_eyes_ears ticks=60 tps=30 changed_pixels=YES endpoint_start_end_rgb_differences=0
+clip=Raphtalia_Rig_TEST_fingers_35 ticks=60 tps=30 changed_pixels=YES endpoint_start_end_rgb_differences=0
+clip=Raphtalia_Rig_TEST_hair_tail_cloth ticks=60 tps=30 changed_pixels=YES endpoint_start_end_rgb_differences=0
+clip=Raphtalia_Rig_TEST_head_torso ticks=60 tps=30 changed_pixels=YES endpoint_start_end_rgb_differences=0
+clip=Raphtalia_Rig_TEST_knees_90 ticks=60 tps=30 changed_pixels=YES endpoint_start_end_rgb_differences=0
+clip=Raphtalia_Rig_TEST_shoulders_hips_ankles ticks=60 tps=30 changed_pixels=YES endpoint_start_end_rgb_differences=0
+combined_pose=elbows_head_torso_fingers_hair_tail_cloth
+combined_masked_nodes=38
+crossfade=elbow_peak_to_knee_peak_local_TRS_lerp_quaternion_slerp
+crossfade_fractions=0,0.25,0.5,0.75,1
+blend_tests=finite_and_rendered_evaluation_only
+rendered_images=74
+clips_with_pixel_changes=7
+gl_errors=0
+bind_reset=EXACT
+result=PASS
+limitations=Pixel changes prove submitted animation affects rendering; they do not establish natural joints, collision freedom or morph support.

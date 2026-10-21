@@ -1,0 +1,3691 @@
+{
+  "blender": "4.2.0",
+  "files": {
+    "source": {
+      "path": "assets\\models\\Raphtalia.fbx",
+      "bytes": 9276700,
+      "sha256": "a602086ac9e580f2d265a489478922b75aae00410313b17a89bd846ad4f3b34c"
+    },
+    "prepared_blend": {
+      "path": "assets\\models\\Raphtalia_prepared.blend",
+      "bytes": 19856872,
+      "sha256": "a37218377c112f3cdfbcc101215038921a1eb26b375c8de9bf2a06e59752416c"
+    },
+    "prepared_fbx": {
+      "path": "assets\\models\\Raphtalia_prepared.fbx",
+      "bytes": 23422156,
+      "sha256": "e9d5e45aed9c8b05ba5c9b9fa04b3508d936d003face8e409bf5d34b622217f9"
+    }
+  },
+  "source_hash_unchanged": true,
+  "source_to_prepared_neutral": {
+    "missing_meshes": [],
+    "extra_meshes": [],
+    "meshes": {
+      "NurbsPath.001_tex_hair3_0": {
+        "reference_vertices": 270,
+        "candidate_vertices": 270,
+        "symmetric_nearest_max_m": 2.6604114263016057e-07,
+        "symmetric_nearest_rms_m": 1.4958865140079713e-07,
+        "corresponding_vertices_max_m": 2.6604114263016057e-07,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 1344,
+            "candidate_corners": 1344,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.03337752486581016,
+          "rms": 0.0038976032388019157
+        }
+      },
+      "NurbsPath.002_tex_hair4_0": {
+        "reference_vertices": 1030,
+        "candidate_vertices": 1030,
+        "symmetric_nearest_max_m": 8.357737418706496e-07,
+        "symmetric_nearest_rms_m": 4.757080303954598e-07,
+        "corresponding_vertices_max_m": 8.357737418706496e-07,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 4728,
+            "candidate_corners": 4728,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.14457213786462106,
+          "rms": 0.009865849047408516
+        }
+      },
+      "NurbsPath.003_tex_hair5_0": {
+        "reference_vertices": 901,
+        "candidate_vertices": 901,
+        "symmetric_nearest_max_m": 8.027449428899125e-07,
+        "symmetric_nearest_rms_m": 4.1994782768807266e-07,
+        "corresponding_vertices_max_m": 8.027449428899125e-07,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 3960,
+            "candidate_corners": 3960,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.23536616318526343,
+          "rms": 0.009795337055342433
+        }
+      },
+      "NurbsPath.006_tex_hair6_0": {
+        "reference_vertices": 1127,
+        "candidate_vertices": 1127,
+        "symmetric_nearest_max_m": 9.74370077555676e-07,
+        "symmetric_nearest_rms_m": 4.7036867302978575e-07,
+        "corresponding_vertices_max_m": 9.74370077555676e-07,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 5040,
+            "candidate_corners": 5040,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.008389397032400202,
+          "rms": 0.0008905564955333151
+        }
+      },
+      "NurbsPath.007_tex_hair7_0": {
+        "reference_vertices": 4049,
+        "candidate_vertices": 4049,
+        "symmetric_nearest_max_m": 1.1054574293750055e-06,
+        "symmetric_nearest_rms_m": 3.6950831468392844e-07,
+        "corresponding_vertices_max_m": 1.1054574293750055e-06,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 20364,
+            "candidate_corners": 20364,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.012532108021217342,
+          "rms": 0.0010492947308612238
+        }
+      },
+      "NurbsPath_tex_hair2_0": {
+        "reference_vertices": 270,
+        "candidate_vertices": 270,
+        "symmetric_nearest_max_m": 2.666917037232613e-07,
+        "symmetric_nearest_rms_m": 1.4577937784247953e-07,
+        "corresponding_vertices_max_m": 2.666917037232613e-07,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 1344,
+            "candidate_corners": 1344,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.012787718754349836,
+          "rms": 0.0020984196445130734
+        }
+      },
+      "armor_tex_armor_0": {
+        "reference_vertices": 921,
+        "candidate_vertices": 921,
+        "symmetric_nearest_max_m": 7.831982317034271e-07,
+        "symmetric_nearest_rms_m": 6.763828659576228e-07,
+        "corresponding_vertices_max_m": 7.831982317034271e-07,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 3042,
+            "candidate_corners": 3042,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.008552176981270719,
+          "rms": 0.0010020362361153146
+        }
+      },
+      "belt_tex_belt_0": {
+        "reference_vertices": 452,
+        "candidate_vertices": 452,
+        "symmetric_nearest_max_m": 4.501686172454418e-07,
+        "symmetric_nearest_rms_m": 3.0282618536022813e-07,
+        "corresponding_vertices_max_m": 4.501686172454418e-07,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 1476,
+            "candidate_corners": 1476,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.03194443551889925,
+          "rms": 0.002889976962982155
+        }
+      },
+      "body_tex_skin2_0": {
+        "reference_vertices": 274,
+        "candidate_vertices": 274,
+        "symmetric_nearest_max_m": 2.6550253159810337e-07,
+        "symmetric_nearest_rms_m": 2.5545690704850104e-07,
+        "corresponding_vertices_max_m": 2.6550253159810337e-07,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 1536,
+            "candidate_corners": 1536,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.0024759741922223476,
+          "rms": 0.00043945926524667034
+        }
+      },
+      "body_tex_skin_0": {
+        "reference_vertices": 14556,
+        "candidate_vertices": 14556,
+        "symmetric_nearest_max_m": 7.868816293863402e-07,
+        "symmetric_nearest_rms_m": 3.5751677743503543e-07,
+        "corresponding_vertices_max_m": 7.868816293863402e-07,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 81312,
+            "candidate_corners": 81312,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.09263768795716698,
+          "rms": 0.003696570145462453
+        }
+      },
+      "bow_tex_bow_0": {
+        "reference_vertices": 584,
+        "candidate_vertices": 584,
+        "symmetric_nearest_max_m": 7.871728984418478e-07,
+        "symmetric_nearest_rms_m": 5.181664309772819e-07,
+        "corresponding_vertices_max_m": 7.871728984418478e-07,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 2196,
+            "candidate_corners": 2196,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.03517254818114004,
+          "rms": 0.0040934183671868735
+        }
+      },
+      "cuff.001_tex_cuff_0": {
+        "reference_vertices": 548,
+        "candidate_vertices": 548,
+        "symmetric_nearest_max_m": 4.3209399107430763e-07,
+        "symmetric_nearest_rms_m": 3.701862059309168e-07,
+        "corresponding_vertices_max_m": 4.3209399107430763e-07,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 1704,
+            "candidate_corners": 1704,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.031854415654809114,
+          "rms": 0.002298533600510701
+        }
+      },
+      "cuff_tex_cuff_0": {
+        "reference_vertices": 548,
+        "candidate_vertices": 548,
+        "symmetric_nearest_max_m": 4.2808899211822813e-07,
+        "symmetric_nearest_rms_m": 3.178457651415397e-07,
+        "corresponding_vertices_max_m": 4.2808899211822813e-07,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 1704,
+            "candidate_corners": 1704,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.026783168697822015,
+          "rms": 0.0039059768760822083
+        }
+      },
+      "ear.001_tex_ear2_0": {
+        "reference_vertices": 538,
+        "candidate_vertices": 538,
+        "symmetric_nearest_max_m": 6.040794665181837e-07,
+        "symmetric_nearest_rms_m": 5.630855267016029e-07,
+        "corresponding_vertices_max_m": 6.040794665181837e-07,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 1872,
+            "candidate_corners": 1872,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.014700841439799205,
+          "rms": 0.0021455732901339984
+        }
+      },
+      "ear_tex_ear_0": {
+        "reference_vertices": 312,
+        "candidate_vertices": 312,
+        "symmetric_nearest_max_m": 6.103855124115931e-07,
+        "symmetric_nearest_rms_m": 5.648615457893216e-07,
+        "corresponding_vertices_max_m": 6.103855124115931e-07,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 1422,
+            "candidate_corners": 1422,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.0110901026462744,
+          "rms": 0.0017345023239663277
+        }
+      },
+      "eye_tex_eyes_0": {
+        "reference_vertices": 194,
+        "candidate_vertices": 194,
+        "symmetric_nearest_max_m": 2.6432251850571827e-07,
+        "symmetric_nearest_rms_m": 2.575941957824717e-07,
+        "corresponding_vertices_max_m": 2.6432251850571827e-07,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 672,
+            "candidate_corners": 672,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.0006987103249718473,
+          "rms": 0.00017766133028620764
+        }
+      },
+      "eyelashes_tex_eyelashes_0": {
+        "reference_vertices": 246,
+        "candidate_vertices": 246,
+        "symmetric_nearest_max_m": 2.688536968032361e-07,
+        "symmetric_nearest_rms_m": 2.4686929381185346e-07,
+        "corresponding_vertices_max_m": 2.688536968032361e-07,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 834,
+            "candidate_corners": 834,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.008667984707104873,
+          "rms": 0.0012907808598891155
+        }
+      },
+      "hair.mesh.000_tex_hair1_0": {
+        "reference_vertices": 1009,
+        "candidate_vertices": 1009,
+        "symmetric_nearest_max_m": 1.1604658376221893e-06,
+        "symmetric_nearest_rms_m": 5.245431049107769e-07,
+        "corresponding_vertices_max_m": 1.1604658376221893e-06,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 5028,
+            "candidate_corners": 5028,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.03691887745135809,
+          "rms": 0.005008671193195509
+        }
+      },
+      "hair_band_tex_band_0": {
+        "reference_vertices": 340,
+        "candidate_vertices": 340,
+        "symmetric_nearest_max_m": 4.973729532205012e-07,
+        "symmetric_nearest_rms_m": 4.7286948034615403e-07,
+        "corresponding_vertices_max_m": 4.973729532205012e-07,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 1344,
+            "candidate_corners": 1344,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.013008540505402419,
+          "rms": 0.0025366185157353394
+        }
+      },
+      "hightlight_hightlight_0": {
+        "reference_vertices": 96,
+        "candidate_vertices": 96,
+        "symmetric_nearest_max_m": 2.619607796923311e-07,
+        "symmetric_nearest_rms_m": 2.601153948434547e-07,
+        "corresponding_vertices_max_m": 2.619607796923311e-07,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {},
+        "normal_angle_degrees": {
+          "max": 0.000645228100717299,
+          "rms": 0.00027328071973993083
+        }
+      },
+      "long_gloves_tex_glove_0": {
+        "reference_vertices": 3142,
+        "candidate_vertices": 3142,
+        "symmetric_nearest_max_m": 6.509191607131742e-07,
+        "symmetric_nearest_rms_m": 3.642850863435808e-07,
+        "corresponding_vertices_max_m": 6.509191607131742e-07,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 15384,
+            "candidate_corners": 15384,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.025813484795338248,
+          "rms": 0.001313627489686389
+        }
+      },
+      "shirt.001_tex_shirt_0": {
+        "reference_vertices": 420,
+        "candidate_vertices": 420,
+        "symmetric_nearest_max_m": 7.793059798628995e-07,
+        "symmetric_nearest_rms_m": 3.948959514624423e-07,
+        "corresponding_vertices_max_m": 7.793059798628995e-07,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 2016,
+            "candidate_corners": 2016,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.0006502443447692392,
+          "rms": 0.00013132413733961255
+        }
+      },
+      "shirt_tex_shirt_0": {
+        "reference_vertices": 1975,
+        "candidate_vertices": 1975,
+        "symmetric_nearest_max_m": 8.080427676070697e-07,
+        "symmetric_nearest_rms_m": 5.32757433911421e-07,
+        "corresponding_vertices_max_m": 8.080427676070697e-07,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 8313,
+            "candidate_corners": 8313,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.0348052045475835,
+          "rms": 0.001771419678177835
+        }
+      },
+      "shoes_tex_shoes_0": {
+        "reference_vertices": 708,
+        "candidate_vertices": 708,
+        "symmetric_nearest_max_m": 3.8516831928276357e-07,
+        "symmetric_nearest_rms_m": 2.654620311092249e-07,
+        "corresponding_vertices_max_m": 3.8516831928276357e-07,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 2808,
+            "candidate_corners": 2808,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.0036009970095356105,
+          "rms": 0.00036710891961867103
+        }
+      },
+      "shoulder_armor_tex_shoulderarmor_0": {
+        "reference_vertices": 1032,
+        "candidate_vertices": 1032,
+        "symmetric_nearest_max_m": 2.3429234019130473e-07,
+        "symmetric_nearest_rms_m": 2.0843277982673853e-07,
+        "corresponding_vertices_max_m": 2.3429234019130473e-07,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 4296,
+            "candidate_corners": 4296,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.028582435798452904,
+          "rms": 0.0020745216016510534
+        }
+      },
+      "stocking_tex_sock_0": {
+        "reference_vertices": 2265,
+        "candidate_vertices": 2265,
+        "symmetric_nearest_max_m": 3.9387563924928274e-07,
+        "symmetric_nearest_rms_m": 2.6556304204291744e-07,
+        "corresponding_vertices_max_m": 3.9387563924928274e-07,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 10194,
+            "candidate_corners": 10194,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.019971201811045367,
+          "rms": 0.0007891480522132943
+        }
+      },
+      "tail_tex_tail_0": {
+        "reference_vertices": 516,
+        "candidate_vertices": 516,
+        "symmetric_nearest_max_m": 5.462708384616327e-07,
+        "symmetric_nearest_rms_m": 2.5908929677480477e-07,
+        "corresponding_vertices_max_m": 5.462708384616327e-07,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 2331,
+            "candidate_corners": 2331,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.022862964279368098,
+          "rms": 0.0010025222566319848
+        }
+      },
+      "underwear_tex_underwear_0": {
+        "reference_vertices": 139,
+        "candidate_vertices": 139,
+        "symmetric_nearest_max_m": 3.1928624823941883e-07,
+        "symmetric_nearest_rms_m": 2.871391770744815e-07,
+        "corresponding_vertices_max_m": 3.1928624823941883e-07,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 672,
+            "candidate_corners": 672,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.0032065620701566162,
+          "rms": 0.0004346105377045352
+        }
+      }
+    },
+    "max_symmetric_nearest_m": 1.1604658376221893e-06,
+    "positions_within_10_micrometres": true,
+    "max_uv_absolute_delta": 0.0,
+    "max_normal_angle_degrees": 0.23536616318526343,
+    "surface_structure_preserved": true
+  },
+  "blend_to_fbx_neutral": {
+    "missing_meshes": [],
+    "extra_meshes": [],
+    "meshes": {
+      "NurbsPath.001_tex_hair3_0": {
+        "reference_vertices": 270,
+        "candidate_vertices": 270,
+        "symmetric_nearest_max_m": 1.4334788243772123e-06,
+        "symmetric_nearest_rms_m": 1.3992032907545043e-06,
+        "corresponding_vertices_max_m": 1.4334788243772123e-06,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 1344,
+            "candidate_corners": 1344,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.03524212162022367,
+          "rms": 0.004397898393975881
+        }
+      },
+      "NurbsPath.002_tex_hair4_0": {
+        "reference_vertices": 1030,
+        "candidate_vertices": 1030,
+        "symmetric_nearest_max_m": 1.4785467233354446e-06,
+        "symmetric_nearest_rms_m": 1.3399532451148134e-06,
+        "corresponding_vertices_max_m": 1.4785467233354446e-06,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 4728,
+            "candidate_corners": 4728,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.13119748659020042,
+          "rms": 0.007167703091165053
+        }
+      },
+      "NurbsPath.003_tex_hair5_0": {
+        "reference_vertices": 901,
+        "candidate_vertices": 901,
+        "symmetric_nearest_max_m": 1.554716205187652e-06,
+        "symmetric_nearest_rms_m": 1.402996591681678e-06,
+        "corresponding_vertices_max_m": 1.554716205187652e-06,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 3960,
+            "candidate_corners": 3960,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.15951229551400892,
+          "rms": 0.009602840300895173
+        }
+      },
+      "NurbsPath.006_tex_hair6_0": {
+        "reference_vertices": 1127,
+        "candidate_vertices": 1127,
+        "symmetric_nearest_max_m": 1.6021793897873815e-06,
+        "symmetric_nearest_rms_m": 8.666274473162967e-07,
+        "corresponding_vertices_max_m": 1.6021793897873815e-06,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 5040,
+            "candidate_corners": 5040,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.008368938787911477,
+          "rms": 0.0011291161032119356
+        }
+      },
+      "NurbsPath.007_tex_hair7_0": {
+        "reference_vertices": 4049,
+        "candidate_vertices": 4049,
+        "symmetric_nearest_max_m": 1.846687947279204e-06,
+        "symmetric_nearest_rms_m": 1.288760527818953e-06,
+        "corresponding_vertices_max_m": 1.846687947279204e-06,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 20364,
+            "candidate_corners": 20364,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.6984519113195934,
+          "rms": 0.031224432399033348
+        }
+      },
+      "NurbsPath_tex_hair2_0": {
+        "reference_vertices": 270,
+        "candidate_vertices": 270,
+        "symmetric_nearest_max_m": 1.4359024093654558e-06,
+        "symmetric_nearest_rms_m": 1.4003986114961406e-06,
+        "corresponding_vertices_max_m": 1.4359024093654558e-06,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 1344,
+            "candidate_corners": 1344,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.024541815382459507,
+          "rms": 0.0022768451896361583
+        }
+      },
+      "armor_tex_armor_0": {
+        "reference_vertices": 921,
+        "candidate_vertices": 921,
+        "symmetric_nearest_max_m": 1.2220444436270836e-06,
+        "symmetric_nearest_rms_m": 9.85797251929365e-07,
+        "corresponding_vertices_max_m": 1.2220444436270836e-06,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 3042,
+            "candidate_corners": 3042,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.5904027649628771,
+          "rms": 0.018894334438877086
+        }
+      },
+      "belt_tex_belt_0": {
+        "reference_vertices": 452,
+        "candidate_vertices": 452,
+        "symmetric_nearest_max_m": 9.068594582230235e-07,
+        "symmetric_nearest_rms_m": 7.996935185764194e-07,
+        "corresponding_vertices_max_m": 9.068594582230235e-07,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 1476,
+            "candidate_corners": 1476,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.02609520998737985,
+          "rms": 0.0020837320553103596
+        }
+      },
+      "body_tex_skin2_0": {
+        "reference_vertices": 274,
+        "candidate_vertices": 274,
+        "symmetric_nearest_max_m": 1.3534420988150577e-06,
+        "symmetric_nearest_rms_m": 1.3342965034337474e-06,
+        "corresponding_vertices_max_m": 1.3534420988150577e-06,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 1536,
+            "candidate_corners": 1536,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.013731831405540726,
+          "rms": 0.0015494427318938245
+        }
+      },
+      "body_tex_skin_0": {
+        "reference_vertices": 14556,
+        "candidate_vertices": 14556,
+        "symmetric_nearest_max_m": 1.5545643856848039e-06,
+        "symmetric_nearest_rms_m": 9.213060627417657e-07,
+        "corresponding_vertices_max_m": 1.5545643856848039e-06,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 81312,
+            "candidate_corners": 81312,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.7954433501063327,
+          "rms": 0.03263864399912565
+        }
+      },
+      "bow_tex_bow_0": {
+        "reference_vertices": 584,
+        "candidate_vertices": 584,
+        "symmetric_nearest_max_m": 1.2225314248821319e-06,
+        "symmetric_nearest_rms_m": 1.0977929450759454e-06,
+        "corresponding_vertices_max_m": 1.2225314248821319e-06,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 2196,
+            "candidate_corners": 2196,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.01925768550592427,
+          "rms": 0.002664470638007525
+        }
+      },
+      "cuff.001_tex_cuff_0": {
+        "reference_vertices": 548,
+        "candidate_vertices": 548,
+        "symmetric_nearest_max_m": 1.0869449138166214e-06,
+        "symmetric_nearest_rms_m": 9.061232305879296e-07,
+        "corresponding_vertices_max_m": 1.0869449138166214e-06,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 1704,
+            "candidate_corners": 1704,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.02731314959679932,
+          "rms": 0.0025765029200071573
+        }
+      },
+      "cuff_tex_cuff_0": {
+        "reference_vertices": 548,
+        "candidate_vertices": 548,
+        "symmetric_nearest_max_m": 1.0074066358888644e-06,
+        "symmetric_nearest_rms_m": 9.291736494948858e-07,
+        "corresponding_vertices_max_m": 1.0074066358888644e-06,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 1704,
+            "candidate_corners": 1704,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.029439493191021286,
+          "rms": 0.004308275252045093
+        }
+      },
+      "ear.001_tex_ear2_0": {
+        "reference_vertices": 538,
+        "candidate_vertices": 538,
+        "symmetric_nearest_max_m": 1.4648953712620068e-06,
+        "symmetric_nearest_rms_m": 1.4318391585543517e-06,
+        "corresponding_vertices_max_m": 1.4648953712620068e-06,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 1872,
+            "candidate_corners": 1872,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.7773863323722018,
+          "rms": 0.026693435481367166
+        }
+      },
+      "ear_tex_ear_0": {
+        "reference_vertices": 312,
+        "candidate_vertices": 312,
+        "symmetric_nearest_max_m": 1.479624840265972e-06,
+        "symmetric_nearest_rms_m": 1.4438492574914575e-06,
+        "corresponding_vertices_max_m": 1.479624840265972e-06,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 1422,
+            "candidate_corners": 1422,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.019755980132476314,
+          "rms": 0.0021377372176711994
+        }
+      },
+      "eye_tex_eyes_0": {
+        "reference_vertices": 194,
+        "candidate_vertices": 194,
+        "symmetric_nearest_max_m": 1.5330716077978157e-06,
+        "symmetric_nearest_rms_m": 1.5197244203009475e-06,
+        "corresponding_vertices_max_m": 1.5330716077978157e-06,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 672,
+            "candidate_corners": 672,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.005265921303900795,
+          "rms": 0.001330186409890232
+        }
+      },
+      "eyelashes_tex_eyelashes_0": {
+        "reference_vertices": 246,
+        "candidate_vertices": 246,
+        "symmetric_nearest_max_m": 1.3807061821642233e-06,
+        "symmetric_nearest_rms_m": 1.3494850328139543e-06,
+        "corresponding_vertices_max_m": 1.3807061821642233e-06,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 834,
+            "candidate_corners": 834,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.039853702170042186,
+          "rms": 0.009429756226984349
+        }
+      },
+      "hair.mesh.000_tex_hair1_0": {
+        "reference_vertices": 1009,
+        "candidate_vertices": 1009,
+        "symmetric_nearest_max_m": 2.230094662269816e-06,
+        "symmetric_nearest_rms_m": 1.3908115332861045e-06,
+        "corresponding_vertices_max_m": 2.230094662269816e-06,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 5028,
+            "candidate_corners": 5028,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.7520749936395851,
+          "rms": 0.03929560235916979
+        }
+      },
+      "hair_band_tex_band_0": {
+        "reference_vertices": 340,
+        "candidate_vertices": 340,
+        "symmetric_nearest_max_m": 6.36191242504721e-07,
+        "symmetric_nearest_rms_m": 5.443712850505132e-07,
+        "corresponding_vertices_max_m": 6.36191242504721e-07,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 1344,
+            "candidate_corners": 1344,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.619747812540208,
+          "rms": 0.025242701619843818
+        }
+      },
+      "hightlight_hightlight_0": {
+        "reference_vertices": 96,
+        "candidate_vertices": 96,
+        "symmetric_nearest_max_m": 1.5316524412617917e-06,
+        "symmetric_nearest_rms_m": 1.525790870842346e-06,
+        "corresponding_vertices_max_m": 1.5316524412617917e-06,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {},
+        "normal_angle_degrees": {
+          "max": 0.0013397539454539397,
+          "rms": 0.0006795337156558476
+        }
+      },
+      "long_gloves_tex_glove_0": {
+        "reference_vertices": 3142,
+        "candidate_vertices": 3142,
+        "symmetric_nearest_max_m": 1.1418076643842473e-06,
+        "symmetric_nearest_rms_m": 8.063159702114924e-07,
+        "corresponding_vertices_max_m": 1.1418076643842473e-06,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 15384,
+            "candidate_corners": 15384,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.7452708400391448,
+          "rms": 0.02278090503188602
+        }
+      },
+      "shirt.001_tex_shirt_0": {
+        "reference_vertices": 420,
+        "candidate_vertices": 420,
+        "symmetric_nearest_max_m": 1.029385152872045e-06,
+        "symmetric_nearest_rms_m": 7.46139831013936e-07,
+        "corresponding_vertices_max_m": 1.029385152872045e-06,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 2016,
+            "candidate_corners": 2016,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.6177887442090675,
+          "rms": 0.019957468486186625
+        }
+      },
+      "shirt_tex_shirt_0": {
+        "reference_vertices": 1975,
+        "candidate_vertices": 1975,
+        "symmetric_nearest_max_m": 1.2641100021231702e-06,
+        "symmetric_nearest_rms_m": 9.95187983351767e-07,
+        "corresponding_vertices_max_m": 1.2641100021231702e-06,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 8313,
+            "candidate_corners": 8313,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.7835771875036026,
+          "rms": 0.03268591411368965
+        }
+      },
+      "shoes_tex_shoes_0": {
+        "reference_vertices": 708,
+        "candidate_vertices": 708,
+        "symmetric_nearest_max_m": 1.520774141975504e-06,
+        "symmetric_nearest_rms_m": 1.068171252321361e-06,
+        "corresponding_vertices_max_m": 1.520774141975504e-06,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 2808,
+            "candidate_corners": 2808,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.5327254602382827,
+          "rms": 0.020786953645333364
+        }
+      },
+      "shoulder_armor_tex_shoulderarmor_0": {
+        "reference_vertices": 1032,
+        "candidate_vertices": 1032,
+        "symmetric_nearest_max_m": 1.2971923901727182e-06,
+        "symmetric_nearest_rms_m": 1.2328747202365268e-06,
+        "corresponding_vertices_max_m": 1.2971923901727182e-06,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 4296,
+            "candidate_corners": 4296,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.20364111871460808,
+          "rms": 0.006749756072792999
+        }
+      },
+      "stocking_tex_sock_0": {
+        "reference_vertices": 2265,
+        "candidate_vertices": 2265,
+        "symmetric_nearest_max_m": 1.2546252207225776e-06,
+        "symmetric_nearest_rms_m": 8.031375400743302e-07,
+        "corresponding_vertices_max_m": 1.2546252207225776e-06,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 10194,
+            "candidate_corners": 10194,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.7047054506441935,
+          "rms": 0.017939315831223913
+        }
+      },
+      "tail_tex_tail_0": {
+        "reference_vertices": 516,
+        "candidate_vertices": 516,
+        "symmetric_nearest_max_m": 7.566761593875178e-07,
+        "symmetric_nearest_rms_m": 5.627789778481072e-07,
+        "corresponding_vertices_max_m": 7.566761593875178e-07,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 2331,
+            "candidate_corners": 2331,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.5289173447240344,
+          "rms": 0.023815172479240563
+        }
+      },
+      "underwear_tex_underwear_0": {
+        "reference_vertices": 139,
+        "candidate_vertices": 139,
+        "symmetric_nearest_max_m": 8.456300228978429e-07,
+        "symmetric_nearest_rms_m": 7.369611966764398e-07,
+        "corresponding_vertices_max_m": 8.456300228978429e-07,
+        "polygons_equal": true,
+        "triangles_equal": true,
+        "corners_equal": true,
+        "topology_equal": true,
+        "material_slots_equal": true,
+        "polygon_material_indices_equal": true,
+        "smooth_faces_equal": true,
+        "reference_has_custom_normals": true,
+        "candidate_has_custom_normals": true,
+        "uv_layer_names_equal": true,
+        "uv_layers": {
+          "UVMap": {
+            "reference_corners": 672,
+            "candidate_corners": 672,
+            "max_absolute_delta": 0.0
+          }
+        },
+        "normal_angle_degrees": {
+          "max": 0.0055026031437867,
+          "rms": 0.000679753047998274
+        }
+      }
+    },
+    "max_symmetric_nearest_m": 2.230094662269816e-06,
+    "positions_within_10_micrometres": true,
+    "max_uv_absolute_delta": 0.0,
+    "max_normal_angle_degrees": 0.7954433501063327,
+    "surface_structure_preserved": true
+  },
+  "materials_source_to_blend": {
+    "missing": [],
+    "extra": [],
+    "deltas": {
+      "hightlight": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_armor": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_band": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_belt": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_bow": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_cuff": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_ear": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_ear2": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_eyelashes": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_eyes": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_glove": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_hair1": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_hair2": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_hair3": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_hair4": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_hair5": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_hair6": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_hair7": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_shirt": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_shoes": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_shoulderarmor": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_skin": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_skin2": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_sock": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_tail": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_underwear": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      }
+    }
+  },
+  "materials_blend_to_fbx": {
+    "missing": [],
+    "extra": [],
+    "deltas": {
+      "hightlight": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_armor": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_band": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_belt": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_bow": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_cuff": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_ear": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_ear2": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_eyelashes": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_eyes": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_glove": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_hair1": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_hair2": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_hair3": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_hair4": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_hair5": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_hair6": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_hair7": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_shirt": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_shoes": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_shoulderarmor": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_skin": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_skin2": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_sock": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_tail": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      },
+      "tex_underwear": {
+        "diffuse_color": 0.0,
+        "roughness": 0.0,
+        "metallic": 0.0,
+        "principled": {
+          "Alpha": 0.0,
+          "Roughness": 0.0,
+          "Metallic": 0.0,
+          "Specular IOR Level": 0.0,
+          "Base Color": 0.0
+        }
+      }
+    }
+  },
+  "skeleton": {
+    "blend_bones": 239,
+    "fbx_bones": 239,
+    "missing": [],
+    "extra": [],
+    "parent_mismatches": [],
+    "max_head_position_delta_m": 2.5970804606717043e-06,
+    "head_position_deltas_m": {
+      "hair.k.004_057": 9.707508966268498e-07,
+      "hair.m.001_038": 7.043459083105056e-07,
+      "c_middle1.l_0170": 3.4240261593687705e-07,
+      "hair.h.003_0111": 5.268356063861754e-07,
+      "cloth.h.001_0207": 4.432938927603816e-07,
+      "c_thumb1.r_0140": 6.172750943067068e-07,
+      "hair.h.011_0119": 5.794233708150262e-07,
+      "hair.d.000_093": 6.034970283508301e-07,
+      "hair.q.002_087": 7.307648560547369e-07,
+      "cloth.e.001_0192": 2.6987150723151616e-07,
+      "cloth.i.006_0218": 4.4229096411632984e-07,
+      "hair.j.002_063": 3.6983709472390583e-07,
+      "cloth.d.002_0190": 6.882013820860081e-07,
+      "hair.m.000_037": 6.976942633753698e-07,
+      "cloth.i.008_0220": 4.2146848510894033e-07,
+      "hair.i.012_0134": 5.206884506242319e-07,
+      "hair.i.009_0131": 4.5491270787935696e-07,
+      "hair.i.008_0130": 6.421345897440684e-07,
+      "cloth.h.003_0209": 4.464290657069983e-07,
+      "cloth.b.006_0232": 4.425419093643873e-07,
+      "hair.k.001_054": 6.260261397838594e-07,
+      "hair.k.003_056": 5.397430144630323e-07,
+      "c_pinky3.l_0166": 3.2098083538618706e-07,
+      "leg_twist.r_012": 3.604110068812318e-07,
+      "hair.o.004_073": 4.2981520598697533e-07,
+      "arm_twist.r_0156": 6.677537803701774e-07,
+      "hair.a.002_021": 7.548655293420555e-07,
+      "cloth.i.001_0213": 3.5762786865234375e-07,
+      "cloth.c.001_0183": 4.1140430248613723e-07,
+      "hair.o.007_076": 5.438413498072225e-07,
+      "c_pinky1.r_0143": 8.064543680986648e-07,
+      "foot.r_010": 5.786564302130818e-07,
+      "hair.p.004_081": 7.303089353348521e-07,
+      "cloth.f.005_0202": 3.919883500923486e-07,
+      "hair.h.008_0116": 1.2332005105138172e-06,
+      "hair.c.001_027": 6.258598572169036e-07,
+      "hair.i.011_0133": 6.643979790689932e-07,
+      "hair.l.002_047": 6.409231772305539e-07,
+      "cloth.a.000_0221": 4.054238754633901e-07,
+      "cloth.f.001_0198": 6.496974634108436e-07,
+      "hair.p.005_082": 8.940696716308594e-07,
+      "leg_twist.l_06": 1.4451053627054047e-06,
+      "cloth.b.005_0231": 6.145712920219088e-07,
+      "cloth.i.002_0214": 3.6010283153040923e-07,
+      "c_thumb3.r_0142": 7.033600641015736e-07,
+      "cloth.h.002_0208": 4.789280498024284e-07,
+      "hair.j.004_065": 3.725290298461914e-07,
+      "c_index2.r_0153": 6.080331135720958e-07,
+      "hair.k.007_060": 5.066394805908203e-07,
+      "hair.g.000_0104": 7.518813497747698e-07,
+      "hair.j.006_067": 7.929882225781721e-07,
+      "cloth.i.003_0195": 4.676686175607209e-07,
+      "c_middle1.r_0149": 6.36403456451375e-07,
+      "thigh_twist.l_07": 3.9038555093064716e-07,
+      "hair.d.002_096": 8.765442625400268e-07,
+      "cloth.e.004_0175": 2.8351392731726835e-07,
+      "hair.p.003_080": 8.397700073483808e-07,
+      "cloth.b.002_00": 7.731391055031327e-07,
+      "cloth.a.003_0224": 4.054238754633901e-07,
+      "hair.q.005_090": 6.455832428465625e-07,
+      "hair.l.004_049": 7.657805179077147e-07,
+      "c_index3.l_0155": 1.0745380149674383e-07,
+      "root.x_01": 4.220977485413467e-07,
+      "hair.l.007_052": 3.29177409922697e-07,
+      "hair.q.003_088": 8.439899837080417e-07,
+      "c_tail_03.x_0181": 4.0094924113374084e-07,
+      "hair.l.000_045": 6.556510925292969e-07,
+      "cloth.a.001_0222": 5.962326831740902e-07,
+      "hair.h.004_0112": 1.2402923134973534e-06,
+      "cloth.c.004_0186": 5.872267632257352e-07,
+      "hair.l.005_050": 6.963802245585873e-07,
+      "c_ring2.l_0168": 4.995779578161303e-07,
+      "c_pinky1.l_0164": 4.6932744228910274e-07,
+      "hair.n.005_034": 7.177373843356806e-07,
+      "hair.m.005_042": 7.3802128416537e-07,
+      "c_thumb3.l_0163": 3.4240261593687705e-07,
+      "hair.o.000_069": 6.697238997889826e-07,
+      "cloth.c.003_0185": 4.375947732996543e-07,
+      "cloth.e.002_0193": 6.546767130855822e-07,
+      "hair.b.002_025": 6.144922525653383e-07,
+      "c_tail_00.x_0178": 4.6766861756094203e-07,
+      "cloth.i.000_0212": 4.308471767545033e-07,
+      "hair.c.002_028": 5.599843688045011e-07,
+      "hair.m.003_040": 9.911232679078513e-07,
+      "cloth.a.005_0226": 5.788482606278369e-07,
+      "c_index3.r_0154": 5.734527529744463e-07,
+      "arm_twist.l_0177": 4.661444076588756e-07,
+      "hair.p.002_079": 6.558204020460065e-07,
+      "c_thumb1.l_0161": 2.457562461863554e-07,
+      "hair.f.000_0100": 5.869224126002707e-07,
+      "ear.R": 6.472691893577576e-07,
+      "arm_stretch.r_0137": 7.120296178342958e-07,
+      "c_middle3.r_0151": 4.382562985972387e-07,
+      "hair.j.005_066": 5.749994928114038e-07,
+      "hair.n.003_032": 5.59967524225802e-07,
+      "neck.x_017": 5.606561899185181e-07,
+      "hair.h.007_094": 5.364418029785156e-07,
+      "c_thumb2.l_0162": 2.7314279645418166e-07,
+      "c_ring1.l_0167": 4.182955279236495e-07,
+      "Skeleton_4_rootJoint": 1.2710574864626038e-13,
+      "cloth.e.003_0194": 4.54973716758848e-07,
+      "hair.a.001_020": 6.143906154658885e-07,
+      "hair.k.006_059": 6.143906154658885e-07,
+      "hair.n.002_031": 6.697297277291827e-07,
+      "cloth.a.002_0223": 4.851466594964178e-07,
+      "hair.i.001_0123": 9.805371687628092e-07,
+      "hair.j.007_068": 8.221336736758782e-07,
+      "cloth.i.004_0216": 4.5588787021572457e-07,
+      "hair.f.002_0102": 6.564972034666148e-07,
+      "forearm_twist.l_0176": 5.623090941939713e-07,
+      "thigh_stretch.l_02": 4.202445419463878e-07,
+      "toes_01.r_011": 4.861503839492798e-07,
+      "hair.q.001_086": 6.208618478774923e-07,
+      "hair.h.002_0110": 8.690392468129749e-07,
+      "c_ring3.r_0148": 3.4240261593687705e-07,
+      "hair.b.001_024": 9.602870634626165e-07,
+      "hair.h.006_0114": 4.626564591008432e-07,
+      "hair.j.003_064": 7.3802128416537e-07,
+      "hair.h.005_0113": 4.056292053704321e-07,
+      "cloth.a.004_0225": 5.787043937781867e-07,
+      "cloth.b.000_0227": 4.4229096411632984e-07,
+      "cloth.f.004_0201": 3.885747435809761e-07,
+      "hair.i.003_0125": 1.0930791458543126e-06,
+      "hair.i.000_0122": 6.315987733804005e-07,
+      "hair.q.006_091": 7.935480449017494e-07,
+      "hair.l.003_048": 6.933444812376405e-07,
+      "hair.c.000_026": 5.960464477539062e-07,
+      "hair.k.002_055": 6.336060650786549e-07,
+      "hair.p.001_078": 7.750036492315438e-07,
+      "c_ring1.r_0146": 6.267351163868037e-07,
+      "hair.f.001_0101": 1.010496581275921e-06,
+      "hair.m.002_039": 6.344815747750928e-07,
+      "c_pinky2.l_0165": 3.769728732309794e-07,
+      "cloth.d.001_0189": 4.246830940246582e-07,
+      "hair.m.006_043": 1.0354966910536105e-06,
+      "arm_stretch.l_0158": 9.003244056070986e-07,
+      "hair.i.002_0124": 4.5099097342555393e-07,
+      "leg_stretch.r_09": 2.3513635751693695e-07,
+      "hair.g.002_0106": 8.463872675314665e-07,
+      "c_index1.l_0173": 2.086162567138672e-07,
+      "hair.e.000_097": 6.036809652732208e-07,
+      "c_index2.l_0174": 2.1490760299348766e-07,
+      "cloth.h.000_0206": 4.4229096411632984e-07,
+      "hair.e.002_099": 6.66941417829234e-07,
+      "hair.i.006_0128": 9.541398640621973e-07,
+      "cloth.i.005_0217": 3.816559456248789e-07,
+      "cloth.e.000_0191": 4.4229096411632984e-07,
+      "hair.n.006_035": 2.388837865275353e-07,
+      "hair.g.001_0105": 1.0248272933989406e-06,
+      "hair.l.006_051": 1.0637383638366907e-06,
+      "hair.p.006_083": 6.880400407680986e-07,
+      "hair.n.007_036": 4.993695716787497e-07,
+      "hair.i.013_0115": 3.171532847552413e-07,
+      "hair.h.000_0108": 5.85801899433136e-07,
+      "hair.o.001_070": 6.697238997889826e-07,
+      "cloth.b.007_0233": 4.7145164071191475e-07,
+      "hair.i.007_0129": 1.0115243642614567e-06,
+      "hair.p.007_084": 8.945662391068717e-07,
+      "hair.h.001_0109": 4.971273934129559e-07,
+      "c_pinky2.r_0144": 8.134450950596441e-07,
+      "hair.h.012_0120": 7.868038882281831e-07,
+      "hair.l.001_046": 7.873681076540295e-07,
+      "hair.e.001_098": 5.887844592371686e-07,
+      "hair.o.006_075": 8.540588546339929e-07,
+      "hair.f.003_0103": 7.928832118881033e-07,
+      "c_tail_02.x_0180": 7.350064787351206e-07,
+      "hair.h.013_0121": 5.479090306416224e-07,
+      "hair.i.005_0127": 7.540929871129986e-07,
+      "hair.h.010_0118": 6.542950391799256e-07,
+      "hair.n.001_030": 9.310561782590104e-07,
+      "thigh_stretch.r_08": 4.2440626211138993e-07,
+      "cloth.h.004_0210": 3.6814935172843637e-07,
+      "ear.L": 6.908178972313351e-07,
+      "toes_01.l_05": 1.5306739134984468e-06,
+      "cloth.c.002_0184": 4.174985207951635e-07,
+      "spine_01.x_014": 4.023895598948002e-07,
+      "hair.q.000_085": 7.868038882281831e-07,
+      "thigh_twist.r_013": 4.141988439471485e-07,
+      "cloth.f.000_0197": 4.5515669433180285e-07,
+      "hair.g.003_0107": 1.2777908636255724e-06,
+      "cloth.e.005_0196": 5.998064447217802e-07,
+      "shoulder.r_0136": 7.066670478212461e-07,
+      "cloth.f.003_0200": 3.885747435809761e-07,
+      "leg_stretch.l_03": 5.14899270032972e-07,
+      "hair.d.001_095": 7.575082641644988e-07,
+      "c_ring3.l_0169": 4.951133646320149e-07,
+      "cloth.d.000_0188": 4.432938927603816e-07,
+      "cloth.g.000_0203": 4.495732439024922e-07,
+      "forearm_stretch.l_0159": 3.725290298461914e-07,
+      "hair.j.000_061": 6.034970283508301e-07,
+      "cloth.c.005_0187": 5.693268669984462e-07,
+      "hair.p.000_077": 6.407499313354492e-07,
+      "hair.o.005_074": 9.615579727233456e-07,
+      "c_middle3.l_0172": 4.0535540904806387e-07,
+      "head.x_018": 6.488852611125411e-07,
+      "hair.k.005_058": 6.447228089804631e-07,
+      "hair.q.004_089": 7.356104282854488e-07,
+      "hair.a.003_022": 7.407615877736802e-07,
+      "cloth.b.001_0228": 4.034336319768692e-07,
+      "c_middle2.r_0150": 6.258487701416016e-07,
+      "eye.L": 6.627667309792664e-07,
+      "hair.a.000_019": 6.419616707723741e-07,
+      "eye.R": 6.419616707723741e-07,
+      "cloth.h.005_0211": 3.5408389472376143e-07,
+      "hair.i.010_0132": 1.0447828854893508e-06,
+      "cloth.b.008_0215": 3.01357335092972e-07,
+      "hair.j.001_062": 8.189201536321022e-07,
+      "hair.o.002_071": 7.633482524212087e-07,
+      "c_pinky3.r_0145": 9.996002811937584e-07,
+      "hand.r_0139": 4.676686175607209e-07,
+      "c_index1.r_0152": 5.990192664337689e-07,
+      "hair.n.004_033": 4.4703507834728435e-07,
+      "forearm_stretch.r_0138": 3.993539000528275e-07,
+      "cloth.g.002_0205": 5.949744628147759e-07,
+      "cloth.b.003_0229": 4.425419093643873e-07,
+      "c_ring2.r_0147": 6.172750943067068e-07,
+      "c_tail_01.x_0179": 5.61172665883617e-07,
+      "cloth.g.001_0204": 4.329678483536135e-07,
+      "spine_02.x_015": 4.4051557779312134e-07,
+      "cloth.c.000_0182": 4.2981520598697533e-07,
+      "hand.l_0160": 5.075152625419617e-07,
+      "hair.k.000_053": 6.111293034079634e-07,
+      "hair.m.004_041": 5.65459309846469e-07,
+      "shoulder.l_0157": 9.00850374722443e-07,
+      "hair.q.007_092": 1.0845138414459682e-06,
+      "cloth.i.007_0219": 5.992045778895348e-07,
+      "cloth.b.004_0230": 4.300734308261219e-07,
+      "spine_03.x_016": 5.066394805908203e-07,
+      "hair.n.000_029": 6.556510925292969e-07,
+      "cloth.f.002_0199": 6.899736465686694e-07,
+      "hair.h.009_0117": 5.623090941939713e-07,
+      "forearm_twist.r_0135": 4.3392836387637365e-07,
+      "hair.i.004_0126": 1.055566117073586e-06,
+      "foot.l_04": 2.5970804606717043e-06,
+      "c_middle2.l_0171": 4.140270945265831e-07,
+      "hair.o.003_072": 6.336060650786549e-07,
+      "hair.b.000_023": 5.960580891724044e-07,
+      "hair.m.007_044": 9.504090976179823e-07,
+      "c_thumb2.r_0141": 7.015029263410813e-07
+    },
+    "note": "Leaf tail lengths are importer conventions; head transforms and sampled animation are tested."
+  },
+  "animations_blend": {
+    "TEST_elbows_90": {
+      "name": "TEST_elbows_90",
+      "frame_range": [
+        1.0,
+        61.0
+      ],
+      "fcurves": 2390,
+      "face_channels": {
+        "eye.L": {
+          "curves": 10,
+          "keyframes": 50,
+          "rotation_curves": 4
+        },
+        "eye.R": {
+          "curves": 10,
+          "keyframes": 50,
+          "rotation_curves": 4
+        },
+        "ear.L": {
+          "curves": 10,
+          "keyframes": 50,
+          "rotation_curves": 4
+        },
+        "ear.R": {
+          "curves": 10,
+          "keyframes": 50,
+          "rotation_curves": 4
+        }
+      }
+    },
+    "TEST_eyes_ears": {
+      "name": "TEST_eyes_ears",
+      "frame_range": [
+        1.0,
+        61.0
+      ],
+      "fcurves": 2390,
+      "face_channels": {
+        "eye.L": {
+          "curves": 10,
+          "keyframes": 50,
+          "rotation_curves": 4
+        },
+        "eye.R": {
+          "curves": 10,
+          "keyframes": 50,
+          "rotation_curves": 4
+        },
+        "ear.L": {
+          "curves": 10,
+          "keyframes": 50,
+          "rotation_curves": 4
+        },
+        "ear.R": {
+          "curves": 10,
+          "keyframes": 50,
+          "rotation_curves": 4
+        }
+      }
+    },
+    "TEST_fingers_35": {
+      "name": "TEST_fingers_35",
+      "frame_range": [
+        1.0,
+        61.0
+      ],
+      "fcurves": 2390,
+      "face_channels": {
+        "eye.L": {
+          "curves": 10,
+          "keyframes": 50,
+          "rotation_curves": 4
+        },
+        "eye.R": {
+          "curves": 10,
+          "keyframes": 50,
+          "rotation_curves": 4
+        },
+        "ear.L": {
+          "curves": 10,
+          "keyframes": 50,
+          "rotation_curves": 4
+        },
+        "ear.R": {
+          "curves": 10,
+          "keyframes": 50,
+          "rotation_curves": 4
+        }
+      }
+    },
+    "TEST_hair_tail_cloth": {
+      "name": "TEST_hair_tail_cloth",
+      "frame_range": [
+        1.0,
+        61.0
+      ],
+      "fcurves": 2390,
+      "face_channels": {
+        "eye.L": {
+          "curves": 10,
+          "keyframes": 50,
+          "rotation_curves": 4
+        },
+        "eye.R": {
+          "curves": 10,
+          "keyframes": 50,
+          "rotation_curves": 4
+        },
+        "ear.L": {
+          "curves": 10,
+          "keyframes": 50,
+          "rotation_curves": 4
+        },
+        "ear.R": {
+          "curves": 10,
+          "keyframes": 50,
+          "rotation_curves": 4
+        }
+      }
+    },
+    "TEST_head_torso": {
+      "name": "TEST_head_torso",
+      "frame_range": [
+        1.0,
+        61.0
+      ],
+      "fcurves": 2390,
+      "face_channels": {
+        "eye.L": {
+          "curves": 10,
+          "keyframes": 50,
+          "rotation_curves": 4
+        },
+        "eye.R": {
+          "curves": 10,
+          "keyframes": 50,
+          "rotation_curves": 4
+        },
+        "ear.L": {
+          "curves": 10,
+          "keyframes": 50,
+          "rotation_curves": 4
+        },
+        "ear.R": {
+          "curves": 10,
+          "keyframes": 50,
+          "rotation_curves": 4
+        }
+      }
+    },
+    "TEST_knees_90": {
+      "name": "TEST_knees_90",
+      "frame_range": [
+        1.0,
+        61.0
+      ],
+      "fcurves": 2390,
+      "face_channels": {
+        "eye.L": {
+          "curves": 10,
+          "keyframes": 50,
+          "rotation_curves": 4
+        },
+        "eye.R": {
+          "curves": 10,
+          "keyframes": 50,
+          "rotation_curves": 4
+        },
+        "ear.L": {
+          "curves": 10,
+          "keyframes": 50,
+          "rotation_curves": 4
+        },
+        "ear.R": {
+          "curves": 10,
+          "keyframes": 50,
+          "rotation_curves": 4
+        }
+      }
+    },
+    "TEST_shoulders_hips_ankles": {
+      "name": "TEST_shoulders_hips_ankles",
+      "frame_range": [
+        1.0,
+        61.0
+      ],
+      "fcurves": 2390,
+      "face_channels": {
+        "eye.L": {
+          "curves": 10,
+          "keyframes": 50,
+          "rotation_curves": 4
+        },
+        "eye.R": {
+          "curves": 10,
+          "keyframes": 50,
+          "rotation_curves": 4
+        },
+        "ear.L": {
+          "curves": 10,
+          "keyframes": 50,
+          "rotation_curves": 4
+        },
+        "ear.R": {
+          "curves": 10,
+          "keyframes": 50,
+          "rotation_curves": 4
+        }
+      }
+    }
+  },
+  "animations_fbx": {
+    "TEST_elbows_90": {
+      "name": "Raphtalia_Rig|Raphtalia_Rig|TEST_elbows_90",
+      "frame_range": [
+        1.0,
+        61.0
+      ],
+      "fcurves": 2399,
+      "face_channels": {
+        "eye.L": {
+          "curves": 10,
+          "keyframes": 610,
+          "rotation_curves": 4
+        },
+        "eye.R": {
+          "curves": 10,
+          "keyframes": 610,
+          "rotation_curves": 4
+        },
+        "ear.L": {
+          "curves": 10,
+          "keyframes": 610,
+          "rotation_curves": 4
+        },
+        "ear.R": {
+          "curves": 10,
+          "keyframes": 610,
+          "rotation_curves": 4
+        }
+      }
+    },
+    "TEST_eyes_ears": {
+      "name": "Raphtalia_Rig|Raphtalia_Rig|TEST_eyes_ears",
+      "frame_range": [
+        1.0,
+        61.0
+      ],
+      "fcurves": 2399,
+      "face_channels": {
+        "eye.L": {
+          "curves": 10,
+          "keyframes": 610,
+          "rotation_curves": 4
+        },
+        "eye.R": {
+          "curves": 10,
+          "keyframes": 610,
+          "rotation_curves": 4
+        },
+        "ear.L": {
+          "curves": 10,
+          "keyframes": 610,
+          "rotation_curves": 4
+        },
+        "ear.R": {
+          "curves": 10,
+          "keyframes": 610,
+          "rotation_curves": 4
+        }
+      }
+    },
+    "TEST_fingers_35": {
+      "name": "Raphtalia_Rig|Raphtalia_Rig|TEST_fingers_35",
+      "frame_range": [
+        1.0,
+        61.0
+      ],
+      "fcurves": 2399,
+      "face_channels": {
+        "eye.L": {
+          "curves": 10,
+          "keyframes": 610,
+          "rotation_curves": 4
+        },
+        "eye.R": {
+          "curves": 10,
+          "keyframes": 610,
+          "rotation_curves": 4
+        },
+        "ear.L": {
+          "curves": 10,
+          "keyframes": 610,
+          "rotation_curves": 4
+        },
+        "ear.R": {
+          "curves": 10,
+          "keyframes": 610,
+          "rotation_curves": 4
+        }
+      }
+    },
+    "TEST_hair_tail_cloth": {
+      "name": "Raphtalia_Rig|Raphtalia_Rig|TEST_hair_tail_cloth",
+      "frame_range": [
+        1.0,
+        61.0
+      ],
+      "fcurves": 2399,
+      "face_channels": {
+        "eye.L": {
+          "curves": 10,
+          "keyframes": 610,
+          "rotation_curves": 4
+        },
+        "eye.R": {
+          "curves": 10,
+          "keyframes": 610,
+          "rotation_curves": 4
+        },
+        "ear.L": {
+          "curves": 10,
+          "keyframes": 610,
+          "rotation_curves": 4
+        },
+        "ear.R": {
+          "curves": 10,
+          "keyframes": 610,
+          "rotation_curves": 4
+        }
+      }
+    },
+    "TEST_head_torso": {
+      "name": "Raphtalia_Rig|Raphtalia_Rig|TEST_head_torso",
+      "frame_range": [
+        1.0,
+        61.0
+      ],
+      "fcurves": 2399,
+      "face_channels": {
+        "eye.L": {
+          "curves": 10,
+          "keyframes": 610,
+          "rotation_curves": 4
+        },
+        "eye.R": {
+          "curves": 10,
+          "keyframes": 610,
+          "rotation_curves": 4
+        },
+        "ear.L": {
+          "curves": 10,
+          "keyframes": 610,
+          "rotation_curves": 4
+        },
+        "ear.R": {
+          "curves": 10,
+          "keyframes": 610,
+          "rotation_curves": 4
+        }
+      }
+    },
+    "TEST_knees_90": {
+      "name": "Raphtalia_Rig|Raphtalia_Rig|TEST_knees_90",
+      "frame_range": [
+        1.0,
+        61.0
+      ],
+      "fcurves": 2399,
+      "face_channels": {
+        "eye.L": {
+          "curves": 10,
+          "keyframes": 610,
+          "rotation_curves": 4
+        },
+        "eye.R": {
+          "curves": 10,
+          "keyframes": 610,
+          "rotation_curves": 4
+        },
+        "ear.L": {
+          "curves": 10,
+          "keyframes": 610,
+          "rotation_curves": 4
+        },
+        "ear.R": {
+          "curves": 10,
+          "keyframes": 610,
+          "rotation_curves": 4
+        }
+      }
+    },
+    "TEST_shoulders_hips_ankles": {
+      "name": "Raphtalia_Rig|Raphtalia_Rig|TEST_shoulders_hips_ankles",
+      "frame_range": [
+        1.0,
+        61.0
+      ],
+      "fcurves": 2399,
+      "face_channels": {
+        "eye.L": {
+          "curves": 10,
+          "keyframes": 610,
+          "rotation_curves": 4
+        },
+        "eye.R": {
+          "curves": 10,
+          "keyframes": 610,
+          "rotation_curves": 4
+        },
+        "ear.L": {
+          "curves": 10,
+          "keyframes": 610,
+          "rotation_curves": 4
+        },
+        "ear.R": {
+          "curves": 10,
+          "keyframes": 610,
+          "rotation_curves": 4
+        }
+      }
+    }
+  },
+  "missing_actions": [],
+  "extra_actions": [],
+  "animation_samples": [
+    {
+      "action": "TEST_elbows_90",
+      "frame": 16,
+      "max_symmetric_nearest_m": 2.230094662269816e-06,
+      "positions_within_10_micrometres": true,
+      "mesh_maxima_m": {
+        "NurbsPath.001_tex_hair3_0": 1.4334788243772123e-06,
+        "NurbsPath.002_tex_hair4_0": 1.4785467233354446e-06,
+        "NurbsPath.003_tex_hair5_0": 1.554716205187652e-06,
+        "NurbsPath.006_tex_hair6_0": 1.6021793897873815e-06,
+        "NurbsPath.007_tex_hair7_0": 1.846687947279204e-06,
+        "NurbsPath_tex_hair2_0": 1.4359024093654558e-06,
+        "armor_tex_armor_0": 1.2220444436270836e-06,
+        "belt_tex_belt_0": 9.068594582230235e-07,
+        "body_tex_skin2_0": 1.3534420988150577e-06,
+        "body_tex_skin_0": 1.6557917052052657e-06,
+        "bow_tex_bow_0": 1.2225314248821319e-06,
+        "cuff.001_tex_cuff_0": 1.4815575159183562e-06,
+        "cuff_tex_cuff_0": 1.0074066358888644e-06,
+        "ear.001_tex_ear2_0": 1.4648953712620068e-06,
+        "ear_tex_ear_0": 1.479624840265972e-06,
+        "eye_tex_eyes_0": 1.5330716077978157e-06,
+        "eyelashes_tex_eyelashes_0": 1.3807061821642233e-06,
+        "hair.mesh.000_tex_hair1_0": 2.230094662269816e-06,
+        "hair_band_tex_band_0": 6.36191242504721e-07,
+        "hightlight_hightlight_0": 1.5316524412617917e-06,
+        "long_gloves_tex_glove_0": 1.5840283972650415e-06,
+        "shirt.001_tex_shirt_0": 1.029385152872045e-06,
+        "shirt_tex_shirt_0": 1.5672474944760113e-06,
+        "shoes_tex_shoes_0": 1.520774141975504e-06,
+        "shoulder_armor_tex_shoulderarmor_0": 1.2971923901727182e-06,
+        "stocking_tex_sock_0": 1.2546252207225776e-06,
+        "tail_tex_tail_0": 7.566761593875178e-07,
+        "underwear_tex_underwear_0": 8.456300228978429e-07
+      }
+    },
+    {
+      "action": "TEST_elbows_90",
+      "frame": 31,
+      "max_symmetric_nearest_m": 2.230094662269816e-06,
+      "positions_within_10_micrometres": true,
+      "mesh_maxima_m": {
+        "NurbsPath.001_tex_hair3_0": 1.4334788243772123e-06,
+        "NurbsPath.002_tex_hair4_0": 1.4785467233354446e-06,
+        "NurbsPath.003_tex_hair5_0": 1.554716205187652e-06,
+        "NurbsPath.006_tex_hair6_0": 1.6021793897873815e-06,
+        "NurbsPath.007_tex_hair7_0": 1.846687947279204e-06,
+        "NurbsPath_tex_hair2_0": 1.4359024093654558e-06,
+        "armor_tex_armor_0": 1.2220444436270836e-06,
+        "belt_tex_belt_0": 9.068594582230235e-07,
+        "body_tex_skin2_0": 1.3534420988150577e-06,
+        "body_tex_skin_0": 2.2200884431811637e-06,
+        "bow_tex_bow_0": 1.2225314248821319e-06,
+        "cuff.001_tex_cuff_0": 1.6314392871756245e-06,
+        "cuff_tex_cuff_0": 1.0074066358888644e-06,
+        "ear.001_tex_ear2_0": 1.4648953712620068e-06,
+        "ear_tex_ear_0": 1.479624840265972e-06,
+        "eye_tex_eyes_0": 1.5330716077978157e-06,
+        "eyelashes_tex_eyelashes_0": 1.3807061821642233e-06,
+        "hair.mesh.000_tex_hair1_0": 2.230094662269816e-06,
+        "hair_band_tex_band_0": 6.36191242504721e-07,
+        "hightlight_hightlight_0": 1.5316524412617917e-06,
+        "long_gloves_tex_glove_0": 2.2076782473722803e-06,
+        "shirt.001_tex_shirt_0": 1.029385152872045e-06,
+        "shirt_tex_shirt_0": 1.6118219525433896e-06,
+        "shoes_tex_shoes_0": 1.520774141975504e-06,
+        "shoulder_armor_tex_shoulderarmor_0": 1.2971923901727182e-06,
+        "stocking_tex_sock_0": 1.2546252207225776e-06,
+        "tail_tex_tail_0": 7.566761593875178e-07,
+        "underwear_tex_underwear_0": 8.456300228978429e-07
+      }
+    },
+    {
+      "action": "TEST_elbows_90",
+      "frame": 46,
+      "max_symmetric_nearest_m": 2.230094662269816e-06,
+      "positions_within_10_micrometres": true,
+      "mesh_maxima_m": {
+        "NurbsPath.001_tex_hair3_0": 1.4334788243772123e-06,
+        "NurbsPath.002_tex_hair4_0": 1.4785467233354446e-06,
+        "NurbsPath.003_tex_hair5_0": 1.554716205187652e-06,
+        "NurbsPath.006_tex_hair6_0": 1.6021793897873815e-06,
+        "NurbsPath.007_tex_hair7_0": 1.846687947279204e-06,
+        "NurbsPath_tex_hair2_0": 1.4359024093654558e-06,
+        "armor_tex_armor_0": 1.2220444436270836e-06,
+        "belt_tex_belt_0": 9.068594582230235e-07,
+        "body_tex_skin2_0": 1.3534420988150577e-06,
+        "body_tex_skin_0": 1.6557917052052657e-06,
+        "bow_tex_bow_0": 1.2225314248821319e-06,
+        "cuff.001_tex_cuff_0": 1.4815575159183562e-06,
+        "cuff_tex_cuff_0": 1.0074066358888644e-06,
+        "ear.001_tex_ear2_0": 1.4648953712620068e-06,
+        "ear_tex_ear_0": 1.479624840265972e-06,
+        "eye_tex_eyes_0": 1.5330716077978157e-06,
+        "eyelashes_tex_eyelashes_0": 1.3807061821642233e-06,
+        "hair.mesh.000_tex_hair1_0": 2.230094662269816e-06,
+        "hair_band_tex_band_0": 6.36191242504721e-07,
+        "hightlight_hightlight_0": 1.5316524412617917e-06,
+        "long_gloves_tex_glove_0": 1.5840283972650415e-06,
+        "shirt.001_tex_shirt_0": 1.029385152872045e-06,
+        "shirt_tex_shirt_0": 1.5672474944760113e-06,
+        "shoes_tex_shoes_0": 1.520774141975504e-06,
+        "shoulder_armor_tex_shoulderarmor_0": 1.2971923901727182e-06,
+        "stocking_tex_sock_0": 1.2546252207225776e-06,
+        "tail_tex_tail_0": 7.566761593875178e-07,
+        "underwear_tex_underwear_0": 8.456300228978429e-07
+      }
+    },
+    {
+      "action": "TEST_eyes_ears",
+      "frame": 16,
+      "max_symmetric_nearest_m": 2.230094662269816e-06,
+      "positions_within_10_micrometres": true,
+      "mesh_maxima_m": {
+        "NurbsPath.001_tex_hair3_0": 1.4334788243772123e-06,
+        "NurbsPath.002_tex_hair4_0": 1.4785467233354446e-06,
+        "NurbsPath.003_tex_hair5_0": 1.554716205187652e-06,
+        "NurbsPath.006_tex_hair6_0": 1.6021793897873815e-06,
+        "NurbsPath.007_tex_hair7_0": 1.846687947279204e-06,
+        "NurbsPath_tex_hair2_0": 1.4359024093654558e-06,
+        "armor_tex_armor_0": 1.2220444436270836e-06,
+        "belt_tex_belt_0": 9.068594582230235e-07,
+        "body_tex_skin2_0": 1.3534420988150577e-06,
+        "body_tex_skin_0": 1.5545643856848039e-06,
+        "bow_tex_bow_0": 1.2225314248821319e-06,
+        "cuff.001_tex_cuff_0": 1.1055991212767097e-06,
+        "cuff_tex_cuff_0": 1.0074066358888644e-06,
+        "ear.001_tex_ear2_0": 1.6051892572082155e-06,
+        "ear_tex_ear_0": 1.6192732849134051e-06,
+        "eye_tex_eyes_0": 1.5620792112056597e-06,
+        "eyelashes_tex_eyelashes_0": 1.3807061821642233e-06,
+        "hair.mesh.000_tex_hair1_0": 2.230094662269816e-06,
+        "hair_band_tex_band_0": 6.36191242504721e-07,
+        "hightlight_hightlight_0": 1.5605603272172414e-06,
+        "long_gloves_tex_glove_0": 1.1645674062750229e-06,
+        "shirt.001_tex_shirt_0": 1.029385152872045e-06,
+        "shirt_tex_shirt_0": 1.2641100021231702e-06,
+        "shoes_tex_shoes_0": 1.520774141975504e-06,
+        "shoulder_armor_tex_shoulderarmor_0": 1.2971923901727182e-06,
+        "stocking_tex_sock_0": 1.2546252207225776e-06,
+        "tail_tex_tail_0": 7.566761593875178e-07,
+        "underwear_tex_underwear_0": 8.456300228978429e-07
+      }
+    },
+    {
+      "action": "TEST_eyes_ears",
+      "frame": 31,
+      "max_symmetric_nearest_m": 2.230094662269816e-06,
+      "positions_within_10_micrometres": true,
+      "mesh_maxima_m": {
+        "NurbsPath.001_tex_hair3_0": 1.4334788243772123e-06,
+        "NurbsPath.002_tex_hair4_0": 1.4785467233354446e-06,
+        "NurbsPath.003_tex_hair5_0": 1.554716205187652e-06,
+        "NurbsPath.006_tex_hair6_0": 1.6021793897873815e-06,
+        "NurbsPath.007_tex_hair7_0": 1.846687947279204e-06,
+        "NurbsPath_tex_hair2_0": 1.4359024093654558e-06,
+        "armor_tex_armor_0": 1.2220444436270836e-06,
+        "belt_tex_belt_0": 9.068594582230235e-07,
+        "body_tex_skin2_0": 1.3534420988150577e-06,
+        "body_tex_skin_0": 1.5545643856848039e-06,
+        "bow_tex_bow_0": 1.2225314248821319e-06,
+        "cuff.001_tex_cuff_0": 1.1055991212767097e-06,
+        "cuff_tex_cuff_0": 1.0074066358888644e-06,
+        "ear.001_tex_ear2_0": 1.6162818580180197e-06,
+        "ear_tex_ear_0": 1.6145532013836322e-06,
+        "eye_tex_eyes_0": 1.5638534342534202e-06,
+        "eyelashes_tex_eyelashes_0": 1.3807061821642233e-06,
+        "hair.mesh.000_tex_hair1_0": 2.230094662269816e-06,
+        "hair_band_tex_band_0": 6.36191242504721e-07,
+        "hightlight_hightlight_0": 1.5465344823236797e-06,
+        "long_gloves_tex_glove_0": 1.1645674062750229e-06,
+        "shirt.001_tex_shirt_0": 1.029385152872045e-06,
+        "shirt_tex_shirt_0": 1.2641100021231702e-06,
+        "shoes_tex_shoes_0": 1.520774141975504e-06,
+        "shoulder_armor_tex_shoulderarmor_0": 1.2971923901727182e-06,
+        "stocking_tex_sock_0": 1.2546252207225776e-06,
+        "tail_tex_tail_0": 7.566761593875178e-07,
+        "underwear_tex_underwear_0": 8.456300228978429e-07
+      }
+    },
+    {
+      "action": "TEST_eyes_ears",
+      "frame": 46,
+      "max_symmetric_nearest_m": 2.230094662269816e-06,
+      "positions_within_10_micrometres": true,
+      "mesh_maxima_m": {
+        "NurbsPath.001_tex_hair3_0": 1.4334788243772123e-06,
+        "NurbsPath.002_tex_hair4_0": 1.4785467233354446e-06,
+        "NurbsPath.003_tex_hair5_0": 1.554716205187652e-06,
+        "NurbsPath.006_tex_hair6_0": 1.6021793897873815e-06,
+        "NurbsPath.007_tex_hair7_0": 1.846687947279204e-06,
+        "NurbsPath_tex_hair2_0": 1.4359024093654558e-06,
+        "armor_tex_armor_0": 1.2220444436270836e-06,
+        "belt_tex_belt_0": 9.068594582230235e-07,
+        "body_tex_skin2_0": 1.3534420988150577e-06,
+        "body_tex_skin_0": 1.5545643856848039e-06,
+        "bow_tex_bow_0": 1.2225314248821319e-06,
+        "cuff.001_tex_cuff_0": 1.1055991212767097e-06,
+        "cuff_tex_cuff_0": 1.0074066358888644e-06,
+        "ear.001_tex_ear2_0": 1.6051892572082155e-06,
+        "ear_tex_ear_0": 1.6192732849134051e-06,
+        "eye_tex_eyes_0": 1.5620792112056597e-06,
+        "eyelashes_tex_eyelashes_0": 1.3807061821642233e-06,
+        "hair.mesh.000_tex_hair1_0": 2.230094662269816e-06,
+        "hair_band_tex_band_0": 6.36191242504721e-07,
+        "hightlight_hightlight_0": 1.5605603272172414e-06,
+        "long_gloves_tex_glove_0": 1.1645674062750229e-06,
+        "shirt.001_tex_shirt_0": 1.029385152872045e-06,
+        "shirt_tex_shirt_0": 1.2641100021231702e-06,
+        "shoes_tex_shoes_0": 1.520774141975504e-06,
+        "shoulder_armor_tex_shoulderarmor_0": 1.2971923901727182e-06,
+        "stocking_tex_sock_0": 1.2546252207225776e-06,
+        "tail_tex_tail_0": 7.566761593875178e-07,
+        "underwear_tex_underwear_0": 8.456300228978429e-07
+      }
+    },
+    {
+      "action": "TEST_fingers_35",
+      "frame": 16,
+      "max_symmetric_nearest_m": 2.230094662269816e-06,
+      "positions_within_10_micrometres": true,
+      "mesh_maxima_m": {
+        "NurbsPath.001_tex_hair3_0": 1.4334788243772123e-06,
+        "NurbsPath.002_tex_hair4_0": 1.4785467233354446e-06,
+        "NurbsPath.003_tex_hair5_0": 1.554716205187652e-06,
+        "NurbsPath.006_tex_hair6_0": 1.6021793897873815e-06,
+        "NurbsPath.007_tex_hair7_0": 1.846687947279204e-06,
+        "NurbsPath_tex_hair2_0": 1.4359024093654558e-06,
+        "armor_tex_armor_0": 1.2220444436270836e-06,
+        "belt_tex_belt_0": 9.068594582230235e-07,
+        "body_tex_skin2_0": 1.3534420988150577e-06,
+        "body_tex_skin_0": 1.5545643856848039e-06,
+        "bow_tex_bow_0": 1.2225314248821319e-06,
+        "cuff.001_tex_cuff_0": 1.1055991212767097e-06,
+        "cuff_tex_cuff_0": 1.0074066358888644e-06,
+        "ear.001_tex_ear2_0": 1.4648953712620068e-06,
+        "ear_tex_ear_0": 1.479624840265972e-06,
+        "eye_tex_eyes_0": 1.5330716077978157e-06,
+        "eyelashes_tex_eyelashes_0": 1.3807061821642233e-06,
+        "hair.mesh.000_tex_hair1_0": 2.230094662269816e-06,
+        "hair_band_tex_band_0": 6.36191242504721e-07,
+        "hightlight_hightlight_0": 1.5316524412617917e-06,
+        "long_gloves_tex_glove_0": 1.1645674062750229e-06,
+        "shirt.001_tex_shirt_0": 1.029385152872045e-06,
+        "shirt_tex_shirt_0": 1.2641100021231702e-06,
+        "shoes_tex_shoes_0": 1.520774141975504e-06,
+        "shoulder_armor_tex_shoulderarmor_0": 1.2971923901727182e-06,
+        "stocking_tex_sock_0": 1.2546252207225776e-06,
+        "tail_tex_tail_0": 7.566761593875178e-07,
+        "underwear_tex_underwear_0": 8.456300228978429e-07
+      }
+    },
+    {
+      "action": "TEST_fingers_35",
+      "frame": 31,
+      "max_symmetric_nearest_m": 2.230094662269816e-06,
+      "positions_within_10_micrometres": true,
+      "mesh_maxima_m": {
+        "NurbsPath.001_tex_hair3_0": 1.4334788243772123e-06,
+        "NurbsPath.002_tex_hair4_0": 1.4785467233354446e-06,
+        "NurbsPath.003_tex_hair5_0": 1.554716205187652e-06,
+        "NurbsPath.006_tex_hair6_0": 1.6021793897873815e-06,
+        "NurbsPath.007_tex_hair7_0": 1.846687947279204e-06,
+        "NurbsPath_tex_hair2_0": 1.4359024093654558e-06,
+        "armor_tex_armor_0": 1.2220444436270836e-06,
+        "belt_tex_belt_0": 9.068594582230235e-07,
+        "body_tex_skin2_0": 1.3534420988150577e-06,
+        "body_tex_skin_0": 1.8334849954344426e-06,
+        "bow_tex_bow_0": 1.2225314248821319e-06,
+        "cuff.001_tex_cuff_0": 1.1055991212767097e-06,
+        "cuff_tex_cuff_0": 1.0074066358888644e-06,
+        "ear.001_tex_ear2_0": 1.4648953712620068e-06,
+        "ear_tex_ear_0": 1.479624840265972e-06,
+        "eye_tex_eyes_0": 1.5330716077978157e-06,
+        "eyelashes_tex_eyelashes_0": 1.3807061821642233e-06,
+        "hair.mesh.000_tex_hair1_0": 2.230094662269816e-06,
+        "hair_band_tex_band_0": 6.36191242504721e-07,
+        "hightlight_hightlight_0": 1.5316524412617917e-06,
+        "long_gloves_tex_glove_0": 1.8121525636947474e-06,
+        "shirt.001_tex_shirt_0": 1.029385152872045e-06,
+        "shirt_tex_shirt_0": 1.2641100021231702e-06,
+        "shoes_tex_shoes_0": 1.520774141975504e-06,
+        "shoulder_armor_tex_shoulderarmor_0": 1.2971923901727182e-06,
+        "stocking_tex_sock_0": 1.2546252207225776e-06,
+        "tail_tex_tail_0": 7.566761593875178e-07,
+        "underwear_tex_underwear_0": 8.456300228978429e-07
+      }
+    },
+    {
+      "action": "TEST_fingers_35",
+      "frame": 46,
+      "max_symmetric_nearest_m": 2.230094662269816e-06,
+      "positions_within_10_micrometres": true,
+      "mesh_maxima_m": {
+        "NurbsPath.001_tex_hair3_0": 1.4334788243772123e-06,
+        "NurbsPath.002_tex_hair4_0": 1.4785467233354446e-06,
+        "NurbsPath.003_tex_hair5_0": 1.554716205187652e-06,
+        "NurbsPath.006_tex_hair6_0": 1.6021793897873815e-06,
+        "NurbsPath.007_tex_hair7_0": 1.846687947279204e-06,
+        "NurbsPath_tex_hair2_0": 1.4359024093654558e-06,
+        "armor_tex_armor_0": 1.2220444436270836e-06,
+        "belt_tex_belt_0": 9.068594582230235e-07,
+        "body_tex_skin2_0": 1.3534420988150577e-06,
+        "body_tex_skin_0": 1.5545643856848039e-06,
+        "bow_tex_bow_0": 1.2225314248821319e-06,
+        "cuff.001_tex_cuff_0": 1.1055991212767097e-06,
+        "cuff_tex_cuff_0": 1.0074066358888644e-06,
+        "ear.001_tex_ear2_0": 1.4648953712620068e-06,
+        "ear_tex_ear_0": 1.479624840265972e-06,
+        "eye_tex_eyes_0": 1.5330716077978157e-06,
+        "eyelashes_tex_eyelashes_0": 1.3807061821642233e-06,
+        "hair.mesh.000_tex_hair1_0": 2.230094662269816e-06,
+        "hair_band_tex_band_0": 6.36191242504721e-07,
+        "hightlight_hightlight_0": 1.5316524412617917e-06,
+        "long_gloves_tex_glove_0": 1.1645674062750229e-06,
+        "shirt.001_tex_shirt_0": 1.029385152872045e-06,
+        "shirt_tex_shirt_0": 1.2641100021231702e-06,
+        "shoes_tex_shoes_0": 1.520774141975504e-06,
+        "shoulder_armor_tex_shoulderarmor_0": 1.2971923901727182e-06,
+        "stocking_tex_sock_0": 1.2546252207225776e-06,
+        "tail_tex_tail_0": 7.566761593875178e-07,
+        "underwear_tex_underwear_0": 8.456300228978429e-07
+      }
+    },
+    {
+      "action": "TEST_hair_tail_cloth",
+      "frame": 16,
+      "max_symmetric_nearest_m": 2.230094662269816e-06,
+      "positions_within_10_micrometres": true,
+      "mesh_maxima_m": {
+        "NurbsPath.001_tex_hair3_0": 1.4334788243772123e-06,
+        "NurbsPath.002_tex_hair4_0": 1.4418707132308703e-06,
+        "NurbsPath.003_tex_hair5_0": 1.554716205187652e-06,
+        "NurbsPath.006_tex_hair6_0": 1.6021793897873815e-06,
+        "NurbsPath.007_tex_hair7_0": 1.846687947279204e-06,
+        "NurbsPath_tex_hair2_0": 1.4359024093654558e-06,
+        "armor_tex_armor_0": 1.2220444436270836e-06,
+        "belt_tex_belt_0": 9.068594582230235e-07,
+        "body_tex_skin2_0": 1.3534420988150577e-06,
+        "body_tex_skin_0": 1.5545643856848039e-06,
+        "bow_tex_bow_0": 1.2225314248821319e-06,
+        "cuff.001_tex_cuff_0": 1.1055991212767097e-06,
+        "cuff_tex_cuff_0": 1.0074066358888644e-06,
+        "ear.001_tex_ear2_0": 1.4648953712620068e-06,
+        "ear_tex_ear_0": 1.479624840265972e-06,
+        "eye_tex_eyes_0": 1.5330716077978157e-06,
+        "eyelashes_tex_eyelashes_0": 1.3807061821642233e-06,
+        "hair.mesh.000_tex_hair1_0": 2.230094662269816e-06,
+        "hair_band_tex_band_0": 9.592905134461272e-07,
+        "hightlight_hightlight_0": 1.5316524412617917e-06,
+        "long_gloves_tex_glove_0": 1.1645674062750229e-06,
+        "shirt.001_tex_shirt_0": 1.029385152872045e-06,
+        "shirt_tex_shirt_0": 1.2641100021231702e-06,
+        "shoes_tex_shoes_0": 1.520774141975504e-06,
+        "shoulder_armor_tex_shoulderarmor_0": 1.2971923901727182e-06,
+        "stocking_tex_sock_0": 1.2546252207225776e-06,
+        "tail_tex_tail_0": 6.965020055332856e-07,
+        "underwear_tex_underwear_0": 8.456300228978429e-07
+      }
+    },
+    {
+      "action": "TEST_hair_tail_cloth",
+      "frame": 31,
+      "max_symmetric_nearest_m": 2.230094662269816e-06,
+      "positions_within_10_micrometres": true,
+      "mesh_maxima_m": {
+        "NurbsPath.001_tex_hair3_0": 1.4334788243772123e-06,
+        "NurbsPath.002_tex_hair4_0": 1.4418707132308703e-06,
+        "NurbsPath.003_tex_hair5_0": 1.554716205187652e-06,
+        "NurbsPath.006_tex_hair6_0": 1.6021793897873815e-06,
+        "NurbsPath.007_tex_hair7_0": 1.846687947279204e-06,
+        "NurbsPath_tex_hair2_0": 1.4359024093654558e-06,
+        "armor_tex_armor_0": 1.2220444436270836e-06,
+        "belt_tex_belt_0": 9.068594582230235e-07,
+        "body_tex_skin2_0": 1.3534420988150577e-06,
+        "body_tex_skin_0": 1.5545643856848039e-06,
+        "bow_tex_bow_0": 1.2225314248821319e-06,
+        "cuff.001_tex_cuff_0": 1.1055991212767097e-06,
+        "cuff_tex_cuff_0": 1.0074066358888644e-06,
+        "ear.001_tex_ear2_0": 1.4648953712620068e-06,
+        "ear_tex_ear_0": 1.479624840265972e-06,
+        "eye_tex_eyes_0": 1.5330716077978157e-06,
+        "eyelashes_tex_eyelashes_0": 1.3807061821642233e-06,
+        "hair.mesh.000_tex_hair1_0": 2.230094662269816e-06,
+        "hair_band_tex_band_0": 1.0482259184582683e-06,
+        "hightlight_hightlight_0": 1.5316524412617917e-06,
+        "long_gloves_tex_glove_0": 1.1645674062750229e-06,
+        "shirt.001_tex_shirt_0": 1.029385152872045e-06,
+        "shirt_tex_shirt_0": 1.2641100021231702e-06,
+        "shoes_tex_shoes_0": 1.520774141975504e-06,
+        "shoulder_armor_tex_shoulderarmor_0": 1.2971923901727182e-06,
+        "stocking_tex_sock_0": 1.2546252207225776e-06,
+        "tail_tex_tail_0": 8.083079343718921e-07,
+        "underwear_tex_underwear_0": 8.456300228978429e-07
+      }
+    },
+    {
+      "action": "TEST_hair_tail_cloth",
+      "frame": 46,
+      "max_symmetric_nearest_m": 2.230094662269816e-06,
+      "positions_within_10_micrometres": true,
+      "mesh_maxima_m": {
+        "NurbsPath.001_tex_hair3_0": 1.4334788243772123e-06,
+        "NurbsPath.002_tex_hair4_0": 1.4418707132308703e-06,
+        "NurbsPath.003_tex_hair5_0": 1.554716205187652e-06,
+        "NurbsPath.006_tex_hair6_0": 1.6021793897873815e-06,
+        "NurbsPath.007_tex_hair7_0": 1.846687947279204e-06,
+        "NurbsPath_tex_hair2_0": 1.4359024093654558e-06,
+        "armor_tex_armor_0": 1.2220444436270836e-06,
+        "belt_tex_belt_0": 9.068594582230235e-07,
+        "body_tex_skin2_0": 1.3534420988150577e-06,
+        "body_tex_skin_0": 1.5545643856848039e-06,
+        "bow_tex_bow_0": 1.2225314248821319e-06,
+        "cuff.001_tex_cuff_0": 1.1055991212767097e-06,
+        "cuff_tex_cuff_0": 1.0074066358888644e-06,
+        "ear.001_tex_ear2_0": 1.4648953712620068e-06,
+        "ear_tex_ear_0": 1.479624840265972e-06,
+        "eye_tex_eyes_0": 1.5330716077978157e-06,
+        "eyelashes_tex_eyelashes_0": 1.3807061821642233e-06,
+        "hair.mesh.000_tex_hair1_0": 2.230094662269816e-06,
+        "hair_band_tex_band_0": 9.592905134461272e-07,
+        "hightlight_hightlight_0": 1.5316524412617917e-06,
+        "long_gloves_tex_glove_0": 1.1645674062750229e-06,
+        "shirt.001_tex_shirt_0": 1.029385152872045e-06,
+        "shirt_tex_shirt_0": 1.2641100021231702e-06,
+        "shoes_tex_shoes_0": 1.520774141975504e-06,
+        "shoulder_armor_tex_shoulderarmor_0": 1.2971923901727182e-06,
+        "stocking_tex_sock_0": 1.2546252207225776e-06,
+        "tail_tex_tail_0": 6.965020055332856e-07,
+        "underwear_tex_underwear_0": 8.456300228978429e-07
+      }
+    },
+    {
+      "action": "TEST_head_torso",
+      "frame": 16,
+      "max_symmetric_nearest_m": 2.534258674103996e-06,
+      "positions_within_10_micrometres": true,
+      "mesh_maxima_m": {
+        "NurbsPath.001_tex_hair3_0": 1.4085250515633333e-06,
+        "NurbsPath.002_tex_hair4_0": 1.5327380015191146e-06,
+        "NurbsPath.003_tex_hair5_0": 1.367795331456191e-06,
+        "NurbsPath.006_tex_hair6_0": 1.2955460886628478e-06,
+        "NurbsPath.007_tex_hair7_0": 2.534258674103996e-06,
+        "NurbsPath_tex_hair2_0": 1.3996895293301708e-06,
+        "armor_tex_armor_0": 1.2437880737873333e-06,
+        "belt_tex_belt_0": 9.068594582230235e-07,
+        "body_tex_skin2_0": 1.3128288595076257e-06,
+        "body_tex_skin_0": 1.5545643856848039e-06,
+        "bow_tex_bow_0": 1.2690803318623775e-06,
+        "cuff.001_tex_cuff_0": 1.3164023506085405e-06,
+        "cuff_tex_cuff_0": 1.044639137187251e-06,
+        "ear.001_tex_ear2_0": 1.4100843561231995e-06,
+        "ear_tex_ear_0": 1.433478357577408e-06,
+        "eye_tex_eyes_0": 1.609560317327867e-06,
+        "eyelashes_tex_eyelashes_0": 1.3803837454461214e-06,
+        "hair.mesh.000_tex_hair1_0": 2.273317665411076e-06,
+        "hair_band_tex_band_0": 9.723652260846985e-07,
+        "hightlight_hightlight_0": 1.6051343910887028e-06,
+        "long_gloves_tex_glove_0": 1.4426221891850526e-06,
+        "shirt.001_tex_shirt_0": 1.029385152872045e-06,
+        "shirt_tex_shirt_0": 1.25969468279854e-06,
+        "shoes_tex_shoes_0": 1.520774141975504e-06,
+        "shoulder_armor_tex_shoulderarmor_0": 1.1422207646238552e-06,
+        "stocking_tex_sock_0": 1.2546252207225776e-06,
+        "tail_tex_tail_0": 7.566761593875178e-07,
+        "underwear_tex_underwear_0": 8.456300228978429e-07
+      }
+    },
+    {
+      "action": "TEST_head_torso",
+      "frame": 31,
+      "max_symmetric_nearest_m": 2.7985154344139876e-06,
+      "positions_within_10_micrometres": true,
+      "mesh_maxima_m": {
+        "NurbsPath.001_tex_hair3_0": 1.5087942927188e-06,
+        "NurbsPath.002_tex_hair4_0": 1.9913205610714708e-06,
+        "NurbsPath.003_tex_hair5_0": 1.7946660740627697e-06,
+        "NurbsPath.006_tex_hair6_0": 1.895593277367883e-06,
+        "NurbsPath.007_tex_hair7_0": 2.7985154344139876e-06,
+        "NurbsPath_tex_hair2_0": 1.498153665346141e-06,
+        "armor_tex_armor_0": 1.1381436485345685e-06,
+        "belt_tex_belt_0": 9.068594582230235e-07,
+        "body_tex_skin2_0": 1.4294411962381585e-06,
+        "body_tex_skin_0": 1.6663805908077454e-06,
+        "bow_tex_bow_0": 1.1493548535072721e-06,
+        "cuff.001_tex_cuff_0": 1.4798419255551426e-06,
+        "cuff_tex_cuff_0": 1.362425942922624e-06,
+        "ear.001_tex_ear2_0": 1.9253412465597345e-06,
+        "ear_tex_ear_0": 1.9444384201875018e-06,
+        "eye_tex_eyes_0": 2.027201192422809e-06,
+        "eyelashes_tex_eyelashes_0": 1.463256797618122e-06,
+        "hair.mesh.000_tex_hair1_0": 2.7539668473777626e-06,
+        "hair_band_tex_band_0": 1.3197985101168894e-06,
+        "hightlight_hightlight_0": 2.0190244868529954e-06,
+        "long_gloves_tex_glove_0": 1.469984368443408e-06,
+        "shirt.001_tex_shirt_0": 1.029385152872045e-06,
+        "shirt_tex_shirt_0": 1.6567021516942225e-06,
+        "shoes_tex_shoes_0": 1.520774141975504e-06,
+        "shoulder_armor_tex_shoulderarmor_0": 1.9141231183543035e-06,
+        "stocking_tex_sock_0": 1.2546252207225776e-06,
+        "tail_tex_tail_0": 7.566761593875178e-07,
+        "underwear_tex_underwear_0": 8.456300228978429e-07
+      }
+    },
+    {
+      "action": "TEST_head_torso",
+      "frame": 46,
+      "max_symmetric_nearest_m": 2.534258674103996e-06,
+      "positions_within_10_micrometres": true,
+      "mesh_maxima_m": {
+        "NurbsPath.001_tex_hair3_0": 1.4085250515633333e-06,
+        "NurbsPath.002_tex_hair4_0": 1.5327380015191146e-06,
+        "NurbsPath.003_tex_hair5_0": 1.367795331456191e-06,
+        "NurbsPath.006_tex_hair6_0": 1.2955460886628478e-06,
+        "NurbsPath.007_tex_hair7_0": 2.534258674103996e-06,
+        "NurbsPath_tex_hair2_0": 1.3996895293301708e-06,
+        "armor_tex_armor_0": 1.2437880737873333e-06,
+        "belt_tex_belt_0": 9.068594582230235e-07,
+        "body_tex_skin2_0": 1.3128288595076257e-06,
+        "body_tex_skin_0": 1.5545643856848039e-06,
+        "bow_tex_bow_0": 1.2690803318623775e-06,
+        "cuff.001_tex_cuff_0": 1.3164023506085405e-06,
+        "cuff_tex_cuff_0": 1.044639137187251e-06,
+        "ear.001_tex_ear2_0": 1.4100843561231995e-06,
+        "ear_tex_ear_0": 1.433478357577408e-06,
+        "eye_tex_eyes_0": 1.609560317327867e-06,
+        "eyelashes_tex_eyelashes_0": 1.3803837454461214e-06,
+        "hair.mesh.000_tex_hair1_0": 2.273317665411076e-06,
+        "hair_band_tex_band_0": 9.723652260846985e-07,
+        "hightlight_hightlight_0": 1.6051343910887028e-06,
+        "long_gloves_tex_glove_0": 1.4426221891850526e-06,
+        "shirt.001_tex_shirt_0": 1.029385152872045e-06,
+        "shirt_tex_shirt_0": 1.25969468279854e-06,
+        "shoes_tex_shoes_0": 1.520774141975504e-06,
+        "shoulder_armor_tex_shoulderarmor_0": 1.1422207646238552e-06,
+        "stocking_tex_sock_0": 1.2546252207225776e-06,
+        "tail_tex_tail_0": 7.566761593875178e-07,
+        "underwear_tex_underwear_0": 8.456300228978429e-07
+      }
+    },
+    {
+      "action": "TEST_knees_90",
+      "frame": 16,
+      "max_symmetric_nearest_m": 9.984818068062064e-06,
+      "positions_within_10_micrometres": true,
+      "mesh_maxima_m": {
+        "NurbsPath.001_tex_hair3_0": 1.4334788243772123e-06,
+        "NurbsPath.002_tex_hair4_0": 1.4785467233354446e-06,
+        "NurbsPath.003_tex_hair5_0": 1.554716205187652e-06,
+        "NurbsPath.006_tex_hair6_0": 1.6021793897873815e-06,
+        "NurbsPath.007_tex_hair7_0": 1.846687947279204e-06,
+        "NurbsPath_tex_hair2_0": 1.4359024093654558e-06,
+        "armor_tex_armor_0": 1.2220444436270836e-06,
+        "belt_tex_belt_0": 9.068594582230235e-07,
+        "body_tex_skin2_0": 1.3534420988150577e-06,
+        "body_tex_skin_0": 9.939266807055076e-06,
+        "bow_tex_bow_0": 1.2225314248821319e-06,
+        "cuff.001_tex_cuff_0": 1.1055991212767097e-06,
+        "cuff_tex_cuff_0": 1.0074066358888644e-06,
+        "ear.001_tex_ear2_0": 1.4648953712620068e-06,
+        "ear_tex_ear_0": 1.479624840265972e-06,
+        "eye_tex_eyes_0": 1.5330716077978157e-06,
+        "eyelashes_tex_eyelashes_0": 1.3807061821642233e-06,
+        "hair.mesh.000_tex_hair1_0": 2.230094662269816e-06,
+        "hair_band_tex_band_0": 6.36191242504721e-07,
+        "hightlight_hightlight_0": 1.5316524412617917e-06,
+        "long_gloves_tex_glove_0": 1.1645674062750229e-06,
+        "shirt.001_tex_shirt_0": 1.029385152872045e-06,
+        "shirt_tex_shirt_0": 1.2641100021231702e-06,
+        "shoes_tex_shoes_0": 9.984818068062064e-06,
+        "shoulder_armor_tex_shoulderarmor_0": 1.2971923901727182e-06,
+        "stocking_tex_sock_0": 7.74269138157364e-06,
+        "tail_tex_tail_0": 7.566761593875178e-07,
+        "underwear_tex_underwear_0": 8.456300228978429e-07
+      }
+    },
+    {
+      "action": "TEST_knees_90",
+      "frame": 31,
+      "max_symmetric_nearest_m": 1.4360686719769655e-05,
+      "positions_within_10_micrometres": false,
+      "mesh_maxima_m": {
+        "NurbsPath.001_tex_hair3_0": 1.4334788243772123e-06,
+        "NurbsPath.002_tex_hair4_0": 1.4785467233354446e-06,
+        "NurbsPath.003_tex_hair5_0": 1.554716205187652e-06,
+        "NurbsPath.006_tex_hair6_0": 1.6021793897873815e-06,
+        "NurbsPath.007_tex_hair7_0": 1.846687947279204e-06,
+        "NurbsPath_tex_hair2_0": 1.4359024093654558e-06,
+        "armor_tex_armor_0": 1.2220444436270836e-06,
+        "belt_tex_belt_0": 9.068594582230235e-07,
+        "body_tex_skin2_0": 1.3534420988150577e-06,
+        "body_tex_skin_0": 1.3907812363287381e-05,
+        "bow_tex_bow_0": 1.2225314248821319e-06,
+        "cuff.001_tex_cuff_0": 1.1055991212767097e-06,
+        "cuff_tex_cuff_0": 1.0074066358888644e-06,
+        "ear.001_tex_ear2_0": 1.4648953712620068e-06,
+        "ear_tex_ear_0": 1.479624840265972e-06,
+        "eye_tex_eyes_0": 1.5330716077978157e-06,
+        "eyelashes_tex_eyelashes_0": 1.3807061821642233e-06,
+        "hair.mesh.000_tex_hair1_0": 2.230094662269816e-06,
+        "hair_band_tex_band_0": 6.36191242504721e-07,
+        "hightlight_hightlight_0": 1.5316524412617917e-06,
+        "long_gloves_tex_glove_0": 1.1645674062750229e-06,
+        "shirt.001_tex_shirt_0": 1.029385152872045e-06,
+        "shirt_tex_shirt_0": 1.2641100021231702e-06,
+        "shoes_tex_shoes_0": 1.4360686719769655e-05,
+        "shoulder_armor_tex_shoulderarmor_0": 1.2971923901727182e-06,
+        "stocking_tex_sock_0": 1.1312147219619865e-05,
+        "tail_tex_tail_0": 7.566761593875178e-07,
+        "underwear_tex_underwear_0": 8.456300228978429e-07
+      }
+    },
+    {
+      "action": "TEST_knees_90",
+      "frame": 46,
+      "max_symmetric_nearest_m": 9.984818068062064e-06,
+      "positions_within_10_micrometres": true,
+      "mesh_maxima_m": {
+        "NurbsPath.001_tex_hair3_0": 1.4334788243772123e-06,
+        "NurbsPath.002_tex_hair4_0": 1.4785467233354446e-06,
+        "NurbsPath.003_tex_hair5_0": 1.554716205187652e-06,
+        "NurbsPath.006_tex_hair6_0": 1.6021793897873815e-06,
+        "NurbsPath.007_tex_hair7_0": 1.846687947279204e-06,
+        "NurbsPath_tex_hair2_0": 1.4359024093654558e-06,
+        "armor_tex_armor_0": 1.2220444436270836e-06,
+        "belt_tex_belt_0": 9.068594582230235e-07,
+        "body_tex_skin2_0": 1.3534420988150577e-06,
+        "body_tex_skin_0": 9.939266807055076e-06,
+        "bow_tex_bow_0": 1.2225314248821319e-06,
+        "cuff.001_tex_cuff_0": 1.1055991212767097e-06,
+        "cuff_tex_cuff_0": 1.0074066358888644e-06,
+        "ear.001_tex_ear2_0": 1.4648953712620068e-06,
+        "ear_tex_ear_0": 1.479624840265972e-06,
+        "eye_tex_eyes_0": 1.5330716077978157e-06,
+        "eyelashes_tex_eyelashes_0": 1.3807061821642233e-06,
+        "hair.mesh.000_tex_hair1_0": 2.230094662269816e-06,
+        "hair_band_tex_band_0": 6.36191242504721e-07,
+        "hightlight_hightlight_0": 1.5316524412617917e-06,
+        "long_gloves_tex_glove_0": 1.1645674062750229e-06,
+        "shirt.001_tex_shirt_0": 1.029385152872045e-06,
+        "shirt_tex_shirt_0": 1.2641100021231702e-06,
+        "shoes_tex_shoes_0": 9.984818068062064e-06,
+        "shoulder_armor_tex_shoulderarmor_0": 1.2971923901727182e-06,
+        "stocking_tex_sock_0": 7.74269138157364e-06,
+        "tail_tex_tail_0": 7.566761593875178e-07,
+        "underwear_tex_underwear_0": 8.456300228978429e-07
+      }
+    },
+    {
+      "action": "TEST_shoulders_hips_ankles",
+      "frame": 16,
+      "max_symmetric_nearest_m": 6.40141493740277e-06,
+      "positions_within_10_micrometres": true,
+      "mesh_maxima_m": {
+        "NurbsPath.001_tex_hair3_0": 1.4334788243772123e-06,
+        "NurbsPath.002_tex_hair4_0": 1.4785467233354446e-06,
+        "NurbsPath.003_tex_hair5_0": 1.554716205187652e-06,
+        "NurbsPath.006_tex_hair6_0": 1.6021793897873815e-06,
+        "NurbsPath.007_tex_hair7_0": 1.846687947279204e-06,
+        "NurbsPath_tex_hair2_0": 1.4359024093654558e-06,
+        "armor_tex_armor_0": 1.2220444436270836e-06,
+        "belt_tex_belt_0": 9.068594582230235e-07,
+        "body_tex_skin2_0": 1.3534420988150577e-06,
+        "body_tex_skin_0": 6.40141493740277e-06,
+        "bow_tex_bow_0": 1.2226432203432267e-06,
+        "cuff.001_tex_cuff_0": 1.1204727857661368e-06,
+        "cuff_tex_cuff_0": 1.1028070826801303e-06,
+        "ear.001_tex_ear2_0": 1.4648953712620068e-06,
+        "ear_tex_ear_0": 1.479624840265972e-06,
+        "eye_tex_eyes_0": 1.5330716077978157e-06,
+        "eyelashes_tex_eyelashes_0": 1.3807061821642233e-06,
+        "hair.mesh.000_tex_hair1_0": 2.230094662269816e-06,
+        "hair_band_tex_band_0": 6.36191242504721e-07,
+        "hightlight_hightlight_0": 1.5316524412617917e-06,
+        "long_gloves_tex_glove_0": 1.3450909321212095e-06,
+        "shirt.001_tex_shirt_0": 1.029385152872045e-06,
+        "shirt_tex_shirt_0": 1.3412384921963738e-06,
+        "shoes_tex_shoes_0": 6.337166278144464e-06,
+        "shoulder_armor_tex_shoulderarmor_0": 1.310754711518565e-06,
+        "stocking_tex_sock_0": 4.845476965293137e-06,
+        "tail_tex_tail_0": 7.566761593875178e-07,
+        "underwear_tex_underwear_0": 8.569740879069949e-07
+      }
+    },
+    {
+      "action": "TEST_shoulders_hips_ankles",
+      "frame": 31,
+      "max_symmetric_nearest_m": 1.248274741047741e-05,
+      "positions_within_10_micrometres": false,
+      "mesh_maxima_m": {
+        "NurbsPath.001_tex_hair3_0": 1.4334788243772123e-06,
+        "NurbsPath.002_tex_hair4_0": 1.4785467233354446e-06,
+        "NurbsPath.003_tex_hair5_0": 1.554716205187652e-06,
+        "NurbsPath.006_tex_hair6_0": 1.6021793897873815e-06,
+        "NurbsPath.007_tex_hair7_0": 1.846687947279204e-06,
+        "NurbsPath_tex_hair2_0": 1.4359024093654558e-06,
+        "armor_tex_armor_0": 1.2220444436270836e-06,
+        "belt_tex_belt_0": 9.068594582230235e-07,
+        "body_tex_skin2_0": 1.3534420988150577e-06,
+        "body_tex_skin_0": 1.248274741047741e-05,
+        "bow_tex_bow_0": 1.2232751998860205e-06,
+        "cuff.001_tex_cuff_0": 1.2782145680303475e-06,
+        "cuff_tex_cuff_0": 1.326085751968485e-06,
+        "ear.001_tex_ear2_0": 1.4648953712620068e-06,
+        "ear_tex_ear_0": 1.479624840265972e-06,
+        "eye_tex_eyes_0": 1.5330716077978157e-06,
+        "eyelashes_tex_eyelashes_0": 1.3807061821642233e-06,
+        "hair.mesh.000_tex_hair1_0": 2.230094662269816e-06,
+        "hair_band_tex_band_0": 6.36191242504721e-07,
+        "hightlight_hightlight_0": 1.5316524412617917e-06,
+        "long_gloves_tex_glove_0": 1.491687085114055e-06,
+        "shirt.001_tex_shirt_0": 1.029385152872045e-06,
+        "shirt_tex_shirt_0": 1.4017304411224626e-06,
+        "shoes_tex_shoes_0": 1.2450579698109339e-05,
+        "shoulder_armor_tex_shoulderarmor_0": 1.63514293054152e-06,
+        "stocking_tex_sock_0": 9.555580619377597e-06,
+        "tail_tex_tail_0": 7.566761593875178e-07,
+        "underwear_tex_underwear_0": 1.1830566383361683e-06
+      }
+    },
+    {
+      "action": "TEST_shoulders_hips_ankles",
+      "frame": 46,
+      "max_symmetric_nearest_m": 6.40141493740277e-06,
+      "positions_within_10_micrometres": true,
+      "mesh_maxima_m": {
+        "NurbsPath.001_tex_hair3_0": 1.4334788243772123e-06,
+        "NurbsPath.002_tex_hair4_0": 1.4785467233354446e-06,
+        "NurbsPath.003_tex_hair5_0": 1.554716205187652e-06,
+        "NurbsPath.006_tex_hair6_0": 1.6021793897873815e-06,
+        "NurbsPath.007_tex_hair7_0": 1.846687947279204e-06,
+        "NurbsPath_tex_hair2_0": 1.4359024093654558e-06,
+        "armor_tex_armor_0": 1.2220444436270836e-06,
+        "belt_tex_belt_0": 9.068594582230235e-07,
+        "body_tex_skin2_0": 1.3534420988150577e-06,
+        "body_tex_skin_0": 6.40141493740277e-06,
+        "bow_tex_bow_0": 1.2226432203432267e-06,
+        "cuff.001_tex_cuff_0": 1.1204727857661368e-06,
+        "cuff_tex_cuff_0": 1.1028070826801303e-06,
+        "ear.001_tex_ear2_0": 1.4648953712620068e-06,
+        "ear_tex_ear_0": 1.479624840265972e-06,
+        "eye_tex_eyes_0": 1.5330716077978157e-06,
+        "eyelashes_tex_eyelashes_0": 1.3807061821642233e-06,
+        "hair.mesh.000_tex_hair1_0": 2.230094662269816e-06,
+        "hair_band_tex_band_0": 6.36191242504721e-07,
+        "hightlight_hightlight_0": 1.5316524412617917e-06,
+        "long_gloves_tex_glove_0": 1.3450909321212095e-06,
+        "shirt.001_tex_shirt_0": 1.029385152872045e-06,
+        "shirt_tex_shirt_0": 1.3412384921963738e-06,
+        "shoes_tex_shoes_0": 6.337166278144464e-06,
+        "shoulder_armor_tex_shoulderarmor_0": 1.310754711518565e-06,
+        "stocking_tex_sock_0": 4.845476965293137e-06,
+        "tail_tex_tail_0": 7.566761593875178e-07,
+        "underwear_tex_underwear_0": 8.569740879069949e-07
+      }
+    }
+  ],
+  "limits": [
+    "Compares actual sampled Blender deformation; does not validate game blending, transitions, IK, collisions or artistic motion quality.",
+    "Source's outer placement transform is removed using the documented preparation coordinate convention.",
+    "Normal comparisons are corner-wise and meaningful when topology order is equal."
+  ],
+  "files_stable_during_check": true,
+  "summary": {
+    "source_neutral_max_delta_m": 1.1604658376221893e-06,
+    "roundtrip_neutral_max_delta_m": 2.230094662269816e-06,
+    "sampled_animation_max_delta_m": 1.4360686719769655e-05,
+    "sample_count": 21,
+    "bones": [
+      239,
+      239
+    ],
+    "clips": [
+      7,
+      7
+    ],
+    "source_hash_unchanged": true,
+    "files_stable_during_check": true
+  }
+}

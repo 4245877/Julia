@@ -1,0 +1,27 @@
+[
+  {
+    "path": "assets/models/Raphtalia.fbx",
+    "bytes": 9276700,
+    "sha256": "A602086AC9E580F2D265A489478922B75AAE00410313B17A89BD846AD4F3B34C"
+  },
+  {
+    "path": "assets/models/backups/Raphtalia.original.fbx",
+    "bytes": 9276700,
+    "sha256": "A602086AC9E580F2D265A489478922B75AAE00410313B17A89BD846AD4F3B34C"
+  },
+  {
+    "path": "assets/models/Raphtalia_prepared.fbx",
+    "bytes": 31916460,
+    "sha256": "AB529E9874280AFF5494F3E7261B42FE48FA4E0B1CDBF211EB2E8A5DB5B62BBB"
+  },
+  {
+    "path": "assets/models/Raphtalia_prepared.blend",
+    "bytes": 25351720,
+    "sha256": "3CCE06655FEEACA59F87FFD0DDD0D930F4A7EAEDC303E8396098E4A9866685B2"
+  },
+  {
+    "path": "assets/models/backups/Raphtalia_prepared.pre_reaudit_2026-10-21.zip",
+    "bytes": 9036770,
+    "sha256": "45DCAF850EF345F77F7E7384987C0DE1E4B0D7E5C444F73381CB5DC053F7155B"
+  }
+]

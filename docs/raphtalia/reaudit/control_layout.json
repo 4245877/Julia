@@ -1,0 +1,112 @@
+{
+  "ik": [
+    {
+      "property": "IK_arm.L",
+      "target": "CTRL_hand.L",
+      "pole": "CTRL_pole_arm.L",
+      "end_bone": "hand.l_0160",
+      "solver_bone": "forearm_stretch.l_0159",
+      "pole_angle": -1.0328065552615513,
+      "rest_orientation_fit_error": 2.353623462575047e-10
+    },
+    {
+      "property": "IK_leg.L",
+      "target": "CTRL_foot.L",
+      "pole": "CTRL_pole_leg.L",
+      "end_bone": "foot.l_04",
+      "solver_bone": "leg_stretch.l_03",
+      "pole_angle": 1.6492326845450853,
+      "rest_orientation_fit_error": 2.0024329139278763e-09
+    },
+    {
+      "property": "IK_arm.R",
+      "target": "CTRL_hand.R",
+      "pole": "CTRL_pole_arm.R",
+      "end_bone": "hand.r_0139",
+      "solver_bone": "forearm_stretch.r_0138",
+      "pole_angle": -0.9734394398179439,
+      "rest_orientation_fit_error": 5.499291943500112e-12
+    },
+    {
+      "property": "IK_leg.R",
+      "target": "CTRL_foot.R",
+      "pole": "CTRL_pole_leg.R",
+      "end_bone": "foot.r_010",
+      "solver_bone": "leg_stretch.r_09",
+      "pole_angle": 0.7441181099337718,
+      "rest_orientation_fit_error": 5.8168735399179855e-12
+    }
+  ],
+  "finger_controls": [
+    "CTRL_curl_index.L",
+    "CTRL_curl_middle.L",
+    "CTRL_curl_ring.L",
+    "CTRL_curl_pinky.L",
+    "CTRL_curl_thumb.L",
+    "CTRL_curl_index.R",
+    "CTRL_curl_middle.R",
+    "CTRL_curl_ring.R",
+    "CTRL_curl_pinky.R",
+    "CTRL_curl_thumb.R"
+  ],
+  "twist": [
+    {
+      "bone": "forearm_twist.l_0176",
+      "source": "hand.l_0160",
+      "fraction": 0.5
+    },
+    {
+      "bone": "forearm_twist.r_0135",
+      "source": "hand.r_0139",
+      "fraction": 0.5
+    }
+  ],
+  "brows": [
+    {
+      "bone": "brow.L",
+      "mesh": "eyelashes_tex_eyelashes_0",
+      "vertices": [
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90
+      ]
+    },
+    {
+      "bone": "brow.R",
+      "mesh": "eyelashes_tex_eyelashes_0",
+      "vertices": [
+        165,
+        166,
+        167,
+        168,
+        169,
+        170,
+        171,
+        172,
+        173,
+        174,
+        175,
+        176,
+        177,
+        178,
+        179,
+        180,
+        181
+      ]
+    }
+  ]
+}

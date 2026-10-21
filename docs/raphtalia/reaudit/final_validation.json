@@ -1,0 +1,12 @@
+{
+  "result": "PASS",
+  "syntax_checked": 17,
+  "markdown_broken_links": [],
+  "common_pose_mesh_regressions": [],
+  "pose_counts": [
+    50,
+    53
+  ],
+  "original_hash": "a602086ac9e580f2d265a489478922b75aae00410313b17a89bd846ad4f3b34c",
+  "manifest_hashes_verified": true
+}

@@ -1,0 +1,727 @@
+{
+  "mesh": "cuff.001_tex_cuff_0",
+  "vertices_changed": 72,
+  "method": "Rigid wrist bracelets: each side follows the forearm twist helper that already carried >99% of total source influence; remove incidental hand/forearm residue.",
+  "patch": [
+    {
+      "vertex": 1,
+      "old_weights": {
+        "forearm_twist.l_0176": 0.9355225563049316,
+        "hand.l_0160": 0.06447742134332657
+      },
+      "weights": {
+        "forearm_twist.l_0176": 1.0
+      }
+    },
+    {
+      "vertex": 2,
+      "old_weights": {
+        "forearm_twist.l_0176": 0.9346423745155334,
+        "hand.l_0160": 0.06535764783620834
+      },
+      "weights": {
+        "forearm_twist.l_0176": 1.0
+      }
+    },
+    {
+      "vertex": 3,
+      "old_weights": {
+        "forearm_twist.l_0176": 0.9255141019821167,
+        "hand.l_0160": 0.07448586821556091
+      },
+      "weights": {
+        "forearm_twist.l_0176": 1.0
+      }
+    },
+    {
+      "vertex": 4,
+      "old_weights": {
+        "forearm_twist.l_0176": 0.9183222055435181,
+        "hand.l_0160": 0.08167777210474014
+      },
+      "weights": {
+        "forearm_twist.l_0176": 1.0
+      }
+    },
+    {
+      "vertex": 29,
+      "old_weights": {
+        "forearm_twist.l_0176": 0.9341520071029663,
+        "hand.l_0160": 0.06584801524877548
+      },
+      "weights": {
+        "forearm_twist.l_0176": 1.0
+      }
+    },
+    {
+      "vertex": 48,
+      "old_weights": {
+        "forearm_stretch.l_0159": 0.05548699200153351,
+        "forearm_twist.l_0176": 0.9445130228996277
+      },
+      "weights": {
+        "forearm_twist.l_0176": 1.0
+      }
+    },
+    {
+      "vertex": 52,
+      "old_weights": {
+        "forearm_twist.l_0176": 0.9351431727409363,
+        "hand.l_0160": 0.06485682725906372
+      },
+      "weights": {
+        "forearm_twist.l_0176": 1.0
+      }
+    },
+    {
+      "vertex": 76,
+      "old_weights": {
+        "forearm_twist.l_0176": 0.9176684021949768,
+        "hand.l_0160": 0.08233161270618439
+      },
+      "weights": {
+        "forearm_twist.l_0176": 1.0
+      }
+    },
+    {
+      "vertex": 78,
+      "old_weights": {
+        "forearm_twist.l_0176": 0.918280839920044,
+        "hand.l_0160": 0.08171913772821426
+      },
+      "weights": {
+        "forearm_twist.l_0176": 1.0
+      }
+    },
+    {
+      "vertex": 81,
+      "old_weights": {
+        "forearm_twist.r_0135": 0.9346423745155334,
+        "hand.r_0139": 0.06535764783620834
+      },
+      "weights": {
+        "forearm_twist.r_0135": 1.0
+      }
+    },
+    {
+      "vertex": 82,
+      "old_weights": {
+        "forearm_twist.r_0135": 0.9355225563049316,
+        "hand.r_0139": 0.06447742134332657
+      },
+      "weights": {
+        "forearm_twist.r_0135": 1.0
+      }
+    },
+    {
+      "vertex": 83,
+      "old_weights": {
+        "forearm_twist.r_0135": 0.9255141019821167,
+        "hand.r_0139": 0.07448586821556091
+      },
+      "weights": {
+        "forearm_twist.r_0135": 1.0
+      }
+    },
+    {
+      "vertex": 84,
+      "old_weights": {
+        "forearm_twist.r_0135": 0.9183222055435181,
+        "hand.r_0139": 0.08167777210474014
+      },
+      "weights": {
+        "forearm_twist.r_0135": 1.0
+      }
+    },
+    {
+      "vertex": 92,
+      "old_weights": {
+        "forearm_twist.r_0135": 0.9341520071029663,
+        "hand.r_0139": 0.06584801524877548
+      },
+      "weights": {
+        "forearm_twist.r_0135": 1.0
+      }
+    },
+    {
+      "vertex": 95,
+      "old_weights": {
+        "forearm_stretch.r_0138": 0.05548699200153351,
+        "forearm_twist.r_0135": 0.9445130228996277
+      },
+      "weights": {
+        "forearm_twist.r_0135": 1.0
+      }
+    },
+    {
+      "vertex": 99,
+      "old_weights": {
+        "forearm_twist.r_0135": 0.9351431727409363,
+        "hand.r_0139": 0.06485682725906372
+      },
+      "weights": {
+        "forearm_twist.r_0135": 1.0
+      }
+    },
+    {
+      "vertex": 103,
+      "old_weights": {
+        "forearm_twist.r_0135": 0.918280839920044,
+        "hand.r_0139": 0.08171913772821426
+      },
+      "weights": {
+        "forearm_twist.r_0135": 1.0
+      }
+    },
+    {
+      "vertex": 106,
+      "old_weights": {
+        "forearm_twist.r_0135": 0.9176684021949768,
+        "hand.r_0139": 0.08233161270618439
+      },
+      "weights": {
+        "forearm_twist.r_0135": 1.0
+      }
+    },
+    {
+      "vertex": 129,
+      "old_weights": {
+        "forearm_twist.l_0176": 0.9696341753005981,
+        "hand.l_0160": 0.03036581538617611
+      },
+      "weights": {
+        "forearm_twist.l_0176": 1.0
+      }
+    },
+    {
+      "vertex": 176,
+      "old_weights": {
+        "forearm_stretch.l_0159": 0.05548699200153351,
+        "forearm_twist.l_0176": 0.9445130228996277
+      },
+      "weights": {
+        "forearm_twist.l_0176": 1.0
+      }
+    },
+    {
+      "vertex": 211,
+      "old_weights": {
+        "forearm_twist.l_0176": 0.9696341753005981,
+        "hand.l_0160": 0.03036581538617611
+      },
+      "weights": {
+        "forearm_twist.l_0176": 1.0
+      }
+    },
+    {
+      "vertex": 245,
+      "old_weights": {
+        "forearm_twist.l_0176": 0.9316381216049194,
+        "hand.l_0160": 0.06836188584566116
+      },
+      "weights": {
+        "forearm_twist.l_0176": 1.0
+      }
+    },
+    {
+      "vertex": 247,
+      "old_weights": {
+        "forearm_twist.l_0176": 0.931434154510498,
+        "hand.l_0160": 0.06856581568717957
+      },
+      "weights": {
+        "forearm_twist.l_0176": 1.0
+      }
+    },
+    {
+      "vertex": 250,
+      "old_weights": {
+        "forearm_twist.l_0176": 0.9279784560203552,
+        "hand.l_0160": 0.07202152907848358
+      },
+      "weights": {
+        "forearm_twist.l_0176": 1.0
+      }
+    },
+    {
+      "vertex": 251,
+      "old_weights": {
+        "forearm_twist.l_0176": 0.9278250932693481,
+        "hand.l_0160": 0.07217489182949066
+      },
+      "weights": {
+        "forearm_twist.l_0176": 1.0
+      }
+    },
+    {
+      "vertex": 253,
+      "old_weights": {
+        "forearm_twist.l_0176": 0.9276742935180664,
+        "hand.l_0160": 0.07232573628425598
+      },
+      "weights": {
+        "forearm_twist.l_0176": 1.0
+      }
+    },
+    {
+      "vertex": 257,
+      "old_weights": {
+        "forearm_twist.l_0176": 0.9341520071029663,
+        "hand.l_0160": 0.06584801524877548
+      },
+      "weights": {
+        "forearm_twist.l_0176": 1.0
+      }
+    },
+    {
+      "vertex": 258,
+      "old_weights": {
+        "forearm_twist.l_0176": 0.9346423745155334,
+        "hand.l_0160": 0.06535764783620834
+      },
+      "weights": {
+        "forearm_twist.l_0176": 1.0
+      }
+    },
+    {
+      "vertex": 260,
+      "old_weights": {
+        "forearm_twist.l_0176": 0.9332788586616516,
+        "hand.l_0160": 0.0667211264371872
+      },
+      "weights": {
+        "forearm_twist.l_0176": 1.0
+      }
+    },
+    {
+      "vertex": 273,
+      "old_weights": {
+        "forearm_twist.l_0176": 0.9255141019821167,
+        "hand.l_0160": 0.07448586821556091
+      },
+      "weights": {
+        "forearm_twist.l_0176": 1.0
+      }
+    },
+    {
+      "vertex": 276,
+      "old_weights": {
+        "forearm_twist.l_0176": 0.9255141019821167,
+        "hand.l_0160": 0.07448586821556091
+      },
+      "weights": {
+        "forearm_twist.l_0176": 1.0
+      }
+    },
+    {
+      "vertex": 281,
+      "old_weights": {
+        "forearm_twist.l_0176": 0.9341520071029663,
+        "hand.l_0160": 0.06584801524877548
+      },
+      "weights": {
+        "forearm_twist.l_0176": 1.0
+      }
+    },
+    {
+      "vertex": 282,
+      "old_weights": {
+        "forearm_twist.l_0176": 0.9346423745155334,
+        "hand.l_0160": 0.06535764783620834
+      },
+      "weights": {
+        "forearm_twist.l_0176": 1.0
+      }
+    },
+    {
+      "vertex": 283,
+      "old_weights": {
+        "forearm_twist.l_0176": 0.9255141019821167,
+        "hand.l_0160": 0.07448586821556091
+      },
+      "weights": {
+        "forearm_twist.l_0176": 1.0
+      }
+    },
+    {
+      "vertex": 285,
+      "old_weights": {
+        "forearm_twist.l_0176": 0.9346423745155334,
+        "hand.l_0160": 0.06535764783620834
+      },
+      "weights": {
+        "forearm_twist.l_0176": 1.0
+      }
+    },
+    {
+      "vertex": 286,
+      "old_weights": {
+        "forearm_twist.l_0176": 0.9341520071029663,
+        "hand.l_0160": 0.06584801524877548
+      },
+      "weights": {
+        "forearm_twist.l_0176": 1.0
+      }
+    },
+    {
+      "vertex": 296,
+      "old_weights": {
+        "forearm_twist.r_0135": 0.9696341753005981,
+        "hand.r_0139": 0.03036581538617611
+      },
+      "weights": {
+        "forearm_twist.r_0135": 1.0
+      }
+    },
+    {
+      "vertex": 374,
+      "old_weights": {
+        "forearm_stretch.r_0138": 0.05548699200153351,
+        "forearm_twist.r_0135": 0.9445130228996277
+      },
+      "weights": {
+        "forearm_twist.r_0135": 1.0
+      }
+    },
+    {
+      "vertex": 404,
+      "old_weights": {
+        "forearm_twist.r_0135": 0.9696341753005981,
+        "hand.r_0139": 0.03036581538617611
+      },
+      "weights": {
+        "forearm_twist.r_0135": 1.0
+      }
+    },
+    {
+      "vertex": 437,
+      "old_weights": {
+        "forearm_twist.r_0135": 0.9276742935180664,
+        "hand.r_0139": 0.07232573628425598
+      },
+      "weights": {
+        "forearm_twist.r_0135": 1.0
+      }
+    },
+    {
+      "vertex": 439,
+      "old_weights": {
+        "forearm_twist.r_0135": 0.9278250932693481,
+        "hand.r_0139": 0.07217489182949066
+      },
+      "weights": {
+        "forearm_twist.r_0135": 1.0
+      }
+    },
+    {
+      "vertex": 441,
+      "old_weights": {
+        "forearm_twist.r_0135": 0.9279784560203552,
+        "hand.r_0139": 0.07202152907848358
+      },
+      "weights": {
+        "forearm_twist.r_0135": 1.0
+      }
+    },
+    {
+      "vertex": 442,
+      "old_weights": {
+        "forearm_twist.r_0135": 0.931434154510498,
+        "hand.r_0139": 0.06856581568717957
+      },
+      "weights": {
+        "forearm_twist.r_0135": 1.0
+      }
+    },
+    {
+      "vertex": 445,
+      "old_weights": {
+        "forearm_twist.r_0135": 0.9316381216049194,
+        "hand.r_0139": 0.06836188584566116
+      },
+      "weights": {
+        "forearm_twist.r_0135": 1.0
+      }
+    },
+    {
+      "vertex": 450,
+      "old_weights": {
+        "forearm_twist.r_0135": 0.9341520071029663,
+        "hand.r_0139": 0.06584801524877548
+      },
+      "weights": {
+        "forearm_twist.r_0135": 1.0
+      }
+    },
+    {
+      "vertex": 451,
+      "old_weights": {
+        "forearm_twist.r_0135": 0.9346423745155334,
+        "hand.r_0139": 0.06535764783620834
+      },
+      "weights": {
+        "forearm_twist.r_0135": 1.0
+      }
+    },
+    {
+      "vertex": 453,
+      "old_weights": {
+        "forearm_twist.r_0135": 0.9332788586616516,
+        "hand.r_0139": 0.0667211264371872
+      },
+      "weights": {
+        "forearm_twist.r_0135": 1.0
+      }
+    },
+    {
+      "vertex": 466,
+      "old_weights": {
+        "forearm_twist.r_0135": 0.9255141019821167,
+        "hand.r_0139": 0.07448586821556091
+      },
+      "weights": {
+        "forearm_twist.r_0135": 1.0
+      }
+    },
+    {
+      "vertex": 470,
+      "old_weights": {
+        "forearm_twist.r_0135": 0.9255141019821167,
+        "hand.r_0139": 0.07448586821556091
+      },
+      "weights": {
+        "forearm_twist.r_0135": 1.0
+      }
+    },
+    {
+      "vertex": 472,
+      "old_weights": {
+        "forearm_twist.r_0135": 0.9346423745155334,
+        "hand.r_0139": 0.06535764783620834
+      },
+      "weights": {
+        "forearm_twist.r_0135": 1.0
+      }
+    },
+    {
+      "vertex": 473,
+      "old_weights": {
+        "forearm_twist.r_0135": 0.9341520071029663,
+        "hand.r_0139": 0.06584801524877548
+      },
+      "weights": {
+        "forearm_twist.r_0135": 1.0
+      }
+    },
+    {
+      "vertex": 476,
+      "old_weights": {
+        "forearm_twist.r_0135": 0.9341520071029663,
+        "hand.r_0139": 0.06584801524877548
+      },
+      "weights": {
+        "forearm_twist.r_0135": 1.0
+      }
+    },
+    {
+      "vertex": 477,
+      "old_weights": {
+        "forearm_twist.r_0135": 0.9346423745155334,
+        "hand.r_0139": 0.06535764783620834
+      },
+      "weights": {
+        "forearm_twist.r_0135": 1.0
+      }
+    },
+    {
+      "vertex": 479,
+      "old_weights": {
+        "forearm_twist.r_0135": 0.9255141019821167,
+        "hand.r_0139": 0.07448586821556091
+      },
+      "weights": {
+        "forearm_twist.r_0135": 1.0
+      }
+    },
+    {
+      "vertex": 480,
+      "old_weights": {
+        "forearm_twist.l_0176": 0.9255141019821167,
+        "hand.l_0160": 0.07448586821556091
+      },
+      "weights": {
+        "forearm_twist.l_0176": 1.0
+      }
+    },
+    {
+      "vertex": 483,
+      "old_weights": {
+        "forearm_twist.l_0176": 0.9276742935180664,
+        "hand.l_0160": 0.07232573628425598
+      },
+      "weights": {
+        "forearm_twist.l_0176": 1.0
+      }
+    },
+    {
+      "vertex": 490,
+      "old_weights": {
+        "forearm_twist.l_0176": 0.9332788586616516,
+        "hand.l_0160": 0.0667211264371872
+      },
+      "weights": {
+        "forearm_twist.l_0176": 1.0
+      }
+    },
+    {
+      "vertex": 492,
+      "old_weights": {
+        "forearm_twist.l_0176": 0.9346423745155334,
+        "hand.l_0160": 0.06535764783620834
+      },
+      "weights": {
+        "forearm_twist.l_0176": 1.0
+      }
+    },
+    {
+      "vertex": 493,
+      "old_weights": {
+        "forearm_twist.l_0176": 0.9278250932693481,
+        "hand.l_0160": 0.07217489182949066
+      },
+      "weights": {
+        "forearm_twist.l_0176": 1.0
+      }
+    },
+    {
+      "vertex": 494,
+      "old_weights": {
+        "forearm_twist.l_0176": 0.9279784560203552,
+        "hand.l_0160": 0.07202152907848358
+      },
+      "weights": {
+        "forearm_twist.l_0176": 1.0
+      }
+    },
+    {
+      "vertex": 495,
+      "old_weights": {
+        "forearm_twist.l_0176": 0.931434154510498,
+        "hand.l_0160": 0.06856581568717957
+      },
+      "weights": {
+        "forearm_twist.l_0176": 1.0
+      }
+    },
+    {
+      "vertex": 496,
+      "old_weights": {
+        "forearm_twist.l_0176": 0.9316381216049194,
+        "hand.l_0160": 0.06836188584566116
+      },
+      "weights": {
+        "forearm_twist.l_0176": 1.0
+      }
+    },
+    {
+      "vertex": 497,
+      "old_weights": {
+        "forearm_twist.l_0176": 0.9341520071029663,
+        "hand.l_0160": 0.06584801524877548
+      },
+      "weights": {
+        "forearm_twist.l_0176": 1.0
+      }
+    },
+    {
+      "vertex": 514,
+      "old_weights": {
+        "forearm_twist.r_0135": 0.9255141019821167,
+        "hand.r_0139": 0.07448586821556091
+      },
+      "weights": {
+        "forearm_twist.r_0135": 1.0
+      }
+    },
+    {
+      "vertex": 518,
+      "old_weights": {
+        "forearm_twist.r_0135": 0.9276742935180664,
+        "hand.r_0139": 0.07232573628425598
+      },
+      "weights": {
+        "forearm_twist.r_0135": 1.0
+      }
+    },
+    {
+      "vertex": 522,
+      "old_weights": {
+        "forearm_twist.r_0135": 0.9278250932693481,
+        "hand.r_0139": 0.07217489182949066
+      },
+      "weights": {
+        "forearm_twist.r_0135": 1.0
+      }
+    },
+    {
+      "vertex": 523,
+      "old_weights": {
+        "forearm_twist.r_0135": 0.9279784560203552,
+        "hand.r_0139": 0.07202152907848358
+      },
+      "weights": {
+        "forearm_twist.r_0135": 1.0
+      }
+    },
+    {
+      "vertex": 525,
+      "old_weights": {
+        "forearm_twist.r_0135": 0.9316381216049194,
+        "hand.r_0139": 0.06836188584566116
+      },
+      "weights": {
+        "forearm_twist.r_0135": 1.0
+      }
+    },
+    {
+      "vertex": 526,
+      "old_weights": {
+        "forearm_twist.r_0135": 0.931434154510498,
+        "hand.r_0139": 0.06856581568717957
+      },
+      "weights": {
+        "forearm_twist.r_0135": 1.0
+      }
+    },
+    {
+      "vertex": 529,
+      "old_weights": {
+        "forearm_twist.r_0135": 0.9332788586616516,
+        "hand.r_0139": 0.0667211264371872
+      },
+      "weights": {
+        "forearm_twist.r_0135": 1.0
+      }
+    },
+    {
+      "vertex": 530,
+      "old_weights": {
+        "forearm_twist.r_0135": 0.9346423745155334,
+        "hand.r_0139": 0.06535764783620834
+      },
+      "weights": {
+        "forearm_twist.r_0135": 1.0
+      }
+    },
+    {
+      "vertex": 547,
+      "old_weights": {
+        "forearm_twist.r_0135": 0.9341520071029663,
+        "hand.r_0139": 0.06584801524877548
+      },
+      "weights": {
+        "forearm_twist.r_0135": 1.0
+      }
+    }
+  ]
+}
