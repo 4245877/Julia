@@ -1,0 +1,254 @@
+﻿[
+    {
+        "path":  "assets/models/.gitkeep",
+        "bytes":  0,
+        "sha256":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+        "reason":  "Empty placeholder in tracked nonempty directory; no build/test references"
+    },
+    {
+        "path":  "assets/shaders/.gitkeep",
+        "bytes":  0,
+        "sha256":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+        "reason":  "Empty placeholder in tracked nonempty directory; no build/test references"
+    },
+    {
+        "path":  "assets/textures/.gitkeep",
+        "bytes":  0,
+        "sha256":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+        "reason":  "Empty placeholder in tracked nonempty directory; no build/test references"
+    },
+    {
+        "path":  "tools/.gitkeep",
+        "bytes":  0,
+        "sha256":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+        "reason":  "Empty placeholder in tracked nonempty directory; no build/test references"
+    },
+    {
+        "path":  "tests/.gitkeep",
+        "bytes":  0,
+        "sha256":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+        "reason":  "Empty placeholder in tracked nonempty directory; no build/test references"
+    },
+    {
+        "path":  "docs/.gitkeep",
+        "bytes":  0,
+        "sha256":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+        "reason":  "Empty placeholder in tracked nonempty directory; no build/test references"
+    },
+    {
+        "path":  "tools/raphtalia/__pycache__/blender_controls.cpython-311.pyc",
+        "bytes":  21509,
+        "sha256":  "5A2F5ABFCAB1CAE004A739E0CF70D7743380B35B04EFDE06C76351F24B7EE0FC",
+        "reason":  "Regenerable CPython cache; all source tools retained; no CMake/test inputs"
+    },
+    {
+        "path":  "tools/raphtalia/__pycache__/blender_inspect.cpython-311.pyc",
+        "bytes":  14423,
+        "sha256":  "079E069DA90D1515411428909994B71186A9B94B0734938DAD5FB5B433D7FBE4",
+        "reason":  "Regenerable CPython cache; all source tools retained; no CMake/test inputs"
+    },
+    {
+        "path":  "tools/raphtalia/__pycache__/blink_corner_audit.cpython-311.pyc",
+        "bytes":  25364,
+        "sha256":  "3DC73C9452BEC1FCD7912913A2B28A459369B4B83D4F5EF9C977AFC86B1C352A",
+        "reason":  "Regenerable CPython cache; all source tools retained; no CMake/test inputs"
+    },
+    {
+        "path":  "tools/raphtalia/__pycache__/blink_gpu_samples.cpython-311.pyc",
+        "bytes":  7178,
+        "sha256":  "2904D7D2211D0644153D604CD14178D7D7AB105DFE7F4B2474EDAA3A8DB3F4DB",
+        "reason":  "Regenerable CPython cache; all source tools retained; no CMake/test inputs"
+    },
+    {
+        "path":  "tools/raphtalia/__pycache__/blink_integrity.cpython-311.pyc",
+        "bytes":  46240,
+        "sha256":  "E946CCE49F605DBA2954CA1E02646258180975109EA125316EEF70782B1B7882",
+        "reason":  "Regenerable CPython cache; all source tools retained; no CMake/test inputs"
+    },
+    {
+        "path":  "tools/raphtalia/__pycache__/blink_lash_mapping.cpython-311.pyc",
+        "bytes":  5980,
+        "sha256":  "887E71AC761C05EFFFAF4E3BDE172C187E965D2A969CC4CB927BB6772CD5F53C",
+        "reason":  "Regenerable CPython cache; all source tools retained; no CMake/test inputs"
+    },
+    {
+        "path":  "tools/raphtalia/__pycache__/blink_local_surface.cpython-311.pyc",
+        "bytes":  42647,
+        "sha256":  "0A9C630A874A0BED3B0F7FF12B192B9B5CAF95286CC5AF7712AE7998DE2ACF7C",
+        "reason":  "Regenerable CPython cache; all source tools retained; no CMake/test inputs"
+    },
+    {
+        "path":  "tools/raphtalia/__pycache__/blink_render.cpython-311.pyc",
+        "bytes":  4456,
+        "sha256":  "33EE391F56744AF174C676B229BFAA6D2C31E5A6561E5B8CBF2DD0F611A6E7A2",
+        "reason":  "Regenerable CPython cache; all source tools retained; no CMake/test inputs"
+    },
+    {
+        "path":  "tools/raphtalia/__pycache__/blink_render_suite.cpython-311.pyc",
+        "bytes":  11372,
+        "sha256":  "B82E2487C5AA1E2FA3DC5EF6DD4E0EBE1DEEBF344C9FBE0056352DE033E21EA9",
+        "reason":  "Regenerable CPython cache; all source tools retained; no CMake/test inputs"
+    },
+    {
+        "path":  "tools/raphtalia/__pycache__/blink_topology_audit.cpython-311.pyc",
+        "bytes":  19863,
+        "sha256":  "02331B4E1A9E08BC4F689761F0AC3CD36EBB8FB85032381C6E296E0661C32E18",
+        "reason":  "Regenerable CPython cache; all source tools retained; no CMake/test inputs"
+    },
+    {
+        "path":  "tools/raphtalia/__pycache__/blink_visibility.cpython-311.pyc",
+        "bytes":  23140,
+        "sha256":  "D18D2FB10720DB75C44FD0A9165821972391B364389B2593014ECA045CA0F2AE",
+        "reason":  "Regenerable CPython cache; all source tools retained; no CMake/test inputs"
+    },
+    {
+        "path":  "tools/raphtalia/__pycache__/build_blink.cpython-311.pyc",
+        "bytes":  45917,
+        "sha256":  "E3E2C53BF113980059C511A58E0AB1E29FA6371702C150AFBF6271433706B819",
+        "reason":  "Regenerable CPython cache; all source tools retained; no CMake/test inputs"
+    },
+    {
+        "path":  "tools/raphtalia/__pycache__/control_check.cpython-311.pyc",
+        "bytes":  11251,
+        "sha256":  "B8618E9AF51C51584B7A06AA6A9BE7F82C350AB20EFEABA0EF277D35790DF8D3",
+        "reason":  "Regenerable CPython cache; all source tools retained; no CMake/test inputs"
+    },
+    {
+        "path":  "tools/raphtalia/__pycache__/convert_blink_gpu.cpython-311.pyc",
+        "bytes":  14656,
+        "sha256":  "2818E42A652959E6EDA8891DE595D2D47D9AD92B422F7591E143859CC118EF00",
+        "reason":  "Regenerable CPython cache; all source tools retained; no CMake/test inputs"
+    },
+    {
+        "path":  "tools/raphtalia/__pycache__/convert_gpu_evidence.cpython-311.pyc",
+        "bytes":  12047,
+        "sha256":  "C535F11705ACD0E6D44B016CD0A1516028275F035DE40C4C73027DA43EF1F5BC",
+        "reason":  "Regenerable CPython cache; all source tools retained; no CMake/test inputs"
+    },
+    {
+        "path":  "tools/raphtalia/__pycache__/create_blender_comparison.cpython-311.pyc",
+        "bytes":  3472,
+        "sha256":  "AD5695DBB97F7273BAA116F36434865961E1024F8B5C57D869C47D3C05F6DB17",
+        "reason":  "Regenerable CPython cache; all source tools retained; no CMake/test inputs"
+    },
+    {
+        "path":  "tools/raphtalia/__pycache__/create_deep_comparison.cpython-311.pyc",
+        "bytes":  16764,
+        "sha256":  "AEE741CBECE59A22C881B0A66DD2DE0660BB1F8DA6C08A5334ECD79A955F6631",
+        "reason":  "Regenerable CPython cache; all source tools retained; no CMake/test inputs"
+    },
+    {
+        "path":  "tools/raphtalia/__pycache__/deep_body.cpython-311.pyc",
+        "bytes":  29323,
+        "sha256":  "B11F99DD2182BB671BE80EEE3A72FF3D91C37B22B871E6118499DC42CEEC301E",
+        "reason":  "Regenerable CPython cache; all source tools retained; no CMake/test inputs"
+    },
+    {
+        "path":  "tools/raphtalia/__pycache__/deep_cloth.cpython-311.pyc",
+        "bytes":  11780,
+        "sha256":  "9C4103AF2E7C0F5068CF29B1A11826C2388F7321ED078F6DE262C89E0EF06732",
+        "reason":  "Regenerable CPython cache; all source tools retained; no CMake/test inputs"
+    },
+    {
+        "path":  "tools/raphtalia/__pycache__/deep_cloth_controls.cpython-311.pyc",
+        "bytes":  5743,
+        "sha256":  "1F63AA16E973EA23F8A32E7066C1C87673306C1D7DD313C8794CC1EA8DA46C56",
+        "reason":  "Regenerable CPython cache; all source tools retained; no CMake/test inputs"
+    },
+    {
+        "path":  "tools/raphtalia/__pycache__/deep_integrity.cpython-311.pyc",
+        "bytes":  32458,
+        "sha256":  "C1EBBE1FC9AE3E04BB3D7763766A2AC6105687019BD5D4E67E2A1A6ED61C8347",
+        "reason":  "Regenerable CPython cache; all source tools retained; no CMake/test inputs"
+    },
+    {
+        "path":  "tools/raphtalia/__pycache__/deep_pose_audit.cpython-311.pyc",
+        "bytes":  18221,
+        "sha256":  "A47BBE01E2C03337B581B65C0FF1BB2E85BC51C1A83C143D00B47D68837E644A",
+        "reason":  "Regenerable CPython cache; all source tools retained; no CMake/test inputs"
+    },
+    {
+        "path":  "tools/raphtalia/__pycache__/face_blink_probe.cpython-311.pyc",
+        "bytes":  10041,
+        "sha256":  "9199E02974242F17DA83D1ED1184AE5DE875B0DE8BD3C3CB0E267D7F72C69C4A",
+        "reason":  "Regenerable CPython cache; all source tools retained; no CMake/test inputs"
+    },
+    {
+        "path":  "tools/raphtalia/__pycache__/face_geometry.cpython-311.pyc",
+        "bytes":  19221,
+        "sha256":  "93A1461DC6DCCD2ADD64F4D55E09CCE05B0C869DF89EFB2A13F9BE1175BF38A0",
+        "reason":  "Regenerable CPython cache; all source tools retained; no CMake/test inputs"
+    },
+    {
+        "path":  "tools/raphtalia/__pycache__/fbx_audit.cpython-311.pyc",
+        "bytes":  50099,
+        "sha256":  "212FB1226C83DC5CE25AE11140FAF8A9AC828CA1A99EE2C5A70CF645FFA6508E",
+        "reason":  "Regenerable CPython cache; all source tools retained; no CMake/test inputs"
+    },
+    {
+        "path":  "tools/raphtalia/__pycache__/glove_skinning.cpython-311.pyc",
+        "bytes":  14728,
+        "sha256":  "BB01E98755054AD8B42D9BDBEC3B60FFA4551A5CF3D601736B3B64120C097847",
+        "reason":  "Regenerable CPython cache; all source tools retained; no CMake/test inputs"
+    },
+    {
+        "path":  "tools/raphtalia/__pycache__/joint_geometry.cpython-311.pyc",
+        "bytes":  18118,
+        "sha256":  "96D6A1FD27C64CDFC6BEFA5F9136A3D9E8EEA42A75EB5296E4948644D956366F",
+        "reason":  "Regenerable CPython cache; all source tools retained; no CMake/test inputs"
+    },
+    {
+        "path":  "tools/raphtalia/__pycache__/joint_sweep.cpython-311.pyc",
+        "bytes":  19712,
+        "sha256":  "50C45FA107DAF0305A56600EF696B175D8AC1AA8167B2C5D240C78CB796AF606",
+        "reason":  "Regenerable CPython cache; all source tools retained; no CMake/test inputs"
+    },
+    {
+        "path":  "tools/raphtalia/__pycache__/limb_validation.cpython-311.pyc",
+        "bytes":  13439,
+        "sha256":  "E36C0EB07ADAB1BB413A83BB2CCBF2CBD67381BF90D01DC821064F385066F53B",
+        "reason":  "Regenerable CPython cache; all source tools retained; no CMake/test inputs"
+    },
+    {
+        "path":  "tools/raphtalia/__pycache__/prepare_rig.cpython-311.pyc",
+        "bytes":  38981,
+        "sha256":  "69938976D4F0A9A41C4F4CD325D1DF860B688F32D7B597B14EFA9DA01458430C",
+        "reason":  "Regenerable CPython cache; all source tools retained; no CMake/test inputs"
+    },
+    {
+        "path":  "tools/raphtalia/__pycache__/reaudit.cpython-311.pyc",
+        "bytes":  25902,
+        "sha256":  "F3F9271A0CC395CAE03BF01FA22A6944F505E6381A8F3488DF188FAFAD114423",
+        "reason":  "Regenerable CPython cache; all source tools retained; no CMake/test inputs"
+    },
+    {
+        "path":  "tools/raphtalia/__pycache__/refine_deep_deformation.cpython-311.pyc",
+        "bytes":  5677,
+        "sha256":  "7275DE809B366FAA2FD1D36BAA2DD8066E9D993721CD17999BA50E9F09601267",
+        "reason":  "Regenerable CPython cache; all source tools retained; no CMake/test inputs"
+    },
+    {
+        "path":  "tools/raphtalia/__pycache__/refine_rig.cpython-311.pyc",
+        "bytes":  19981,
+        "sha256":  "69D344012207233A3C16D876172E89AB450E56DA469CCD29BB73667D58149C37",
+        "reason":  "Regenerable CPython cache; all source tools retained; no CMake/test inputs"
+    },
+    {
+        "path":  "tools/raphtalia/__pycache__/roundtrip_check.cpython-311.pyc",
+        "bytes":  38265,
+        "sha256":  "C576DB8DB17A3835AA313963E46805AAFF5C9F6070C1E6B2261C530B207EDBA8",
+        "reason":  "Regenerable CPython cache; all source tools retained; no CMake/test inputs"
+    },
+    {
+        "path":  "tools/raphtalia/__pycache__/verify_prepared.cpython-311.pyc",
+        "bytes":  13741,
+        "sha256":  "23723CD6097C001912EAF94BC44F44A94BF681BA91B5A743A70F94EC6B6C2FB0",
+        "reason":  "Regenerable CPython cache; all source tools retained; no CMake/test inputs"
+    },
+    {
+        "path":  "tools/raphtalia/__pycache__/write_report.cpython-311.pyc",
+        "bytes":  46970,
+        "sha256":  "6CA98A7BE0190D2A940B684E77E09C29E642F5A2E07492BE2BC91507649CDD9B",
+        "reason":  "Regenerable CPython cache; all source tools retained; no CMake/test inputs"
+    }
+]

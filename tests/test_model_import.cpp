@@ -48,7 +48,8 @@ namespace
         return pixel;
     }
 
-    std::filesystem::path writeInstancedSkin(const std::filesystem::path& directory, bool singular = false)
+    std::filesystem::path writeInstancedSkin(const std::filesystem::path& directory, bool singular = false,
+        bool animated = false)
     {
         // Assbin preserves exact offset matrices, unlike exporters that may
         // reconstruct skeletons. The same aiMesh is referenced by two nodes.
@@ -105,7 +106,26 @@ namespace
         auto& texel = scene.mTextures[0]->pcData[0];
         texel.r = 200; texel.g = 100; texel.b = 50; texel.a = 128;
 
-        const auto path = directory / (singular ? "singular.assbin" : "instanced_skin.assbin");
+        if (animated)
+        {
+            scene.mNumAnimations = 1;
+            scene.mAnimations = new aiAnimation*[1]{new aiAnimation};
+            auto& clip = *scene.mAnimations[0];
+            clip.mName = "owned keys, unspecified tick rate";
+            clip.mDuration = 50;
+            clip.mTicksPerSecond = 0;
+            clip.mNumChannels = 1;
+            clip.mChannels = new aiNodeAnim*[1]{new aiNodeAnim};
+            auto& channel = *clip.mChannels[0];
+            channel.mNodeName = "joint";
+            channel.mNumPositionKeys = 2;
+            channel.mPositionKeys = new aiVectorKey[2]{{0,{0,.3f,0}}, {50,{1,.3f,0}}};
+            channel.mNumRotationKeys = 1;
+            channel.mRotationKeys = new aiQuatKey[1]{{0,aiQuaternion{}}};
+            channel.mNumScalingKeys = 1;
+            channel.mScalingKeys = new aiVectorKey[1]{{0,{1,1,1}}};
+        }
+        const auto path = directory / (singular ? "singular.assbin" : animated ? "animated_skin.assbin" : "instanced_skin.assbin");
         Assimp::Exporter exporter;
         if (exporter.Export(&scene, "assbin", path.string()) != AI_SUCCESS)
             throw std::runtime_error(exporter.GetErrorString());
@@ -343,6 +363,21 @@ void main(){color=vec4(mode==0?vec3(1):mode==1?normal*.5+.5:mode==2?vec3(uv,0):t
         std::filesystem::create_directories(directory);
         testNormalRepair(directory);
         testToonMaterialProfiles(directory);
+        // Both fixture scene and loader importer are destroyed before playback.
+        const auto animated = GLModelLoader::loadFromFile(writeInstancedSkin(directory, false, true));
+        JULIA_CHECK(animated.animations().size() == 1);
+        if (animated.animations().size() == 1)
+        {
+            const auto& clip = animated.animations()[0];
+            JULIA_CHECK(clip.name == "owned keys, unspecified tick rate");
+            JULIA_CHECK(clip.usedDefaultTicksPerSecond && clip.ticksPerSecond == 25);
+            JULIA_CHECK(clip.durationSeconds() == 2);
+            AnimationPlayer player(animated);
+            player.play(); player.update(1);
+            const auto node = clip.channels[0].nodeIndex;
+            JULIA_CHECK(std::abs(player.localTransforms()[node][3].x - .5f) < 1e-5f);
+            JULIA_CHECK(std::abs(player.localTransforms()[node][3].y - .3f) < 1e-5f);
+        }
         const auto skin = GLModelLoader::loadFromFile(writeInstancedSkin(directory));
         JULIA_CHECK(skin.meshCount() == 2);
         JULIA_CHECK(skin.boneCount() == 2);

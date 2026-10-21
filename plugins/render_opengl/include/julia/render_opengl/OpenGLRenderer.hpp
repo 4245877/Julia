@@ -53,6 +53,8 @@ namespace julia::render_opengl
         void setCamera(const CameraConfig& camera);
         void setStyleConfig(const ToonStyleConfig& style);
         void beginFrame();
+        // CPU submission time (not GPU execution), for explicit runtime audits.
+        double lastPaletteUploadCpuMilliseconds() const { return paletteUploadCpuMs_; }
 
         // Requires the initialized context to remain current through destruction.
         // Empty palette draws baked static geometry. A nonempty palette contains
@@ -73,6 +75,7 @@ namespace julia::render_opengl
         GLuint boneTexture_ = 0;
         GLint maxBoneTexels_ = 0;
         bool boneStorageInitialized_ = false;
+        double paletteUploadCpuMs_ = 0.0;
         GLuint shadowFramebuffer_ = 0;
         GLuint shadowTexture_ = 0;
         static constexpr int ShadowMapSize = 2048;

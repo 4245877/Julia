@@ -17,6 +17,7 @@ target_sources(julia_render_opengl
         src/GLModel.cpp
         src/GLTexture.cpp
         src/GLModelLoader.cpp
+        src/Animation.cpp
 )
 
 target_include_directories(julia_render_opengl

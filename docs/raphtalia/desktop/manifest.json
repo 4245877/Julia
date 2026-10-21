@@ -1,0 +1,167 @@
+{
+  "validated_on": "2026-10-21",
+  "protected_assets_unchanged": [
+    {
+      "path": "assets/models/Raphtalia.fbx",
+      "bytes": 9276700,
+      "sha256": "A602086AC9E580F2D265A489478922B75AAE00410313B17A89BD846AD4F3B34C"
+    },
+    {
+      "path": "assets/models/backups/Raphtalia.original.fbx",
+      "bytes": 9276700,
+      "sha256": "A602086AC9E580F2D265A489478922B75AAE00410313B17A89BD846AD4F3B34C"
+    },
+    {
+      "path": "assets/models/Raphtalia_prepared.blend",
+      "bytes": 30354620,
+      "sha256": "C1C0DB17B06CDF1D0C621DBAA1916E6A452E50464D8BAAB2155E44F7AEA897C6"
+    },
+    {
+      "path": "assets/models/Raphtalia_prepared.fbx",
+      "bytes": 169903772,
+      "sha256": "B98E2063F3226C369A66E711B0DC61ED1A2C1DA6B93B6DC117C2E4C923882DBE"
+    },
+    {
+      "path": "assets/models/backups/Raphtalia_prepared.pre_deep_deformation_2026-10-21.zip",
+      "bytes": 10481779,
+      "sha256": "DD39FDE112F58C98624520B05A9E67BD3B478D0B8AF8F20190EDA019717B5B53"
+    },
+    {
+      "path": "assets/models/backups/Raphtalia_prepared.pre_reaudit_2026-10-21.zip",
+      "bytes": 9036770,
+      "sha256": "45DCAF850EF345F77F7E7384987C0DE1E4B0D7E5C444F73381CB5DC053F7155B"
+    },
+    {
+      "path": "assets/models/backups/Raphtalia_prepared.pre_blink_2026-10-21.zip",
+      "bytes": 11453052,
+      "sha256": "8060EE02D7B8732CBB3E9B2E3B8477050642611F8CD069314F9897B0BD8DEC1E"
+    }
+  ],
+  "files": [
+    {
+      "path": "apps/julia_desktop/AnimationVerification.cpp",
+      "bytes": 13444,
+      "sha256": "d6d5140bf87a4de316b358a8f82c63db000ed62d0200d4eed620b7f89615c566"
+    },
+    {
+      "path": "apps/julia_desktop/AnimationVerification.hpp",
+      "bytes": 625,
+      "sha256": "9e51679c3a8dba08f1cf6f9d8697b684c82a62a3fc82a3a27acad34b43d1bb35"
+    },
+    {
+      "path": "apps/julia_desktop/main.cpp",
+      "bytes": 20831,
+      "sha256": "cd186b4275d6078b7aa2c282e999b8a18dd2f4b100befe309b180c581081c0e6"
+    },
+    {
+      "path": "docs/raphtalia/desktop/all_clips_desktop.png",
+      "bytes": 131937,
+      "sha256": "bc253b9a18a5c3100d48e3248405a97fee1b1f95c5c7a365fb92fc9198e004bf"
+    },
+    {
+      "path": "docs/raphtalia/desktop/bind_back.png",
+      "bytes": 44264,
+      "sha256": "7e35a65ed37ce9653c3e106cd8f5533fbaaa50afcde3080437297fb7dbe13de6"
+    },
+    {
+      "path": "docs/raphtalia/desktop/bind_eyes.png",
+      "bytes": 121452,
+      "sha256": "013dc676fad58b704ebf5b1166e75ab8c8d563201de7bb5b851c1bbd14c02e78"
+    },
+    {
+      "path": "docs/raphtalia/desktop/bind_front.png",
+      "bytes": 58861,
+      "sha256": "1b2772c94b84638ab2f0b61a332f7f50cd3523967be2600829c92123c04ea808"
+    },
+    {
+      "path": "docs/raphtalia/desktop/blink_desktop_contact.png",
+      "bytes": 344998,
+      "sha256": "fbfdaacc63ed2359ffee2e791e9545ba91ca7eaab80042180c904ee62b3909c5"
+    },
+    {
+      "path": "docs/raphtalia/desktop/cleanup.json",
+      "bytes": 12626,
+      "sha256": "fc6301fb4544c3d25dd079ffb45708280f472f33c4811aabc544781b8f520e4b"
+    },
+    {
+      "path": "docs/raphtalia/desktop/comparison.json",
+      "bytes": 63080,
+      "sha256": "80e21808cd252fb2262f98bb3b372b75d31dfeafe7f05c4e29fcf63abe6f6928"
+    },
+    {
+      "path": "docs/raphtalia/desktop/ctest.txt",
+      "bytes": 10740,
+      "sha256": "f6d3be94bd7a0d17857716ad958f980b7b3760f5e82ed0dcbfff1721d400b5ab"
+    },
+    {
+      "path": "docs/raphtalia/desktop/desktop_animation.txt",
+      "bytes": 2908,
+      "sha256": "47ce2e05500759c9742cbb39cbd9082b3880afc53e10147f9a6b103c7175f050"
+    },
+    {
+      "path": "docs/raphtalia/desktop/materials.json",
+      "bytes": 15138,
+      "sha256": "5c4e7de7b7a22ed580973b1a6d7e5748041fb22d3e12de01e6c03e9ccb535eef"
+    },
+    {
+      "path": "docs/raphtalia/desktop/oracle_audit.txt",
+      "bytes": 3202,
+      "sha256": "08cef309fc38c3a8dc0c12163ffbe09a4687125b6dbf23515ed5eb877a3587b3"
+    },
+    {
+      "path": "docs/raphtalia/desktop/samples.csv",
+      "bytes": 30726,
+      "sha256": "f14b696099d87546ab8c782e3176b3ada20b2cd17d85b0c393b212e6e59e78c6"
+    },
+    {
+      "path": "docs/raphtalia/desktop/visible_desktop_animation.txt",
+      "bytes": 2895,
+      "sha256": "bfa7f1028d8d9371947a3af7ff57b09be8dc8b0e8a146474949929af9eaf3eac"
+    },
+    {
+      "path": "julia_desktop/julia_desktop.exe",
+      "bytes": 393728,
+      "sha256": "472368489c28df5209375426505851997c55d4b0bf3a67d30d92e25cafff59b1"
+    },
+    {
+      "path": "plugins/render_opengl/include/julia/render_opengl/Animation.hpp",
+      "bytes": 2724,
+      "sha256": "38955d988004b991ef70b40a8955b765e3011f3250d9eb5074c218351a6ca57e"
+    },
+    {
+      "path": "plugins/render_opengl/include/julia/render_opengl/GLModel.hpp",
+      "bytes": 3861,
+      "sha256": "b9f21779ce0abdf53e0175ac6fbc50b2e6e1ba6f6a3e44d602fedf3f64603bc6"
+    },
+    {
+      "path": "plugins/render_opengl/src/Animation.cpp",
+      "bytes": 5325,
+      "sha256": "e32e4c210f02de84ab80118e9166a51e10aa51443952a9144c74a92b81407499"
+    },
+    {
+      "path": "plugins/render_opengl/src/GLModel.cpp",
+      "bytes": 9336,
+      "sha256": "603f386e5311bca7f889454ab37e45f3ff153f59f3a6dc39119c09add7ee2d60"
+    },
+    {
+      "path": "plugins/render_opengl/src/GLModelLoader.cpp",
+      "bytes": 40833,
+      "sha256": "dcf5a09dae56b69cc9912b3f34f4c1039d0119b9b86e873aae013d22eb0844b3"
+    },
+    {
+      "path": "plugins/render_opengl/src/OpenGLRenderer.cpp",
+      "bytes": 32956,
+      "sha256": "e0567426f431f93984ca945813046d9a47f3813ddb806ec7b1345bf4a0b3fd65"
+    },
+    {
+      "path": "tests/test_animation.cpp",
+      "bytes": 4748,
+      "sha256": "f1abc922411e9466f57db46aa0c826aff28cb46a850c52f5b45f44b6519e218b"
+    },
+    {
+      "path": "tests/test_model_import.cpp",
+      "bytes": 25331,
+      "sha256": "9ec921c9373534db3a13d18f2c4bee641e1e012646b658e17718f18873bc52fa"
+    }
+  ]
+}

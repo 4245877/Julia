@@ -28,6 +28,15 @@ add_test(NAME desktop_launch COMMAND $<TARGET_FILE:julia_desktop> --verify)
 set_tests_properties(desktop_launch PROPERTIES
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}" TIMEOUT 60)
 
+add_executable(julia_test_animation test_animation.cpp)
+target_include_directories(julia_test_animation PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(julia_test_animation PRIVATE julia_render_opengl julia::warnings)
+add_test(NAME animation COMMAND julia_test_animation)
+add_test(NAME desktop_animation COMMAND $<TARGET_FILE:julia_desktop>
+    --verify-animations "${CMAKE_BINARY_DIR}/verification/desktop_animation")
+set_tests_properties(desktop_animation PROPERTIES
+    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}" TIMEOUT 180 RUN_SERIAL TRUE)
+
 foreach(suite model_math model_import gpu_resources shader_pipeline)
     add_executable(julia_test_${suite} test_${suite}.cpp)
     target_include_directories(julia_test_${suite} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})

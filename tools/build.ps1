@@ -1,5 +1,5 @@
 ﻿[CmdletBinding()]
-param([switch]$SkipTests)
+param([switch]$SkipTests, [switch]$UseInstalledDependencies)
 
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
@@ -18,7 +18,8 @@ try {
     # Windows PowerShell wraps native stderr as ErrorRecord when redirected;
     # warnings must not abort a successful CMake invocation. Check exit codes.
     $ErrorActionPreference = 'Continue'
-    & cmake --preset vs-release -DVCPKG_MANIFEST_INSTALL=ON
+    $installManifest = if ($UseInstalledDependencies) { 'OFF' } else { 'ON' }
+    & cmake --preset vs-release "-DVCPKG_MANIFEST_INSTALL=$installManifest"
     if ($LASTEXITCODE -ne 0) { throw 'CMake configuration failed.' }
     & cmake --build --preset build-release --parallel 4
     if ($LASTEXITCODE -ne 0) { throw 'JULIA build failed.' }

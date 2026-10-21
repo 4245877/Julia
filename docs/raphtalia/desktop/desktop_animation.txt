@@ -1,0 +1,45 @@
+process=julia_desktop
+GL_VENDOR=NVIDIA Corporation
+GL_RENDERER=NVIDIA GeForce RTX 4070 SUPER/PCIe/SSE2
+GL_VERSION=3.3.0 NVIDIA 617.42
+meshes=28
+nodes=459
+bones=429
+clips=15
+max_palette_matrices=67108864
+palette_bytes=27456
+window_visible=0
+textured_meshes=0
+masked_meshes=0
+blended_meshes=0
+materials_status=SOURCE_IMAGES_MISSING; imported diffuse only
+clip=Raphtalia_Rig|TEST_blink_gaze duration_s=4 tps=30 channels=430 pause_loop_finish_bind=PASS changed_pixels=YES
+clip=Raphtalia_Rig|TEST_blink_head duration_s=4 tps=30 channels=430 pause_loop_finish_bind=PASS changed_pixels=YES
+clip=Raphtalia_Rig|TEST_blink_independent duration_s=2 tps=30 channels=430 pause_loop_finish_bind=PASS changed_pixels=YES
+clip=Raphtalia_Rig|TEST_blink_natural duration_s=1 tps=30 channels=430 pause_loop_finish_bind=PASS changed_pixels=YES
+clip=Raphtalia_Rig|TEST_brows_wrist duration_s=2 tps=30 channels=430 pause_loop_finish_bind=PASS changed_pixels=YES
+clip=Raphtalia_Rig|TEST_deep_body_cloth duration_s=12 tps=30 channels=430 pause_loop_finish_bind=PASS changed_pixels=YES
+clip=Raphtalia_Rig|TEST_elbows_90 duration_s=2 tps=30 channels=430 pause_loop_finish_bind=PASS changed_pixels=YES
+clip=Raphtalia_Rig|TEST_eyes_ears duration_s=2 tps=30 channels=430 pause_loop_finish_bind=PASS changed_pixels=YES
+clip=Raphtalia_Rig|TEST_fingers_35 duration_s=2 tps=30 channels=430 pause_loop_finish_bind=PASS changed_pixels=YES
+clip=Raphtalia_Rig|TEST_hair_tail_cloth duration_s=2 tps=30 channels=430 pause_loop_finish_bind=PASS changed_pixels=YES
+clip=Raphtalia_Rig|TEST_head_torso duration_s=2 tps=30 channels=430 pause_loop_finish_bind=PASS changed_pixels=YES
+clip=Raphtalia_Rig|TEST_knees_90 duration_s=2 tps=30 channels=430 pause_loop_finish_bind=PASS changed_pixels=YES
+clip=Raphtalia_Rig|TEST_practical_ranges duration_s=8 tps=30 channels=430 pause_loop_finish_bind=PASS changed_pixels=YES
+clip=Raphtalia_Rig|TEST_shoulders_hips_ankles duration_s=2 tps=30 channels=430 pause_loop_finish_bind=PASS changed_pixels=YES
+clip=Raphtalia_Rig|TEST_toes_30 duration_s=2 tps=30 channels=430 pause_loop_finish_bind=PASS changed_pixels=YES
+frame_rates=24,60,144
+max_palette_delta_between_rates=0
+private_bytes_after_1000_switches=290553856
+private_bytes_after_2000_switches=290553856
+private_bytes_after_3000_switches=290553856
+switches_with_draws=3000
+private_bytes_before_switches=284250112
+private_bytes_after_switches=290553856
+bind_benchmark resolution=768x768 frames=240 update_cpu_ms=2.833333333e-05 palette_upload_cpu_ms=0.01705833333 gpu_frame_ms=0.1730048 wall_frame_ms=0.17369875 throughput_fps=5757.093819
+animated_benchmark resolution=768x768 frames=240 update_cpu_ms=0.03930541667 palette_upload_cpu_ms=0.01657291667 gpu_frame_ms=0.1688533333 wall_frame_ms=0.1703275 throughput_fps=5871.04255
+clips_with_pixel_changes=15
+saved_images=334
+bind_reset=EXACT
+gl_errors=0
+result=PASS

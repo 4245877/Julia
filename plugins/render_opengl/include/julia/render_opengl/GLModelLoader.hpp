@@ -24,7 +24,8 @@ namespace julia::render_opengl
     public:
         // Requires a current initialized OpenGL context. Geometry is baked to
         // imported scene space; nodes and adjusted inverse binds are retained
-        // for GLModel::skinningMatrices(). Animation clips are not sampled here.
+        // for GLModel::skinningMatrices(). Skeletal clips/keys are deep-copied
+        // before freeing Assimp; sampling/playback belongs to AnimationPlayer.
         static GLModel loadFromFile(const std::filesystem::path& path,
             GLModelLoadOptions options = {});
     };

@@ -1,0 +1,755 @@
+{
+  "blender_version": "4.2.0",
+  "blend_sha256": "c1c0db17b06cdf1d0c621dbaa1916e6a452e50464d8baab2155e44f7aea897c6",
+  "blend_images": [],
+  "blend_materials": [
+    {
+      "name": "hightlight",
+      "diffuse": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "image_nodes": [],
+      "links": [
+        [
+          "Principled BSDF",
+          "BSDF",
+          "Material Output",
+          "Surface"
+        ],
+        [
+          "Normal Map",
+          "Normal",
+          "Principled BSDF",
+          "Normal"
+        ]
+      ]
+    },
+    {
+      "name": "tex_armor",
+      "diffuse": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "image_nodes": [],
+      "links": [
+        [
+          "Principled BSDF",
+          "BSDF",
+          "Material Output",
+          "Surface"
+        ],
+        [
+          "Normal Map",
+          "Normal",
+          "Principled BSDF",
+          "Normal"
+        ]
+      ]
+    },
+    {
+      "name": "tex_band",
+      "diffuse": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "image_nodes": [],
+      "links": [
+        [
+          "Principled BSDF",
+          "BSDF",
+          "Material Output",
+          "Surface"
+        ],
+        [
+          "Normal Map",
+          "Normal",
+          "Principled BSDF",
+          "Normal"
+        ]
+      ]
+    },
+    {
+      "name": "tex_belt",
+      "diffuse": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "image_nodes": [],
+      "links": [
+        [
+          "Principled BSDF",
+          "BSDF",
+          "Material Output",
+          "Surface"
+        ],
+        [
+          "Normal Map",
+          "Normal",
+          "Principled BSDF",
+          "Normal"
+        ]
+      ]
+    },
+    {
+      "name": "tex_bow",
+      "diffuse": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "image_nodes": [],
+      "links": [
+        [
+          "Principled BSDF",
+          "BSDF",
+          "Material Output",
+          "Surface"
+        ],
+        [
+          "Normal Map",
+          "Normal",
+          "Principled BSDF",
+          "Normal"
+        ]
+      ]
+    },
+    {
+      "name": "tex_cuff",
+      "diffuse": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "image_nodes": [],
+      "links": [
+        [
+          "Principled BSDF",
+          "BSDF",
+          "Material Output",
+          "Surface"
+        ],
+        [
+          "Normal Map",
+          "Normal",
+          "Principled BSDF",
+          "Normal"
+        ]
+      ]
+    },
+    {
+      "name": "tex_ear",
+      "diffuse": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "image_nodes": [],
+      "links": [
+        [
+          "Principled BSDF",
+          "BSDF",
+          "Material Output",
+          "Surface"
+        ],
+        [
+          "Normal Map",
+          "Normal",
+          "Principled BSDF",
+          "Normal"
+        ]
+      ]
+    },
+    {
+      "name": "tex_ear2",
+      "diffuse": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "image_nodes": [],
+      "links": [
+        [
+          "Principled BSDF",
+          "BSDF",
+          "Material Output",
+          "Surface"
+        ],
+        [
+          "Normal Map",
+          "Normal",
+          "Principled BSDF",
+          "Normal"
+        ]
+      ]
+    },
+    {
+      "name": "tex_eyelashes",
+      "diffuse": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "image_nodes": [],
+      "links": [
+        [
+          "Principled BSDF",
+          "BSDF",
+          "Material Output",
+          "Surface"
+        ],
+        [
+          "Normal Map",
+          "Normal",
+          "Principled BSDF",
+          "Normal"
+        ]
+      ]
+    },
+    {
+      "name": "tex_eyes",
+      "diffuse": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "image_nodes": [],
+      "links": [
+        [
+          "Principled BSDF",
+          "BSDF",
+          "Material Output",
+          "Surface"
+        ],
+        [
+          "Normal Map",
+          "Normal",
+          "Principled BSDF",
+          "Normal"
+        ]
+      ]
+    },
+    {
+      "name": "tex_glove",
+      "diffuse": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "image_nodes": [],
+      "links": [
+        [
+          "Principled BSDF",
+          "BSDF",
+          "Material Output",
+          "Surface"
+        ],
+        [
+          "Normal Map",
+          "Normal",
+          "Principled BSDF",
+          "Normal"
+        ]
+      ]
+    },
+    {
+      "name": "tex_hair1",
+      "diffuse": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "image_nodes": [],
+      "links": [
+        [
+          "Principled BSDF",
+          "BSDF",
+          "Material Output",
+          "Surface"
+        ],
+        [
+          "Normal Map",
+          "Normal",
+          "Principled BSDF",
+          "Normal"
+        ]
+      ]
+    },
+    {
+      "name": "tex_hair2",
+      "diffuse": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "image_nodes": [],
+      "links": [
+        [
+          "Principled BSDF",
+          "BSDF",
+          "Material Output",
+          "Surface"
+        ],
+        [
+          "Normal Map",
+          "Normal",
+          "Principled BSDF",
+          "Normal"
+        ]
+      ]
+    },
+    {
+      "name": "tex_hair3",
+      "diffuse": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "image_nodes": [],
+      "links": [
+        [
+          "Principled BSDF",
+          "BSDF",
+          "Material Output",
+          "Surface"
+        ],
+        [
+          "Normal Map",
+          "Normal",
+          "Principled BSDF",
+          "Normal"
+        ]
+      ]
+    },
+    {
+      "name": "tex_hair4",
+      "diffuse": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "image_nodes": [],
+      "links": [
+        [
+          "Principled BSDF",
+          "BSDF",
+          "Material Output",
+          "Surface"
+        ],
+        [
+          "Normal Map",
+          "Normal",
+          "Principled BSDF",
+          "Normal"
+        ]
+      ]
+    },
+    {
+      "name": "tex_hair5",
+      "diffuse": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "image_nodes": [],
+      "links": [
+        [
+          "Principled BSDF",
+          "BSDF",
+          "Material Output",
+          "Surface"
+        ],
+        [
+          "Normal Map",
+          "Normal",
+          "Principled BSDF",
+          "Normal"
+        ]
+      ]
+    },
+    {
+      "name": "tex_hair6",
+      "diffuse": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "image_nodes": [],
+      "links": [
+        [
+          "Principled BSDF",
+          "BSDF",
+          "Material Output",
+          "Surface"
+        ],
+        [
+          "Normal Map",
+          "Normal",
+          "Principled BSDF",
+          "Normal"
+        ]
+      ]
+    },
+    {
+      "name": "tex_hair7",
+      "diffuse": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "image_nodes": [],
+      "links": [
+        [
+          "Principled BSDF",
+          "BSDF",
+          "Material Output",
+          "Surface"
+        ],
+        [
+          "Normal Map",
+          "Normal",
+          "Principled BSDF",
+          "Normal"
+        ]
+      ]
+    },
+    {
+      "name": "tex_shirt",
+      "diffuse": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "image_nodes": [],
+      "links": [
+        [
+          "Principled BSDF",
+          "BSDF",
+          "Material Output",
+          "Surface"
+        ],
+        [
+          "Normal Map",
+          "Normal",
+          "Principled BSDF",
+          "Normal"
+        ]
+      ]
+    },
+    {
+      "name": "tex_shoes",
+      "diffuse": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "image_nodes": [],
+      "links": [
+        [
+          "Principled BSDF",
+          "BSDF",
+          "Material Output",
+          "Surface"
+        ],
+        [
+          "Normal Map",
+          "Normal",
+          "Principled BSDF",
+          "Normal"
+        ]
+      ]
+    },
+    {
+      "name": "tex_shoulderarmor",
+      "diffuse": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "image_nodes": [],
+      "links": [
+        [
+          "Principled BSDF",
+          "BSDF",
+          "Material Output",
+          "Surface"
+        ],
+        [
+          "Normal Map",
+          "Normal",
+          "Principled BSDF",
+          "Normal"
+        ]
+      ]
+    },
+    {
+      "name": "tex_skin",
+      "diffuse": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "image_nodes": [],
+      "links": [
+        [
+          "Principled BSDF",
+          "BSDF",
+          "Material Output",
+          "Surface"
+        ],
+        [
+          "Normal Map",
+          "Normal",
+          "Principled BSDF",
+          "Normal"
+        ]
+      ]
+    },
+    {
+      "name": "tex_skin2",
+      "diffuse": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "image_nodes": [],
+      "links": [
+        [
+          "Principled BSDF",
+          "BSDF",
+          "Material Output",
+          "Surface"
+        ],
+        [
+          "Normal Map",
+          "Normal",
+          "Principled BSDF",
+          "Normal"
+        ]
+      ]
+    },
+    {
+      "name": "tex_sock",
+      "diffuse": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "image_nodes": [],
+      "links": [
+        [
+          "Principled BSDF",
+          "BSDF",
+          "Material Output",
+          "Surface"
+        ],
+        [
+          "Normal Map",
+          "Normal",
+          "Principled BSDF",
+          "Normal"
+        ]
+      ]
+    },
+    {
+      "name": "tex_tail",
+      "diffuse": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "image_nodes": [],
+      "links": [
+        [
+          "Principled BSDF",
+          "BSDF",
+          "Material Output",
+          "Surface"
+        ],
+        [
+          "Normal Map",
+          "Normal",
+          "Principled BSDF",
+          "Normal"
+        ]
+      ]
+    },
+    {
+      "name": "tex_underwear",
+      "diffuse": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "image_nodes": [],
+      "links": [
+        [
+          "Principled BSDF",
+          "BSDF",
+          "Material Output",
+          "Surface"
+        ],
+        [
+          "Normal Map",
+          "Normal",
+          "Principled BSDF",
+          "Normal"
+        ]
+      ]
+    }
+  ],
+  "fbx": [
+    {
+      "path": "C:/Julia/assets/models/Raphtalia.fbx",
+      "sha256": "a602086ac9e580f2d265a489478922b75aae00410313b17a89bd846ad4f3b34c",
+      "materials": [
+        "tex_hair3",
+        "tex_hair4",
+        "tex_hair5",
+        "tex_hair6",
+        "tex_hair7",
+        "tex_hair2",
+        "tex_armor",
+        "tex_belt",
+        "tex_skin2",
+        "tex_skin",
+        "tex_bow",
+        "tex_cuff",
+        "tex_ear2",
+        "tex_ear",
+        "tex_eyes",
+        "tex_eyelashes",
+        "tex_hair1",
+        "tex_band",
+        "hightlight",
+        "tex_glove",
+        "tex_shirt",
+        "tex_shoes",
+        "tex_shoulderarmor",
+        "tex_sock",
+        "tex_tail",
+        "tex_underwear"
+      ],
+      "textures": [],
+      "videos": []
+    },
+    {
+      "path": "C:/Julia/assets/models/Raphtalia_prepared.fbx",
+      "sha256": "b98e2063f3226c369a66e711b0dc61ed1a2c1da6b93b6dc117c2e4c923882dbe",
+      "materials": [
+        "tex_hair6",
+        "tex_hair4",
+        "tex_armor",
+        "tex_skin2",
+        "tex_eyelashes",
+        "tex_ear",
+        "tex_band",
+        "tex_glove",
+        "tex_shirt",
+        "tex_skin",
+        "tex_shoulderarmor",
+        "tex_tail",
+        "tex_hair5",
+        "tex_hair3",
+        "tex_hair7",
+        "tex_belt",
+        "tex_cuff",
+        "tex_ear2",
+        "tex_hair1",
+        "tex_eyes",
+        "hightlight",
+        "tex_hair2",
+        "tex_bow",
+        "tex_shoes",
+        "tex_sock",
+        "tex_underwear"
+      ],
+      "textures": [],
+      "videos": []
+    },
+    {
+      "path": "C:/Julia/assets/models/Raphtalia1.fbx",
+      "sha256": "99ebbcca5fdf52b0c285f5fb68cdaa37c2eeeb98989fe3e2c4a2772d46de40df",
+      "materials": [
+        "body_material",
+        "hair_material",
+        "shield_material"
+      ],
+      "textures": [
+        "file5",
+        "file7",
+        "file1"
+      ],
+      "videos": [
+        "file5",
+        "file7",
+        "file1"
+      ]
+    }
+  ],
+  "available_images": [
+    {
+      "path": "assets/textures/body_color.png",
+      "sha256": "e67cd5cedeaa6212689b3f40e4206e85b80ff7f37ea4c4cd8d45019fe0db3e4c",
+      "size": [
+        2048,
+        2048
+      ],
+      "mode": "RGB",
+      "alpha_range": null
+    },
+    {
+      "path": "assets/textures/hair_color.png",
+      "sha256": "f67b513c188ca81dcfb0a764809b19afef9391e48a0cb7ea0208bbb613496e43",
+      "size": [
+        1024,
+        1024
+      ],
+      "mode": "RGB",
+      "alpha_range": null
+    },
+    {
+      "path": "assets/textures/shield_color.png",
+      "sha256": "1a118469224d40232a7b091f1fd2ebd549fcf363f47483948fd7f69b40aa68ff",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "alpha_range": [
+        229,
+        255
+      ]
+    }
+  ]
+}

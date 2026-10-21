@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <limits>
@@ -550,6 +551,7 @@ namespace julia::render_opengl
 
         shader_.setBool("uUseSkinning", useSkinning);
 
+        const auto uploadStart = std::chrono::steady_clock::now();
         glActiveTexture(GL_TEXTURE1);
         if (!boneBuffer_) glGenBuffers(1, &boneBuffer_);
         if (!boneTexture_) glGenTextures(1, &boneTexture_);
@@ -576,6 +578,8 @@ namespace julia::render_opengl
             boneStorageInitialized_ = true;
         }
 
+        paletteUploadCpuMs_ = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - uploadStart).count();
         const bool hasCasters = std::any_of(model.meshes().begin(), model.meshes().end(),
             [](const GLMesh& mesh) { return !mesh.transparent() && mesh.indexCount() > 0; });
         const auto shadow = style_.selfShadows && style_.shadowStrength > 0.0f && hasCasters

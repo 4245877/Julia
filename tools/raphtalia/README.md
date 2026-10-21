@@ -3,6 +3,8 @@
 Рабочая папка — `C:\Julia`. Актуальный итог: [REPORT_RU.md](../../docs/raphtalia/REPORT_RU.md).
 Текущая модель после этапа моргания: **429 deform bones, 15 TEST Actions**. Сохранены исходные 241 кость, 11 прежних клипов, IK/FK, управление глазами/бровями и исправленные веса тела/одежды. Добавлены 188 костей век и локальной поверхности, независимые параметры моргания и четыре диагностических клипа. Исходный `Raphtalia.fbx` и резервные копии сохраняются.
 
+Основной desktop теперь воспроизводит эти 15 клипов. Сборка, управление, архитектура, результаты и ограничения материалов: [runtime_audit.md](../../docs/raphtalia/runtime_audit.md). Быстрая проверка: `julia_desktop/julia_desktop.exe`, клавиши 1–4 — моргание, Space — pause/play, PgUp/PgDn — clip, X — exact bind, F/B — лицо/общий вид. `--verify-animations output_directory` проверяет именно desktop. Исходные карты этой модели пока отсутствуют; импортированные однотонные материалы не являются восстановленной текстурированной внешностью.
+
 ## Управление `.blend`
 
 В Object custom properties объекта `Raphtalia_Rig`:
@@ -68,9 +70,11 @@ python tools/raphtalia/blink_gpu_samples.py --blend assets/models/Raphtalia_prep
 python tools/raphtalia/convert_blink_gpu.py --source build/raphtalia_tools/blink/gpu --before build/raphtalia_tools/blink/gpu_before --samples build/raphtalia_tools/blink/gpu_samples.csv --output docs/raphtalia/blink/gpu
 ```
 
-CSV выбирает реальные моменты 0/25/50/75/100% управляющих кривых, в том числе между целыми кадрами. Успешный импорт Assimp не заменяет воспроизведение этих состояний в GPU. Различайте три проверки: Blender-деформация; сохранение костей/анимаций в FBX и импорт; воспроизведение экспортированных TRS отдельным OpenGL-аудитором. Desktop JULIA остаётся статическим просмотрщиком: запуск GPU-аудита не добавляет в него пользовательский проигрыватель или интерфейс `Blink_L/R`.
+CSV выбирает реальные моменты 0/25/50/75/100% управляющих кривых, в том числе между целыми кадрами. Успешный импорт Assimp не заменяет воспроизведение этих состояний в GPU. Различайте Blender-деформацию, сохранность FBX/Assimp, независимый GPU-аудитор и новую проверку основного desktop. `gpu_pose_audit.cpp` дополнительно сравнивает свой независимый sampler с production `sampleAnimation`; отдельный запуск аудитора не заменяет desktop-проверку. Прямой runtime API `Blink_L/R` не добавлен.
 
 GPU clay-материалы обусловлены прежним prepared FBX с нулём Assimp texture slots. Этап моргания не добавляет и не удаляет исходные текстуры/материалы. Workbench/GPU кадры служат диагностикой деформаций, а не подтверждением текстурированного beauty render.
+
+`material_audit.py` повторно читает FBX/BLEND и доступные PNG без изменения модели. `desktop_evidence.py` конвертирует framebuffer PPM основного desktop в компактные листы и сравнивает их с независимым аудитором при одинаковых camera/MSAA. Их стандартные outputs — `docs/raphtalia/desktop/`; raw frames остаются в `build/`. Команды приведены в runtime audit, источники и backups сохраняются.
 
 `write_report.py` — исторический генератор отчёта тела/одежды, рассчитанный на этап 241/11. **Не запускайте его для публикации этапа моргания: он перезаписывает новый `REPORT_RU.md` старым body-only содержимым.** `deep_integrity.py` и `joint_sweep.py` также рассчитаны на прежние снимки/число костей и не являются проверками актуального 429-костного файла. Их прежние метрики и assertions используйте только с соответствующими архивами. `face_blink_probe.py` сохраняет отклонённый эксперимент; это не реализация текущего моргания.
 

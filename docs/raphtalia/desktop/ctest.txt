@@ -1,0 +1,264 @@
+Start testing: Oct 21 23:38 Финляндия (лето)
+----------------------------------------------------------
+1/13 Testing: core
+1/13 Test: core
+Command: "C:/Julia/build/vs-release/tests/julia_test_core.exe"
+Directory: C:/Julia/build/vs-release/tests
+"core" start time: Oct 21 23:38 Финляндия (лето)
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"core" end time: Oct 21 23:38 Финляндия (лето)
+"core" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/13 Testing: events
+2/13 Test: events
+Command: "C:/Julia/build/vs-release/tests/julia_test_events.exe"
+Directory: C:/Julia/build/vs-release/tests
+"events" start time: Oct 21 23:38 Финляндия (лето)
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"events" end time: Oct 21 23:38 Финляндия (лето)
+"events" time elapsed: 00:00:00
+----------------------------------------------------------
+
+3/13 Testing: orbit_camera
+3/13 Test: orbit_camera
+Command: "C:/Julia/build/vs-release/tests/julia_test_orbit_camera.exe"
+Directory: C:/Julia/build/vs-release/tests
+"orbit_camera" start time: Oct 21 23:38 Финляндия (лето)
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"orbit_camera" end time: Oct 21 23:38 Финляндия (лето)
+"orbit_camera" time elapsed: 00:00:00
+----------------------------------------------------------
+
+4/13 Testing: opengl
+4/13 Test: opengl
+Command: "C:/Julia/build/vs-release/tests/julia_test_opengl.exe" "C:/Julia/build/vs-release/verification"
+Directory: C:/Julia/build/vs-release/tests
+"opengl" start time: Oct 21 23:38 Финляндия (лето)
+Output:
+----------------------------------------------------------
+Stress: 360 frames at 640x480, GPU average 0.143659 ms, wall average 0.144102 ms
+Rigged FBX: 28 meshes, 235 palette entries, 372 nodes
+Renderer: NVIDIA GeForce RTX 4070 SUPER/PCIe/SSE2
+OpenGL: 3.3.0 NVIDIA 617.42
+Meshes: 19, bones: 0, background RGB: 128
+<end of output>
+Test time =   0.69 sec
+----------------------------------------------------------
+Test Passed.
+"opengl" end time: Oct 21 23:38 Финляндия (лето)
+"opengl" time elapsed: 00:00:00
+----------------------------------------------------------
+
+5/13 Testing: desktop_launch
+5/13 Test: desktop_launch
+Command: "C:/Julia/julia_desktop/julia_desktop.exe" "--verify"
+Directory: C:/Julia/build/vs-release
+"desktop_launch" start time: Oct 21 23:38 Финляндия (лето)
+Output:
+----------------------------------------------------------
+OpenGL version: 3.3.0 NVIDIA 617.42
+MSAA samples: 8
+Loading model: C:\Julia\julia_desktop\assets\models\Raphtalia_prepared.fbx
+Model loaded
+Meshes: 28
+Bones: 429
+Animation clips: 15
+Textured meshes: 0/28
+Material diagnostic: this asset has no assigned images; using imported diffuse values.
+Camera controls: left drag to orbit, wheel to zoom, right/middle
+or Shift+left drag to pan; WASD/QE or arrows to move; Esc to exit
+Animation: PgUp/PgDn select, Space play/pause, X/R stop + bind, L loop,
+1..4 blink clips, comma/period step 1/30 s, F face / B body, F1 list clips.
+0: Raphtalia_Rig|TEST_blink_gaze (4 s)
+1: Raphtalia_Rig|TEST_blink_head (4 s)
+2: Raphtalia_Rig|TEST_blink_independent (2 s)
+3: Raphtalia_Rig|TEST_blink_natural (1 s)
+4: Raphtalia_Rig|TEST_brows_wrist (2 s)
+5: Raphtalia_Rig|TEST_deep_body_cloth (12 s)
+6: Raphtalia_Rig|TEST_elbows_90 (2 s)
+7: Raphtalia_Rig|TEST_eyes_ears (2 s)
+8: Raphtalia_Rig|TEST_fingers_35 (2 s)
+9: Raphtalia_Rig|TEST_hair_tail_cloth (2 s)
+10: Raphtalia_Rig|TEST_head_torso (2 s)
+11: Raphtalia_Rig|TEST_knees_90 (2 s)
+12: Raphtalia_Rig|TEST_practical_ranges (8 s)
+13: Raphtalia_Rig|TEST_shoulders_hips_ankles (2 s)
+14: Raphtalia_Rig|TEST_toes_30 (2 s)
+Desktop verification completed: orbit, zoom, pan, 120 frames
+<end of output>
+Test time =   2.94 sec
+----------------------------------------------------------
+Test Passed.
+"desktop_launch" end time: Oct 21 23:39 Финляндия (лето)
+"desktop_launch" time elapsed: 00:00:02
+----------------------------------------------------------
+
+6/13 Testing: animation
+6/13 Test: animation
+Command: "C:/Julia/build/vs-release/tests/julia_test_animation.exe"
+Directory: C:/Julia/build/vs-release/tests
+"animation" start time: Oct 21 23:39 Финляндия (лето)
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"animation" end time: Oct 21 23:39 Финляндия (лето)
+"animation" time elapsed: 00:00:00
+----------------------------------------------------------
+
+7/13 Testing: desktop_animation
+7/13 Test: desktop_animation
+Command: "C:/Julia/julia_desktop/julia_desktop.exe" "--verify-animations" "C:/Julia/build/vs-release/verification/desktop_animation"
+Directory: C:/Julia/build/vs-release
+"desktop_animation" start time: Oct 21 23:39 Финляндия (лето)
+Output:
+----------------------------------------------------------
+OpenGL version: 3.3.0 NVIDIA 617.42
+MSAA samples: 4
+Loading model: C:\Julia\julia_desktop\assets\models\Raphtalia_prepared.fbx
+Model loaded
+Meshes: 28
+Bones: 429
+Animation clips: 15
+Textured meshes: 0/28
+Material diagnostic: this asset has no assigned images; using imported diffuse values.
+Camera controls: left drag to orbit, wheel to zoom, right/middle
+or Shift+left drag to pan; WASD/QE or arrows to move; Esc to exit
+Animation: PgUp/PgDn select, Space play/pause, X/R stop + bind, L loop,
+1..4 blink clips, comma/period step 1/30 s, F face / B body, F1 list clips.
+0: Raphtalia_Rig|TEST_blink_gaze (4 s)
+1: Raphtalia_Rig|TEST_blink_head (4 s)
+2: Raphtalia_Rig|TEST_blink_independent (2 s)
+3: Raphtalia_Rig|TEST_blink_natural (1 s)
+4: Raphtalia_Rig|TEST_brows_wrist (2 s)
+5: Raphtalia_Rig|TEST_deep_body_cloth (12 s)
+6: Raphtalia_Rig|TEST_elbows_90 (2 s)
+7: Raphtalia_Rig|TEST_eyes_ears (2 s)
+8: Raphtalia_Rig|TEST_fingers_35 (2 s)
+9: Raphtalia_Rig|TEST_hair_tail_cloth (2 s)
+10: Raphtalia_Rig|TEST_head_torso (2 s)
+11: Raphtalia_Rig|TEST_knees_90 (2 s)
+12: Raphtalia_Rig|TEST_practical_ranges (8 s)
+13: Raphtalia_Rig|TEST_shoulders_hips_ankles (2 s)
+14: Raphtalia_Rig|TEST_toes_30 (2 s)
+Desktop animation verification PASS: 15 clips, 334 images
+<end of output>
+Test time =   6.23 sec
+----------------------------------------------------------
+Test Passed.
+"desktop_animation" end time: Oct 21 23:39 Финляндия (лето)
+"desktop_animation" time elapsed: 00:00:06
+----------------------------------------------------------
+
+8/13 Testing: model_math
+8/13 Test: model_math
+Command: "C:/Julia/build/vs-release/tests/julia_test_model_math.exe" "C:/Julia/build/vs-release/verification"
+Directory: C:/Julia/build/vs-release/tests
+"model_math" start time: Oct 21 23:39 Финляндия (лето)
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"model_math" end time: Oct 21 23:39 Финляндия (лето)
+"model_math" time elapsed: 00:00:00
+----------------------------------------------------------
+
+9/13 Testing: model_import
+9/13 Test: model_import
+Command: "C:/Julia/build/vs-release/tests/julia_test_model_import.exe" "C:/Julia/build/vs-release/verification"
+Directory: C:/Julia/build/vs-release/tests
+"model_import" start time: Oct 21 23:39 Финляндия (лето)
+Output:
+----------------------------------------------------------
+Loaded texture: C:/Julia/build/vs-release/verification\textures\body_color.png
+Loaded texture: C:/Julia/build/vs-release/verification\textures\hair_color.png
+<end of output>
+Test time =   0.30 sec
+----------------------------------------------------------
+Test Passed.
+"model_import" end time: Oct 21 23:39 Финляндия (лето)
+"model_import" time elapsed: 00:00:00
+----------------------------------------------------------
+
+10/13 Testing: gpu_resources
+10/13 Test: gpu_resources
+Command: "C:/Julia/build/vs-release/tests/julia_test_gpu_resources.exe" "C:/Julia/build/vs-release/verification"
+Directory: C:/Julia/build/vs-release/tests
+"gpu_resources" start time: Oct 21 23:39 Финляндия (лето)
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.22 sec
+----------------------------------------------------------
+Test Passed.
+"gpu_resources" end time: Oct 21 23:39 Финляндия (лето)
+"gpu_resources" time elapsed: 00:00:00
+----------------------------------------------------------
+
+11/13 Testing: shader_pipeline
+11/13 Test: shader_pipeline
+Command: "C:/Julia/build/vs-release/tests/julia_test_shader_pipeline.exe" "C:/Julia/build/vs-release/verification"
+Directory: C:/Julia/build/vs-release/tests
+"shader_pipeline" start time: Oct 21 23:39 Финляндия (лето)
+Output:
+----------------------------------------------------------
+Shader pipeline verified on 3.3.0 NVIDIA 617.42
+<end of output>
+Test time =   0.26 sec
+----------------------------------------------------------
+Test Passed.
+"shader_pipeline" end time: Oct 21 23:39 Финляндия (лето)
+"shader_pipeline" time elapsed: 00:00:00
+----------------------------------------------------------
+
+12/13 Testing: outline_normals
+12/13 Test: outline_normals
+Command: "C:/Julia/build/vs-release/tests/julia_test_outline_normals.exe"
+Directory: C:/Julia/build/vs-release/tests
+"outline_normals" start time: Oct 21 23:39 Финляндия (лето)
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"outline_normals" end time: Oct 21 23:39 Финляндия (лето)
+"outline_normals" time elapsed: 00:00:00
+----------------------------------------------------------
+
+13/13 Testing: toon_render
+13/13 Test: toon_render
+Command: "C:/Julia/build/vs-release/tests/julia_test_toon_render.exe"
+Directory: C:/Julia/build/vs-release/tests
+"toon_render" start time: Oct 21 23:39 Финляндия (лето)
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.23 sec
+----------------------------------------------------------
+Test Passed.
+"toon_render" end time: Oct 21 23:39 Финляндия (лето)
+"toon_render" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Oct 21 23:39 Финляндия (лето)

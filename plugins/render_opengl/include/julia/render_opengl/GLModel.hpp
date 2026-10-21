@@ -2,6 +2,7 @@
 
 #include "julia/render_opengl/Bounds.hpp"
 #include "julia/render_opengl/GLMesh.hpp"
+#include "julia/render_opengl/Animation.hpp"
 
 #include <glm/glm.hpp>
 
@@ -25,6 +26,7 @@ namespace julia::render_opengl
         std::uint32_t parent = NoModelNode;
         glm::mat4 localTransform{1.0f};
         glm::mat4 globalBindTransform{1.0f};
+        NodeTRS bindTRS{};
     };
 
     struct GLBoneInfo
@@ -52,6 +54,8 @@ namespace julia::render_opengl
         void addMesh(GLMesh&& mesh);
         std::uint32_t addNode(GLModelNode node);
         std::uint32_t addBone(GLBoneInfo bone);
+        void addAnimation(AnimationClip clip);
+        const std::vector<AnimationClip>& animations() const { return animations_; }
 
         void draw(const GLShader& shader) const;
         void drawOpaque(const GLShader& shader) const;
@@ -64,6 +68,10 @@ namespace julia::render_opengl
         // applied because mesh positions already contain the imported root.
         std::vector<glm::mat4> skinningMatrices(
             std::span<const glm::mat4> localNodeTransforms = {}) const;
+        // Allocation-free variant; scratch and output must be distinct and sized
+        // to nodes()/bones(). Retains the same scene-space palette convention.
+        void skinningMatrices(std::span<const glm::mat4> localNodeTransforms,
+            std::span<glm::mat4> globals, std::span<glm::mat4> palette) const;
 
         bool empty() const
         {
@@ -107,6 +115,7 @@ namespace julia::render_opengl
         std::vector<GLMesh> meshes_;
         std::vector<GLModelNode> nodes_;
         std::vector<GLBoneInfo> bones_;
+        std::vector<AnimationClip> animations_;
         Bounds bounds_{};
     };
 }

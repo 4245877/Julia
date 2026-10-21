@@ -4,6 +4,8 @@
 
 [Управление, структура проекта и результаты проверки](docs/desktop.md).
 
+Raphtalia_prepared: 429 костей, playback 15 клипов и четыре теста моргания в основном desktop. [Интеграция и ограничения текстур](docs/raphtalia/runtime_audit.md).
+
 ---
 
 # Waifu / Вайфу

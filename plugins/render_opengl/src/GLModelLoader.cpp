@@ -823,6 +823,48 @@ namespace julia::render_opengl
                 );
             }
         }
+
+        void copyAnimations(const aiScene& scene, LoadContext& context)
+        {
+            for (unsigned int a = 0; a < scene.mNumAnimations; ++a)
+            {
+                const auto& source = *scene.mAnimations[a];
+                AnimationClip clip;
+                clip.name = source.mName.C_Str();
+                clip.durationTicks = source.mDuration;
+                if (!std::isfinite(source.mTicksPerSecond) || source.mTicksPerSecond < 0.0)
+                    throw std::runtime_error("Invalid animation tick rate: " + clip.name);
+                clip.usedDefaultTicksPerSecond = source.mTicksPerSecond == 0.0;
+                clip.ticksPerSecond = clip.usedDefaultTicksPerSecond ? 25.0 : source.mTicksPerSecond;
+                clip.channels.reserve(source.mNumChannels);
+                for (unsigned int c = 0; c < source.mNumChannels; ++c)
+                {
+                    const auto& input = *source.mChannels[c];
+                    const auto found = context.nodeNameToIndices.find(input.mNodeName.C_Str());
+                    if (found == context.nodeNameToIndices.end() || found->second.size() != 1)
+                        throw std::runtime_error("Animation channel has no unique node: " +
+                            std::string{input.mNodeName.C_Str()});
+                    AnimationChannel channel;
+                    channel.nodeIndex = found->second.front();
+                    const auto copyVectors = [](const aiVectorKey* keys, unsigned int count, auto& out) {
+                        out.reserve(count);
+                        for (unsigned int k = 0; k < count; ++k)
+                            out.push_back({keys[k].mTime,
+                                {keys[k].mValue.x, keys[k].mValue.y, keys[k].mValue.z}});
+                    };
+                    copyVectors(input.mPositionKeys, input.mNumPositionKeys, channel.translations);
+                    copyVectors(input.mScalingKeys, input.mNumScalingKeys, channel.scales);
+                    channel.rotations.reserve(input.mNumRotationKeys);
+                    for (unsigned int k = 0; k < input.mNumRotationKeys; ++k)
+                    {
+                        const auto& q = input.mRotationKeys[k].mValue;
+                        channel.rotations.push_back({input.mRotationKeys[k].mTime, {q.w, q.x, q.y, q.z}});
+                    }
+                    clip.channels.push_back(std::move(channel));
+                }
+                context.model.addAnimation(std::move(clip));
+            }
+        }
     }
 
     GLModel GLModelLoader::loadFromFile(const std::filesystem::path& path, GLModelLoadOptions options)
@@ -892,6 +934,7 @@ namespace julia::render_opengl
 
         registerNodes(scene->mRootNode, NoModelNode, context);
         processNode(scene, scene->mRootNode, context);
+        copyAnimations(*scene, context);
 
         if (context.model.empty())
         {

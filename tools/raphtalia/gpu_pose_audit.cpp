@@ -102,6 +102,7 @@ int main(int argc,char** argv){
             const auto render=[&](unsigned view,const std::vector<glm::mat4>& palette){auto camera=cameras[view];if(view>=4&&view<BodyViewCount){const unsigned a=view-4,b=anchorBones[a];camera.target=glm::vec3{fit*palette[b]*glm::inverse(model.bones()[b].offsetMatrix)*glm::vec4{0,0,0,1}};camera.position=camera.target+cameraOffsets[a];camera.nearPlane=.03f;}renderer.setCamera(camera);renderer.beginFrame();renderer.renderModel(model,fit,palette);checkGl("render");return readFrame();};
             for(unsigned v=0;v<ViewCount;++v){reference[v]=render(v,bind);save(out/("gpu_neutral_"+viewNames[v]+".ppm"),reference[v]);}
             csv<<"clip_index,clip_name,fraction,time_ticks,mapped_channels,unresolved_channels,max_palette_delta,view,changed_rgb_bytes_vs_bind,image,authored_frame,sample_label\n";endpoints<<"clip_index,clip_name,view,start_vs_bind_changed_rgb_bytes,end_vs_start_changed_rgb_bytes,start_vs_bind_max_palette_delta,end_vs_start_max_palette_delta\n";unsigned rendered=ViewCount,changedClipCount=0;
+            float runtimeSamplerMaxDelta=0;unsigned runtimeSamplerComparisons=0;
             for(unsigned a=0;a<scene->mNumAnimations;++a){const auto* clip=scene->mAnimations[a];const std::string name=slug(clip->mName.C_Str());bool clipChanged=false;
                 const bool practical=std::string(clip->mName.C_Str()).ends_with("TEST_practical_ranges");
                 const bool deep=std::string(clip->mName.C_Str()).ends_with("TEST_deep_body_cloth");
@@ -112,6 +113,13 @@ int main(int argc,char** argv){
                     if(auditSamples.empty())for(double frame:authored.frames)auditSamples.push_back({(frame-1)/(authored.finalFrame-1),frame,"authored"});
                 }else for(double fraction:deep?std::vector<double>{1./12,3./12,5./12,7./12,9./12,11./12}:practical?std::vector<double>{.125,.375,.625,.875}:std::vector<double>{.25,.5,.75})auditSamples.push_back({fraction,0,"legacy"});
                 for(const auto& auditSample:auditSamples){const double fraction=auditSample.fraction;if(!std::isfinite(fraction)||fraction<0||fraction>1)throw std::runtime_error("Audit frame outside clip range");unsigned mapped=0,unresolved=0;const auto local=localPose(model,clip,clip->mDuration*fraction,mapped,unresolved);if(unresolved)throw std::runtime_error("Unresolved animation channels in "+name);const auto palette=model.skinningMatrices(local);for(const auto& matrix:palette)if(!finite(matrix))throw std::runtime_error("Nonfinite palette");const auto delta=matrixDelta(palette,bind);
+                    // Keep the original Assimp sampler independent as an oracle.
+                    // Compare the production player after its importer has died.
+                    const auto runtimeClip=std::find_if(model.animations().begin(),model.animations().end(),[&](const auto& candidate){return candidate.name==clip->mName.C_Str();});
+                    if(runtimeClip==model.animations().end())throw std::runtime_error("Runtime clip missing");
+                    std::vector<glm::mat4> runtimeLocal(model.nodes().size());sampleAnimation(model,*runtimeClip,clip->mDuration*fraction/clip->mTicksPerSecond,runtimeLocal);
+                    const float runtimeDelta=matrixDelta(model.skinningMatrices(runtimeLocal),palette);runtimeSamplerMaxDelta=std::max(runtimeSamplerMaxDelta,runtimeDelta);++runtimeSamplerComparisons;
+                    if(runtimeDelta>.002f)throw std::runtime_error("Runtime sampler differs from independent Assimp oracle");
                     std::vector<unsigned> views;
                     if(blink)views={0,1,2,EyeView};else for(unsigned v=0;v<(deep?BodyViewCount:((practical?fraction==.875:fraction==.5)?4u:2u));++v)views.push_back(v);
                     const std::string timeLabel=blink?"f"+std::to_string(static_cast<long long>(std::llround(auditSample.authoredFrame*10000)))+"_"+auditSample.label:std::to_string(static_cast<int>(fraction*100));
@@ -121,6 +129,7 @@ int main(int argc,char** argv){
                 for(unsigned v=0;v<ViewCount;++v){const auto first=render(v,firstPalette);const auto last=render(v,lastPalette);const auto change=changed(first,last);endpointChanged+=change;endpoints<<a<<','<<name<<','<<viewNames[v]<<','<<changed(reference[v],first)<<','<<change<<','<<matrixDelta(firstPalette,bind)<<','<<matrixDelta(lastPalette,firstPalette)<<'\n';}
                 if(clipChanged)++changedClipCount;report<<"clip="<<name<<" ticks="<<clip->mDuration<<" tps="<<clip->mTicksPerSecond<<" changed_pixels="<<(clipChanged?"YES":"NO")<<" endpoint_start_end_rgb_differences="<<endpointChanged<<'\n';
             }
+            report<<"runtime_sampler_comparisons="<<runtimeSamplerComparisons<<"\nruntime_sampler_max_palette_delta="<<runtimeSamplerMaxDelta<<'\n';
             // Evaluation-only example of local-space masks and TRS crossfade.
             // No animation player or blend logic is added to the application.
             const auto findClip=[&](const std::string& suffix)->const aiAnimation*{for(unsigned i=0;i<scene->mNumAnimations;++i)if(std::string(scene->mAnimations[i]->mName.C_Str()).ends_with(suffix))return scene->mAnimations[i];return nullptr;};
