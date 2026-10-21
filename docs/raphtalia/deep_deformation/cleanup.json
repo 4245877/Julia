@@ -1,0 +1,284 @@
+﻿[
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\assist_probe.blend",
+        "bytes":  28506920,
+        "sha256":  "4A7B4F453C8C5C1A1A7BCDC4A480DEE290D2B41F43562DB30666DA8209B0882D",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\assist_probe.json",
+        "bytes":  354095,
+        "sha256":  "CD9EC8B67C38BF3753504D50D50AE9CA690ACC08F2AAD818E50B27EDDD93C280",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\assist_probe.patch.json",
+        "bytes":  705096,
+        "sha256":  "CBB8F23084BD02437C83CEA48FBEE92E73A627DEDF86D2C952DC6D223DD83BE9",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\assist_probe2.blend",
+        "bytes":  28506920,
+        "sha256":  "5BB02EDAB36B2AB242F059875FF832A5B3A2ED2CB205F7E4AA263B77AC46794D",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\assist_probe2.json",
+        "bytes":  173516,
+        "sha256":  "AE2CCD50D350E4C52A9BA63C53FC2B6A259286CE31658DFA6FA58619F611B052",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\assist_probe2.patch.json",
+        "bytes":  704962,
+        "sha256":  "A5ED3E4502E7F388579399AD97B89DD46C4AF70B1ABF509DF7D8DA7616D5C338",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\assist_probe2_high_step_body.png",
+        "bytes":  450667,
+        "sha256":  "FEC908BE2040B48D7299E01647A5326E3CCB3B73C62504B37716DFAD8403451B",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\assist_probe2_high_step_side.png",
+        "bytes":  453379,
+        "sha256":  "3E461BF230DD30C4098F4D9D7B1072861C78D8E0AEC1079540E48D127656F171",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\assist_probe2_squat_body.png",
+        "bytes":  435727,
+        "sha256":  "9FE625BF35C189A5416ACDD07C14A09A6463CE69A6E69659B5DC75096448B666",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\assist_probe2_squat_side.png",
+        "bytes":  445216,
+        "sha256":  "D260F09AC886603D84EEC4EF49CC9CF00FEA7838894D6F6328262778FD382DB7",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\assist_probe3.blend",
+        "bytes":  28480352,
+        "sha256":  "99DEF390D196C34D4D7B4354B6A0BF1392C6A69DDCDD399F8751A95B10261999",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\assist_probe3.json",
+        "bytes":  169010,
+        "sha256":  "0DDF9CCF4A06594E58684965AB95F116365812E981E775B4F2E7DE60CE2D79E3",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\assist_probe3.patch.json",
+        "bytes":  1266577,
+        "sha256":  "915BC7DCFE41B0DC78E1AC5075519186CCF2F9B9E291085AA21AB86C9D48BE1E",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\assist_probe3_high_step_body.png",
+        "bytes":  450370,
+        "sha256":  "A34876DE5DD49180F8DC3876C28D62DF95CA960C7135C5C99101EB33872FC762",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\assist_probe3_high_step_side.png",
+        "bytes":  453890,
+        "sha256":  "EB710A5258FEBA261AD50FFC994E49C009D7B9748078CED83C7D4FFB28BA7E0E",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\assist_probe3_squat_body.png",
+        "bytes":  436069,
+        "sha256":  "CE18518FEFD1B2FA928062D63717FCC9ADEE359AFC4FF1784A7E8EC95282DAD7",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\assist_probe3_squat_side.png",
+        "bytes":  447338,
+        "sha256":  "45617DA291D5FA7748494F8D09E399737F9D3B3DF8C887877808782CB4326212",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\assist_probe_cloth_fan_body.png",
+        "bytes":  464333,
+        "sha256":  "F4C8A204AC81AD2E9DD69FC58C4214E2908CD9C85A45AC61E736AB49B8660B1E",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\assist_probe_cloth_fan_waist.png",
+        "bytes":  689830,
+        "sha256":  "C7AAE939785FCF41DD0F886E2D24EC34D7CD36C350F2D181810A35FB14BF7EE6",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\assist_probe_high_step_body.png",
+        "bytes":  450525,
+        "sha256":  "B4983ED564565566C598C12AD34CF1BC7BE9255B809014FB14D8347F2752DAB4",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\assist_probe_high_step_side.png",
+        "bytes":  453377,
+        "sha256":  "BA95A5B0FB40AB9E697F73C8A18B66E20A85D1CD1835C4C7A6D34FE370EF7E72",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\assist_probe_overhead_turn_body.png",
+        "bytes":  464973,
+        "sha256":  "8397A04E3EC84E1436E6F3C98C89D1BF5B5782829CC64413785415A65B3F4AAE",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\assist_probe_overhead_turn_shoulder.png",
+        "bytes":  569141,
+        "sha256":  "DC36584466B2A332F8C8FF6D72A00DE6B4F0B5EE67DFF809E4CA236E5BA63624",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\assist_probe_squat_body.png",
+        "bytes":  436208,
+        "sha256":  "E4F21FC219D9663FFC142FE9F945330CDD9B1ADF0E5B8A1D29B51B201881C176",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\assist_probe_squat_side.png",
+        "bytes":  446226,
+        "sha256":  "DE5E236F4E5B879F4A9B829B5EC4DC9145D9DFC915143D83188C392509887928",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\candidate.json",
+        "bytes":  3488046,
+        "sha256":  "724DDFF8E763E3B286ADEC0A78193C89382917EC55D00EDB70BE1FCF35739C0D",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\candidate_arm_combined_body.png",
+        "bytes":  459308,
+        "sha256":  "18E25004E4BC70680CF9455F66E831AE29FD9A831A9303DABFAC4A136AC74116",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\candidate_cloth_fan_body.png",
+        "bytes":  464171,
+        "sha256":  "021892F75AB94897C1548A16E8F049D0ED3FA01767D789B53DC390FCAE614F3E",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\candidate_cloth_fan_waist.png",
+        "bytes":  689913,
+        "sha256":  "66E7707FD90752624CE1F40E04B647C64624D76E0B9E01B676929B0EC2802B0C",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\candidate_high_step_body.png",
+        "bytes":  450422,
+        "sha256":  "7E0DD43A7AD3C762963533C63348D9C8180456A77F6A2BAD86533BBAA1F9AE03",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\candidate_high_step_side.png",
+        "bytes":  452711,
+        "sha256":  "A725382B06D590B5BB98586C49763D761D0372FA4FB16564551F448A31B1F0FF",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\candidate_knee_flex_120_body.png",
+        "bytes":  442972,
+        "sha256":  "D733F5BF84CE7C142DD4A0E275EA87F4D118D4755AA074193F053C929279D69C",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\candidate_knee_flex_120_knees.png",
+        "bytes":  484457,
+        "sha256":  "1B219AE55A23D792FCCC79AF8BD7F230B79FF9DF4BB95E3024229E8175781463",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\candidate_overhead_turn_body.png",
+        "bytes":  464947,
+        "sha256":  "615687BCBB9A0F7986A9960E3D8E6DE2051C2CD72B3B2A0133E3A5309649ADB0",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\candidate_overhead_turn_shoulder.png",
+        "bytes":  569138,
+        "sha256":  "383B3B48BFC744C99D22048EEBAD10FB143EC8D8EBD803C63D2A0D0C607BB6A3",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\candidate_shoulder_forward_100_body.png",
+        "bytes":  458681,
+        "sha256":  "825EDEBC56440B78B076E48ED057C867CBAAD82AB5EDDAF2AAEFF61A4F8302F2",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\candidate_shoulder_forward_100_shoulder.png",
+        "bytes":  539310,
+        "sha256":  "94C352214515EA46053B031E34EB464E3B342D59B7CBFC870BA074C9E919B950",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\candidate_squat_body.png",
+        "bytes":  436675,
+        "sha256":  "F492531A8460C2A14D09DE46E46C6F330A8130B3BEBE47B659FB04D2635AFEA0",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\candidate_squat_side.png",
+        "bytes":  446969,
+        "sha256":  "D127AED835D0F272CD42C5C0C1CBE60D389B6304E1452270DCEA6D2745257CFA",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\candidate_torso_bend_45_body.png",
+        "bytes":  445231,
+        "sha256":  "3FF374BE27CEC090C7DE8219B4C02EDD6044369D11FEA5372ADFBED5376071FB",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\candidate_torso_bend_45_waist.png",
+        "bytes":  682090,
+        "sha256":  "0DA8B04C67DED9D90A0D94B88C0B72115CE53217892679013976D6313586CE35",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\candidate_torso_combined_body.png",
+        "bytes":  453758,
+        "sha256":  "4C54858B9A929752173CF2ECB0CCB43C8B2122662541648EF71872917E493386",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\candidate_torso_combined_waist.png",
+        "bytes":  684936,
+        "sha256":  "346B508BF9779046343593BCE42C13157310C4749A579882CCA6BDAB99E89632",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\candidate_torso_turn_30_body.png",
+        "bytes":  465907,
+        "sha256":  "3B857858B50730CE27E2DF605D1DF47E5A2C79BCAE1A9212EE22C8AF63DCB393",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\candidate_torso_turn_30_waist.png",
+        "bytes":  698780,
+        "sha256":  "EEC1FFB859F99998698A55C7D1E17E1F751CD5A1BA4A89A76172640F51B65A15",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\face_brows_raised.png",
+        "bytes":  782893,
+        "sha256":  "99AD43D063DFED6580AFFA709CA254B8A25536D45449634C842BD531A3788E46",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    },
+    {
+        "path":  "C:\\Julia\\build\\raphtalia_tools\\deep\\face_neutral.png",
+        "bytes":  782879,
+        "sha256":  "C103C51B64BD09A728FCD4B2833AFF8665E277410FF1B0E1F9992AAAF8D34BC6",
+        "reason":  "Rejected current-task probe or superseded temporary diagnostic image; final evidence and backups retained"
+    }
+]

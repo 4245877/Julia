@@ -1,0 +1,5999 @@
+{
+  "source": "build\\raphtalia_tools\\deep\\base\\Raphtalia_prepared.blend",
+  "source_sha256": "3cce06655feeaca59f87ffd0ddd0d930f4a7eaedc303e8396098e4a9866685b2",
+  "tool_sha256": "217729f7645cf8bcf3526c81771e8af9398e64a03e207d709ffa5475cb4c9840",
+  "blender": "4.2.0",
+  "standard_poses": [
+    "elbow_flex_45",
+    "elbow_flex_90",
+    "elbow_flex_120",
+    "elbow_flex_135",
+    "knee_flex_60",
+    "knee_flex_90",
+    "knee_flex_120",
+    "knee_flex_135",
+    "hip_flex_60",
+    "hip_flex_90",
+    "hip_flex_110",
+    "hip_abduction_45",
+    "hip_abduction_80",
+    "shoulder_forward_60",
+    "shoulder_forward_100",
+    "shoulder_forward_140",
+    "shoulder_side_60",
+    "shoulder_side_100",
+    "shoulder_side_140",
+    "forearm_roll_-60",
+    "forearm_roll_60",
+    "upper_arm_roll_-45",
+    "upper_arm_roll_45",
+    "wrist_flex_-45",
+    "wrist_flex_45",
+    "wrist_side_-25",
+    "wrist_side_25",
+    "ankle_-30",
+    "toes_-30",
+    "ankle_30",
+    "toes_30",
+    "foot_roll_-20",
+    "foot_roll_20",
+    "torso_bend_-30",
+    "torso_bend_30",
+    "torso_bend_45",
+    "torso_side_-30",
+    "torso_side_30",
+    "torso_side_45",
+    "torso_turn_-30",
+    "torso_turn_30",
+    "torso_turn_45",
+    "overhead_turn",
+    "squat",
+    "high_step",
+    "arm_combined",
+    "torso_combined",
+    "arms_open_turn",
+    "lean_crouch",
+    "cloth_fan"
+  ],
+  "heldout_poses": [
+    "heldout_knee_5",
+    "heldout_knee_10",
+    "heldout_knee_15",
+    "heldout_knee_20",
+    "heldout_knee_25",
+    "heldout_knee_30",
+    "heldout_knee_35",
+    "heldout_knee_40",
+    "heldout_knee_45",
+    "heldout_knee_50",
+    "heldout_knee_55",
+    "heldout_knee_65",
+    "heldout_knee_70",
+    "heldout_knee_75",
+    "heldout_knee_80",
+    "heldout_knee_85",
+    "heldout_knee_95",
+    "heldout_knee_100",
+    "heldout_knee_105",
+    "heldout_knee_110",
+    "heldout_knee_115",
+    "heldout_knee_125",
+    "heldout_knee_130",
+    "heldout_ankle_-35",
+    "heldout_ankle_-25",
+    "heldout_ankle_-15",
+    "heldout_ankle_-5",
+    "heldout_ankle_5",
+    "heldout_ankle_15",
+    "heldout_ankle_25",
+    "heldout_ankle_35",
+    "heldout_foot_roll_-30",
+    "heldout_foot_roll_-15",
+    "heldout_foot_roll_15",
+    "heldout_foot_roll_30",
+    "heldout_unilateral_l_35",
+    "heldout_unilateral_l_75",
+    "heldout_unilateral_l_105",
+    "heldout_unilateral_l_130",
+    "heldout_axial_leg_stretch_l_-60",
+    "heldout_axial_leg_stretch_l_-30",
+    "heldout_axial_leg_stretch_l_30",
+    "heldout_axial_leg_stretch_l_60",
+    "heldout_axial_leg_twist_l_-60",
+    "heldout_axial_leg_twist_l_-30",
+    "heldout_axial_leg_twist_l_30",
+    "heldout_axial_leg_twist_l_60",
+    "heldout_axial_thigh_twist_l_-60",
+    "heldout_axial_thigh_twist_l_-30",
+    "heldout_axial_thigh_twist_l_30",
+    "heldout_axial_thigh_twist_l_60",
+    "heldout_unilateral_r_35",
+    "heldout_unilateral_r_75",
+    "heldout_unilateral_r_105",
+    "heldout_unilateral_r_130",
+    "heldout_axial_leg_stretch_r_-60",
+    "heldout_axial_leg_stretch_r_-30",
+    "heldout_axial_leg_stretch_r_30",
+    "heldout_axial_leg_stretch_r_60",
+    "heldout_axial_leg_twist_r_-60",
+    "heldout_axial_leg_twist_r_-30",
+    "heldout_axial_leg_twist_r_30",
+    "heldout_axial_leg_twist_r_60",
+    "heldout_axial_thigh_twist_r_-60",
+    "heldout_axial_thigh_twist_r_-30",
+    "heldout_axial_thigh_twist_r_30",
+    "heldout_axial_thigh_twist_r_60"
+  ],
+  "limits": "Edge and collapse diagnostics plus matched visual review; no proof of collision-free cloth. No runtime solver.",
+  "rejected_candidates": [
+    {
+      "method": "full-radius stocking scalar diffusion",
+      "reason": "ordinary knee motion worsened",
+      "knee_60_max_before_after": [
+        1.749,
+        2.122
+      ],
+      "knee_90_max_before_after": [
+        2.077,
+        2.521
+      ],
+      "disposition": "replaced by bounded motion-constrained fit"
+    },
+    {
+      "method": "233-vertex boot scalar diffusion",
+      "reason": "unnecessary spread and mild ordinary positive-ankle regressions",
+      "ankle_15_max_before_after": [
+        1.135,
+        1.213
+      ],
+      "disposition": "replaced by 144-vertex connected-fold coherence"
+    }
+  ],
+  "before": {
+    "elbow_flex_45": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "elbow_flex_90": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "elbow_flex_120": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "elbow_flex_135": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "knee_flex_60": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.7490525659981369,
+        "p99": 1.3507926063751954,
+        "edges_over_2": 0,
+        "edges_under_half": 20,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000486166079294,
+        "p99": 1.0000142138468868,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "knee_flex_90": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 2.0768135376271006,
+        "p99": 1.5207034191415947,
+        "edges_over_2": 1,
+        "edges_under_half": 27,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000547283385661,
+        "p99": 1.0000224152457604,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "knee_flex_120": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 2.770705016714903,
+        "p99": 1.6120060615374088,
+        "edges_over_2": 7,
+        "edges_under_half": 43,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000752406490123,
+        "p99": 1.0000279142962274,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "knee_flex_135": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 3.106375301664319,
+        "p99": 1.6351754448699058,
+        "edges_over_2": 9,
+        "edges_under_half": 72,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0001698610830985,
+        "p99": 1.0000253566579789,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "hip_flex_60": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.000212692111274,
+        "p99": 1.0000251534476112,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.000121543739091,
+        "p99": 1.0000250973437372,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "hip_flex_90": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0001079570330185,
+        "p99": 1.0000265637789325,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.00009518223199,
+        "p99": 1.000028860225685,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "hip_flex_110": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.000154968214016,
+        "p99": 1.000030720571923,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0002288659735277,
+        "p99": 1.0000361079931188,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "hip_abduction_45": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.000075017862481,
+        "p99": 1.000022844680897,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0001031998975525,
+        "p99": 1.000026494627951,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "hip_abduction_80": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.000127616699158,
+        "p99": 1.0000316952706072,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000589290091146,
+        "p99": 1.0000217459188163,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "shoulder_forward_60": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "shoulder_forward_100": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "shoulder_forward_140": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "shoulder_side_60": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "shoulder_side_100": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "shoulder_side_140": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "forearm_roll_-60": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "forearm_roll_60": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "upper_arm_roll_-45": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "upper_arm_roll_45": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "wrist_flex_-45": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "wrist_flex_45": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "wrist_side_-25": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "wrist_side_25": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "ankle_-30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.291389835895688,
+        "p99": 1.0159159609937574,
+        "edges_over_2": 0,
+        "edges_under_half": 1,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 4.0298792670204415,
+        "p99": 1.172043873287313,
+        "edges_over_2": 2,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "toes_-30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.5176427508376849,
+        "p99": 1.1247263949118753,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "ankle_30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 2.0727898267443288,
+        "p99": 1.0579099951776978,
+        "edges_over_2": 2,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 2.3267036673463646,
+        "p99": 1.1445421750371991,
+        "edges_over_2": 1,
+        "edges_under_half": 3,
+        "nonfinite": 0
+      }
+    },
+    "toes_30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.2261844235336234,
+        "p99": 1.17904678193179,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "foot_roll_-20": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.2670810634984346,
+        "p99": 1.01377178979532,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 2.0651769613914355,
+        "p99": 1.1186522388554812,
+        "edges_over_2": 1,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "foot_roll_20": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.5189385443239845,
+        "p99": 1.014036729335575,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.5795140258945386,
+        "p99": 1.108617091355257,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "torso_bend_-30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "torso_bend_30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "torso_bend_45": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "torso_side_-30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "torso_side_30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "torso_side_45": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "torso_turn_-30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "torso_turn_30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "torso_turn_45": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "overhead_turn": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "squat": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 2.7707171084736633,
+        "p99": 1.6120048740246224,
+        "edges_over_2": 7,
+        "edges_under_half": 43,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 4.029883137110303,
+        "p99": 1.172042757798213,
+        "edges_over_2": 2,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "high_step": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 2.2505451317160636,
+        "p99": 1.4419967660974062,
+        "edges_over_2": 4,
+        "edges_under_half": 17,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000718414711063,
+        "p99": 1.0000084882389297,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "arm_combined": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "torso_combined": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 2.076811300433044,
+        "p99": 1.5207133073918881,
+        "edges_over_2": 1,
+        "edges_under_half": 27,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000642229882546,
+        "p99": 1.0000102981357484,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "arms_open_turn": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "lean_crouch": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 2.076811300433044,
+        "p99": 1.5207133073918881,
+        "edges_over_2": 1,
+        "edges_under_half": 27,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000642229882546,
+        "p99": 1.0000102981357484,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "cloth_fan": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_5": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0545134751277843,
+        "p99": 1.0280846021541856,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000316594245244,
+        "p99": 1.0000096540375,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_10": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.111899729484781,
+        "p99": 1.0554225702596638,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000284888523083,
+        "p99": 1.0000120694957613,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_15": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.1713339725900636,
+        "p99": 1.08595858789549,
+        "edges_over_2": 0,
+        "edges_under_half": 2,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000317905233558,
+        "p99": 1.0000097007072002,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_20": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.2320845986257138,
+        "p99": 1.1156083882719094,
+        "edges_over_2": 0,
+        "edges_under_half": 2,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000307759759177,
+        "p99": 1.0000087942220905,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_25": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.2935760333661714,
+        "p99": 1.1463160568154853,
+        "edges_over_2": 0,
+        "edges_under_half": 4,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000360451345018,
+        "p99": 1.0000055430834707,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.3588257073572163,
+        "p99": 1.1753567688257893,
+        "edges_over_2": 0,
+        "edges_under_half": 4,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000327852720463,
+        "p99": 1.000009633109596,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_35": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.4251593927134998,
+        "p99": 1.2068832250897135,
+        "edges_over_2": 0,
+        "edges_under_half": 4,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000321678803386,
+        "p99": 1.000010862724178,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_40": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.4915550573397107,
+        "p99": 1.242557584247182,
+        "edges_over_2": 0,
+        "edges_under_half": 9,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000312058701732,
+        "p99": 1.0000129391327224,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_45": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.557563550071797,
+        "p99": 1.2688593659315432,
+        "edges_over_2": 0,
+        "edges_under_half": 15,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000386751660684,
+        "p99": 1.0000116290979923,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_50": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.622688193498106,
+        "p99": 1.2983164420377475,
+        "edges_over_2": 0,
+        "edges_under_half": 16,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000471455212627,
+        "p99": 1.0000124294214554,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_55": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.6866289745575407,
+        "p99": 1.3266342545778238,
+        "edges_over_2": 0,
+        "edges_under_half": 16,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000348126390823,
+        "p99": 1.0000124363562144,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_65": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.8096151283681374,
+        "p99": 1.3815601646985167,
+        "edges_over_2": 0,
+        "edges_under_half": 20,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000671540928572,
+        "p99": 1.000018670706982,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_70": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.8681041319592548,
+        "p99": 1.4164903516258378,
+        "edges_over_2": 0,
+        "edges_under_half": 20,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000578035530743,
+        "p99": 1.0000213235578475,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_75": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.9242754724627864,
+        "p99": 1.4459399632766816,
+        "edges_over_2": 0,
+        "edges_under_half": 22,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000652648077024,
+        "p99": 1.0000190620528784,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_80": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.9779072848221417,
+        "p99": 1.4714389423111351,
+        "edges_over_2": 0,
+        "edges_under_half": 26,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000415175894568,
+        "p99": 1.000018654724398,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_85": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 2.028814739877014,
+        "p99": 1.4958441897229102,
+        "edges_over_2": 1,
+        "edges_under_half": 27,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000627799767345,
+        "p99": 1.0000228989928597,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_95": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 2.1217606011483507,
+        "p99": 1.5408475009498552,
+        "edges_over_2": 7,
+        "edges_under_half": 32,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000872562067096,
+        "p99": 1.0000212584013166,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_100": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 2.2505341835983446,
+        "p99": 1.5541473601481348,
+        "edges_over_2": 7,
+        "edges_under_half": 37,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0001064041114045,
+        "p99": 1.000025878247998,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_105": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 2.3876402505213496,
+        "p99": 1.5713276736149675,
+        "edges_over_2": 7,
+        "edges_under_half": 37,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0001126153939872,
+        "p99": 1.0000253060588788,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_110": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 2.5202047385562056,
+        "p99": 1.5851984810058173,
+        "edges_over_2": 7,
+        "edges_under_half": 38,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000905873401322,
+        "p99": 1.0000295865599258,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_115": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 2.647975015439225,
+        "p99": 1.6012139061020096,
+        "edges_over_2": 7,
+        "edges_under_half": 39,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0001496734545532,
+        "p99": 1.0000285973652079,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_125": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 2.8881634498087037,
+        "p99": 1.623410696957007,
+        "edges_over_2": 8,
+        "edges_under_half": 51,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.000067286163272,
+        "p99": 1.0000294062038277,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_130": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 3.0001233400798553,
+        "p99": 1.625640962165101,
+        "edges_over_2": 8,
+        "edges_under_half": 64,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000808872151306,
+        "p99": 1.0000271244287213,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_ankle_-35": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.4723243676131905,
+        "p99": 1.0179816831266,
+        "edges_over_2": 0,
+        "edges_under_half": 1,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 4.524885245746023,
+        "p99": 1.2129052780797647,
+        "edges_over_2": 3,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_ankle_-25": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.1292276106434573,
+        "p99": 1.0134464726820387,
+        "edges_over_2": 0,
+        "edges_under_half": 1,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 3.5281131011960403,
+        "p99": 1.1394237585632188,
+        "edges_over_2": 2,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_ankle_-15": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0735455544399144,
+        "p99": 1.008226262209158,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 2.510247627588541,
+        "p99": 1.0859320573162874,
+        "edges_over_2": 1,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_ankle_-5": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0236740256470842,
+        "p99": 1.002888267418447,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.4908690749684355,
+        "p99": 1.0298492537151982,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_ankle_5": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.1337570259701142,
+        "p99": 1.0126048284036084,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.043648798585942,
+        "p99": 1.024765319719554,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_ankle_15": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.4779963520217085,
+        "p99": 1.0345080710213843,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.1346879434398955,
+        "p99": 1.0698366284753253,
+        "edges_over_2": 0,
+        "edges_under_half": 1,
+        "nonfinite": 0
+      }
+    },
+    "heldout_ankle_25": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.8700470007642997,
+        "p99": 1.051190102694976,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.8156805609186757,
+        "p99": 1.1177224335912057,
+        "edges_over_2": 0,
+        "edges_under_half": 2,
+        "nonfinite": 0
+      }
+    },
+    "heldout_ankle_35": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 2.276691857756236,
+        "p99": 1.0647296904238879,
+        "edges_over_2": 2,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 2.838148481684876,
+        "p99": 1.1747526851725523,
+        "edges_over_2": 1,
+        "edges_under_half": 4,
+        "nonfinite": 0
+      }
+    },
+    "heldout_foot_roll_-30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.4859364936701451,
+        "p99": 1.020942580548287,
+        "edges_over_2": 0,
+        "edges_under_half": 1,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 2.6979566347536204,
+        "p99": 1.1793191009918826,
+        "edges_over_2": 2,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_foot_roll_-15": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.173339611410103,
+        "p99": 1.0106245467422033,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.758015879198152,
+        "p99": 1.0878355742761912,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_foot_roll_15": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.3888806871375123,
+        "p99": 1.0107944361903602,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.4236520489746014,
+        "p99": 1.0780734700607737,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_foot_roll_30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.774669730044676,
+        "p99": 1.02005946159872,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 2.046738723901765,
+        "p99": 1.1607376498393536,
+        "edges_over_2": 1,
+        "edges_under_half": 1,
+        "nonfinite": 0
+      }
+    },
+    "heldout_unilateral_l_35": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.4165958200689805,
+        "p99": 1.1657213422475114,
+        "edges_over_2": 0,
+        "edges_under_half": 2,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.311714564309108,
+        "p99": 1.0619245989494097,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_unilateral_l_75": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.8577502076478847,
+        "p99": 1.3586492738555416,
+        "edges_over_2": 0,
+        "edges_under_half": 11,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.3117000921572894,
+        "p99": 1.061926646922258,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_unilateral_l_105": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 2.3876402505213496,
+        "p99": 1.4559124993872028,
+        "edges_over_2": 4,
+        "edges_under_half": 17,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.311725672879484,
+        "p99": 1.061925525482822,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_unilateral_l_130": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 3.0001233400798553,
+        "p99": 1.4783366636339133,
+        "edges_over_2": 4,
+        "edges_under_half": 32,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.3116879974304625,
+        "p99": 1.0619285542211316,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_leg_stretch_l_-60": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.6756780372033773,
+        "p99": 1.1931847191577127,
+        "edges_over_2": 0,
+        "edges_under_half": 1,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000271358479478,
+        "p99": 1.0000110251653695,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_leg_stretch_l_-30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.246369147952487,
+        "p99": 1.0971874799505006,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000258034352016,
+        "p99": 1.0000085401216119,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_leg_stretch_l_30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.3040414915740646,
+        "p99": 1.1081575243794033,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000298269220163,
+        "p99": 1.0000048503314027,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_leg_stretch_l_60": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.656559152333396,
+        "p99": 1.200703169260738,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000250390796288,
+        "p99": 1.0000082776700616,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_leg_twist_l_-60": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 6.405084103789308,
+        "p99": 1.3521989822056757,
+        "edges_over_2": 17,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 25.12264018077549,
+        "p99": 4.079555843295788,
+        "edges_over_2": 59,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_leg_twist_l_-30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 3.0822502409901276,
+        "p99": 1.1447197911808038,
+        "edges_over_2": 1,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 12.932843166680696,
+        "p99": 2.2583687904070366,
+        "edges_over_2": 26,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_leg_twist_l_30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 4.21921300082802,
+        "p99": 1.1855302369756828,
+        "edges_over_2": 1,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 13.301108749185678,
+        "p99": 2.2750056108016445,
+        "edges_over_2": 22,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_leg_twist_l_60": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 7.4433584408404645,
+        "p99": 1.4993119039154157,
+        "edges_over_2": 26,
+        "edges_under_half": 1,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 25.453479278579877,
+        "p99": 4.0234543789368935,
+        "edges_over_2": 50,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_thigh_twist_l_-60": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 11.122781830977008,
+        "p99": 1.6860982743800916,
+        "edges_over_2": 2,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_thigh_twist_l_-30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 6.177888535919572,
+        "p99": 1.246628532207923,
+        "edges_over_2": 2,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_thigh_twist_l_30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 4.709127054649919,
+        "p99": 1.25787439307894,
+        "edges_over_2": 1,
+        "edges_under_half": 1,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_thigh_twist_l_60": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 9.798964942514914,
+        "p99": 1.658444737455104,
+        "edges_over_2": 13,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_unilateral_r_35": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.6707338309195288,
+        "p99": 1.1615708515170073,
+        "edges_over_2": 0,
+        "edges_under_half": 2,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.1794826493098511,
+        "p99": 1.061883795932347,
+        "edges_over_2": 0,
+        "edges_under_half": 1,
+        "nonfinite": 0
+      }
+    },
+    "heldout_unilateral_r_75": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.9242754724627864,
+        "p99": 1.357868851589613,
+        "edges_over_2": 0,
+        "edges_under_half": 11,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.1794834431262666,
+        "p99": 1.0618695421764164,
+        "edges_over_2": 0,
+        "edges_under_half": 1,
+        "nonfinite": 0
+      }
+    },
+    "heldout_unilateral_r_105": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 2.20194130166915,
+        "p99": 1.4822636662917277,
+        "edges_over_2": 3,
+        "edges_under_half": 20,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.179483105760554,
+        "p99": 1.061879572693231,
+        "edges_over_2": 0,
+        "edges_under_half": 1,
+        "nonfinite": 0
+      }
+    },
+    "heldout_unilateral_r_130": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 2.4683801739966547,
+        "p99": 1.5515460960329779,
+        "edges_over_2": 4,
+        "edges_under_half": 32,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.1794816806388289,
+        "p99": 1.061906322880711,
+        "edges_over_2": 0,
+        "edges_under_half": 1,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_leg_stretch_r_-60": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.6691269956402948,
+        "p99": 1.2217331589579126,
+        "edges_over_2": 0,
+        "edges_under_half": 3,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000598010974358,
+        "p99": 1.0000141509686733,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_leg_stretch_r_-30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.3156950888940457,
+        "p99": 1.1086927022807345,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000236209275908,
+        "p99": 1.0000038763179993,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_leg_stretch_r_30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.2678920966277447,
+        "p99": 1.1376316688097752,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000550758283986,
+        "p99": 1.0000051533910321,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_leg_stretch_r_60": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.6492693835238132,
+        "p99": 1.2592760929849165,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.000093163013543,
+        "p99": 1.0000106968305753,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_leg_twist_r_-60": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 10.090200174582968,
+        "p99": 1.627429519091888,
+        "edges_over_2": 40,
+        "edges_under_half": 1,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 32.254888658295265,
+        "p99": 4.972575326573342,
+        "edges_over_2": 70,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_leg_twist_r_-30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 5.214591337531967,
+        "p99": 1.227298735946631,
+        "edges_over_2": 5,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 16.800423581094346,
+        "p99": 2.720246933391833,
+        "edges_over_2": 26,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_leg_twist_r_30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 5.5003942851990235,
+        "p99": 1.1722164469372216,
+        "edges_over_2": 4,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 16.49171352496813,
+        "p99": 2.7560288805453252,
+        "edges_over_2": 32,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_leg_twist_r_60": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 10.34971000929546,
+        "p99": 1.4742823838637427,
+        "edges_over_2": 39,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 31.977742184851266,
+        "p99": 4.946169853978178,
+        "edges_over_2": 73,
+        "edges_under_half": 2,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_thigh_twist_r_-60": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 9.795120743541027,
+        "p99": 1.6757640027100895,
+        "edges_over_2": 26,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_thigh_twist_r_-30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 4.691053157135759,
+        "p99": 1.2620699000571178,
+        "edges_over_2": 1,
+        "edges_under_half": 1,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_thigh_twist_r_30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 6.209272369832924,
+        "p99": 1.2586512564153327,
+        "edges_over_2": 2,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_thigh_twist_r_60": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 11.162810019734161,
+        "p99": 1.678977682622414,
+        "edges_over_2": 21,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_brows_wrist_1.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_brows_wrist_16.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_brows_wrist_31.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_brows_wrist_46.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_brows_wrist_61.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_elbows_90_1.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_elbows_90_16.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_elbows_90_31.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_elbows_90_46.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_elbows_90_61.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_eyes_ears_1.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_eyes_ears_16.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_eyes_ears_31.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_eyes_ears_46.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_eyes_ears_61.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_fingers_35_1.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_fingers_35_16.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_fingers_35_31.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_fingers_35_46.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_fingers_35_61.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_hair_tail_cloth_1.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_hair_tail_cloth_16.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_hair_tail_cloth_31.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_hair_tail_cloth_46.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_hair_tail_cloth_61.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_head_torso_1.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_head_torso_16.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_head_torso_31.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_head_torso_46.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_head_torso_61.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_knees_90_1.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_knees_90_16.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.557563550071797,
+        "p99": 1.2688593659315432,
+        "edges_over_2": 0,
+        "edges_under_half": 15,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000386751660684,
+        "p99": 1.0000116290979923,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_knees_90_31.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 2.0768135376271006,
+        "p99": 1.5207034191415947,
+        "edges_over_2": 1,
+        "edges_under_half": 27,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000547283385661,
+        "p99": 1.0000224152457604,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_knees_90_46.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.557563550071797,
+        "p99": 1.2688593659315432,
+        "edges_over_2": 0,
+        "edges_under_half": 15,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000386751660684,
+        "p99": 1.0000116290979923,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_knees_90_61.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_practical_ranges_1.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_practical_ranges_16.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_practical_ranges_31.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_practical_ranges_46.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_practical_ranges_61.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_practical_ranges_76.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.7490312720753365,
+        "p99": 1.350793811233751,
+        "edges_over_2": 0,
+        "edges_under_half": 20,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.00002631427071,
+        "p99": 1.0000127770722382,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_practical_ranges_91.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 2.770705016714903,
+        "p99": 1.6120060615374088,
+        "edges_over_2": 7,
+        "edges_under_half": 43,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000752406490123,
+        "p99": 1.0000279142962274,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_practical_ranges_106.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.7490312720753365,
+        "p99": 1.350793811233751,
+        "edges_over_2": 0,
+        "edges_under_half": 20,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.00002631427071,
+        "p99": 1.0000127770722382,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_practical_ranges_121.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_practical_ranges_136.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_practical_ranges_151.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_practical_ranges_166.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_practical_ranges_181.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_practical_ranges_196.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.5575294707116913,
+        "p99": 1.2688593550894816,
+        "edges_over_2": 0,
+        "edges_under_half": 15,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000352877947079,
+        "p99": 1.0000144771384538,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_practical_ranges_211.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 2.0768135376271006,
+        "p99": 1.5207034191415947,
+        "edges_over_2": 1,
+        "edges_under_half": 27,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000547283385661,
+        "p99": 1.0000224152457604,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_practical_ranges_226.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.5575294707116913,
+        "p99": 1.2688593550894816,
+        "edges_over_2": 0,
+        "edges_under_half": 15,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000352877947079,
+        "p99": 1.0000144771384538,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_practical_ranges_241.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_shoulders_hips_ankles_1.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000126047117097,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000293995137397,
+        "p99": 1.000001484899258,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_shoulders_hips_ankles_16.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.132385023670282,
+        "p99": 1.0076297383446002,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.210208952054104,
+        "p99": 1.0413062573363083,
+        "edges_over_2": 0,
+        "edges_under_half": 1,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_shoulders_hips_ankles_31.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.278165206269212,
+        "p99": 1.0151469288390893,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.4194119769925884,
+        "p99": 1.0821543764396133,
+        "edges_over_2": 0,
+        "edges_under_half": 1,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_shoulders_hips_ankles_46.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.132385023670282,
+        "p99": 1.0076297383446002,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.210208952054104,
+        "p99": 1.0413062573363083,
+        "edges_over_2": 0,
+        "edges_under_half": 1,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_shoulders_hips_ankles_61.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000126047117097,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000293995137397,
+        "p99": 1.000001484899258,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_toes_30_1.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_toes_30_16.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.5176427508376849,
+        "p99": 1.1247263949118753,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_toes_30_31.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_toes_30_46.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.2261844235336234,
+        "p99": 1.17904678193179,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_toes_30_61.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    }
+  },
+  "after": {
+    "elbow_flex_45": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "elbow_flex_90": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "elbow_flex_120": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "elbow_flex_135": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "knee_flex_60": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.475425944860934,
+        "p99": 1.3347997266228995,
+        "edges_over_2": 0,
+        "edges_under_half": 22,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000486166079294,
+        "p99": 1.0000144466374186,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "knee_flex_90": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.6310562307048588,
+        "p99": 1.4740787400128073,
+        "edges_over_2": 0,
+        "edges_under_half": 28,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000547283385661,
+        "p99": 1.0000222816468847,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "knee_flex_120": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.7000014983653153,
+        "p99": 1.5540870825700335,
+        "edges_over_2": 0,
+        "edges_under_half": 41,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000752406490123,
+        "p99": 1.0000285537291724,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "knee_flex_135": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.8022502636164714,
+        "p99": 1.5855071514486758,
+        "edges_over_2": 0,
+        "edges_under_half": 71,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0001698610830985,
+        "p99": 1.0000254800825648,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "hip_flex_60": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.000212692111274,
+        "p99": 1.0000249204763483,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.000121543739091,
+        "p99": 1.0000250973437372,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "hip_flex_90": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0001079570330185,
+        "p99": 1.0000265637789325,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.00009518223199,
+        "p99": 1.0000334655589616,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "hip_flex_110": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.000154968214016,
+        "p99": 1.0000310491789055,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0002288659735277,
+        "p99": 1.0000414431326066,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "hip_abduction_45": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.000075017862481,
+        "p99": 1.0000218478273772,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0001031998975525,
+        "p99": 1.0000240731373495,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "hip_abduction_80": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.000127616699158,
+        "p99": 1.0000313594732,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000589290091146,
+        "p99": 1.0000218019453977,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "shoulder_forward_60": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "shoulder_forward_100": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "shoulder_forward_140": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "shoulder_side_60": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "shoulder_side_100": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "shoulder_side_140": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "forearm_roll_-60": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "forearm_roll_60": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "upper_arm_roll_-45": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "upper_arm_roll_45": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "wrist_flex_-45": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "wrist_flex_45": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "wrist_side_-25": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "wrist_side_25": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "ankle_-30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.291389835895688,
+        "p99": 1.0159159609937574,
+        "edges_over_2": 0,
+        "edges_under_half": 1,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.6300198805378812,
+        "p99": 1.2029098617297442,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "toes_-30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.5176427508376849,
+        "p99": 1.1247263949118753,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "ankle_30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 2.0727898267443288,
+        "p99": 1.0579099951776978,
+        "edges_over_2": 2,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.2781298039235833,
+        "p99": 1.134970252754047,
+        "edges_over_2": 0,
+        "edges_under_half": 2,
+        "nonfinite": 0
+      }
+    },
+    "toes_30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.2261844235336234,
+        "p99": 1.17904678193179,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "foot_roll_-20": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.2670810634984346,
+        "p99": 1.01377178979532,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.379683839537571,
+        "p99": 1.1095435842150698,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "foot_roll_20": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.5189385443239845,
+        "p99": 1.014036729335575,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.5795140258945386,
+        "p99": 1.0962711260861266,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "torso_bend_-30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "torso_bend_30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "torso_bend_45": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "torso_side_-30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "torso_side_30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "torso_side_45": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "torso_turn_-30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "torso_turn_30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "torso_turn_45": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "overhead_turn": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "squat": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.7000014983653153,
+        "p99": 1.5540918696377553,
+        "edges_over_2": 0,
+        "edges_under_half": 42,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.6300119967626736,
+        "p99": 1.202913483394999,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "high_step": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.6421084201735245,
+        "p99": 1.402054043350071,
+        "edges_over_2": 0,
+        "edges_under_half": 18,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000718414711063,
+        "p99": 1.0000076749926394,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "arm_combined": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "torso_combined": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.6310613650457326,
+        "p99": 1.4740624452990867,
+        "edges_over_2": 0,
+        "edges_under_half": 28,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000642229882546,
+        "p99": 1.0000097279064977,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "arms_open_turn": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "lean_crouch": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.6310613650457326,
+        "p99": 1.4740624452990867,
+        "edges_over_2": 0,
+        "edges_under_half": 28,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000642229882546,
+        "p99": 1.0000097279064977,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "cloth_fan": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_5": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.041761913266295,
+        "p99": 1.0270033923438544,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000316594245244,
+        "p99": 1.0000094352929978,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_10": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0841197851550997,
+        "p99": 1.0535257671557503,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000284888523083,
+        "p99": 1.0000120694957613,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_15": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.1267027861027687,
+        "p99": 1.0791828967730484,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000317905233558,
+        "p99": 1.0000088533575582,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_20": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.1691754030587067,
+        "p99": 1.1036870786115378,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000307759759177,
+        "p99": 1.000009374374839,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_25": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.211251958722828,
+        "p99": 1.131720427968868,
+        "edges_over_2": 0,
+        "edges_under_half": 4,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000360451345018,
+        "p99": 1.0000055430834707,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.2526572989454428,
+        "p99": 1.1608125396202924,
+        "edges_over_2": 0,
+        "edges_under_half": 4,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000327852720463,
+        "p99": 1.0000078606488776,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_35": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.2931611116361592,
+        "p99": 1.1897661521878615,
+        "edges_over_2": 0,
+        "edges_under_half": 4,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000321678803386,
+        "p99": 1.0000104897543856,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_40": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.3325532408728553,
+        "p99": 1.2190710389612793,
+        "edges_over_2": 0,
+        "edges_under_half": 9,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000312058701732,
+        "p99": 1.0000111514221501,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_45": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.3706409890511908,
+        "p99": 1.2470352995552636,
+        "edges_over_2": 0,
+        "edges_under_half": 17,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000386751660684,
+        "p99": 1.0000116290979923,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_50": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.4072498171194046,
+        "p99": 1.2750119215068159,
+        "edges_over_2": 0,
+        "edges_under_half": 18,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000471455212627,
+        "p99": 1.0000124294214554,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_55": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.4422246173464117,
+        "p99": 1.3055973209588994,
+        "edges_over_2": 0,
+        "edges_under_half": 18,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000348126390823,
+        "p99": 1.0000127590850234,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_65": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.5067236867006062,
+        "p99": 1.3605251893567585,
+        "edges_over_2": 0,
+        "edges_under_half": 23,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000671540928572,
+        "p99": 1.0000193881762625,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_70": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.5360080616548135,
+        "p99": 1.3833727755536818,
+        "edges_over_2": 0,
+        "edges_under_half": 20,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000578035530743,
+        "p99": 1.0000206270032368,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_75": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.563170104880577,
+        "p99": 1.4047564331034739,
+        "edges_over_2": 0,
+        "edges_under_half": 22,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000652648077024,
+        "p99": 1.0000190620528784,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_80": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.5881190720311267,
+        "p99": 1.4288444575070927,
+        "edges_over_2": 0,
+        "edges_under_half": 26,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000415175894568,
+        "p99": 1.00001943889355,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_85": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.6107714643282713,
+        "p99": 1.4526435000034257,
+        "edges_over_2": 0,
+        "edges_under_half": 27,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000627799767345,
+        "p99": 1.0000228989928597,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_95": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.64890561752975,
+        "p99": 1.4958972923955713,
+        "edges_over_2": 0,
+        "edges_under_half": 32,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000872562067096,
+        "p99": 1.0000217621871907,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_100": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.6642674989436304,
+        "p99": 1.5120097302518785,
+        "edges_over_2": 0,
+        "edges_under_half": 38,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0001064041114045,
+        "p99": 1.0000243332158243,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_105": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.6770914117904008,
+        "p99": 1.5275266190283745,
+        "edges_over_2": 0,
+        "edges_under_half": 37,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0001126153939872,
+        "p99": 1.000027768091104,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_110": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.6873403796011077,
+        "p99": 1.5346934672162842,
+        "edges_over_2": 0,
+        "edges_under_half": 38,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000905873401322,
+        "p99": 1.0000294839905455,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_115": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.6949870555226465,
+        "p99": 1.5445347121069442,
+        "edges_over_2": 0,
+        "edges_under_half": 39,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0001496734545532,
+        "p99": 1.0000285973652079,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_125": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.7023747644952405,
+        "p99": 1.5698052991010065,
+        "edges_over_2": 0,
+        "edges_under_half": 49,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.000067286163272,
+        "p99": 1.0000246297117412,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_knee_130": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.720807017382125,
+        "p99": 1.583191559631899,
+        "edges_over_2": 0,
+        "edges_under_half": 64,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000808872151306,
+        "p99": 1.0000238813151339,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_ankle_-35": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.4723243676131905,
+        "p99": 1.0179816831266,
+        "edges_over_2": 0,
+        "edges_under_half": 1,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.7265515544895766,
+        "p99": 1.2327800856266515,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_ankle_-25": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.1292276106434573,
+        "p99": 1.0134464726820387,
+        "edges_over_2": 0,
+        "edges_under_half": 1,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.5306260179032931,
+        "p99": 1.1716616320894218,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_ankle_-15": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0735455544399144,
+        "p99": 1.008226262209158,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.3242204446907369,
+        "p99": 1.1040751846640653,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_ankle_-5": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0236740256470842,
+        "p99": 1.002888267418447,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.109556810660057,
+        "p99": 1.0341514776304286,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_ankle_5": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.1337570259701142,
+        "p99": 1.0126048284036084,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.043648798585942,
+        "p99": 1.0250364886584868,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_ankle_15": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.4779963520217085,
+        "p99": 1.0345080710213843,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.1346879434398955,
+        "p99": 1.0733306942436702,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_ankle_25": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.8700470007642997,
+        "p99": 1.051190102694976,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.2300940399748386,
+        "p99": 1.1168321022577345,
+        "edges_over_2": 0,
+        "edges_under_half": 1,
+        "nonfinite": 0
+      }
+    },
+    "heldout_ankle_35": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 2.276691857756236,
+        "p99": 1.0647296904238879,
+        "edges_over_2": 2,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.3258996148510815,
+        "p99": 1.15496399245529,
+        "edges_over_2": 0,
+        "edges_under_half": 5,
+        "nonfinite": 0
+      }
+    },
+    "heldout_foot_roll_-30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.4859364936701451,
+        "p99": 1.020942580548287,
+        "edges_over_2": 0,
+        "edges_under_half": 1,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.5584729432522808,
+        "p99": 1.171274241090212,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_foot_roll_-15": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.173339611410103,
+        "p99": 1.0106245467422033,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.2880181655690945,
+        "p99": 1.0817222950631622,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_foot_roll_15": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.3888806871375123,
+        "p99": 1.0107944361903602,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.4236520489746014,
+        "p99": 1.0726040529693568,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_foot_roll_30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.774669730044676,
+        "p99": 1.02005946159872,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.8971210031746337,
+        "p99": 1.1429311375105071,
+        "edges_over_2": 0,
+        "edges_under_half": 1,
+        "nonfinite": 0
+      }
+    },
+    "heldout_unilateral_l_35": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.3796338147225156,
+        "p99": 1.1583073821116698,
+        "edges_over_2": 0,
+        "edges_under_half": 2,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.1821452299719812,
+        "p99": 1.0479160377227419,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_unilateral_l_75": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.5314694055309215,
+        "p99": 1.3461869048378758,
+        "edges_over_2": 0,
+        "edges_under_half": 11,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.1821435445647093,
+        "p99": 1.047920337912145,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_unilateral_l_105": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.6576211453081815,
+        "p99": 1.4101040657296076,
+        "edges_over_2": 0,
+        "edges_under_half": 17,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.18214136172839,
+        "p99": 1.0479233026494665,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_unilateral_l_130": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.720807017382125,
+        "p99": 1.4602890186740096,
+        "edges_over_2": 0,
+        "edges_under_half": 33,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.1821429432721755,
+        "p99": 1.047924572908159,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_leg_stretch_l_-60": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.413733059416469,
+        "p99": 1.1886562161238152,
+        "edges_over_2": 0,
+        "edges_under_half": 1,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000271358479478,
+        "p99": 1.0000103480547635,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_leg_stretch_l_-30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.231539911502163,
+        "p99": 1.0918412418204684,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000258034352016,
+        "p99": 1.000007664709542,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_leg_stretch_l_30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.2342181718572967,
+        "p99": 1.1053988962736367,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000298269220163,
+        "p99": 1.0000048503314027,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_leg_stretch_l_60": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.4202383995205228,
+        "p99": 1.196227443815475,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000250390796288,
+        "p99": 1.0000082776700616,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_leg_twist_l_-60": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 6.405084103789308,
+        "p99": 1.3521989822056757,
+        "edges_over_2": 15,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 13.078691253972782,
+        "p99": 3.8240708876454543,
+        "edges_over_2": 61,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_leg_twist_l_-30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 3.0822502409901276,
+        "p99": 1.1447197911808038,
+        "edges_over_2": 1,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 6.819139087223296,
+        "p99": 2.2271784258739276,
+        "edges_over_2": 25,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_leg_twist_l_30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 4.21921300082802,
+        "p99": 1.18527370171054,
+        "edges_over_2": 1,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 6.836780400853797,
+        "p99": 2.209146634616609,
+        "edges_over_2": 21,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_leg_twist_l_60": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 7.4433584408404645,
+        "p99": 1.497983055805299,
+        "edges_over_2": 24,
+        "edges_under_half": 1,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 13.094612765856171,
+        "p99": 3.9033692251369683,
+        "edges_over_2": 55,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_thigh_twist_l_-60": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 11.122781830977008,
+        "p99": 1.6883717713767668,
+        "edges_over_2": 2,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_thigh_twist_l_-30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 6.177888535919572,
+        "p99": 1.2445663460853125,
+        "edges_over_2": 2,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_thigh_twist_l_30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 4.709127054649919,
+        "p99": 1.253480379122916,
+        "edges_over_2": 1,
+        "edges_under_half": 1,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_thigh_twist_l_60": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 9.798964942514914,
+        "p99": 1.658444737455104,
+        "edges_over_2": 13,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_unilateral_r_35": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.6707338309195288,
+        "p99": 1.1522806982747236,
+        "edges_over_2": 0,
+        "edges_under_half": 2,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.1794826493098511,
+        "p99": 1.0575548043815068,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_unilateral_r_75": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.6707179259129272,
+        "p99": 1.3339544753545995,
+        "edges_over_2": 0,
+        "edges_under_half": 11,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.1794834431262666,
+        "p99": 1.0575570375897347,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_unilateral_r_105": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.6770914117904008,
+        "p99": 1.4525931776486039,
+        "edges_over_2": 0,
+        "edges_under_half": 20,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.179483105760554,
+        "p99": 1.0575563293774546,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_unilateral_r_130": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.7020922978345672,
+        "p99": 1.5115128319181874,
+        "edges_over_2": 0,
+        "edges_under_half": 31,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.1794816806388289,
+        "p99": 1.0575512594420264,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_leg_stretch_r_-60": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.4526330707943713,
+        "p99": 1.2154092002065149,
+        "edges_over_2": 0,
+        "edges_under_half": 3,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000598010974358,
+        "p99": 1.0000137781020806,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_leg_stretch_r_-30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.246046593698079,
+        "p99": 1.10670472426843,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000236209275908,
+        "p99": 1.0000041718979198,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_leg_stretch_r_30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.267968443287139,
+        "p99": 1.1346445706577937,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000550758283986,
+        "p99": 1.0000057068367623,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_leg_stretch_r_60": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.5108290868519678,
+        "p99": 1.251340611965852,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.000093163013543,
+        "p99": 1.0000093630902307,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_leg_twist_r_-60": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 10.090200174582968,
+        "p99": 1.627429519091888,
+        "edges_over_2": 40,
+        "edges_under_half": 1,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 12.295768285882474,
+        "p99": 4.497344712236343,
+        "edges_over_2": 67,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_leg_twist_r_-30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 5.214591337531967,
+        "p99": 1.2269981497759406,
+        "edges_over_2": 5,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 6.491919780242827,
+        "p99": 2.5786877550094713,
+        "edges_over_2": 33,
+        "edges_under_half": 2,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_leg_twist_r_30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 5.5003942851990235,
+        "p99": 1.1777554880392858,
+        "edges_over_2": 4,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 6.227010531569202,
+        "p99": 2.5632966704147657,
+        "edges_over_2": 30,
+        "edges_under_half": 1,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_leg_twist_r_60": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 10.34971000929546,
+        "p99": 1.4742823838637427,
+        "edges_over_2": 39,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 12.056116546873636,
+        "p99": 4.313170535226667,
+        "edges_over_2": 69,
+        "edges_under_half": 6,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_thigh_twist_r_-60": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 9.795120743541027,
+        "p99": 1.6752334374294073,
+        "edges_over_2": 26,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_thigh_twist_r_-30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 4.691053157135759,
+        "p99": 1.2605406391909812,
+        "edges_over_2": 1,
+        "edges_under_half": 1,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_thigh_twist_r_30": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 6.209272369832924,
+        "p99": 1.2583194735460996,
+        "edges_over_2": 2,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "heldout_axial_thigh_twist_r_60": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 11.162810019734161,
+        "p99": 1.6782302924998338,
+        "edges_over_2": 21,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_brows_wrist_1.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_brows_wrist_16.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_brows_wrist_31.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_brows_wrist_46.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_brows_wrist_61.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_elbows_90_1.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_elbows_90_16.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_elbows_90_31.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_elbows_90_46.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_elbows_90_61.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_eyes_ears_1.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_eyes_ears_16.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_eyes_ears_31.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_eyes_ears_46.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_eyes_ears_61.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_fingers_35_1.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_fingers_35_16.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_fingers_35_31.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_fingers_35_46.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_fingers_35_61.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_hair_tail_cloth_1.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_hair_tail_cloth_16.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_hair_tail_cloth_31.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_hair_tail_cloth_46.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_hair_tail_cloth_61.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_head_torso_1.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_head_torso_16.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_head_torso_31.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_head_torso_46.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_head_torso_61.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_knees_90_1.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_knees_90_16.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.3706409890511908,
+        "p99": 1.2470352995552636,
+        "edges_over_2": 0,
+        "edges_under_half": 17,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000386751660684,
+        "p99": 1.0000116290979923,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_knees_90_31.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.6310562307048588,
+        "p99": 1.4740787400128073,
+        "edges_over_2": 0,
+        "edges_under_half": 28,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000547283385661,
+        "p99": 1.0000222816468847,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_knees_90_46.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.3706409890511908,
+        "p99": 1.2470352995552636,
+        "edges_over_2": 0,
+        "edges_under_half": 17,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000386751660684,
+        "p99": 1.0000116290979923,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_knees_90_61.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_practical_ranges_1.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_practical_ranges_16.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_practical_ranges_31.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_practical_ranges_46.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_practical_ranges_61.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_practical_ranges_76.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.4754259084797063,
+        "p99": 1.3348020662561944,
+        "edges_over_2": 0,
+        "edges_under_half": 22,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000256175100692,
+        "p99": 1.000012685691181,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_practical_ranges_91.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.7000014983653153,
+        "p99": 1.5540870825700335,
+        "edges_over_2": 0,
+        "edges_under_half": 41,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000752406490123,
+        "p99": 1.0000285537291724,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_practical_ranges_106.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.4754259084797063,
+        "p99": 1.3348020662561944,
+        "edges_over_2": 0,
+        "edges_under_half": 22,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000256175100692,
+        "p99": 1.000012685691181,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_practical_ranges_121.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_practical_ranges_136.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_practical_ranges_151.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_practical_ranges_166.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_practical_ranges_181.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_practical_ranges_196.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.370640987533976,
+        "p99": 1.2470341976380186,
+        "edges_over_2": 0,
+        "edges_under_half": 17,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000352877947079,
+        "p99": 1.0000149486296401,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_practical_ranges_211.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.6310562307048588,
+        "p99": 1.4740787400128073,
+        "edges_over_2": 0,
+        "edges_under_half": 28,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000547283385661,
+        "p99": 1.0000222816468847,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_practical_ranges_226.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.370640987533976,
+        "p99": 1.2470341976380186,
+        "edges_over_2": 0,
+        "edges_under_half": 17,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000352877947079,
+        "p99": 1.0000149486296401,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_practical_ranges_241.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_shoulders_hips_ankles_1.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000126047117097,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000293995137397,
+        "p99": 1.0000016261350317,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_shoulders_hips_ankles_16.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.132385023670282,
+        "p99": 1.0076297383446002,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.1638539394673342,
+        "p99": 1.041340711050241,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_shoulders_hips_ankles_31.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.278165206269212,
+        "p99": 1.0151469288390893,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.3242168030444603,
+        "p99": 1.081105225490696,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_shoulders_hips_ankles_46.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.132385023670282,
+        "p99": 1.0076297383446002,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.1638539394673342,
+        "p99": 1.041340711050241,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_shoulders_hips_ankles_61.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000126047117097,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000293995137397,
+        "p99": 1.0000016261350317,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_toes_30_1.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_toes_30_16.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.5176427508376849,
+        "p99": 1.1247263949118753,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_toes_30_31.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_toes_30_46.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.2261844235336234,
+        "p99": 1.17904678193179,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    },
+    "legacy_TEST_toes_30_61.0": {
+      "stocking_tex_sock_0": {
+        "max_ratio": 1.0000012182650175,
+        "p99": 1.0,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      },
+      "shoes_tex_shoes_0": {
+        "max_ratio": 1.0000040359820526,
+        "p99": 1.000000401165715,
+        "edges_over_2": 0,
+        "edges_under_half": 0,
+        "nonfinite": 0
+      }
+    }
+  },
+  "patches": [
+    {
+      "mesh": "stocking_tex_sock_0",
+      "regions": [
+        {
+          "region": "knee_folds",
+          "method": "bounded motion-constrained scalar blend fit",
+          "radius_source_units": 30
+        }
+      ],
+      "fit": {
+        "poses": [
+          "knee_60",
+          "knee_90",
+          "knee_120",
+          "knee_135",
+          "shin_y_-30",
+          "shin_z_-30",
+          "shin_y_30",
+          "shin_z_30",
+          "twist_-45",
+          "twist_45"
+        ],
+        "variables": 573,
+        "edges": 1911,
+        "evaluations": 100,
+        "objective": 1.28090680651611,
+        "status": 0,
+        "message": "The maximum number of function evaluations is exceeded.",
+        "method": "bounded sparse least squares; fixed 100-evaluation budget; offline static weights only"
+      },
+      "changed_vertices": 309
+    },
+    {
+      "mesh": "shoes_tex_shoes_0",
+      "regions": [
+        {
+          "region": "ankle_folded_seams",
+          "radius_source_units": 17,
+          "connected_edge_limit_mm": 12,
+          "method": "coherent weights within isolated short connected folds",
+          "component_sizes": [
+            5,
+            5,
+            7,
+            2,
+            2,
+            2,
+            2,
+            2,
+            5,
+            5,
+            2,
+            7,
+            2,
+            5,
+            5,
+            3,
+            4,
+            5,
+            3,
+            7,
+            2,
+            2,
+            2,
+            2,
+            2,
+            5,
+            5,
+            2,
+            7,
+            4,
+            4,
+            5,
+            3,
+            4,
+            5,
+            5,
+            3,
+            3,
+            3,
+            5,
+            5,
+            4,
+            2,
+            2,
+            2,
+            2,
+            2,
+            5,
+            5,
+            3,
+            3,
+            3,
+            5,
+            5,
+            2,
+            2,
+            2,
+            2,
+            2
+          ]
+        }
+      ],
+      "changed_vertices": 144
+    }
+  ],
+  "rest_max_delta_mm": {
+    "stocking_tex_sock_0": 1.907348590179936e-05,
+    "shoes_tex_shoes_0": 8.740569291166862e-05
+  },
+  "source_unchanged": true,
+  "samples_per_stage": 179,
+  "standard_over2_regressions": [],
+  "standard_max_increases_over_0_05": []
+}

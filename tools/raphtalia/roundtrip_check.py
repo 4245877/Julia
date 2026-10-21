@@ -55,13 +55,26 @@ def actions():
     return {action_label(a): a for a in bpy.data.actions}
 
 
+def sample_frames(action, label):
+    if label.startswith('TEST_deep_'):
+        # Inspect every authored pose and the transitions between them. Do not
+        # assume a particular duration or silently miss multi-peak clips.
+        keyed = sorted({float(k.co.x) for curve in action.fcurves
+                        if curve.data_path.startswith('pose.bones[')
+                        for k in curve.keyframe_points} | set(map(float, action.frame_range)))
+        return sorted(set(keyed) | {(a + b) / 2 for a, b in zip(keyed, keyed[1:])})
+    return ((1,16,31,46,61,76,91,106,121,136,151,166,181,196,211,226,241)
+            if label == 'TEST_practical_ranges' else (1,16,31,46,61))
+
+
 def set_action(label=None, frame=1):
     arm = armature()
     arm.animation_data_create()
     arm.animation_data.action = actions().get(label)
     for bone in arm.pose.bones:
         bone.matrix_basis = Matrix.Identity(4)
-    bpy.context.scene.frame_set(frame)
+    whole = int(np.floor(frame))
+    bpy.context.scene.frame_set(whole, subframe=float(frame - whole))
     bpy.context.view_layer.update()
 
 
@@ -244,7 +257,7 @@ def main():
     blend_weights=weights_snapshot()
     blend_samples = {}
     for label in labels:
-        frames=(1,16,31,46,61,76,91,106,121,136,151,166,181,196,211,226,241) if label=='TEST_practical_ranges' else (1,16,31,46,61)
+        frames=sample_frames(actions()[label], label)
         for frame in frames:
             set_action(label, frame)
             blend_samples[(label, frame)] = mesh_snapshot(include_surface=False)

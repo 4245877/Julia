@@ -37,7 +37,11 @@ def main():
     if (source / 'gpu_mix.csv').exists():
         with (source / 'gpu_mix.csv').open(newline='',encoding='utf-8') as f:
             frame_names.update(r['image'] for r in csv.DictReader(f))
-    frame_names.update('gpu_neutral_'+v+'.ppm' for v in ('front','back','face_front','face_back'))
+    view_names = ('front','back','face_front','face_back')
+    for line in (source / 'gpu_audit.txt').read_text(encoding='utf-8').splitlines():
+        if line.startswith('views='):
+            view_names = tuple(line.partition('=')[2].split(','))
+    frame_names.update('gpu_neutral_'+v+'.ppm' for v in view_names)
     for ppm in sorted(source / n for n in frame_names):
         with Image.open(ppm) as image:
             image.save(output / f"{ppm.stem}.png", optimize=True)
@@ -63,16 +67,27 @@ def main():
                     path = output / (Path(s["image"]).stem + ".png")
                     row.append((path, f"{index}: {title[:34]}\n{float(s['fraction']):.0%} | delta bytes {s['changed_rgb_bytes_vs_bind']}"))
             rows.append(row)
-        row = []
-        for s in clip:
-            if s["view"].startswith("face_"):
-                row.append((output / (Path(s["image"]).stem + ".png"),
-                            f"{index}: {title[:34]}\n50% | {s['view']} | bytes {s['changed_rgb_bytes_vs_bind']}"))
-        if row:
-            face_rows.append(row)
+        for fraction in dict.fromkeys(s['fraction'] for s in clip):
+            row = []
+            for s in clip:
+                if s["view"].startswith("face_") and s['fraction'] == fraction:
+                    row.append((output / (Path(s["image"]).stem + ".png"),
+                                f"{index}: {title[:34]}\n{float(s['fraction']):.1%} | {s['view']} | bytes {s['changed_rgb_bytes_vs_bind']}"))
+            if row:
+                face_rows.append(row)
     sheet(front_rows, output / "gpu_front_contact.png", max(map(len,front_rows),default=3))
     sheet(back_rows, output / "gpu_back_contact.png", max(map(len,back_rows),default=3))
     sheet(face_rows, output / "gpu_face_contact.png", 2)
+    detail_rows = []
+    for (index, name), clip in sorted(clips.items()):
+        for view in view_names[4:]:
+            row = [(output / (Path(s['image']).stem + '.png'),
+                    f"{index}: {view}\n{float(s['fraction']):.1%} | {name.split('|')[-1][:28]}")
+                   for s in clip if s['view'] == view]
+            if row:
+                detail_rows.append(row)
+    sheet(detail_rows, output / 'gpu_body_cloth_contact.png',
+          max(map(len, detail_rows), default=1), 320)
     if (output / "gpu_mix.csv").exists():
         with (output / "gpu_mix.csv").open(newline="", encoding="utf-8") as stream:
             mixed = list(csv.DictReader(stream))

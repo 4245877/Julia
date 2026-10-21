@@ -1,0 +1,354 @@
+{
+  "experiments": [
+    {
+      "variant": "front-dependent lift, high gain",
+      "candidate_sha256": "4a7b4f453c8c5c1a1a7bcdc4a480dee290d2b41f43562db30666da8209b0882d",
+      "control_parameters": {
+        "property": "skirt_clearance",
+        "source": "evaluated thigh local quaternions",
+        "roots": [
+          {
+            "bone": "cloth.a.000_0221",
+            "gain": 0.9,
+            "left_weight": 0.3096154865465666
+          },
+          {
+            "bone": "cloth.a.003_0224",
+            "gain": 0.9,
+            "left_weight": 0.30750175526267604
+          },
+          {
+            "bone": "cloth.b.000_0227",
+            "gain": 0.9,
+            "left_weight": 0.8930674603110866
+          },
+          {
+            "bone": "cloth.b.003_0229",
+            "gain": 0.9,
+            "left_weight": 0.8921878714310496
+          },
+          {
+            "bone": "cloth.b.006_0232",
+            "gain": 0.8851870964465532,
+            "left_weight": 0.9274277436105829
+          },
+          {
+            "bone": "cloth.c.000_0182",
+            "gain": 0.5711740306137952,
+            "left_weight": 1.0
+          },
+          {
+            "bone": "cloth.c.003_0185",
+            "gain": 0.326988675715879,
+            "left_weight": 1.0
+          },
+          {
+            "bone": "cloth.d.000_0188",
+            "gain": 0.06629884597913847,
+            "left_weight": 1.0
+          },
+          {
+            "bone": "cloth.e.000_0191",
+            "gain": 0.0,
+            "left_weight": 0.709326982498169
+          },
+          {
+            "bone": "cloth.e.003_0194",
+            "gain": 0.0,
+            "left_weight": 0.7077142313907021
+          },
+          {
+            "bone": "cloth.f.000_0197",
+            "gain": 0.0,
+            "left_weight": 0.0
+          },
+          {
+            "bone": "cloth.f.003_0200",
+            "gain": 0.0,
+            "left_weight": 0.0
+          },
+          {
+            "bone": "cloth.g.000_0203",
+            "gain": 0.15645581030109007,
+            "left_weight": 0.0
+          },
+          {
+            "bone": "cloth.h.000_0206",
+            "gain": 0.48755676759809574,
+            "left_weight": 0.0
+          },
+          {
+            "bone": "cloth.h.003_0209",
+            "gain": 0.3213738886428261,
+            "left_weight": 0.0
+          },
+          {
+            "bone": "cloth.i.000_0212",
+            "gain": 0.7358448775551263,
+            "left_weight": 0.0
+          },
+          {
+            "bone": "cloth.i.003_0195",
+            "gain": 0.7524830653091331,
+            "left_weight": 0.0
+          },
+          {
+            "bone": "cloth.i.006_0218",
+            "gain": 0.7354476838889547,
+            "left_weight": 0.0
+          }
+        ]
+      },
+      "tested": {
+        "overhead_turn": {
+          "max_ratio": 3.942009558057529,
+          "over_2": 31,
+          "nonfinite": 0
+        },
+        "squat": {
+          "max_ratio": 7.717314317201487,
+          "over_2": 38,
+          "nonfinite": 0
+        },
+        "high_step": {
+          "max_ratio": 8.409332240616822,
+          "over_2": 30,
+          "nonfinite": 0
+        },
+        "cloth_fan": {
+          "max_ratio": 1.6625287896853993,
+          "over_2": 0,
+          "nonfinite": 0
+        }
+      },
+      "decision": "rejected: larger inter-panel strain and/or worse high-step silhouette; not in final model"
+    },
+    {
+      "variant": "uniform lift, medium gain",
+      "candidate_sha256": "5bb02edab36b2ab242f059875ff832a5b3a2ed2cb205f7e4aa263b77ac46794d",
+      "control_parameters": {
+        "property": "skirt_clearance",
+        "source": "evaluated thigh local quaternions",
+        "roots": [
+          {
+            "bone": "cloth.a.000_0221",
+            "gain": 0.65,
+            "left_weight": 0.3096154865465666
+          },
+          {
+            "bone": "cloth.a.003_0224",
+            "gain": 0.65,
+            "left_weight": 0.30750175526267604
+          },
+          {
+            "bone": "cloth.b.000_0227",
+            "gain": 0.65,
+            "left_weight": 0.8930674603110866
+          },
+          {
+            "bone": "cloth.b.003_0229",
+            "gain": 0.65,
+            "left_weight": 0.8921878714310496
+          },
+          {
+            "bone": "cloth.b.006_0232",
+            "gain": 0.65,
+            "left_weight": 0.9274277436105829
+          },
+          {
+            "bone": "cloth.c.000_0182",
+            "gain": 0.65,
+            "left_weight": 1.0
+          },
+          {
+            "bone": "cloth.c.003_0185",
+            "gain": 0.65,
+            "left_weight": 1.0
+          },
+          {
+            "bone": "cloth.d.000_0188",
+            "gain": 0.65,
+            "left_weight": 1.0
+          },
+          {
+            "bone": "cloth.e.000_0191",
+            "gain": 0.65,
+            "left_weight": 0.709326982498169
+          },
+          {
+            "bone": "cloth.e.003_0194",
+            "gain": 0.65,
+            "left_weight": 0.7077142313907021
+          },
+          {
+            "bone": "cloth.f.000_0197",
+            "gain": 0.65,
+            "left_weight": 0.0
+          },
+          {
+            "bone": "cloth.f.003_0200",
+            "gain": 0.65,
+            "left_weight": 0.0
+          },
+          {
+            "bone": "cloth.g.000_0203",
+            "gain": 0.65,
+            "left_weight": 0.0
+          },
+          {
+            "bone": "cloth.h.000_0206",
+            "gain": 0.65,
+            "left_weight": 0.0
+          },
+          {
+            "bone": "cloth.h.003_0209",
+            "gain": 0.65,
+            "left_weight": 0.0
+          },
+          {
+            "bone": "cloth.i.000_0212",
+            "gain": 0.65,
+            "left_weight": 0.0
+          },
+          {
+            "bone": "cloth.i.003_0195",
+            "gain": 0.65,
+            "left_weight": 0.0
+          },
+          {
+            "bone": "cloth.i.006_0218",
+            "gain": 0.65,
+            "left_weight": 0.0
+          }
+        ]
+      },
+      "tested": {
+        "squat": {
+          "max_ratio": 4.029883137110303,
+          "over_2": 33,
+          "nonfinite": 0
+        },
+        "high_step": {
+          "max_ratio": 5.051065156018054,
+          "over_2": 29,
+          "nonfinite": 0
+        }
+      },
+      "decision": "rejected: larger inter-panel strain and/or worse high-step silhouette; not in final model"
+    },
+    {
+      "variant": "front-dependent lift, low gain",
+      "candidate_sha256": "99def390d196c34d4d7b4354b6a0bf1392c6a69ddcdd399f8751a95b10261999",
+      "control_parameters": {
+        "property": "skirt_clearance",
+        "source": "evaluated thigh local quaternions",
+        "roots": [
+          {
+            "bone": "cloth.a.000_0221",
+            "gain": 0.4,
+            "left_weight": 0.3096154865465666
+          },
+          {
+            "bone": "cloth.a.003_0224",
+            "gain": 0.4,
+            "left_weight": 0.30750175526267604
+          },
+          {
+            "bone": "cloth.b.000_0227",
+            "gain": 0.4,
+            "left_weight": 0.8930674603110866
+          },
+          {
+            "bone": "cloth.b.003_0229",
+            "gain": 0.4,
+            "left_weight": 0.8921878714310496
+          },
+          {
+            "bone": "cloth.b.006_0232",
+            "gain": 0.39341648730957923,
+            "left_weight": 0.9274277436105829
+          },
+          {
+            "bone": "cloth.c.000_0182",
+            "gain": 0.25385512471724236,
+            "left_weight": 1.0
+          },
+          {
+            "bone": "cloth.c.003_0185",
+            "gain": 0.14532830031816843,
+            "left_weight": 1.0
+          },
+          {
+            "bone": "cloth.d.000_0188",
+            "gain": 0.02946615376850599,
+            "left_weight": 1.0
+          },
+          {
+            "bone": "cloth.e.000_0191",
+            "gain": 0.0,
+            "left_weight": 0.709326982498169
+          },
+          {
+            "bone": "cloth.e.003_0194",
+            "gain": 0.0,
+            "left_weight": 0.7077142313907021
+          },
+          {
+            "bone": "cloth.f.000_0197",
+            "gain": 0.0,
+            "left_weight": 0.0
+          },
+          {
+            "bone": "cloth.f.003_0200",
+            "gain": 0.0,
+            "left_weight": 0.0
+          },
+          {
+            "bone": "cloth.g.000_0203",
+            "gain": 0.06953591568937337,
+            "left_weight": 0.0
+          },
+          {
+            "bone": "cloth.h.000_0206",
+            "gain": 0.2166918967102648,
+            "left_weight": 0.0
+          },
+          {
+            "bone": "cloth.h.003_0209",
+            "gain": 0.1428328393968116,
+            "left_weight": 0.0
+          },
+          {
+            "bone": "cloth.i.000_0212",
+            "gain": 0.32704216780227835,
+            "left_weight": 0.0
+          },
+          {
+            "bone": "cloth.i.003_0195",
+            "gain": 0.3344369179151703,
+            "left_weight": 0.0
+          },
+          {
+            "bone": "cloth.i.006_0218",
+            "gain": 0.3268656372839798,
+            "left_weight": 0.0
+          }
+        ]
+      },
+      "tested": {
+        "squat": {
+          "max_ratio": 4.029883137110303,
+          "over_2": 17,
+          "nonfinite": 0
+        },
+        "high_step": {
+          "max_ratio": 4.3597130713469765,
+          "over_2": 12,
+          "nonfinite": 0
+        }
+      },
+      "decision": "rejected: larger inter-panel strain and/or worse high-step silhouette; not in final model"
+    }
+  ],
+  "scope": "Temporary additive rotation aid on existing cloth roots only. No new bones. All variants removed from final pipeline."
+}

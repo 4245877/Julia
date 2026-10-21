@@ -1,170 +1,277 @@
-"""Generate one current report and manifest, refusing stale model evidence."""
+"""Generate the current Russian report and asset manifest from verified evidence.
+
+Refuses stale model hashes or mismatched before/after pictures. No model, rig,
+runtime source, historical evidence, or secondary text report is modified.
+"""
 from pathlib import Path
+import csv
 import hashlib
 import json
+import zipfile
 
-ROOT=Path(__file__).resolve().parents[2];OUT=ROOT/'docs/raphtalia'
-def read(path):return json.loads((OUT/path).read_text(encoding='utf-8'))
-def sha(path):return hashlib.sha256(path.read_bytes()).hexdigest()
+ROOT = Path(__file__).resolve().parents[2]
+OUT = ROOT / 'docs/raphtalia'
+STAGE = OUT / 'deep_deformation'
+ORIGINAL = 'a602086ac9e580f2d265a489478922b75aae00410313b17a89bd846ad4f3b34c'
+
+
+def read(path):
+    return json.loads((OUT / path).read_text(encoding='utf-8'))
+
+
+def sha(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def csv_rows(path):
+    with path.open(newline='', encoding='utf-8') as stream:
+        return list(csv.DictReader(stream))
+
 
 def main():
-    a=read('reaudit/after.json');b=read('reaudit/before.json');rt=read('roundtrip.json')
-    ai=read('reaudit/assimp_after.json');ctrl=read('reaudit/controls.json');st=read('reaudit/structure.json')
-    sw=read('joint_sweep.json');oldsw=read('reaudit/joint_sweep_before.json');patch=read('reaudit/weight_patch.json');clean=read('reaudit/cleanup.json')
-    raw=read('reaudit/raw_prepared.json')
-    positive_bones={w['bone']['name'] for m in raw['meshes'] for w in m['bone_weights'] if w['total_weight']>0}
-    files=['assets/models/Raphtalia.fbx','assets/models/backups/Raphtalia.original.fbx',
-      'assets/models/Raphtalia_prepared.fbx','assets/models/Raphtalia_prepared.blend',
-      'assets/models/backups/Raphtalia_prepared.pre_reaudit_2026-10-21.zip']
-    manifest=[{'path':n,'bytes':(ROOT/n).stat().st_size,'sha256':sha(ROOT/n).upper()} for n in files]
-    assert a['sha256']==sha(ROOT/files[3])==rt['files']['prepared_blend']['sha256']==sw['sha256']
-    assert rt['files']['prepared_fbx']['sha256']==sha(ROOT/files[2])
-    assert st['result']==ctrl['result']=='PASS'
-    assert a['bones']==241 and len(rt['animations_blend'])==10
-    assert a['summary']['nonfinite']==0 and sw['summary']['nonfinite_vertex_total']==0
-    assert rt['files_stable_during_check'] and rt['summary']['sampled_animation_max_delta_m']<2e-5
-    assert rt['source_to_prepared_neutral']['surface_structure_preserved'] and rt['blend_to_fbx_neutral']['surface_structure_preserved']
-    assert rt['weights_blend_to_fbx']['max_weight_delta']<1e-6
-    for w in a['weights'].values():
-        assert w['max_influences']<=4 and w['unweighted']==0 and w['max_sum_error']<1e-5 and not w['unknown_groups']
-    for mode in ('source_validation','project_import'):
-        data=ai[mode]
-        assert data['loaded'] and data['max_positive_influences']<=4
-        for key in ('unweighted_vertices','invalid_weight_entries','nonunit_weight_vertices_epsilon_1e_5','unresolved_bone_entries','nonfinite_global_bind_matrices','nonfinite_bind_deformed_vertices'):assert data[key]==0,key
-        for clip in data['animations']:
-            assert clip['nonfinite_key_entries']==clip['sampled_nonfinite_total']==0
-            assert not clip['unresolved_or_ambiguous_channels']
-        assert not any(n['name'].startswith(('CTRL_','_auto_twist','_curl_')) for n in data['nodes'])
-    gpu=(OUT/'reaudit/gpu_after/gpu_audit.txt').read_text()
-    assert all(line in gpu.splitlines() for line in ('animation_clips=10','rendered_images=100','gl_errors=0','bind_reset=EXACT','result=PASS'))
-    assert manifest[0]['sha256']==manifest[1]['sha256']=='A602086AC9E580F2D265A489478922B75AAE00410313B17A89BD846AD4F3B34C'
-    assert not rt['missing_actions'] and not rt['extra_actions'] and not rt['skeleton']['parent_mismatches']
-    (OUT/'deliverable_manifest.json').write_text(json.dumps(manifest,indent=2),encoding='utf-8')
-    tests=[('TEST_elbows_90','Прежний тест локтей +90°'),('elbow_-120','Локти −120°'),('TEST_knees_90','Колени 90°'),
-      ('knee_120','Колени 120°'),('ankle_-35','Голеностопы −35°'),('ankle_35','Голеностопы +35°'),
-      ('toes_-30','Носки стоп −30°'),('toes_30','Носки стоп +30°'),('TEST_fingers_35','Прежний тест фаланг 35°'),
-      ('finger_curl_30','Фаланги +30° по поперечным осям'),('finger_curl_60','Фаланги +60°, стресс'),
-      ('wrist_flex_60','Кисти +60°, стресс'),('wrist_roll_60','Поворот кистей +60°'),
-      ('shoulder_raise_100','Плечи 100°, ключицы неподвижны'),('shoulder_coordinated','Ключицы 15° + плечи 80°'),
-      ('torso_head','Корпус 30° + шея 15° + голова 60°'),('secondary_all','Все цепочки волос/ткани/хвоста совместно'),('combined','Комбинированная поза')]
-    rows=[]
-    for key,label in tests:
-        x=b['poses'][key];y=a['poses'][key]
-        rows.append(f"| {label} | {x['max_ratio']:.3f} / {x['over_2']} | {y['max_ratio']:.3f} / {y['over_2']} |")
-    patch_rows='\n'.join(f"| `{p['mesh']}` | {len(p['changes'])} |" for p in patch)
-    strict=sum(not x['positions_within_10_micrometres'] for x in rt['animation_samples'])
-    text=f'''# Raphtalia — повторный аудит и состояние модели
+    blend = ROOT / 'assets/models/Raphtalia_prepared.blend'
+    fbx = ROOT / 'assets/models/Raphtalia_prepared.fbx'
+    blend_hash, fbx_hash = sha(blend), sha(fbx)
+    before, after = (read('deep_deformation/' + n + '.json') for n in ('before', 'after'))
+    old, legacy = (read('deep_deformation/legacy_' + n + '.json') for n in ('before', 'after'))
+    integrity = read('deep_deformation/integrity.json')
+    comparison = read('deep_deformation/comparison.json')
+    patch = read('deep_deformation/weight_patch.json')
+    ai = read('deep_deformation/assimp_after.json')
+    controls = read('deep_deformation/controls.json')
+    structure = read('deep_deformation/structure.json')
+    limb = read('deep_deformation/limb_validation.json')
+    sleeve = read('deep_deformation/sleeve_validation.json')
+    rt, sweep = read('roundtrip.json'), read('joint_sweep.json')
+    sweep_before = read('deep_deformation/joint_sweep_before.json')
+    archive = ROOT / 'assets/models/backups/Raphtalia_prepared.pre_deep_deformation_2026-10-21.zip'
+    with zipfile.ZipFile(archive) as retained:
+        base_hash = hashlib.sha256(retained.read('Raphtalia_prepared.blend')).hexdigest()
+    assert before['sha256'] == old['sha256'] == patch['sha256'] == base_hash
+    assert sweep_before['sha256'] == base_hash and sweep_before['file_unchanged']
+    assert after['sha256'] == legacy['sha256'] == sweep['sha256'] == blend_hash, 'Stale Blender pose evidence'
+    assert before['file_unchanged'] and after['file_unchanged']
+    assert limb['source_sha256'] == sleeve['input']['sha256'] == base_hash
+    assert limb['source_unchanged']
+    assert integrity['files']['base']['sha256'] == base_hash
+    assert integrity['files']['candidate']['sha256'] == blend_hash, 'Stale integrity audit'
+    assert integrity['result'] == 'PASS' and all(integrity['checks'].values())
+    assert rt['files']['prepared_blend']['sha256'] == blend_hash
+    assert rt['files']['prepared_fbx']['sha256'] == fbx_hash, 'Stale FBX roundtrip'
+    assert rt['source_hash_unchanged'] and rt['files_stable_during_check']
+    assert not rt['missing_actions'] and not rt['extra_actions']
+    assert not rt['skeleton']['parent_mismatches']
+    assert rt['skeleton']['blend_bones'] == rt['skeleton']['fbx_bones'] == 241
+    assert rt['source_to_prepared_neutral']['surface_structure_preserved']
+    assert rt['blend_to_fbx_neutral']['surface_structure_preserved']
+    assert rt['weights_blend_to_fbx']['max_weight_delta'] < 1e-6
+    assert rt['summary']['sampled_animation_max_delta_m'] < 2e-5
+    clip_count = len(rt['animations_blend'])
+    assert clip_count == len(rt['animations_fbx']) == 11
+    assert controls['result'] == structure['result'] == 'PASS'
+    assert after['summary']['nonfinite'] == legacy['summary']['nonfinite'] == 0
+    assert sweep['summary']['nonfinite_vertex_total'] == 0 and sweep['file_unchanged']
+    assert comparison['inputs']['before_model_sha256'] == base_hash
+    assert comparison['inputs']['after_model_sha256'] == blend_hash
+    assert all(comparison['checks'].values()), 'Before/after views are not comparable'
+    for n in ('before', 'after'):
+        assert comparison['inputs'][n]['sha256'] == sha(STAGE / (n + '.json'))
+    for pair in comparison['image_pairs']:
+        for image in pair['images'].values():
+            assert sha(Path(image['path'])) == image['sha256'], 'Stale comparison picture'
+    assert sha(Path(comparison['contact_sheet']['path'])) == comparison['contact_sheet']['sha256']
+    assert ai.get('input_sha256') == fbx_hash and ai.get('input_stable_during_audit'), 'Stale Assimp audit; rerun build_assimp_audit.ps1'
+    for mode in ('source_validation', 'project_import'):
+        data = ai[mode]
+        assert data['loaded'] and data['animation_count'] == clip_count
+        assert data['unique_weighted_bone_names'] == 241 and data['max_positive_influences'] <= 4
+        for key in ('unweighted_vertices', 'invalid_weight_entries', 'nonunit_weight_vertices_epsilon_1e_5',
+                    'unresolved_bone_entries', 'nonfinite_global_bind_matrices', 'nonfinite_bind_deformed_vertices'):
+            assert data[key] == 0, (mode, key)
+        for action in data['animations']:
+            assert action['nonfinite_key_entries'] == action['sampled_nonfinite_total'] == 0
+            assert action['unresolved_or_ambiguous_channels'] == 0
+        assert not any(n['name'].startswith(('CTRL_', '_auto_twist', '_curl_')) for n in data['nodes'])
+    gpu = dict(line.split('=', 1) for line in (STAGE / 'gpu_after/gpu_audit.txt').read_text(encoding='utf-8').splitlines() if '=' in line)
+    assert gpu.get('input_sha256') == fbx_hash and gpu.get('input_stable_during_audit') == 'YES', 'Stale GPU audit; rerun build_gpu_audit.ps1 and converter'
+    assert gpu['animation_clips'] == str(clip_count) and gpu['clips_with_pixel_changes'] == str(clip_count)
+    assert gpu['result'] == 'PASS' and gpu['gl_errors'] == '0' and gpu['bind_reset'] == 'EXACT'
+    samples = csv_rows(STAGE / 'gpu_after/gpu_samples.csv')
+    peaks = {float(r['fraction']) for r in samples if r['clip_name'].endswith('TEST_deep_body_cloth')}
+    assert len(peaks) == 6
+    endpoints = csv_rows(STAGE / 'gpu_after/gpu_endpoints.csv')
+    assert not any(int(e['end_vs_start_changed_rgb_bytes']) for e in endpoints)
+    files = [ROOT / n for n in (
+        'assets/models/Raphtalia.fbx', 'assets/models/backups/Raphtalia.original.fbx',
+        'assets/models/Raphtalia_prepared.blend', 'assets/models/Raphtalia_prepared.fbx',
+        'assets/models/backups/Raphtalia_prepared.pre_deep_deformation_2026-10-21.zip',
+        'assets/models/backups/Raphtalia_prepared.pre_reaudit_2026-10-21.zip')]
+    assert sha(files[0]) == sha(files[1]) == ORIGINAL
+    manifest = [{'path': p.relative_to(ROOT).as_posix(), 'bytes': p.stat().st_size, 'sha256': sha(p).upper()}
+                for p in files]
+    weights = integrity['weights']
+    weight_rows = '\n'.join(f"| `{m['mesh']}` | {m['changed_vertices']} |" for m in weights['changes'])
+    bow_changed = any(m['mesh'] == 'bow_tex_bow_0' for m in weights['changes'])
+    bow_note = ''
+    bow_visual = ''
+    bow_limit = ''
+    if bow_changed:
+        bow = read('deep_deformation/bow_validation.json')
+        bow_vertices = next(m['changed_vertices'] for m in weights['changes'] if m['mesh'] == 'bow_tex_bow_0')
+        assert bow['changed_vertices'] == bow_vertices
+        assert bow['sha256'] == bow['small_angle_reproduction_source']['sha256'] == base_hash
+        assert bow['file_unchanged'] and bow['small_angle_reproduction_source']['file_unchanged']
+        assert bow['render_source']['file_unchanged_during_trial']
+        assert bow['replay_matches_historical_render_trial']['passed']
+        assert bow['callable_check']['same_trial_weights']
+        assert bow['callable_check']['changed_vertices_from_immutable_base'] == bow_vertices
+        assert bow['callable_check']['candidate_idempotent_changed_vertices'] == 0
+        assert bow['view']['same_pose_camera_settings']
+        assert all(p['after']['over_2'] == p['after']['nonfinite'] == 0 for p in bow['poses'].values())
+        for pair in bow['image_pairs']:
+            for im in pair['images'].values():
+                assert sha(ROOT / im['path']) == im['sha256'], 'Stale bow comparison picture'
+        bow_note = ('\n- **Бант у воротника:** лента, узел, петли, короткие концы и отдельные островки толщины '
+                    'согласованы с существующей `spine_03.x_016`. Разные clavicle-веса раньше растягивали '
+                    'малые рёбра узла при одностороннем движении плеча. Геометрия аксессуара и шея не менялись. '
+                    f"[Изолированная проверка](deep_deformation/bow_validation.json): {len(bow['poses'])} пар поз; "
+                    'окончательная модель дополнительно проверена общим integrity/roundtrip/GPU.')
+        bow_visual = (' Дополнительно сохранены пары банта при [движении ключицы до](deep_deformation/before_bow_clavicle.png) '
+                      '/ [после](deep_deformation/after_bow_clavicle.png), '
+                      '[движении шеи до](deep_deformation/before_bow_neck.png) / [после](deep_deformation/after_bow_neck.png) '
+                      'и [верхней груди до](deep_deformation/before_bow_upper_chest.png) / [после](deep_deformation/after_bow_upper_chest.png). '
+                      'Последняя пара также показывает сохранённое пересечение концов банта с бронёй.')
+        bow_limit = (' При отдельном локальном наклоне верхней груди +20° концы банта пересекают нагрудник '
+                     'так же, как до исправления крепления; эта коллизия не устранена.')
+    selected = [('torso_turn_30', 'Поворот корпуса 30°'), ('torso_bend_45', 'Наклон корпуса 45°'),
+                ('overhead_turn', 'Руки вверх + поворот'), ('shoulder_forward_100', 'Руки вперёд 100°'),
+                ('knee_flex_120', 'Колени 120°'), ('ankle_-30', 'Стопы −30°'),
+                ('hip_flex_90', 'Бёдра 90°'), ('squat', 'Глубокое приседание'), ('cloth_fan', 'Движение цепочек ткани')]
+    metric_rows = '\n'.join(f"| {label} | {before['poses'][key]['max_ratio']:.3f} / {before['poses'][key]['over_2']} | {after['poses'][key]['max_ratio']:.3f} / {after['poses'][key]['over_2']} |"
+                            for key, label in selected)
+    regression_count = len(comparison['regressions'])
+    max_p99 = max((r['deltas'].get('p99', 0) for r in comparison['regressions']), default=0)
+    regression_metrics = sorted({m for r in comparison['regressions'] for m in r['metrics']})
+    source, imported = ai['source_validation'], ai['project_import']
+    import_rows = '\n'.join(f"| {label} | {source[k]} | {imported[k]} |" for k, label in (
+        ('node_count', 'Узлы'), ('mesh_count', 'Meshes'), ('vertices', 'Вершины'), ('triangles', 'Треугольники'),
+        ('material_count', 'Материалы'), ('animation_count', 'Клипы'), ('max_positive_influences', 'Максимум влияний')))
+    neutral_rgb = max(int(e['start_vs_bind_changed_rgb_bytes']) for e in endpoints)
+    neutral_palette = max(float(e['start_vs_bind_max_palette_delta']) for e in endpoints)
+    strict_misses = sum(not s['positions_within_10_micrometres'] for s in rt['animation_samples'])
+    positive_bones = {b['name'] for m in source['meshes'] for b in m['bones'] if b['weight_entries'] > 0}
+    text = f'''# Raphtalia — деформации тела и одежды
 
-Дата: **21 октября 2026**. Проверены фактические FBX/BLEND, исходники JULIA, прежние скрипты, JSON и изображения. Инструменты: bpy 4.2.0, Assimp {ai['assimp_version']}, MSVC, настоящие GLModelLoader/OpenGLRenderer проекта, NumPy/SciPy/Pillow.
+Дата: **21 октября 2026**. Текущий результат: **241 деформирующая кость, {clip_count} TEST-клипов**, прежние Blender-контроллеры и локально улучшенные веса тела и костюма. Исходная точка этого этапа — фактическая подготовленная модель с 241 костью и 10 Actions из сохранённого архива. Состояние проверено заново в Blender, через экспорт FBX, Assimp и настоящий OpenGL-путь JULIA.
 
-**Модель улучшена и пригодна для разработки animation player и авторинга движений. Полностью готовым универсальным анимационным персонажем она не объявляется.** Остаются деформации глубоких поз, отдельные швы одежды, ручная работа над веками/ртом и проверка gait/contact. Основной C++-рендерер и desktop playback не изменены.
+Работа ограничена телом и одеждой. Лицо, его кости, веса, Actions, ограничения и drivers сохранены; моргание, речь и эмоции не разрабатывались. Новых костей, Shape Keys, симуляции ткани или изменений C++-рендерера нет. Глубокие складки и пересечения юбки полностью устранёнными не объявляются.
 
-## Файлы и сохранность
+## Файлы и возможность отката
 
-| Файл | Назначение |
+| Файл | Состояние |
 |---|---|
-| [Raphtalia_prepared.blend](../../assets/models/Raphtalia_prepared.blend) | Редактируемая модель, Blender-контроллеры, 10 Actions |
-| [Raphtalia_prepared.fbx](../../assets/models/Raphtalia_prepared.fbx) | 241 deform bone, 10 запечённых TEST-клипов, без управляющих объектов |
-| [Оригинал](../../assets/models/Raphtalia.fbx) / [резервная копия](../../assets/models/backups/Raphtalia.original.fbx) | Не изменены; SHA256 A602086AC9E580F2D265A489478922B75AAE00410313B17A89BD846AD4F3B34C |
-| [Архив до повторного аудита](../../assets/models/backups/Raphtalia_prepared.pre_reaudit_2026-10-21.zip) | Побайтовые prepared FBX/BLEND до изменений и manifest для отката |
-| [Манифест](deliverable_manifest.json) / [иерархия CSV](skeleton_prepared.csv) | Текущие размеры, хэши, 241 head/tail/parent |
-| [Воспроизведение и управление](../../tools/raphtalia/README.md) | Команды, контроллеры, ограничения экспорта |
+| [Raphtalia_prepared.blend](../../assets/models/Raphtalia_prepared.blend) | Текущая редактируемая модель и существующие средства управления |
+| [Raphtalia_prepared.fbx](../../assets/models/Raphtalia_prepared.fbx) | Те же исправленные статические веса и {clip_count} запечённых клипов |
+| [Архив перед этим этапом](../../assets/models/backups/Raphtalia_prepared.pre_deep_deformation_2026-10-21.zip) | Точные BLEND/FBX состояния 241/10 и manifest |
+| [Оригинал](../../assets/models/Raphtalia.fbx) / [его backup](../../assets/models/backups/Raphtalia.original.fbx) | Оба SHA256 `{ORIGINAL.upper()}`; не изменены |
+| [Манифест](deliverable_manifest.json) | Размеры и SHA256 текущих файлов и обоих prepared-архивов |
+| [Команды и управление](../../tools/raphtalia/README.md), [runtime contract](runtime_audit.md) | Воспроизведение, экспорт и ограничения JULIA |
 
-`Raphtalia1.fbx` сохранён: это другой asset, используемый `tests/test_opengl.cpp`. Текстуры не удалялись и не переназначались. У оригинала нет texture references; JULIA использует существующий material/fallback-путь. Новые назначения неизвестных карт не выдумывались.
+Нейтральные позиции вершин, топология, UV, материалы, corner normals, все 241 rest matrices/родители и прежние 10 Actions совпадают с началом этапа точно. Сохранены свойства и формы контроллеров, IK/FK, ограничения и drivers. [integrity.json](deep_deformation/integrity.json) содержит хэши, все проверки и каждую изменённую вершину. Защита лица охватывает все head/hair meshes и верхнюю часть body; neck-вес заклёпки брони не превращает эту деталь одежды в лицевую геометрию. Любые изменения весов за пределами явного списка тела/костюма запрещены проверкой.
 
-## 1. Независимо подтверждённое состояние
+## Воспроизведённые проблемы и приоритеты
 
-Оригинал и prepared повторно импортированы; выполнены собственные позовые испытания, Assimp/CPU, реальная GPU-отрисовка и сравнение поверхности. Прежний отчёт не был единственным доказательством.
+| Приоритет | Реальный дефект и условия | Причина |
+|---|---|---|
+| 1 | Пояс, кольца и верх юбочных панелей ломаются при yaw корпуса 30°, наклоне 45° и комбинированной позе | Низ одежды привязан к lumbar spine, тогда как цепочки ткани начинаются от таза; отдельные части креплений имеют разные веса |
+| 1 | Короткие складки чулка у колена вытягиваются при 90–135°, локальные швы обуви растягиваются при сгибании стопы | Неравномерный переход thigh/shin и противоположные назначения соседних вершин сложенного шва |
+| 2 | Нагрудник и его отделка деформируются как мягкая ткань, плечевые заклёпки расходятся при поднятии руки | Части одной жёсткой детали имеют разные влияния; одна заклёпка полностью следует шее |
+| 2 | Узел и ленты банта растягиваются при одностороннем движении ключицы | Отдельные островки одного аксессуара имеют разные clavicle-веса |
+| 2 | Переходы подмышки, рукава и таза дают локальные заломы при подъёме рук, twist и глубоком сгибании бедра | Неравномерный переход влияний по UV-разрывам; малый spine residual чередуется между соседними сегментами |
+| 3 | Сильное уплощение глубокого сгиба и проникновение коленей через перед юбки | Ограничения исходной низкополигональной формы и LBS; свободная ткань не имеет автоматических коллизий |
 
-- Все **60** записанных refit-положений суставов действительно присутствуют. **9** исправлений родителей лент ткани и **5** исправлений terminal tails подтверждены по данным модели. [structure.json](reaudit/structure.json).
-- Один корень; вырожденных костей и невалидных rest matrices нет. Все 28 meshes используют LBS без Preserve Volume. Bind/rest проверены нейтральной деформацией и экспортным roundtrip.
-- Плечи, таз, позвоночник, шея/голова сохранены. Локти, кисти, фаланги, колени и стопы следуют ранее восстановленной запечённой позе. В этом аудите pivots не перемещались. Вид [спереди](reaudit/joints_front.png) и [сбоку](reaudit/joints_side.png) проверен по реальной поверхности.
-- Асимметричные ноги и согнутая левая кисть принадлежат исходной геометрии. Формальная симметризация не проводилась. Это ещё не стандартная T/A reference pose; внешние клипы требуют retargeting.
-- Центры суставов остаются приближённой реконструкцией по геометрии/весам, а не восстановленной авторской анатомией. Практические позы проверены; строгая анатомическая сертификация не заявляется.
-- Часть прежних diagnostic JSON фиксировала промежуточные веса перчатки/манжет. Их плохие назначения не приписываются окончательной модели; старые данные отделены от текущих.
+Дефекты воспроизведены по реальным вершинам и позам, а не перенесены из прежнего отчёта: [before.json](deep_deformation/before.json), [сравнение](deep_deformation/comparison.png). Углы — добавки к асимметричной запечённой rest pose, а не медицинский диапазон движения. Исправные суставы и иерархия не перестраивались.
 
-## 2. Скелет и исправления весов
+## Выполненные локальные исправления
 
-**241 deform bone:** 31 тело/корни/twist, 30 фаланг, 116 волос, 54 ткани, 4 хвоста, 6 лица. К прежним 239 добавлены только **brow.L/R**, по 17 реальных вершин брови на сторону. Остальные управляющие элементы — объекты Blender, не кости FBX. Сохраняются дерево root → pelvis/spine → limbs/head, ветви twist и независимые ribbons/цепочки волос и хвоста. Имена и rest matrices прежних костей сохранены.
-
-Из них **{len(positive_bones)} имеют положительные vertex weights**, а 13 — необходимые корневые/родительские узлы, передающие движение потомкам. Assimp возвращает 241 имя `aiBone`/palette entry, включая пустые cluster entries; это не число напрямую взвешенных костей. Такие счётчики не используются как доказательство качества. Raw FBX содержит {len(raw['nonempty_clusters'])} непустых и {raw['empty_cluster_count']} пустых mesh/bone clusters, создаваемых экспортёром; дополнительная оптимизация FBX не выполнялась.
-
-Blender Z up, 0.01 м на исходную единицу; FBX Y up / −Z forward. Высота около 4.16 единицы; автоматического назначения человеческого роста нет. Для C++ надо согласовать physical scale и root motion.
-
-Помимо 34 вершин новых бровей, изменены веса **{sum(len(p['changes']) for p in patch)} вершин в пяти meshes**: области плеч, шеи, локтей, кистей/фаланг, коленей, голеностопов, носков стоп и пояса. Остальные meshes не перевзвешивались.
+Изменены **{weights['changed_vertices']} уникальных вершин в {weights['changed_meshes']} meshes**:
 
 | Mesh | Изменено вершин |
 |---|---:|
-{patch_rows}
+{weight_rows}
 
-Метод: ограниченная диффузия по настоящим рёбрам и совпадающим UV-seam вершинам, обратный квадрат длины, компактные маски у суставов, шесть итераций с привязкой к исходным весам. Узкие связанные сгибы обуви/стопы/пояса согласованы по весам. Сохранены четыре сильнейших влияния и нормализация. Полного automatic/heat weighting нет. Полный before/after журнал: [weight_patch.json](reaudit/weight_patch.json).
+- **Тело:** переходы рука/торс в подмышках, бедро/таз и малые остаточные spine influences верхней груди. Фильтруется скалярная доля двух физических семейств по графу рёбер и совпадающим seam-вершинам. Существующие кости влияния и отношения основной/twist внутри семейства сохраняются. Лицо и шея исключены отдельно; локти, кисти и стопы тела не подвергались общему сглаживанию.
+- **Рукава:** отдельно согласованы shoulder-girdle/chest и arm/girdle переходы; жёсткие и отсутствующие семейства влияний не создаются заново. Манжеты и перчатки сохранены. Дополнительная [проверка рукавов](deep_deformation/sleeve_validation.json): {sleeve['summary']['samples']} позовых samples, включая прежние клипы и знаковые стресс-повороты; роста max ratio/over_2 в этой выборке нет.
+- **Чулки:** ограниченная offline-подгонка только доли shin/thigh по нескольким движениям, с сохранением списка влияний и primary/helper split. Бюджет оптимизатора — 100 вычислений; остановка по бюджету не трактуется как доказательство сходимости. Полученные статические веса проверены на дополнительных движениях, которые не входили в подбор.
+- **Обувь:** согласованы лишь короткие связные складки у голеностопа. Подошва, носок и голенище не превращены в один жёсткий блок. [limb_validation.json](deep_deformation/limb_validation.json) содержит {limb['samples_per_stage']} samples на вариант, независимые углы, поперечные/продольные повороты и прежние Actions.
+- **Пояс и свободные панели:** attachment нижней части согласован с `root.x_01`, выше сохранён плавный переход к lumbar spine. Замкнутый пояс, его пряжка и целые островки металлических колец следуют единому attachment. Существующие 54 кости ткани и их родители не менялись.
+- **Броня:** shell/толщина/отделка нагрудника согласованы с chest; высокие clavicle straps оставлены. Плечевая пластина и заклёпки следуют одной существующей arm-twist кости. Это локальное исправление жёсткой детали, а не глобальная rigid-привязка одежды.
+{bow_note}
 
-Ранее не испытанный дефект носков стоп: rigid foot/toe assignments соседних вершин растягивали ребро 1.258 мм до 20.04 мм при −30°. Исправлен плавный локальный переход; в обоих тестах ±30° флагов >2× теперь нет. Обувь целиком жёсткой не делалась: голенище и носок сохраняют подвижность.
+Все итоговые веса нормализованы, не более четырёх влияний на вершину. Полный журнал before/after: [weight_patch.json](deep_deformation/weight_patch.json). Исходные twist drivers и управление остаются рабочими. Blender-зависимых corrective drivers/morphs в результате нет: исправления работают в том же LBS, который использует JULIA.
 
-Малый sweep также выявил переход spine/cloth у пояса: ребро 2.13 мм достигало 18.16 мм при 5° spine yaw. Шов локально смягчён и короткие связанные складки согласованы; остатки требуют ручной проверки конструкции одежды. Веса у основания большого пальца кожи сохранены исходными там, где пробное сглаживание ухудшало отдельный тест 60°.
+**Отклонённые варианты:** общий knee smoothing ухудшал отдельные сгибы; широкая диффузия обуви давала паразитную мягкость и ухудшала промежуточные движения. Автоматический подъём юбочных цепочек от бедра менял силуэт и растягивал швы панелей: [три отклонённых варианта](deep_deformation/rejected_lift.json). Эти изменения не включены. Численное улучшение не использовалось для оправдания заметного визуального ухудшения.
 
-Нейтральная геометрия, UV, топология и материалы не редактировались. Новые brow bones имеют корректный bind и не меняют внешность в нейтрали. Исправные pivots/иерархии волос, хвоста, ушей, манжет и аксессуаров сохранены.
+## Визуальные сравнения и численные результаты
 
-## 3. Управление в Blender
+[Семь пар «до → после»](deep_deformation/comparison.png) используют одинаковые позы, камеры, видимые объекты, масштаб и освещение: талия при повороте/наклоне, плечи в двух движениях, колени, голеностоп и таз. [comparison.json](deep_deformation/comparison.json) проверяет определения поз/камер, хэши изображений и содержит per-pose/per-mesh дельты.
 
-- Четыре двухзвенных IK рук/ног, hand/foot targets, pole targets, отключённый stretch, ориентация кисти/стопы от target. IK/FK influence в Object custom properties Armature; по умолчанию 0.
-- Pole angles откалиброваны по асимметричной rest pose. В восьми перемещениях targets максимальная ошибка конца цепочки **{max(x['end_error_m'] for x in ctrl['ik'])*1000:.4f} мм**, изменение длины <0.1 мм. Переключение в rest: максимальный сдвиг головы кости **{max(x['rest_switch_head_jump_m'] for x in ctrl['ik'])*1000:.4f} мм**. Для произвольной FK-позы targets надо предварительно совмещать; автоматического snap/matching нет.
-- Десять finger curl controls: добавочное сгибание трёх фаланг каждого пальца, с поперечной осью каждого сегмента. Левая кисть уже согнута; начинать с 0..30°, +60° — стресс.
-- Два forearm helpers получают половину локального продольного twist кисти через swing/twist-разложение. Из 60° получено 30°. Ручной FK сохраняется. Upper-arm/leg twist остаются FK: полной автоматизации восьми helpers нет.
-- Тело управляется существующим `root.x_01`; глаза/уши/брови доступны в коллекции Face. Новые фиктивные body/facial controls не добавлялись.
+Видимое улучшение наиболее выражено у пояса, круглых креплений, верхних панелей и края нагрудника. Рукава и переходы ног улучшены локально; внешняя разница отдельных кадров невелика. В OpenGL также проверены все шесть пиков нового клипа с близкими видами плеча, талии, колена и обуви. Отсутствие новых разрывов не означает отсутствия всех пересечений.{bow_visual}
 
-[control_layout.json](reaudit/control_layout.json) описывает связи, [controls.json](reaudit/controls.json) подтверждает каждый curl control, IK и twist. Невалидных drivers нет, возврат к нейтрали точный. Сложный heel/toe foot roll, полный набор joint limits, FK/IK snap и collision system не реализованы: они требуют проверки походки/контактов и не нужны для текущего FK-экспорта.
+Таблица: максимальное отношение длины ребра к rest / число рёбер >2×. Исключены почти нулевые rest-рёбра. Эти показатели локализуют растяжение, но не измеряют естественность, потерю объёма и коллизии.
 
-## 4. Лицо
-
-Работают отдельные радужки/блики, уши и новые брови. Проверены горизонтальный gaze ±12°, вертикальный ±8°, уши ±20°, подъём бровей на 0.8 исходной единицы и сочетания с головой/волосами. Радужки — patch surfaces, не сферические eyeballs; большие углы не гарантируются. [Горизонтальный gaze](reaudit/after_gaze_horizontal_1.png), [вертикальный](reaudit/after_gaze_vertical_1.png), [брови](reaudit/face_brows_raised.png).
-
-Пробный morph моргания сводил две 16-вершинные границы глаз в линию закрытия, плавно деформируя кожу и ресницы. Он закрывал проём, но создавал складки щеки/века и смещал нижние ресницы. **Кандидат отклонён, в модель не включён**: [rejected_blink.png](reaudit/rejected_blink.png), воспроизведение — [face_blink_probe.py](../../tools/raphtalia/face_blink_probe.py). Сжатие глаз не подменяло моргание.
-
-Нужны вручную вылепленные верхние/нижние eyelid shapes с проверкой lash attachments, уголков и толщины века. Полная смена топологии заранее не требуется, но одной автоматической маски оказалось недостаточно. В ротовой области есть внутренняя поверхность, однако качественные jaw/lip/cheek/inner-mouth deformations и visemes не созданы. Нужны ручное авторство и визуальная QA; необходимость локального изменения геометрии определяется при ней. Открывание/закрывание рта, речь и полноценные эмоции **не готовы**. Фиктивных blink/lip controllers и morph targets нет. Будущие Shape Keys потребуют поддержки importer/buffer/shader в C++; bone-мимика использует нынешний skinning path.
-
-## 5. Сравнение деформаций
-
-«До» — реальная prepared-модель с 239 костями начала этого аудита, а не повреждённый исходный T-pose skeleton. Таблица: **максимальная длина ребра относительно rest / число рёбер >2×**; исключены rest-рёбра ≤1 мкм. Углы — добавки к асимметричной запечённой позе, не анатомические ROM. Метрика выявляет растяжение, но не оценивает объём, красоту и коллизии.
-
-| Тест | До | После |
+| Поза | До | После |
 |---|---:|---:|
-{chr(10).join(rows)}
+{metric_rows}
 
-Отдельно проверены все десять пальцев при +60°, обратные сгибания, кисти ±60°, плечи 60°/100°, таз ±45°, toes ±30°. Всего **{a['summary']['poses']} позы**, NaN/Inf = 0: [after.json](reaudit/after.json). Одинаковые базовые 50 поз: [before.json](reaudit/before.json). В них не выросли числа флагов по каждому mesh; это не гарантия отсутствия всех художественных ухудшений. Сохранены координаты/веса концов худших рёбер. Рендеры просмотрены: [сравнение](reaudit/comparison.png), [кисть](reaudit/after_hand_l.png), [локоть](reaudit/after_elbow_detail.png), [колено](reaudit/after_knee_detail.png), [обувь](reaudit/after_shoe_detail.png), [комбинация](reaudit/after_combined.png).
+В {regression_count} парах pose/mesh присутствуют увеличившиеся диагностические показатели ({', '.join(regression_metrics) or 'нет'}); наибольшая прибавка p99 — {max_p99:.5f}. Все дельты сохранены, а не скрыты усреднением. Оценка принятых компромиссов опирается также на локальные кадры и независимые проверки промежуточных движений. Модель не заявляется идеальной в каждом крайнем положении.
 
-Малый отдельный sweep 241 костей по +5° local X/Y/Z: **723 позы, NaN/Inf = 0**; >2× в **{sw['summary']['poses_with_edges_stretched_over_2']}** позах против **{oldsw['summary']['poses_with_edges_stretched_over_2']}** в 717 позах прежнего скелета. [joint_sweep.json](joint_sweep.json). У всех восьми продольных local-Y twist-тестов флагов нет. Поперечные X/Z helpers — стресс, а не штатное сгибание второго локтя/колена. Максимум малого sweep **{sw['summary']['max_edge_ratio_requested']:.3f}×**; finite PASS не означает качества всех деформаций.
+## Практические испытания и экспорт
 
-## 6. Экспорт и совместимость
+| Проверка | Фактический результат |
+|---|---|
+| Новый body/clothing audit | {len(after['poses'])} отдельных и комбинированных поз; NaN/Inf = 0 |
+| Прежний широкий аудит | {old['summary']['poses']} поз до / {legacy['summary']['poses']} после; дополнительная запись — новый TEST Action; NaN/Inf = 0 |
+| Каждая локальная ось всех костей, +5° | {sweep['summary']['poses']} вращения; NaN/Inf = 0. Поз с рёбрами >2×: {sweep_before['summary']['poses_with_edges_stretched_over_2']} → {sweep['summary']['poses_with_edges_stretched_over_2']}; max ratio {sweep_before['summary']['max_edge_ratio_requested']:.3f} → {sweep['summary']['max_edge_ratio_requested']:.3f}. Это малые углы; метрики не измеряют объём и не заменяют глубокие позы: [до](deep_deformation/joint_sweep_before.json) / [после](joint_sweep.json) |
+| Контроллеры и структура | [controls.json](deep_deformation/controls.json) / [structure.json](deep_deformation/structure.json): PASS; проверка сохранности — PASS |
+| Blender → FBX → Blender | {rt['summary']['sample_count']} sampled poses, {clip_count}/{clip_count} Actions, 241/241 костей, родители и веса сохранены |
+| Assimp {ai['assimp_version']} | Source validation и точные project postprocess flags; по девять CPU samples каждого клипа в каждом режиме, нечисловых значений нет |
+| Реальный OpenGL | {gpu['rendered_images']} сохранённых изображений, все {clip_count} клипов меняют rendering, GL errors = {gpu['gl_errors']}, bind reset = EXACT |
 
-Прежние семь Actions сохранены. Добавлены `TEST_practical_ranges` (8 секунд, пики −120° локти / 120° колени / curl 30° / комбинация), `TEST_brows_wrist`, `TEST_toes_30` (по 2 секунды). Это диагностические клипы, не idle/walk/run/речь. Все имеют нейтральные концы, 30 fps. Экспорт: meshes + deform Armature; constraints оцениваются/запекаются, управляющих empties в FBX нет.
+Roundtrip: максимальная ошибка нейтрали {rt['summary']['roundtrip_neutral_max_delta_m'] * 1000:.5f} мм, анимационной поверхности {rt['summary']['sampled_animation_max_delta_m'] * 1000:.5f} мм. Порог 0.01 мм превышен в {strict_misses} samples; все ниже 0.02 мм. UV/топология/материалы сохранены; небольшая разница corner normals после FBX измерена и не выдаётся за побайтовое совпадение shading. Полные данные: [roundtrip.json](roundtrip.json).
 
-Повторный импорт: 241/241 костей, 10/10 clips, parent mismatches = 0. Веса соответствующих вершин совпадают **точно**, max delta = {rt['weights_blend_to_fbx']['max_weight_delta']}. Source → prepared neutral: **{rt['summary']['source_neutral_max_delta_m']*1000:.6f} мм**. BLEND → FBX neutral: **{rt['summary']['roundtrip_neutral_max_delta_m']*1000:.6f} мм**. В **{rt['summary']['sample_count']}** образцах времени максимум **{rt['summary']['sampled_animation_max_delta_m']*1000:.6f} мм**. Строгий порог 0.01 мм превышен в {strict} образцах; все <0.02 мм. Топология, UV (delta 0), material slots/indices и параметры материалов сохранены. Corner normals после FBX отличаются до **{rt['blend_to_fbx_neutral']['max_normal_angle_degrees']:.3f}°**; побайтовое равенство shading не заявляется. [roundtrip.json](roundtrip.json).
+Текущий FBX через Assimp:
 
-Assimp source validation и точные postprocess flags JULIA: **28 meshes, 26 материалов, 241 имя aiBone/palette entry, 271 scene node**; положительные weights есть у {len(positive_bones)} костей. Оба режима: максимум 4 influences; нет invalid/nonunit/unweighted vertices, unresolved bones, NaN/Inf в клипах и CPU-деформации. После postprocess {ai['project_import']['vertices']:,} вершин и 62 342 треугольника; до него 187 032 / 62 344. Два degenerate triangles удаляет нынешний pipeline, как у оригинала. Bind residual **{ai['project_import']['max_bind_position_residual_scene_units']:.9g}** imported scene units. По девять CPU samples каждого клипа. [assimp_after.json](reaudit/assimp_after.json), [raw FBX](reaudit/raw_prepared.json).
+| Показатель | Source validation | Project postprocess |
+|---|---:|---:|
+{import_rows}
 
-Реальный OpenGL 3.3 renderer JULIA на RTX 4070 SUPER: **100 изображений, 10 движущихся клипов, 0 GL errors, точный bind reset**. Начало/конец клипов совпадают побайтово на четырёх видах. Проверены composition masks и пять точек local-TRS/quaternion crossfade. Для длинного range-клипа выбраны настоящие пики 12.5/37.5/62.5/87.5%; выборка четвертей попадала на нейтральные кадры и не подтверждала диапазон. Прежний 239-bone FBX также заново отрисован: 7 клипов / 74 снимка.
+В обоих режимах invalid/unweighted/nonunit vertices, unresolved bones/channels и нечисловые ключи/матрицы/поверхности — ноль. 241 palette entry включает пустые clusters; положительные vertex assignments имеют {len(positive_bones)} имён костей. Два вырожденных треугольника удаляет прежний project pipeline. Текстуры/UV/материалы не удалялись и не переназначались. [assimp_after.json](deep_deformation/assimp_after.json).
 
-[GPU-протокол](reaudit/gpu_after/gpu_audit.txt), [front](reaudit/gpu_after/gpu_front_contact.png), [back](reaudit/gpu_after/gpu_back_contact.png), [face](reaudit/gpu_after/gpu_face_contact.png), [mix](reaudit/gpu_after/gpu_mix_contact.png), [endpoints](reaudit/gpu_after/gpu_endpoints.csv). Pixel change сам по себе не подтверждает отсутствие пересечений; использованы также численные данные и просмотр кадров.
+GPU использует существующие `GLModelLoader` и `OpenGLRenderer`, скрытый GL 3.3 context и независимый TRS/quaternion sampler. Проверены настоящие экспортированные движения, не только успешная загрузка. Начало и конец каждого клипа совпадают побайтово на всех десяти ракурсах. Animation-neutral отличается от imported bind на малую величину: max palette delta {neutral_palette:.8g}, максимум {neutral_rgb} RGB bytes; поэтому равенство animation-neutral и bind не заявляется. Отдельная повторная отрисовка bind точна. Сохраняются прежние masked-composition и пять TRS crossfade-проверок.
 
-## 7. Ограничения и дальнейшая работа
+GPU evidence: [протокол](deep_deformation/gpu_after/gpu_audit.txt), [samples](deep_deformation/gpu_after/gpu_samples.csv), [endpoints](deep_deformation/gpu_after/gpu_endpoints.csv), [body/clothing closeups](deep_deformation/gpu_after/gpu_body_cloth_contact.png), [baseline](deep_deformation/gpu_before/gpu_body_cloth_contact.png). SHA256 в Blender/Assimp/GPU evidence и манифесте привязаны к текущим файлам; генератор отчёта отклоняет устаревшие результаты.
 
-1. На глубоких плечевых позах, кистях +60°, фалангах +60°, коленях 120° и голеностопах ±35° остаются pinching/stretch. Полный кулак, захваты и произвольный mocap не сертифицированы. Нужны ручной cleanup и corrective формы вместо дальнейшего общего размытия.
-2. Отдельные переходы spine/cloth/броня при скручивании ещё деформируются. Улучшение шва пояса не заменяет утверждение конструкции одежды и жёстких деталей; смотреть `worst_edge` и локальные рендеры.
-3. Большие одновременные повороты всех волос/ткани дают накопленный изгиб и пересечения. Физики, collisions и защиты от проникновения в тело нет. Исправные rest pivots/цепочки сохранены.
-4. Качественные blink, верхние/нижние веки, mouth/jaw/visemes и эмоции требуют ручного facial authoring. Подтверждены gaze, уши и брови.
-5. Rest pose асимметрична. IK помогает авторингу, но walk/run, foot contact, heel roll, root-motion scale и переходы ещё надо подготовить.
-6. Desktop JULIA остаётся статическим: GLModelLoader не сохраняет aiAnimation/morph channels для playback. Следующий этап C++: сохранить clips/TRS, сопоставить все 271 scene nodes, local TRS/slerp → `model.skinningMatrices(localPose)` → renderer. Palette уже поддерживает 241 матрицу. Формула проекта `globalNode × adjustedOffset`; повторное inverse(root) не добавлять. [runtime_audit.md](runtime_audit.md).
+## Оставшиеся ограничения и следующий этап
 
-## 8. Очистка
+1. Глубокие сгибы коленей/локтей сохраняют характерное для LBS уплощение и исходную гранёность. Общий DQS/Preserve Volume только в Blender нарушил бы соответствие JULIA, поэтому не включён.
+2. При глубоком приседании и высоком шаге колени/бёдра могут проходить через юбку. Существующие цепочки позволяют ручное позирование панелей; автоматических коллизий и физики ткани нет. Умеренные движения устойчивее, но универсальная collision-free сертификация не заявляется.
+3. При крайнем подъёме вперёд плечевая пластина может располагаться почти ребром и тесно прилегать к рукаву; под грудью в сильном наклоне остаётся жёсткое сжатие.{bow_limit} Эти места требуют авторинга конкретных движений и дальнейшей локальной проверки.
+4. Исходная асимметричная rest pose, масштаб и ориентации локальных осей не изменены. Внешние движения требуют согласования retargeting, контактов и root motion. Автоматического FK/IK matching и полного foot-roll нет; прежнее управление сохранено.
+5. Основное приложение по-прежнему статическое: standalone sampler не добавляет animation player, state machine или morph playback. Новые веса уже совместимы с runtime skinning; воспроизведение клипов — отдельная интеграционная задача.
+6. Крайние сгибания запястья +45/+60° и пальцев сохраняют прежние ограничения сжатия/пересечения. Эти зоны проверены, но их веса на этом этапе не менялись; успешный finite/GPU-тест не означает естественной формы в крайних позах.
 
-Удалены два содержательных файла: `docs/raphtalia/glove_weight_patch.json` — точный дубль сохранённого `glove_transfer_applied.json`; `tools/raphtalia/deformation_diagnostics.py` — устаревший glove-transfer experiment, заменённый reaudit/control checks. Его очистка AnimationData отключала бы новые drivers. Внешних вызовов/импортов не найдено.
+Для следующего этапа: авторить движения с ручными ключами существующих юбочных цепочек и проверить контакты; затем отдельно рассматривать совместимые pose-correctives, только с реальной поддержкой в JULIA и новым roundtrip/GPU сравнением. Лицевая анимация остаётся отдельной будущей задачей.
 
-{len(clean['moves'])} исторических файлов перемещены с проверкой SHA256 в [history/2026-10-20](history/2026-10-20/README.md): старые prepared/GPU-рендеры, intermediate patches/diagnostics. Измерения оригинала, инструменты подготовки и текстуры сохранены. [cleanup.json](reaudit/cleanup.json) содержит точные пути и причины. Старые отчёты явно исторические; актуальный основной отчёт — этот файл. Дополнительно удалены созданные этим аудитом промежуточные GPU-кандидаты и точные временные копии final outputs. Raw GPU before/final, зависимости, логи и rollback snapshots сохранены; глобальной очистки JULIA не было.
-
-Приоритет художественного прохода: плечи/пояс → кисти и глубокие колени → веки/губы → gait/contact и retarget. Для разработки animation player asset пригоден; для выпуска полноценного анимированного персонажа нужна указанная доработка.
+Исходный `Raphtalia.fbx`, текстуры, другие модели и ранние backups сохранены. Промежуточные пробы находятся в build и не заменяют final evidence; очистка затрагивает только явно созданные на этом этапе временные файлы: [журнал](deep_deformation/cleanup.json). `reaudit/` и `history/2026-10-20/` относятся к предыдущим этапам, а не к текущим количествам костей/клипов.
 '''
-    (OUT/'REPORT_RU.md').write_text(text,encoding='utf-8')
-    print('Report/manifest:',a['bones'],'bones;',len(rt['animations_blend']),'clips')
+    # Assertions finish before publishing either artifact.
+    assert (sha(blend), sha(fbx)) == (blend_hash, fbx_hash), 'Models changed while building report'
+    (OUT / 'REPORT_RU.md').write_text(text, encoding='utf-8')
+    (OUT / 'deliverable_manifest.json').write_text(json.dumps(manifest, indent=2), encoding='utf-8')
+    print(json.dumps({'report': str(OUT / 'REPORT_RU.md'), 'bones': 241, 'clips': clip_count,
+                      'changed_vertices': weights['changed_vertices'], 'files': len(manifest)}, ensure_ascii=False))
 
-if __name__=='__main__':main()
+
+if __name__ == '__main__':
+    main()
