@@ -1,54 +1,49 @@
 # Raphtalia: текущий C++/OpenGL contract
 
-Проверка: **21 октября 2026**. Текущий asset — `Raphtalia_prepared.fbx`, **241 deform bone / 11 TEST-клипов**. Размеры и SHA256: [deliverable_manifest.json](deliverable_manifest.json). Изменения тела/одежды и результаты визуального сравнения: [REPORT_RU.md](REPORT_RU.md). Данные текущего этапа находятся в `deep_deformation/`; `reaudit/` и [history/2026-10-20/](history/2026-10-20/runtime_audit.md) относятся к предыдущим этапам.
+Проверка: **21 октября 2026**. Актуальный `Raphtalia_prepared.fbx`: **429 deform bones, 15 TEST-клипов**, включая четыре клипа моргания. SHA256 и размеры — [deliverable_manifest.json](deliverable_manifest.json). Реализация, визуальные сравнения и ограничения — [REPORT_RU.md](REPORT_RU.md). Текущие evidence находятся в `blink/`; `deep_deformation/` относится к предыдущему снимку 241/11.
 
-## Что поддерживает JULIA
+## Что фактически поддерживает JULIA
 
-`plugins/render_opengl/src/GLModelLoader.cpp` импортирует meshes, материалы, vertex weights, nodes, global bind и inverse bind. Вершины приводятся к imported scene space; offsets учитывают inverse(meshGlobal). `GLModel::skinningMatrices(localPose)` ожидает локальные трансформации **всех nodes** в порядке модели, вычисляет глобальные parent → child и выдаёт `globalNode × adjustedOffset`. Второй inverse(root) добавлять нельзя. Пустой массив позы использует imported bind.
+`plugins/render_opengl/src/GLModelLoader.cpp` импортирует meshes, материалы, четыре vertex weights, nodes и inverse bind. `GLModel::skinningMatrices(localPose)` принимает локальные трансформации всех nodes в порядке модели, вычисляет globals parent→child и palette `globalNode × adjustedOffset`. Второй inverse(root) не нужен. Пустая поза использует imported bind.
 
-`OpenGLRenderer.cpp` принимает palette через `renderModel(model, modelMatrix, palette)`. `samplerBuffer`/`GL_RGBA32F` хранит четыре texel на mat4; лимит проверяется через `GL_MAX_TEXTURE_BUFFER_SIZE`. Текущий asset требует 241 матрицу, 15424 байта. NVIDIA RTX 4070 SUPER сообщила 268435456 texels; это характеристика одного устройства, не результат performance benchmark.
+`OpenGLRenderer::renderModel(model, modelMatrix, palette)` выполняет LBS без Preserve Volume. Palette хранится в `samplerBuffer`/`GL_RGBA32F`: четыре texel на mat4. Фиксированного предела 256 костей нет; доступный предел проверяется через `GL_MAX_TEXTURE_BUFFER_SIZE / 4`. Итоговые 429 матриц занимают 27456 байт. В аудите RTX 4070 SUPER сообщил 268435456 texels, или 67108864 матрицы; это характеристика проверенного GPU, не performance benchmark.
 
-Vertex contract: четыре bone indices / weights, **LBS без Preserve Volume**. Исправления этого этапа — статические веса, поэтому специальный runtime solver не нужен. Fitting/камера — Y up; `fitToHeightTransform(2.2f)` отдельно центрирует/масштабирует imported bounds. Physical scale и root motion требуют согласованных единиц.
+**Основной desktop остаётся статическим.** Loader не сохраняет `aiAnimation`/morph channels после уничтожения Assimp scene. Animation player, state machine и runtime UI для `Blink_L/R` не добавлены. Standalone auditor использует готовый renderer API и независимый sampler; он не внедряет playback в desktop. C++-рендерер не изменён.
 
-**Основное приложение остаётся статическим.** Loader не сохраняет `aiAnimation`/morph channels после уничтожения Assimp scene. Animation player, state machine, masks и morph shader не добавлены. Standalone auditor проверяет существующий путь skinning и не внедряет playback в desktop. C++-рендерер на этом этапе не менялся.
+## Моргание и экспортный контракт
 
-## Проверка текущего файла
+В BLEND объект `Raphtalia_Rig` содержит `Blink_L` и `Blink_R` от 0 до 1. Они управляют реальной геометрией через стандартные drivers новых костей век и корректирующей поверхности. Все новые кости находятся под существующей головой. Исходные 241 кость, их rest/parents, 11 Actions, IK/FK и прежние лицевые controls сохранены.
 
-Assimp **6.0.4** проверяет два режима: source validation без сокращения весов и точные postprocess flags загрузчика. [assimp_after.json](deep_deformation/assimp_after.json) содержит оба результата и SHA256 входного FBX.
+FBX переносит **запечённые TRS костей**, не Python или зависимости от Blender. Авторские Actions имеют 30 fps; экспортный шаг 0,25 кадра даёт 120 samples/sec, simplify 0. Длительности четырёх клипов — 1/2/4/4 с. Это увеличивает файл примерно до 170 МБ. Morph targets/channels/keys = 0, что отдельно проверено [morph-аудитором](blink/morph.json). Morph shader для этого решения не требуется.
+
+Контроллеры Blender сами не становятся интерфейсом приложения. Для непрерывных независимых скаляров необходимо перенести выражения из [patch.json](blink/patch.json), соблюдая исходные координаты и масштаб 0,01, либо проигрывать запечённые клипы с масками лицевых костей. Матрицы поз для смешивания следует строить из локальных TRS, quaternion — slerp; matrix lerp не использовать.
+
+## Практические проверки
 
 | Проверка | Результат |
 |---|---|
-| Узлы / meshes / материалы | 271 / 28 / 26 в обоих режимах |
-| Palette entries / skeletal clips | 241 / 11 в обоих режимах |
-| Максимум influences | 4 |
-| Invalid / nonunit / unweighted vertices | 0 / 0 / 0 |
-| Unresolved bones/channels и NaN/Inf | 0 |
-| CPU-деформации | По девять samples каждого клипа в каждом режиме |
-| Blender → FBX → Blender | 87 samples, 241/241 костей, 11/11 Actions; родители и веса сохранены |
+| Blender → FBX → Blender | 216 sampled poses, 429/429 костей, 15/15 Actions, родители и веса сохранены |
+| Максимальная ошибка нейтрали / анимации | 0,00196 / 0,03192 мм; включены дробные состояния 25/50/75% |
+| Assimp 6.0.4: source/project flags | 459 nodes, 28 meshes, 26 materials, 15 clips, 429 palette entries, max4 weights |
+| Invalid / unweighted / nonunit / unresolved / nonfinite | 0 в обоих режимах |
+| Source/project vertices | 206832 / 171523 |
+| Source/project triangles | 68944 / 68942; два прежних degenerate удаляются существующим pipeline |
+| Реальный OpenGL | 307 snapshots, 15/15 clips изменяют rendering, GL errors 0, bind reset EXACT |
+| Начало/конец каждого клипа | RGB совпадают; отдельная повторная отрисовка bind точна |
 
-Palette entries включают пустые FBX clusters; 241 entry не означает 241 непосредственно взвешенную кость. Полные количества vertices/triangles и положительных назначений приведены в отчёте и JSON. Существующий project postprocess удаляет два вырожденных треугольника. Численные проверки не доказывают художественное качество или отсутствие пересечений.
+[Roundtrip](blink/roundtrip.json), [Assimp](blink/assimp.json), [GPU-протокол](blink/gpu/gpu_audit.txt) содержат SHA256 проверенных байтов. Кандидат был проверен до записи в prepared assets; итоговые файлы имеют те же SHA256. После локального subdivision расстояние между ближайшими вершинами исходной и новой сетки не является расстоянием между поверхностями. [Integrity](blink/integrity.json) проверяет исходные точки, barycentric provenance, площади и UV; эта проверка сохраняет смысл при изменении числа вершин.
 
-[roundtrip.json](roundtrip.json) привязан к SHA256 текущих BLEND/FBX. Новый `TEST_deep_body_cloth` проверяется во всех ключевых положениях и серединах переходов. Максимальная ошибка анимационной поверхности <0.02 мм; строгий порог 0.01 мм проходит не везде. UV, топология и материалы сохранены; небольшая разница corner normals после FBX измерена, shading не объявлен побайтово одинаковым. [integrity.json](deep_deformation/integrity.json) отдельно подтверждает точную сохранность исходной геометрии, скелета, controls, прежних Actions и лица до экспорта.
+GPU-аудитор вызывает настоящие `GLModelLoader`/`OpenGLRenderer` в скрытом GL 3.3 context. Независимый Assimp sampler интерполирует position/scale линейно, rotations — slerp. Для blink выбраны реальные закрытые ключи и дробные уровни, а не только 25/50/75% длительности. [35 выбранных состояний / 70 PNG](blink/gpu/manifest.json) показывают общие уровни, независимые wink, шесть направлений взгляда и голову. Сохранены прежние masked composition и TRS crossfade checks.
 
-## Реальный GPU
+Нулевое количество Assimp texture slots у исходного prepared FBX — прежнее ограничение; текущие GPU изображения используют clay-материалы. Исходные materials, UV и файлы текстур сохранены. Эти кадры подтверждают deformation/render path, а не textured beauty render. Небольшой canthus pinch при полном закрытии описан в основном отчёте. Проверки конечны и не доказывают отсутствие всех коллизий для любых поз/камер.
 
-[gpu_pose_audit.cpp](../../tools/raphtalia/gpu_pose_audit.cpp) создаёт скрытый OpenGL 3.3 context и использует **настоящие GLModelLoader/OpenGLRenderer**. Независимый Assimp sampler интерполирует local position/scale линейно, rotation — quaternion slerp, затем передаёт palette через существующий API. Проверяются channels, конечность матриц и GL errors; изображения читаются с GPU.
+## Следующие изменения runtime
 
-Итог: **166 изображений, все 11 клипов меняют rendering, GL errors = 0, bind reset = EXACT**. Все шесть пиков нового body/clothing-клипа показаны с близкими видами плеча, талии, колена и обуви. Для `TEST_practical_ranges` выбраны фактические пики 12.5/37.5/62.5/87.5%; четверти этого клипа нейтральны. `TEST_toes_30` проверяет оба направления на 25/75%. Сохранены 38-node masked composition и пять TRS/quaternion crossfade points.
+1. Сохранить clips, duration, ticks-per-second и TRS channels до уничтожения importer; определить обработку неизвестного ticks-per-second.
+2. Привязать channels ко всем node indices, включая helpers; незаданные компоненты брать из bind TRS.
+3. Смешивать локальные TRS и quaternion slerp; затем вычислять globals и palette через существующий API.
+4. Добавить playback и лицевые masks; для независимых `Blink_L/R` перенести документированные выражения или авторить соответствующие клипы.
+5. Проверять размер palette через уже существующий GL texture-buffer limit. Увеличение skeleton не требует нового shader contract.
+6. Речевую мимику и возможные morphs исследовать отдельным этапом. При выборе morphs понадобятся importer/buffers/shader и отдельная проверка morph deltas/channels; нынешний успешный skeletal playback этого не доказывает.
 
-Начало и конец каждого клипа совпадают побайтово на всех десяти видах. Animation-neutral немного отличается от imported bind вследствие экспорта; точные RGB/palette дельты находятся в endpoints. Отдельная повторная отрисовка bind точна. Существующие лицевые клипы участвуют только в проверке сохранности: новые лицевые движения не создавались.
-
-Доказательства: [протокол и SHA256](deep_deformation/gpu_after/gpu_audit.txt), [samples](deep_deformation/gpu_after/gpu_samples.csv), [endpoints](deep_deformation/gpu_after/gpu_endpoints.csv), [mix](deep_deformation/gpu_after/gpu_mix.csv), [body/clothing closeups](deep_deformation/gpu_after/gpu_body_cloth_contact.png). Для сопоставимого [GPU baseline](deep_deformation/gpu_before/gpu_body_cloth_contact.png) исходная модель 241/10 получила только тот же новый диагностический клип, без исправления весов.
-
-Эти проверки подтверждают выполнение исправленных экспортированных деформаций. Сохраняются LBS-уплощение глубоких сгибов и пересечения юбки с ногами в некоторых глубоких позах; автоматических коллизий нет. Полный OpenGL unit suite и gameplay/performance benchmark не запускались.
-
-## Следующий этап runtime
-
-1. Сохранить clips, duration, ticks-per-second и TRS channels до уничтожения importer; явно обработать неизвестный ticks-per-second.
-2. Привязать channels ко всем node indices, включая helpers без weights. Для незаданных компонентов использовать bind TRS.
-3. Смешивать локальные TRS, rotation — slerp; затем вычислять globals. Matrix lerp для переходов не использовать.
-4. Передавать palette из `model.skinningMatrices(localPose)` в `renderer.renderModel`.
-5. После базового playback отдельно реализовать masks/layers, transitions, root motion и foot contacts; согласовать рост/scale. Для юбки авторить контакты ключами существующих цепочек.
-6. Если понадобятся Shape Keys, добавить importer/buffers/shader и повторить визуальный roundtrip/GPU. Текущие исправления morph-поддержки не требуют. Лицевая анимация остаётся отдельной задачей.
-
-Команды: [tools/raphtalia/README.md](../../tools/raphtalia/README.md). GPU-инструмент линкуется с готовыми Release-библиотеками JULIA; после будущих изменений C++ их нужно пересобрать. Текущий генератор отчёта отклоняет evidence, SHA256 которого не соответствует опубликованным assets.
+Команды и ограничения исторических генераторов: [tools/raphtalia/README.md](../../tools/raphtalia/README.md).

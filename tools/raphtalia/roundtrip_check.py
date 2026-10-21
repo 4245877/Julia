@@ -56,6 +56,21 @@ def actions():
 
 
 def sample_frames(action, label):
+    if label.startswith('TEST_blink_'):
+        blink_curves=[c for c in action.fcurves if c.data_path in ('["Blink_L"]','["Blink_R"]')]
+        keyed=sorted({float(k.co.x) for c in blink_curves for k in c.keyframe_points})
+        frames=set(keyed)|{(a+b)/2 for a,b in zip(keyed,keyed[1:])}
+        for curve in blink_curves:
+            for a,b in zip(keyed,keyed[1:]):
+                if curve.evaluate(a)>.001 or curve.evaluate(b)<.999:continue
+                for target in (.25,.5,.75):
+                    lo,hi=a,b
+                    for _ in range(35):
+                        mid=(lo+hi)*.5
+                        if curve.evaluate(mid)<target:lo=mid
+                        else:hi=mid
+                    frames.add(round((lo+hi)*.5,6))
+        return sorted(frames)
     if label.startswith('TEST_deep_'):
         # Inspect every authored pose and the transitions between them. Do not
         # assume a particular duration or silently miss multi-peak clips.
@@ -71,6 +86,8 @@ def set_action(label=None, frame=1):
     arm = armature()
     arm.animation_data_create()
     arm.animation_data.action = actions().get(label)
+    for key in ('Blink_L','Blink_R'):
+        if key in arm:arm[key]=0.
     for bone in arm.pose.bones:
         bone.matrix_basis = Matrix.Identity(4)
     whole = int(np.floor(frame))
@@ -301,6 +318,7 @@ def main():
         "extra_actions": sorted(set(fbx_animations) - set(blend_animations)),
         "animation_samples": sample_results,
         "limits": ["Compares actual sampled Blender deformation; does not validate game blending, transitions, IK, collisions or artistic motion quality.",
+                   "Symmetric nearest-vertex distances are not surface distances after local subdivision. Use the blink integrity provenance checks for unchanged rest surfaces and UV transfer.",
                    "Source's outer placement transform is removed using the documented preparation coordinate convention.",
                    "Normal comparisons are corner-wise and meaningful when topology order is equal."],
     }

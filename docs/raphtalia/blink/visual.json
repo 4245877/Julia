@@ -1,0 +1,364 @@
+{
+  "blend_sha256": "c1c0db17b06cdf1d0c621dbaa1916e6a452e50464d8baab2155e44f7aea897c6",
+  "render": "Blender Workbench studio, clay, fixed camera/lighting; no material or texture changes are saved",
+  "states": [
+    {
+      "file": "both_000.png",
+      "L": 0,
+      "R": 0,
+      "yaw": 0,
+      "pitch": 0,
+      "oblique": false
+    },
+    {
+      "file": "both_025.png",
+      "L": 0.25,
+      "R": 0.25,
+      "yaw": 0,
+      "pitch": 0,
+      "oblique": false
+    },
+    {
+      "file": "both_050.png",
+      "L": 0.5,
+      "R": 0.5,
+      "yaw": 0,
+      "pitch": 0,
+      "oblique": false
+    },
+    {
+      "file": "both_075.png",
+      "L": 0.75,
+      "R": 0.75,
+      "yaw": 0,
+      "pitch": 0,
+      "oblique": false
+    },
+    {
+      "file": "both_100.png",
+      "L": 1.0,
+      "R": 1.0,
+      "yaw": 0,
+      "pitch": 0,
+      "oblique": false
+    },
+    {
+      "file": "left_000.png",
+      "L": 0,
+      "R": 0,
+      "yaw": 0,
+      "pitch": 0,
+      "oblique": false
+    },
+    {
+      "file": "left_025.png",
+      "L": 0.25,
+      "R": 0,
+      "yaw": 0,
+      "pitch": 0,
+      "oblique": false
+    },
+    {
+      "file": "left_050.png",
+      "L": 0.5,
+      "R": 0,
+      "yaw": 0,
+      "pitch": 0,
+      "oblique": false
+    },
+    {
+      "file": "left_075.png",
+      "L": 0.75,
+      "R": 0,
+      "yaw": 0,
+      "pitch": 0,
+      "oblique": false
+    },
+    {
+      "file": "left_100.png",
+      "L": 1.0,
+      "R": 0,
+      "yaw": 0,
+      "pitch": 0,
+      "oblique": false
+    },
+    {
+      "file": "right_000.png",
+      "L": 0,
+      "R": 0,
+      "yaw": 0,
+      "pitch": 0,
+      "oblique": false
+    },
+    {
+      "file": "right_025.png",
+      "L": 0,
+      "R": 0.25,
+      "yaw": 0,
+      "pitch": 0,
+      "oblique": false
+    },
+    {
+      "file": "right_050.png",
+      "L": 0,
+      "R": 0.5,
+      "yaw": 0,
+      "pitch": 0,
+      "oblique": false
+    },
+    {
+      "file": "right_075.png",
+      "L": 0,
+      "R": 0.75,
+      "yaw": 0,
+      "pitch": 0,
+      "oblique": false
+    },
+    {
+      "file": "right_100.png",
+      "L": 0,
+      "R": 1.0,
+      "yaw": 0,
+      "pitch": 0,
+      "oblique": false
+    },
+    {
+      "file": "gaze_straight_000.png",
+      "L": 0,
+      "R": 0,
+      "yaw": 0,
+      "pitch": 0,
+      "oblique": false
+    },
+    {
+      "file": "gaze_straight_050.png",
+      "L": 0.5,
+      "R": 0.5,
+      "yaw": 0,
+      "pitch": 0,
+      "oblique": false
+    },
+    {
+      "file": "gaze_straight_100.png",
+      "L": 1.0,
+      "R": 1.0,
+      "yaw": 0,
+      "pitch": 0,
+      "oblique": false
+    },
+    {
+      "file": "gaze_up_000.png",
+      "L": 0,
+      "R": 0,
+      "yaw": 0,
+      "pitch": 8,
+      "oblique": false
+    },
+    {
+      "file": "gaze_up_050.png",
+      "L": 0.5,
+      "R": 0.5,
+      "yaw": 0,
+      "pitch": 8,
+      "oblique": false
+    },
+    {
+      "file": "gaze_up_100.png",
+      "L": 1.0,
+      "R": 1.0,
+      "yaw": 0,
+      "pitch": 8,
+      "oblique": false
+    },
+    {
+      "file": "gaze_down_000.png",
+      "L": 0,
+      "R": 0,
+      "yaw": 0,
+      "pitch": -8,
+      "oblique": false
+    },
+    {
+      "file": "gaze_down_050.png",
+      "L": 0.5,
+      "R": 0.5,
+      "yaw": 0,
+      "pitch": -8,
+      "oblique": false
+    },
+    {
+      "file": "gaze_down_100.png",
+      "L": 1.0,
+      "R": 1.0,
+      "yaw": 0,
+      "pitch": -8,
+      "oblique": false
+    },
+    {
+      "file": "gaze_left_000.png",
+      "L": 0,
+      "R": 0,
+      "yaw": 12,
+      "pitch": 0,
+      "oblique": false
+    },
+    {
+      "file": "gaze_left_050.png",
+      "L": 0.5,
+      "R": 0.5,
+      "yaw": 12,
+      "pitch": 0,
+      "oblique": false
+    },
+    {
+      "file": "gaze_left_100.png",
+      "L": 1.0,
+      "R": 1.0,
+      "yaw": 12,
+      "pitch": 0,
+      "oblique": false
+    },
+    {
+      "file": "gaze_right_000.png",
+      "L": 0,
+      "R": 0,
+      "yaw": -12,
+      "pitch": 0,
+      "oblique": false
+    },
+    {
+      "file": "gaze_right_050.png",
+      "L": 0.5,
+      "R": 0.5,
+      "yaw": -12,
+      "pitch": 0,
+      "oblique": false
+    },
+    {
+      "file": "gaze_right_100.png",
+      "L": 1.0,
+      "R": 1.0,
+      "yaw": -12,
+      "pitch": 0,
+      "oblique": false
+    },
+    {
+      "file": "gaze_diagonal_000.png",
+      "L": 0,
+      "R": 0,
+      "yaw": 10,
+      "pitch": 6,
+      "oblique": false
+    },
+    {
+      "file": "gaze_diagonal_050.png",
+      "L": 0.5,
+      "R": 0.5,
+      "yaw": 10,
+      "pitch": 6,
+      "oblique": false
+    },
+    {
+      "file": "gaze_diagonal_100.png",
+      "L": 1.0,
+      "R": 1.0,
+      "yaw": 10,
+      "pitch": 6,
+      "oblique": false
+    },
+    {
+      "file": "oblique_050.png",
+      "L": 0.5,
+      "R": 0.5,
+      "yaw": 0,
+      "pitch": 0,
+      "oblique": true
+    },
+    {
+      "file": "oblique_100.png",
+      "L": 1.0,
+      "R": 1.0,
+      "yaw": 0,
+      "pitch": 0,
+      "oblique": true
+    },
+    {
+      "file": "head_001.png",
+      "action": "TEST_blink_head",
+      "frame": 1
+    },
+    {
+      "file": "head_019.png",
+      "action": "TEST_blink_head",
+      "frame": 19
+    },
+    {
+      "file": "head_020.png",
+      "action": "TEST_blink_head",
+      "frame": 20
+    },
+    {
+      "file": "head_050.png",
+      "action": "TEST_blink_head",
+      "frame": 50
+    },
+    {
+      "file": "head_080.png",
+      "action": "TEST_blink_head",
+      "frame": 80
+    },
+    {
+      "file": "head_121.png",
+      "action": "TEST_blink_head",
+      "frame": 121
+    }
+  ],
+  "sha256": {
+    "both_000.png": "67a1263d56bae1fa3922030fbf7934af23f0c9d77c7d22d9a9987254277d14e6",
+    "both_025.png": "d1fea09fe1a6b3ac9a68494861517128b09da85545734d6cb6c67ed59a02444d",
+    "both_050.png": "ff92715652ad684652143fb6bcb19604070af8b9d96b040a31dae088de30f928",
+    "both_075.png": "2975c1cca5473a8d2e7b32e30f920f3cf28c97d4882060eb7efa69136147da4a",
+    "both_100.png": "c6f1c738bafc2994aaa19f22c82b7743a26bf7e7b87ce0bb74d68d2f27829a68",
+    "gaze.png": "838d8628682211206c0485e48bddf70b9f7298278298dcaf63c008574a32b436",
+    "gaze_diagonal_000.png": "0150a79c18b4f92b183bf63b8a89c79bc552cac1a0316f88a700c7094f7a0dd3",
+    "gaze_diagonal_050.png": "61d471683977a7d037d9f919b1e9031cbe77714df67ffa1a0f9ca3bfbd8cffab",
+    "gaze_diagonal_100.png": "b22362013cd69758617f08ddfb2c445359d9f5b33ee090e2716ba9b1fff5f08b",
+    "gaze_down_000.png": "2edec2d99e44ed84c83296b6840835e576c3a806b3c1e0c46b0ccd079ae15445",
+    "gaze_down_050.png": "1efb79b52922c0ff384a74776aaf228948420038d560f14b913908841e3159fb",
+    "gaze_down_100.png": "d22265390cb4454461a5cb40f10c721eb52fcd925f1836e425e2d338e19848d1",
+    "gaze_left_000.png": "3b4f3d5325e7c1b5012382e44460214157e089ad2b19b605b3da6c409d67d66c",
+    "gaze_left_050.png": "67098d43c40503a60f740866c6ae98669303e30637ecc5b298e57c47e487a76c",
+    "gaze_left_100.png": "a809b3263167c2ee0f608021a1cda49d3f7fab99136aa70b28a98615f090a1cc",
+    "gaze_right_000.png": "02700fede8ebdc64e709c72303882004116969324012fcdaf06b048ae580e6e4",
+    "gaze_right_050.png": "25de4c93e5dbcc06f082cce1969ce5f7ddee5b7b2c8d61b1e628b4b1d3710a95",
+    "gaze_right_100.png": "a809b3263167c2ee0f608021a1cda49d3f7fab99136aa70b28a98615f090a1cc",
+    "gaze_straight_000.png": "50fc186bbbf517232ee6e11815bfd8bd9631e9eddf4f3bb7a854d47ccd5d2037",
+    "gaze_straight_050.png": "bd9ab09dd514174bef011797835daf32179633546133d646963e8f92fa1f3385",
+    "gaze_straight_100.png": "fa1bfb9e0c4a725e5eb7e2f94c8ff5b2fbbaf7799ac26e1e1dc5d6ff66ed9966",
+    "gaze_up_000.png": "ee285eb829e566509a62c52cbe9d0427abac6bcf14e3c8417c2db1b17e7f5b4c",
+    "gaze_up_050.png": "c2ad806c8bcd30686e689af49ada3d9f7de19188f83f106179ddfe5ce0778bd0",
+    "gaze_up_100.png": "fa1bfb9e0c4a725e5eb7e2f94c8ff5b2fbbaf7799ac26e1e1dc5d6ff66ed9966",
+    "head.png": "8bc13d5d00ce4d29caffcc7e77c4baf4f72793dea38c7b303828ec0e5515ae41",
+    "head_001.png": "baff1dc3b05b92332fdbff09d457f27cc8ebcf6de8300a88b676b393c367d6ae",
+    "head_019.png": "136eadfec419d611561ffcaad47495b8376e9112b137bafd7f76ba7d9bf8d08e",
+    "head_020.png": "b52228513120fab22b4d6057b7ed986530e8d64c951da2e9a4790c4bee1830ef",
+    "head_050.png": "46bc3a80ba3fb21b1159dc729a804b75a671ab087d081d26152879aca68426e3",
+    "head_080.png": "e6de651c12578d62cbcac349bce6cb9152303d7b07836c297d99ebc018040955",
+    "head_121.png": "d8329be1ac745bf1de2a25757347fb67a771414dc38ef7aa10994e45d7bd093a",
+    "left_000.png": "0907dba68b0b077ecd096de65161687085fb84a4db0a0073dfcd620b94bc7826",
+    "left_025.png": "bdac0827df073e01f5ef6df184be4a739109667528934cff749e2dcb79a2f782",
+    "left_050.png": "85d0625d582600f91448b3cb433d144a9c4f55b0eefd3feed804909c0245654f",
+    "left_075.png": "c921aaec341a796fbd156f4733f37dfea4afe2ea19edcf426eb2ae47697c601a",
+    "left_100.png": "7e9b996da7f1f94e98900768a1ccd5cbf3f1b95d2880d168d43c07b940a6323d",
+    "oblique_050.png": "8330762cf565895e5bd3ba64e05d002d8b5237077b49e890f957bbef7f12ba1c",
+    "oblique_100.png": "6a7eb5caada3d5b1777b04deaaa1f8cd1d8ec1d14c69022566e837ca25031fe6",
+    "right_000.png": "43396a208fa6a64462da18c43d7f982713d941a971924f330f4a4ee6a2d1c13c",
+    "right_025.png": "1fc0fe11c1d61a34c991b7295e9e570cdec5524a33b9ae56c34a0b631b3a2876",
+    "right_050.png": "568e7f4c1aca4bbc69d1788932d4afcd1a9c4aa781ddb5fdfae79962d10b9211",
+    "right_075.png": "039a5bda62c182694955d2c361d39f4a074db14d77c03664dd788ed55c95059d",
+    "right_100.png": "02275ebb6a3c0df199064a5ddeb016e414d721b56a34f65826b475f74201078a",
+    "states.png": "fd3bab26b155705ebbc294bd3004f43542b6fccfc46c0d23a9f77190063dde83"
+  },
+  "limits": "Clay images assess geometry. Actual material rendering is checked separately by the OpenGL auditor.",
+  "published_blend": "assets/models/Raphtalia_prepared.blend"
+}

@@ -1,0 +1,392 @@
+{
+  "source_sha256": "c1c0db17b06cdf1d0c621dbaa1916e6a452e50464d8baab2155e44f7aea897c6",
+  "camera": "blink_render.setup(single), 1200x720",
+  "faces": [
+    {
+      "face": 197,
+      "pixel_area": 0.06969360231323662,
+      "world_area_m2": 1.260629580460378e-06,
+      "world_centroid": [
+        0.039043787866830826,
+        -0.19134525954723358,
+        3.7797799110412598
+      ],
+      "first_hit": [
+        "body_tex_skin_0",
+        186
+      ],
+      "depth_to_first_hit_m": 0.0003457999309896333,
+      "centroid_visible": false
+    },
+    {
+      "face": 198,
+      "pixel_area": 0.06975387742613748,
+      "world_area_m2": 1.2606419330441215e-06,
+      "world_centroid": [
+        0.04045908525586128,
+        -0.19007240235805511,
+        3.7800698280334473
+      ],
+      "first_hit": [
+        "body_tex_skin_0",
+        184
+      ],
+      "depth_to_first_hit_m": 0.0013836270521608296,
+      "centroid_visible": false
+    },
+    {
+      "face": 201,
+      "pixel_area": 0.0659822051716219,
+      "world_area_m2": 1.2606190601351748e-06,
+      "world_centroid": [
+        0.04187437519431114,
+        -0.18879953026771545,
+        3.7803592681884766
+      ],
+      "first_hit": [
+        "body_tex_skin_0",
+        184
+      ],
+      "depth_to_first_hit_m": 0.0024214714407540545,
+      "centroid_visible": false
+    },
+    {
+      "face": 202,
+      "pixel_area": 0.05916759894830648,
+      "world_area_m2": 1.0881015966284043e-06,
+      "world_centroid": [
+        0.04312892630696297,
+        -0.18759159743785858,
+        3.780616044998169
+      ],
+      "first_hit": [
+        "body_tex_skin_0",
+        178
+      ],
+      "depth_to_first_hit_m": 0.003421434174130019,
+      "centroid_visible": false
+    },
+    {
+      "face": 208,
+      "pixel_area": 5.714131967465619,
+      "world_area_m2": 1.7098782028216275e-06,
+      "world_centroid": [
+        0.04287032410502434,
+        -0.18788549304008484,
+        3.7800824642181396
+      ],
+      "first_hit": [
+        "body_tex_skin_0",
+        208
+      ],
+      "depth_to_first_hit_m": 8.940696716308594e-08,
+      "centroid_visible": true
+    },
+    {
+      "face": 209,
+      "pixel_area": 5.713772658850758,
+      "world_area_m2": 1.7100436725813005e-06,
+      "world_centroid": [
+        0.04145503044128418,
+        -0.1891583502292633,
+        3.7797930240631104
+      ],
+      "first_hit": [
+        "body_tex_skin_0",
+        209
+      ],
+      "depth_to_first_hit_m": 2.9802322387695312e-08,
+      "centroid_visible": true
+    },
+    {
+      "face": 212,
+      "pixel_area": 5.715964354379821,
+      "world_area_m2": 1.7102122017204573e-06,
+      "world_centroid": [
+        0.04003973677754402,
+        -0.19043122231960297,
+        3.779503345489502
+      ],
+      "first_hit": [
+        "body_tex_skin_0",
+        212
+      ],
+      "depth_to_first_hit_m": 4.6193599700927734e-07,
+      "centroid_visible": true
+    },
+    {
+      "face": 213,
+      "pixel_area": 5.715971565507516,
+      "world_area_m2": 1.7102014716261495e-06,
+      "world_centroid": [
+        0.038624443113803864,
+        -0.19170409440994263,
+        3.7792134284973145
+      ],
+      "first_hit": [
+        "body_tex_skin_0",
+        213
+      ],
+      "depth_to_first_hit_m": 4.172325134277344e-07,
+      "centroid_visible": true
+    },
+    {
+      "face": 453,
+      "pixel_area": 0.06799630835985226,
+      "world_area_m2": 1.2174069088486538e-06,
+      "world_centroid": [
+        0.14336803555488586,
+        -0.13082703948020935,
+        3.777275323867798
+      ],
+      "first_hit": [
+        "eyelashes_tex_eyelashes_0",
+        272
+      ],
+      "depth_to_first_hit_m": 0.005696730727498495,
+      "centroid_visible": false
+    },
+    {
+      "face": 454,
+      "pixel_area": 0.06407998611734911,
+      "world_area_m2": 1.2176601926600225e-06,
+      "world_centroid": [
+        0.1420104205608368,
+        -0.13217052817344666,
+        3.7770121097564697
+      ],
+      "first_hit": [
+        "eyelashes_tex_eyelashes_0",
+        357
+      ],
+      "depth_to_first_hit_m": 0.00478640342323931,
+      "centroid_visible": false
+    },
+    {
+      "face": 457,
+      "pixel_area": 0.06680047209783879,
+      "world_area_m2": 1.217426763852051e-06,
+      "world_centroid": [
+        0.14065280556678772,
+        -0.13351401686668396,
+        3.7767491340637207
+      ],
+      "first_hit": [
+        "eyelashes_tex_eyelashes_0",
+        364
+      ],
+      "depth_to_first_hit_m": 0.003125614950361246,
+      "centroid_visible": false
+    },
+    {
+      "face": 458,
+      "pixel_area": 0.06555801866170441,
+      "world_area_m2": 1.2175315789910584e-06,
+      "world_centroid": [
+        0.13929519057273865,
+        -0.13485752046108246,
+        3.7764861583709717
+      ],
+      "first_hit": [
+        "eyelashes_tex_eyelashes_0",
+        352
+      ],
+      "depth_to_first_hit_m": 0.001465052429002911,
+      "centroid_visible": false
+    },
+    {
+      "face": 464,
+      "pixel_area": 8.433229352732496,
+      "world_area_m2": 2.4835891209403715e-06,
+      "world_centroid": [
+        0.13976183533668518,
+        -0.13427937030792236,
+        3.777329206466675
+      ],
+      "first_hit": [
+        "eyelashes_tex_eyelashes_0",
+        355
+      ],
+      "depth_to_first_hit_m": 0.002391697981596424,
+      "centroid_visible": false
+    },
+    {
+      "face": 465,
+      "pixel_area": 8.434715719857877,
+      "world_area_m2": 2.4837001010257823e-06,
+      "world_centroid": [
+        0.14111945033073425,
+        -0.13293588161468506,
+        3.777592420578003
+      ],
+      "first_hit": [
+        "eyelashes_tex_eyelashes_0",
+        356
+      ],
+      "depth_to_first_hit_m": 0.0040522455795818,
+      "centroid_visible": false
+    },
+    {
+      "face": 468,
+      "pixel_area": 8.434737163696582,
+      "world_area_m2": 2.4840541601999936e-06,
+      "world_centroid": [
+        0.14247708022594452,
+        -0.13159239292144775,
+        3.777855396270752
+      ],
+      "first_hit": [
+        "eyelashes_tex_eyelashes_0",
+        485
+      ],
+      "depth_to_first_hit_m": 0.00551394548322756,
+      "centroid_visible": false
+    },
+    {
+      "face": 469,
+      "pixel_area": 8.433538445132172,
+      "world_area_m2": 2.4835304871842133e-06,
+      "world_centroid": [
+        0.1438346952199936,
+        -0.13024890422821045,
+        3.77811861038208
+      ],
+      "first_hit": [
+        "eyelashes_tex_eyelashes_0",
+        275
+      ],
+      "depth_to_first_hit_m": 0.006105966373990891,
+      "centroid_visible": false
+    },
+    {
+      "face": 3761,
+      "pixel_area": 5.988537635445823,
+      "world_area_m2": 1.852686562118123e-06,
+      "world_centroid": [
+        -0.049409229308366776,
+        -0.19161945581436157,
+        3.7787461280822754
+      ],
+      "first_hit": [
+        "body_tex_skin_0",
+        3761
+      ],
+      "depth_to_first_hit_m": 5.960464477539063e-08,
+      "centroid_visible": true
+    },
+    {
+      "face": 3762,
+      "pixel_area": 5.989158996456467,
+      "world_area_m2": 1.8527178453381244e-06,
+      "world_centroid": [
+        -0.050904780626297,
+        -0.19026422500610352,
+        3.779005527496338
+      ],
+      "first_hit": [
+        "body_tex_skin_0",
+        3762
+      ],
+      "depth_to_first_hit_m": 3.5762786865234375e-07,
+      "centroid_visible": true
+    },
+    {
+      "face": 3765,
+      "pixel_area": 5.99010285264967,
+      "world_area_m2": 1.8527096791115366e-06,
+      "world_centroid": [
+        -0.05240033194422722,
+        -0.18890899419784546,
+        3.7792649269104004
+      ],
+      "first_hit": [
+        "body_tex_skin_0",
+        3765
+      ],
+      "depth_to_first_hit_m": 2.980232238769531e-07,
+      "centroid_visible": true
+    },
+    {
+      "face": 3766,
+      "pixel_area": 5.9910540212655405,
+      "world_area_m2": 1.8528686644358344e-06,
+      "world_centroid": [
+        -0.05389587953686714,
+        -0.1875537782907486,
+        3.779524087905884
+      ],
+      "first_hit": [
+        "body_tex_skin_0",
+        3766
+      ],
+      "depth_to_first_hit_m": 1.4901161193847656e-08,
+      "centroid_visible": true
+    },
+    {
+      "face": 3772,
+      "pixel_area": 0.06987531897095778,
+      "world_area_m2": 1.2874753743480897e-06,
+      "world_centroid": [
+        -0.05416296049952507,
+        -0.18728862702846527,
+        3.7800469398498535
+      ],
+      "first_hit": [
+        "body_tex_skin_0",
+        3789
+      ],
+      "depth_to_first_hit_m": 0.004157052240535929,
+      "centroid_visible": false
+    },
+    {
+      "face": 3773,
+      "pixel_area": 0.0764619455111415,
+      "world_area_m2": 1.408136647689112e-06,
+      "world_centroid": [
+        -0.05282276123762131,
+        -0.18855607509613037,
+        3.7798144817352295
+      ],
+      "first_hit": [
+        "body_tex_skin_0",
+        3792
+      ],
+      "depth_to_first_hit_m": 0.002965242386934092,
+      "centroid_visible": false
+    },
+    {
+      "face": 3776,
+      "pixel_area": 0.0764619455111415,
+      "world_area_m2": 1.408139667571191e-06,
+      "world_centroid": [
+        -0.051327209919691086,
+        -0.18991129100322723,
+        3.779555082321167
+      ],
+      "first_hit": [
+        "body_tex_skin_0",
+        3792
+      ],
+      "depth_to_first_hit_m": 0.00169412305462405,
+      "centroid_visible": false
+    },
+    {
+      "face": 3777,
+      "pixel_area": 0.07607162490330666,
+      "world_area_m2": 1.4081287705549905e-06,
+      "world_centroid": [
+        -0.04983166232705116,
+        -0.19126653671264648,
+        3.7792959213256836
+      ],
+      "first_hit": [
+        "body_tex_skin_0",
+        3793
+      ],
+      "depth_to_first_hit_m": 0.0004235723467356791,
+      "centroid_visible": false
+    }
+  ],
+  "sum_projected_pixels": 81.38281763743294,
+  "visible_centroid_faces": 8
+}

@@ -1,0 +1,15 @@
+pose,fraction,view,max_palette_delta_vs_bind,changed_rgb_bytes_vs_bind,image
+combined_masks,0.5,front,4.87594,99405,gpu_mix_combined_masks_front.ppm
+combined_masks,0.5,back,4.87594,105820,gpu_mix_combined_masks_back.ppm
+combined_masks,0.5,face_front,4.87594,430010,gpu_mix_combined_masks_face_front.ppm
+combined_masks,0.5,face_back,4.87594,366881,gpu_mix_combined_masks_face_back.ppm
+crossfade_0,0,front,2.83114,39333,gpu_mix_crossfade_0_front.ppm
+crossfade_0,0,back,2.83114,35711,gpu_mix_crossfade_0_back.ppm
+crossfade_25,0.25,front,2.58661,52871,gpu_mix_crossfade_25_front.ppm
+crossfade_25,0.25,back,2.58661,57402,gpu_mix_crossfade_25_back.ppm
+crossfade_50,0.5,front,1.9627,49333,gpu_mix_crossfade_50_front.ppm
+crossfade_50,0.5,back,1.9627,61012,gpu_mix_crossfade_50_back.ppm
+crossfade_75,0.75,front,1.13258,57349,gpu_mix_crossfade_75_front.ppm
+crossfade_75,0.75,back,1.13258,55760,gpu_mix_crossfade_75_back.ppm
+crossfade_100,1,front,1.39083,41341,gpu_mix_crossfade_100_front.ppm
+crossfade_100,1,back,1.39083,41884,gpu_mix_crossfade_100_back.ppm

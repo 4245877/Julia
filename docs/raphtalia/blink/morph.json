@@ -1,0 +1,837 @@
+{
+    "input":  "C:\\Julia\\assets\\models\\Raphtalia_blink_candidate.fbx",
+    "assimp_version":  "6.0.4",
+    "scope":  "Actual aiAnimMesh positions/normals and all aiMeshMorphAnim keys in two import modes. Exact mesh-name matches are reported, not assumed. No Blender comparison, CPU morph evaluation, skinning composition or OpenGL morph support is claimed.",
+    "source_validation":  {
+                              "loaded":  true,
+                              "flags":  17408,
+                              "message":  "",
+                              "meshes":  [
+                                             {
+                                                 "index":  0,
+                                                 "name":  "NurbsPath.006_tex_hair6_0",
+                                                 "vertices":  5040,
+                                                 "morph_method":  0,
+                                                 "targets":  [
+
+                                                             ]
+                                             },
+                                             {
+                                                 "index":  1,
+                                                 "name":  "NurbsPath.002_tex_hair4_0",
+                                                 "vertices":  4728,
+                                                 "morph_method":  0,
+                                                 "targets":  [
+
+                                                             ]
+                                             },
+                                             {
+                                                 "index":  2,
+                                                 "name":  "armor_tex_armor_0",
+                                                 "vertices":  3042,
+                                                 "morph_method":  0,
+                                                 "targets":  [
+
+                                                             ]
+                                             },
+                                             {
+                                                 "index":  3,
+                                                 "name":  "body_tex_skin2_0",
+                                                 "vertices":  1536,
+                                                 "morph_method":  0,
+                                                 "targets":  [
+
+                                                             ]
+                                             },
+                                             {
+                                                 "index":  4,
+                                                 "name":  "eyelashes_tex_eyelashes_0_blink_local",
+                                                 "vertices":  10464,
+                                                 "morph_method":  0,
+                                                 "targets":  [
+
+                                                             ]
+                                             },
+                                             {
+                                                 "index":  5,
+                                                 "name":  "ear_tex_ear_0",
+                                                 "vertices":  1422,
+                                                 "morph_method":  0,
+                                                 "targets":  [
+
+                                                             ]
+                                             },
+                                             {
+                                                 "index":  6,
+                                                 "name":  "hair_band_tex_band_0",
+                                                 "vertices":  1344,
+                                                 "morph_method":  0,
+                                                 "targets":  [
+
+                                                             ]
+                                             },
+                                             {
+                                                 "index":  7,
+                                                 "name":  "long_gloves_tex_glove_0",
+                                                 "vertices":  15384,
+                                                 "morph_method":  0,
+                                                 "targets":  [
+
+                                                             ]
+                                             },
+                                             {
+                                                 "index":  8,
+                                                 "name":  "shirt.001_tex_shirt_0",
+                                                 "vertices":  2016,
+                                                 "morph_method":  0,
+                                                 "targets":  [
+
+                                                             ]
+                                             },
+                                             {
+                                                 "index":  9,
+                                                 "name":  "body_tex_skin_0_blink_local",
+                                                 "vertices":  91482,
+                                                 "morph_method":  0,
+                                                 "targets":  [
+
+                                                             ]
+                                             },
+                                             {
+                                                 "index":  10,
+                                                 "name":  "shirt_tex_shirt_0",
+                                                 "vertices":  8313,
+                                                 "morph_method":  0,
+                                                 "targets":  [
+
+                                                             ]
+                                             },
+                                             {
+                                                 "index":  11,
+                                                 "name":  "shoulder_armor_tex_shoulderarmor_0",
+                                                 "vertices":  4296,
+                                                 "morph_method":  0,
+                                                 "targets":  [
+
+                                                             ]
+                                             },
+                                             {
+                                                 "index":  12,
+                                                 "name":  "tail_tex_tail_0",
+                                                 "vertices":  2331,
+                                                 "morph_method":  0,
+                                                 "targets":  [
+
+                                                             ]
+                                             },
+                                             {
+                                                 "index":  13,
+                                                 "name":  "NurbsPath.003_tex_hair5_0",
+                                                 "vertices":  3960,
+                                                 "morph_method":  0,
+                                                 "targets":  [
+
+                                                             ]
+                                             },
+                                             {
+                                                 "index":  14,
+                                                 "name":  "NurbsPath.001_tex_hair3_0",
+                                                 "vertices":  1344,
+                                                 "morph_method":  0,
+                                                 "targets":  [
+
+                                                             ]
+                                             },
+                                             {
+                                                 "index":  15,
+                                                 "name":  "NurbsPath.007_tex_hair7_0",
+                                                 "vertices":  20364,
+                                                 "morph_method":  0,
+                                                 "targets":  [
+
+                                                             ]
+                                             },
+                                             {
+                                                 "index":  16,
+                                                 "name":  "belt_tex_belt_0",
+                                                 "vertices":  1476,
+                                                 "morph_method":  0,
+                                                 "targets":  [
+
+                                                             ]
+                                             },
+                                             {
+                                                 "index":  17,
+                                                 "name":  "cuff.001_tex_cuff_0",
+                                                 "vertices":  1704,
+                                                 "morph_method":  0,
+                                                 "targets":  [
+
+                                                             ]
+                                             },
+                                             {
+                                                 "index":  18,
+                                                 "name":  "ear.001_tex_ear2_0",
+                                                 "vertices":  1872,
+                                                 "morph_method":  0,
+                                                 "targets":  [
+
+                                                             ]
+                                             },
+                                             {
+                                                 "index":  19,
+                                                 "name":  "hair.mesh.000_tex_hair1_0",
+                                                 "vertices":  5028,
+                                                 "morph_method":  0,
+                                                 "targets":  [
+
+                                                             ]
+                                             },
+                                             {
+                                                 "index":  20,
+                                                 "name":  "eye_tex_eyes_0",
+                                                 "vertices":  672,
+                                                 "morph_method":  0,
+                                                 "targets":  [
+
+                                                             ]
+                                             },
+                                             {
+                                                 "index":  21,
+                                                 "name":  "hightlight_hightlight_0",
+                                                 "vertices":  96,
+                                                 "morph_method":  0,
+                                                 "targets":  [
+
+                                                             ]
+                                             },
+                                             {
+                                                 "index":  22,
+                                                 "name":  "NurbsPath_tex_hair2_0",
+                                                 "vertices":  1344,
+                                                 "morph_method":  0,
+                                                 "targets":  [
+
+                                                             ]
+                                             },
+                                             {
+                                                 "index":  23,
+                                                 "name":  "bow_tex_bow_0",
+                                                 "vertices":  2196,
+                                                 "morph_method":  0,
+                                                 "targets":  [
+
+                                                             ]
+                                             },
+                                             {
+                                                 "index":  24,
+                                                 "name":  "cuff_tex_cuff_0",
+                                                 "vertices":  1704,
+                                                 "morph_method":  0,
+                                                 "targets":  [
+
+                                                             ]
+                                             },
+                                             {
+                                                 "index":  25,
+                                                 "name":  "shoes_tex_shoes_0",
+                                                 "vertices":  2808,
+                                                 "morph_method":  0,
+                                                 "targets":  [
+
+                                                             ]
+                                             },
+                                             {
+                                                 "index":  26,
+                                                 "name":  "stocking_tex_sock_0",
+                                                 "vertices":  10194,
+                                                 "morph_method":  0,
+                                                 "targets":  [
+
+                                                             ]
+                                             },
+                                             {
+                                                 "index":  27,
+                                                 "name":  "underwear_tex_underwear_0",
+                                                 "vertices":  672,
+                                                 "morph_method":  0,
+                                                 "targets":  [
+
+                                                             ]
+                                             }
+                                         ],
+                              "animations":  [
+                                                 {
+                                                     "name":  "Raphtalia_Rig|TEST_blink_gaze",
+                                                     "duration_ticks":  120,
+                                                     "ticks_per_second":  30,
+                                                     "node_channel_count":  430,
+                                                     "legacy_mesh_channel_count":  0,
+                                                     "morph_channels":  [
+
+                                                                        ]
+                                                 },
+                                                 {
+                                                     "name":  "Raphtalia_Rig|TEST_blink_head",
+                                                     "duration_ticks":  120,
+                                                     "ticks_per_second":  30,
+                                                     "node_channel_count":  430,
+                                                     "legacy_mesh_channel_count":  0,
+                                                     "morph_channels":  [
+
+                                                                        ]
+                                                 },
+                                                 {
+                                                     "name":  "Raphtalia_Rig|TEST_blink_independent",
+                                                     "duration_ticks":  60,
+                                                     "ticks_per_second":  30,
+                                                     "node_channel_count":  430,
+                                                     "legacy_mesh_channel_count":  0,
+                                                     "morph_channels":  [
+
+                                                                        ]
+                                                 },
+                                                 {
+                                                     "name":  "Raphtalia_Rig|TEST_blink_natural",
+                                                     "duration_ticks":  30,
+                                                     "ticks_per_second":  30,
+                                                     "node_channel_count":  430,
+                                                     "legacy_mesh_channel_count":  0,
+                                                     "morph_channels":  [
+
+                                                                        ]
+                                                 },
+                                                 {
+                                                     "name":  "Raphtalia_Rig|TEST_brows_wrist",
+                                                     "duration_ticks":  60,
+                                                     "ticks_per_second":  30,
+                                                     "node_channel_count":  430,
+                                                     "legacy_mesh_channel_count":  0,
+                                                     "morph_channels":  [
+
+                                                                        ]
+                                                 },
+                                                 {
+                                                     "name":  "Raphtalia_Rig|TEST_deep_body_cloth",
+                                                     "duration_ticks":  360,
+                                                     "ticks_per_second":  30,
+                                                     "node_channel_count":  430,
+                                                     "legacy_mesh_channel_count":  0,
+                                                     "morph_channels":  [
+
+                                                                        ]
+                                                 },
+                                                 {
+                                                     "name":  "Raphtalia_Rig|TEST_elbows_90",
+                                                     "duration_ticks":  60,
+                                                     "ticks_per_second":  30,
+                                                     "node_channel_count":  430,
+                                                     "legacy_mesh_channel_count":  0,
+                                                     "morph_channels":  [
+
+                                                                        ]
+                                                 },
+                                                 {
+                                                     "name":  "Raphtalia_Rig|TEST_eyes_ears",
+                                                     "duration_ticks":  60,
+                                                     "ticks_per_second":  30,
+                                                     "node_channel_count":  430,
+                                                     "legacy_mesh_channel_count":  0,
+                                                     "morph_channels":  [
+
+                                                                        ]
+                                                 },
+                                                 {
+                                                     "name":  "Raphtalia_Rig|TEST_fingers_35",
+                                                     "duration_ticks":  60,
+                                                     "ticks_per_second":  30,
+                                                     "node_channel_count":  430,
+                                                     "legacy_mesh_channel_count":  0,
+                                                     "morph_channels":  [
+
+                                                                        ]
+                                                 },
+                                                 {
+                                                     "name":  "Raphtalia_Rig|TEST_hair_tail_cloth",
+                                                     "duration_ticks":  60,
+                                                     "ticks_per_second":  30,
+                                                     "node_channel_count":  430,
+                                                     "legacy_mesh_channel_count":  0,
+                                                     "morph_channels":  [
+
+                                                                        ]
+                                                 },
+                                                 {
+                                                     "name":  "Raphtalia_Rig|TEST_head_torso",
+                                                     "duration_ticks":  60,
+                                                     "ticks_per_second":  30,
+                                                     "node_channel_count":  430,
+                                                     "legacy_mesh_channel_count":  0,
+                                                     "morph_channels":  [
+
+                                                                        ]
+                                                 },
+                                                 {
+                                                     "name":  "Raphtalia_Rig|TEST_knees_90",
+                                                     "duration_ticks":  60,
+                                                     "ticks_per_second":  30,
+                                                     "node_channel_count":  430,
+                                                     "legacy_mesh_channel_count":  0,
+                                                     "morph_channels":  [
+
+                                                                        ]
+                                                 },
+                                                 {
+                                                     "name":  "Raphtalia_Rig|TEST_practical_ranges",
+                                                     "duration_ticks":  240,
+                                                     "ticks_per_second":  30,
+                                                     "node_channel_count":  430,
+                                                     "legacy_mesh_channel_count":  0,
+                                                     "morph_channels":  [
+
+                                                                        ]
+                                                 },
+                                                 {
+                                                     "name":  "Raphtalia_Rig|TEST_shoulders_hips_ankles",
+                                                     "duration_ticks":  60,
+                                                     "ticks_per_second":  30,
+                                                     "node_channel_count":  430,
+                                                     "legacy_mesh_channel_count":  0,
+                                                     "morph_channels":  [
+
+                                                                        ]
+                                                 },
+                                                 {
+                                                     "name":  "Raphtalia_Rig|TEST_toes_30",
+                                                     "duration_ticks":  60,
+                                                     "ticks_per_second":  30,
+                                                     "node_channel_count":  430,
+                                                     "legacy_mesh_channel_count":  0,
+                                                     "morph_channels":  [
+
+                                                                        ]
+                                                 }
+                                             ],
+                              "morph_target_count":  0,
+                              "morph_channel_count":  0,
+                              "morph_key_count":  0,
+                              "invalid_entries":  0
+                          },
+    "project_import":  {
+                           "loaded":  true,
+                           "flags":  9424458,
+                           "message":  "",
+                           "meshes":  [
+                                          {
+                                              "index":  0,
+                                              "name":  "NurbsPath.006_tex_hair6_0",
+                                              "vertices":  4836,
+                                              "morph_method":  0,
+                                              "targets":  [
+
+                                                          ]
+                                          },
+                                          {
+                                              "index":  1,
+                                              "name":  "NurbsPath.002_tex_hair4_0",
+                                              "vertices":  4526,
+                                              "morph_method":  0,
+                                              "targets":  [
+
+                                                          ]
+                                          },
+                                          {
+                                              "index":  2,
+                                              "name":  "armor_tex_armor_0",
+                                              "vertices":  2884,
+                                              "morph_method":  0,
+                                              "targets":  [
+
+                                                          ]
+                                          },
+                                          {
+                                              "index":  3,
+                                              "name":  "body_tex_skin2_0",
+                                              "vertices":  1352,
+                                              "morph_method":  0,
+                                              "targets":  [
+
+                                                          ]
+                                          },
+                                          {
+                                              "index":  4,
+                                              "name":  "eyelashes_tex_eyelashes_0_blink_local",
+                                              "vertices":  3318,
+                                              "morph_method":  0,
+                                              "targets":  [
+
+                                                          ]
+                                          },
+                                          {
+                                              "index":  5,
+                                              "name":  "ear_tex_ear_0",
+                                              "vertices":  1246,
+                                              "morph_method":  0,
+                                              "targets":  [
+
+                                                          ]
+                                          },
+                                          {
+                                              "index":  6,
+                                              "name":  "hair_band_tex_band_0",
+                                              "vertices":  1218,
+                                              "morph_method":  0,
+                                              "targets":  [
+
+                                                          ]
+                                          },
+                                          {
+                                              "index":  7,
+                                              "name":  "long_gloves_tex_glove_0",
+                                              "vertices":  13925,
+                                              "morph_method":  0,
+                                              "targets":  [
+
+                                                          ]
+                                          },
+                                          {
+                                              "index":  8,
+                                              "name":  "shirt.001_tex_shirt_0",
+                                              "vertices":  1872,
+                                              "morph_method":  0,
+                                              "targets":  [
+
+                                                          ]
+                                          },
+                                          {
+                                              "index":  9,
+                                              "name":  "body_tex_skin_0_blink_local",
+                                              "vertices":  72877,
+                                              "morph_method":  0,
+                                              "targets":  [
+
+                                                          ]
+                                          },
+                                          {
+                                              "index":  10,
+                                              "name":  "shirt_tex_shirt_0",
+                                              "vertices":  7503,
+                                              "morph_method":  0,
+                                              "targets":  [
+
+                                                          ]
+                                          },
+                                          {
+                                              "index":  11,
+                                              "name":  "shoulder_armor_tex_shoulderarmor_0",
+                                              "vertices":  4010,
+                                              "morph_method":  0,
+                                              "targets":  [
+
+                                                          ]
+                                          },
+                                          {
+                                              "index":  12,
+                                              "name":  "tail_tex_tail_0",
+                                              "vertices":  2109,
+                                              "morph_method":  0,
+                                              "targets":  [
+
+                                                          ]
+                                          },
+                                          {
+                                              "index":  13,
+                                              "name":  "NurbsPath.003_tex_hair5_0",
+                                              "vertices":  3812,
+                                              "morph_method":  0,
+                                              "targets":  [
+
+                                                          ]
+                                          },
+                                          {
+                                              "index":  14,
+                                              "name":  "NurbsPath.001_tex_hair3_0",
+                                              "vertices":  1254,
+                                              "morph_method":  0,
+                                              "targets":  [
+
+                                                          ]
+                                          },
+                                          {
+                                              "index":  15,
+                                              "name":  "NurbsPath.007_tex_hair7_0",
+                                              "vertices":  18064,
+                                              "morph_method":  0,
+                                              "targets":  [
+
+                                                          ]
+                                          },
+                                          {
+                                              "index":  16,
+                                              "name":  "belt_tex_belt_0",
+                                              "vertices":  1372,
+                                              "morph_method":  0,
+                                              "targets":  [
+
+                                                          ]
+                                          },
+                                          {
+                                              "index":  17,
+                                              "name":  "cuff.001_tex_cuff_0",
+                                              "vertices":  1357,
+                                              "morph_method":  0,
+                                              "targets":  [
+
+                                                          ]
+                                          },
+                                          {
+                                              "index":  18,
+                                              "name":  "ear.001_tex_ear2_0",
+                                              "vertices":  1650,
+                                              "morph_method":  0,
+                                              "targets":  [
+
+                                                          ]
+                                          },
+                                          {
+                                              "index":  19,
+                                              "name":  "hair.mesh.000_tex_hair1_0",
+                                              "vertices":  4396,
+                                              "morph_method":  0,
+                                              "targets":  [
+
+                                                          ]
+                                          },
+                                          {
+                                              "index":  20,
+                                              "name":  "eye_tex_eyes_0",
+                                              "vertices":  650,
+                                              "morph_method":  0,
+                                              "targets":  [
+
+                                                          ]
+                                          },
+                                          {
+                                              "index":  21,
+                                              "name":  "hightlight_hightlight_0",
+                                              "vertices":  96,
+                                              "morph_method":  0,
+                                              "targets":  [
+
+                                                          ]
+                                          },
+                                          {
+                                              "index":  22,
+                                              "name":  "NurbsPath_tex_hair2_0",
+                                              "vertices":  1218,
+                                              "morph_method":  0,
+                                              "targets":  [
+
+                                                          ]
+                                          },
+                                          {
+                                              "index":  23,
+                                              "name":  "bow_tex_bow_0",
+                                              "vertices":  2050,
+                                              "morph_method":  0,
+                                              "targets":  [
+
+                                                          ]
+                                          },
+                                          {
+                                              "index":  24,
+                                              "name":  "cuff_tex_cuff_0",
+                                              "vertices":  1330,
+                                              "morph_method":  0,
+                                              "targets":  [
+
+                                                          ]
+                                          },
+                                          {
+                                              "index":  25,
+                                              "name":  "shoes_tex_shoes_0",
+                                              "vertices":  2538,
+                                              "morph_method":  0,
+                                              "targets":  [
+
+                                                          ]
+                                          },
+                                          {
+                                              "index":  26,
+                                              "name":  "stocking_tex_sock_0",
+                                              "vertices":  9428,
+                                              "morph_method":  0,
+                                              "targets":  [
+
+                                                          ]
+                                          },
+                                          {
+                                              "index":  27,
+                                              "name":  "underwear_tex_underwear_0",
+                                              "vertices":  632,
+                                              "morph_method":  0,
+                                              "targets":  [
+
+                                                          ]
+                                          }
+                                      ],
+                           "animations":  [
+                                              {
+                                                  "name":  "Raphtalia_Rig|TEST_blink_gaze",
+                                                  "duration_ticks":  120,
+                                                  "ticks_per_second":  30,
+                                                  "node_channel_count":  430,
+                                                  "legacy_mesh_channel_count":  0,
+                                                  "morph_channels":  [
+
+                                                                     ]
+                                              },
+                                              {
+                                                  "name":  "Raphtalia_Rig|TEST_blink_head",
+                                                  "duration_ticks":  120,
+                                                  "ticks_per_second":  30,
+                                                  "node_channel_count":  430,
+                                                  "legacy_mesh_channel_count":  0,
+                                                  "morph_channels":  [
+
+                                                                     ]
+                                              },
+                                              {
+                                                  "name":  "Raphtalia_Rig|TEST_blink_independent",
+                                                  "duration_ticks":  60,
+                                                  "ticks_per_second":  30,
+                                                  "node_channel_count":  430,
+                                                  "legacy_mesh_channel_count":  0,
+                                                  "morph_channels":  [
+
+                                                                     ]
+                                              },
+                                              {
+                                                  "name":  "Raphtalia_Rig|TEST_blink_natural",
+                                                  "duration_ticks":  30,
+                                                  "ticks_per_second":  30,
+                                                  "node_channel_count":  430,
+                                                  "legacy_mesh_channel_count":  0,
+                                                  "morph_channels":  [
+
+                                                                     ]
+                                              },
+                                              {
+                                                  "name":  "Raphtalia_Rig|TEST_brows_wrist",
+                                                  "duration_ticks":  60,
+                                                  "ticks_per_second":  30,
+                                                  "node_channel_count":  430,
+                                                  "legacy_mesh_channel_count":  0,
+                                                  "morph_channels":  [
+
+                                                                     ]
+                                              },
+                                              {
+                                                  "name":  "Raphtalia_Rig|TEST_deep_body_cloth",
+                                                  "duration_ticks":  360,
+                                                  "ticks_per_second":  30,
+                                                  "node_channel_count":  430,
+                                                  "legacy_mesh_channel_count":  0,
+                                                  "morph_channels":  [
+
+                                                                     ]
+                                              },
+                                              {
+                                                  "name":  "Raphtalia_Rig|TEST_elbows_90",
+                                                  "duration_ticks":  60,
+                                                  "ticks_per_second":  30,
+                                                  "node_channel_count":  430,
+                                                  "legacy_mesh_channel_count":  0,
+                                                  "morph_channels":  [
+
+                                                                     ]
+                                              },
+                                              {
+                                                  "name":  "Raphtalia_Rig|TEST_eyes_ears",
+                                                  "duration_ticks":  60,
+                                                  "ticks_per_second":  30,
+                                                  "node_channel_count":  430,
+                                                  "legacy_mesh_channel_count":  0,
+                                                  "morph_channels":  [
+
+                                                                     ]
+                                              },
+                                              {
+                                                  "name":  "Raphtalia_Rig|TEST_fingers_35",
+                                                  "duration_ticks":  60,
+                                                  "ticks_per_second":  30,
+                                                  "node_channel_count":  430,
+                                                  "legacy_mesh_channel_count":  0,
+                                                  "morph_channels":  [
+
+                                                                     ]
+                                              },
+                                              {
+                                                  "name":  "Raphtalia_Rig|TEST_hair_tail_cloth",
+                                                  "duration_ticks":  60,
+                                                  "ticks_per_second":  30,
+                                                  "node_channel_count":  430,
+                                                  "legacy_mesh_channel_count":  0,
+                                                  "morph_channels":  [
+
+                                                                     ]
+                                              },
+                                              {
+                                                  "name":  "Raphtalia_Rig|TEST_head_torso",
+                                                  "duration_ticks":  60,
+                                                  "ticks_per_second":  30,
+                                                  "node_channel_count":  430,
+                                                  "legacy_mesh_channel_count":  0,
+                                                  "morph_channels":  [
+
+                                                                     ]
+                                              },
+                                              {
+                                                  "name":  "Raphtalia_Rig|TEST_knees_90",
+                                                  "duration_ticks":  60,
+                                                  "ticks_per_second":  30,
+                                                  "node_channel_count":  430,
+                                                  "legacy_mesh_channel_count":  0,
+                                                  "morph_channels":  [
+
+                                                                     ]
+                                              },
+                                              {
+                                                  "name":  "Raphtalia_Rig|TEST_practical_ranges",
+                                                  "duration_ticks":  240,
+                                                  "ticks_per_second":  30,
+                                                  "node_channel_count":  430,
+                                                  "legacy_mesh_channel_count":  0,
+                                                  "morph_channels":  [
+
+                                                                     ]
+                                              },
+                                              {
+                                                  "name":  "Raphtalia_Rig|TEST_shoulders_hips_ankles",
+                                                  "duration_ticks":  60,
+                                                  "ticks_per_second":  30,
+                                                  "node_channel_count":  430,
+                                                  "legacy_mesh_channel_count":  0,
+                                                  "morph_channels":  [
+
+                                                                     ]
+                                              },
+                                              {
+                                                  "name":  "Raphtalia_Rig|TEST_toes_30",
+                                                  "duration_ticks":  60,
+                                                  "ticks_per_second":  30,
+                                                  "node_channel_count":  430,
+                                                  "legacy_mesh_channel_count":  0,
+                                                  "morph_channels":  [
+
+                                                                     ]
+                                              }
+                                          ],
+                           "morph_target_count":  0,
+                           "morph_channel_count":  0,
+                           "morph_key_count":  0,
+                           "invalid_entries":  0
+                       },
+    "input_sha256":  "b98e2063f3226c369a66e711b0dc61ed1a2c1da6b93b6dc117c2e4c923882dbe",
+    "input_stable_during_audit":  true
+}

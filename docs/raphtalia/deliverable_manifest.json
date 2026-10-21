@@ -11,13 +11,13 @@
   },
   {
     "path": "assets/models/Raphtalia_prepared.blend",
-    "bytes": 28162252,
-    "sha256": "BE4AC79AD4BF85A6430DD550CE6B8CD304088DB0B34577279206007C62B6EDEC"
+    "bytes": 30354620,
+    "sha256": "C1C0DB17B06CDF1D0C621DBAA1916E6A452E50464D8BAAB2155E44F7AEA897C6"
   },
   {
     "path": "assets/models/Raphtalia_prepared.fbx",
-    "bytes": 37869292,
-    "sha256": "7DA9C8D2A412A479D112A70FBF8BAF87BB72D5D4A4B5AE3AFBEC2F8301779FA0"
+    "bytes": 169903772,
+    "sha256": "B98E2063F3226C369A66E711B0DC61ED1A2C1DA6B93B6DC117C2E4C923882DBE"
   },
   {
     "path": "assets/models/backups/Raphtalia_prepared.pre_deep_deformation_2026-10-21.zip",
@@ -28,5 +28,10 @@
     "path": "assets/models/backups/Raphtalia_prepared.pre_reaudit_2026-10-21.zip",
     "bytes": 9036770,
     "sha256": "45DCAF850EF345F77F7E7384987C0DE1E4B0D7E5C444F73381CB5DC053F7155B"
+  },
+  {
+    "path": "assets/models/backups/Raphtalia_prepared.pre_blink_2026-10-21.zip",
+    "bytes": 11453052,
+    "sha256": "8060EE02D7B8732CBB3E9B2E3B8477050642611F8CD069314F9897B0BD8DEC1E"
   }
 ]

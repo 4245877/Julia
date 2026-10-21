@@ -115,14 +115,14 @@ def smooth_local(obj,arm,iterations=6):
     return {'mesh':obj.name,'regions':regions,'iterations':iterations,'changes':changes}
 
 
-def export_fbx(path,arm,meshes):
+def export_fbx(path,arm,meshes,bake_step=1):
     for o in bpy.context.selected_objects:o.select_set(False)
     for o in meshes+[arm]:o.select_set(True)
     bpy.context.view_layer.objects.active=arm
     bpy.ops.export_scene.fbx(filepath=str(path),use_selection=True,object_types={'ARMATURE','MESH'},
         use_mesh_modifiers=False,add_leaf_bones=False,use_armature_deform_only=True,
         bake_anim=True,bake_anim_use_all_actions=True,bake_anim_use_nla_strips=False,
-        bake_anim_use_all_bones=True,bake_anim_force_startend_keying=True,bake_anim_step=1,
+        bake_anim_use_all_bones=True,bake_anim_force_startend_keying=True,bake_anim_step=bake_step,
         bake_anim_simplify_factor=0,path_mode='RELATIVE',embed_textures=False,
         axis_forward='-Z',axis_up='Y',apply_unit_scale=True,apply_scale_options='FBX_SCALE_ALL')
 

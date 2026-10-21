@@ -15,6 +15,7 @@
 #include <iomanip>
 #include <iostream>
 #include <map>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -49,14 +50,36 @@ void save(const fs::path& path,const Pixels& p){std::ofstream f(path,std::ios::b
 std::size_t changed(const Pixels& a,const Pixels& b){std::size_t n=0;for(std::size_t i=0;i<a.size();++i)if(a[i]!=b[i])++n;return n;}
 std::string slug(std::string s){for(char& c:s)if(!((c>='A'&&c<='Z')||(c>='a'&&c<='z')||(c>='0'&&c<='9')||c=='_'))c='_';if(s.empty())s="unnamed";return s;}
 float matrixDelta(const std::vector<glm::mat4>& a,const std::vector<glm::mat4>& b){float max=0;for(std::size_t i=0;i<a.size();++i)for(int c=0;c<4;++c)for(int r=0;r<4;++r)max=std::max(max,std::abs(a[i][c][r]-b[i][c][r]));return max;}
+
+struct AuditSample{double fraction;double authoredFrame;std::string label;};
+struct AuthoredSamples{double finalFrame=0;std::vector<double> frames;};
+AuthoredSamples blinkSamples(const std::string& name){
+    // FBX take duration is last frame minus first frame, not last frame.
+    // Include the actual closed keys and intermediate closure/reopening.
+    if(name.ends_with("TEST_blink_natural"))return {31,{1,9,10,10.5,11,12,14,17,20,31}};
+    if(name.ends_with("TEST_blink_independent"))return {61,{1,8,10,12,15,18.5,22,30,32,34,37,40.5,44,61}};
+    if(name.ends_with("TEST_blink_gaze"))return {121,{1,10,11,12,15,28,29,30,33,46,47,48,51,64,65,66,69,82,83,84,87,100,101,102,105,121}};
+    if(name.ends_with("TEST_blink_head"))return {121,{1,18,19,20,22,25,28,48,49,50,52,55,58,78,79,80,82,85,88,121}};
+    return {};
+}
+struct CsvSample{std::string suffix;double frame;std::string label;};
+std::vector<CsvSample> readSamples(const fs::path& path){
+    std::ifstream stream(path);if(!stream)throw std::runtime_error("Cannot read sample CSV");std::vector<CsvSample> result;std::string line;
+    while(std::getline(stream,line)){
+        if(line.empty()||line.front()=='#')continue;std::istringstream fields(line);std::string suffix,frame,label;
+        if(!std::getline(fields,suffix,',')||!std::getline(fields,frame,',')||!std::getline(fields,label))throw std::runtime_error("Sample CSV needs clip_suffix,frame,label");
+        if(suffix=="clip_suffix")continue;if(!label.empty()&&label.back()=='\r')label.pop_back();result.push_back({suffix,std::stod(frame),slug(label)});
+    }return result;
+}
 glm::mat4 blendTRS(const glm::mat4& a,const glm::mat4& b,float t){
     aiMatrix4x4 am,bm;for(int r=0;r<4;++r)for(int c=0;c<4;++c){am[r][c]=a[c][r];bm[r][c]=b[c][r];}aiVector3D as,ap,bs,bp;aiQuaternion aq,bq,q;am.Decompose(as,aq,ap);bm.Decompose(bs,bq,bp);aiQuaternion::Interpolate(q,aq,bq,t);q.Normalize();return toGlm(aiMatrix4x4(as*(1-t)+bs*t,q,ap*(1-t)+bp*t));
 }
 int main(int argc,char** argv){
-    if(argc!=4){std::cerr<<"Usage: gpu_pose_audit input.fbx assets_root output_directory\n";return 2;}
+    if(argc!=4&&argc!=5){std::cerr<<"Usage: gpu_pose_audit input.fbx assets_root output_directory [blink_samples.csv]\n";return 2;}
     GLFWwindow* window=nullptr;
     try{
         const fs::path modelPath=fs::absolute(fs::u8path(argv[1])),assets=fs::absolute(fs::u8path(argv[2])),out=fs::absolute(fs::u8path(argv[3]));fs::create_directories(out);
+        const auto customSamples=argc==5?readSamples(fs::u8path(argv[4])):std::vector<CsvSample>{};
         glfwSetErrorCallback([](int e,const char* s){std::cerr<<"GLFW "<<e<<": "<<(s?s:"")<<'\n';});if(!glfwInit())throw std::runtime_error("Cannot initialize GLFW");glfwWindowHint(GLFW_VISIBLE,GLFW_FALSE);glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR,3);glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR,3);glfwWindowHint(GLFW_OPENGL_PROFILE,GLFW_OPENGL_CORE_PROFILE);glfwWindowHint(GLFW_SRGB_CAPABLE,GLFW_TRUE);glfwWindowHint(GLFW_SAMPLES,4);
         window=glfwCreateWindow(Width,Height,"Raphtalia skeletal audit",nullptr,nullptr);if(!window)throw std::runtime_error("Cannot create hidden GL context");glfwMakeContextCurrent(window);glfwSwapInterval(0);if(!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)))throw std::runtime_error("Cannot initialize GLAD");
         {
@@ -66,25 +89,33 @@ int main(int argc,char** argv){
             Assimp::Importer importer;const auto* scene=importer.ReadFile(utf8(modelPath),aiProcess_ValidateDataStructure);if(!scene)throw std::runtime_error(importer.GetErrorString());
             report<<"meshes="<<model.meshCount()<<"\nnodes="<<model.nodes().size()<<"\npalette_entries="<<model.boneCount()<<"\nanimation_clips="<<scene->mNumAnimations<<"\npose_sampler=linear_TRS_quaternion_slerp_endpoint_clamp\n";
             const glm::vec3 center=glm::vec3{fit*glm::vec4{model.bounds().center(),1}};glm::vec3 faceTarget=center+glm::vec3{0,.7f,0};for(const auto& node:model.nodes())if(node.name.rfind("head.x",0)==0){faceTarget=glm::vec3{fit*node.globalBindTransform*glm::vec4{0,0,0,1}}+glm::vec3{0,.12f,0};break;}
-            constexpr unsigned ViewCount=10;
+            constexpr unsigned BodyViewCount=10,EyeView=10,ViewCount=11;
             std::array<CameraConfig,ViewCount> cameras;for(unsigned v=0;v<4;++v){cameras[v].target=v>=2?faceTarget:center;cameras[v].position=cameras[v].target+glm::vec3{0,v>=2?.015f:.1f,(v%2==0?1.f:-1.f)*(v>=2?.82f:3.6f)};}
-            const std::array<std::string,ViewCount> viewNames{"front","back","face_front","face_back","shoulder_side","waist_front","waist_side","knee_side","shoe_side","elbow_side"};std::array<Pixels,ViewCount> reference;
+            cameras[EyeView]=cameras[2];cameras[EyeView].fovDegrees=18.f;cameras[EyeView].nearPlane=.03f;
+            const std::array<std::string,ViewCount> viewNames{"front","back","face_front","face_back","shoulder_side","waist_front","waist_side","knee_side","shoe_side","elbow_side","eyes_front"};std::array<Pixels,ViewCount> reference;
             const std::array<std::string,6> anchorNames{"arm_stretch.l_0158","spine_01.x_014","spine_01.x_014","leg_stretch.l_03","foot.l_04","forearm_stretch.l_0159"};
             const std::array<glm::vec3,6> cameraOffsets{glm::vec3{.85f,.04f,.55f},glm::vec3{0,.02f,1.5f},glm::vec3{1.2f,.03f,.45f},glm::vec3{.9f,.03f,.15f},glm::vec3{.65f,.10f,.30f},glm::vec3{.65f,.03f,.40f}};
             std::array<unsigned,6> anchorBones{};for(unsigned a=0;a<anchorNames.size();++a){const auto it=std::find_if(model.bones().begin(),model.bones().end(),[&](const auto& b){return b.name==anchorNames[a];});if(it==model.bones().end())throw std::runtime_error("Missing camera anchor "+anchorNames[a]);anchorBones[a]=static_cast<unsigned>(it-model.bones().begin());}
-            report<<"views=";for(unsigned v=0;v<ViewCount;++v)report<<(v?",":"")<<viewNames[v];report<<"\ndetail_camera=animated_joint_origin_from_palette_times_inverse_adjusted_offset; fixed_world_direction_and_distance\n";
+            report<<"views=";for(unsigned v=0;v<ViewCount;++v)report<<(v?",":"")<<viewNames[v];report<<"\ndetail_camera=animated_joint_origin_from_palette_times_inverse_adjusted_offset; fixed_world_direction_and_distance\nblink_camera=face_front plus eyes_front; eyes_front fixed camera,18_degree_fov\nblink_sampling=explicit_authored_frames_and_intermediates; fraction=(frame-1)/(last_frame-1); custom_csv_overrides_matching_blink_clip\n";
             // The camera follows the joint, with identical fit and world-space
             // direction before/after. Deep squats otherwise leave fixed closeups.
-            const auto render=[&](unsigned view,const std::vector<glm::mat4>& palette){auto camera=cameras[view];if(view>=4){const unsigned a=view-4,b=anchorBones[a];camera.target=glm::vec3{fit*palette[b]*glm::inverse(model.bones()[b].offsetMatrix)*glm::vec4{0,0,0,1}};camera.position=camera.target+cameraOffsets[a];camera.nearPlane=.03f;}renderer.setCamera(camera);renderer.beginFrame();renderer.renderModel(model,fit,palette);checkGl("render");return readFrame();};
+            const auto render=[&](unsigned view,const std::vector<glm::mat4>& palette){auto camera=cameras[view];if(view>=4&&view<BodyViewCount){const unsigned a=view-4,b=anchorBones[a];camera.target=glm::vec3{fit*palette[b]*glm::inverse(model.bones()[b].offsetMatrix)*glm::vec4{0,0,0,1}};camera.position=camera.target+cameraOffsets[a];camera.nearPlane=.03f;}renderer.setCamera(camera);renderer.beginFrame();renderer.renderModel(model,fit,palette);checkGl("render");return readFrame();};
             for(unsigned v=0;v<ViewCount;++v){reference[v]=render(v,bind);save(out/("gpu_neutral_"+viewNames[v]+".ppm"),reference[v]);}
-            csv<<"clip_index,clip_name,fraction,time_ticks,mapped_channels,unresolved_channels,max_palette_delta,view,changed_rgb_bytes_vs_bind,image\n";endpoints<<"clip_index,clip_name,view,start_vs_bind_changed_rgb_bytes,end_vs_start_changed_rgb_bytes,start_vs_bind_max_palette_delta,end_vs_start_max_palette_delta\n";unsigned rendered=ViewCount,changedClipCount=0;
+            csv<<"clip_index,clip_name,fraction,time_ticks,mapped_channels,unresolved_channels,max_palette_delta,view,changed_rgb_bytes_vs_bind,image,authored_frame,sample_label\n";endpoints<<"clip_index,clip_name,view,start_vs_bind_changed_rgb_bytes,end_vs_start_changed_rgb_bytes,start_vs_bind_max_palette_delta,end_vs_start_max_palette_delta\n";unsigned rendered=ViewCount,changedClipCount=0;
             for(unsigned a=0;a<scene->mNumAnimations;++a){const auto* clip=scene->mAnimations[a];const std::string name=slug(clip->mName.C_Str());bool clipChanged=false;
                 const bool practical=std::string(clip->mName.C_Str()).ends_with("TEST_practical_ranges");
                 const bool deep=std::string(clip->mName.C_Str()).ends_with("TEST_deep_body_cloth");
-                const std::vector<double> fractions=deep?std::vector<double>{1./12,3./12,5./12,7./12,9./12,11./12}:practical?std::vector<double>{.125,.375,.625,.875}:std::vector<double>{.25,.5,.75};
-                for(const double fraction:fractions){unsigned mapped=0,unresolved=0;const auto local=localPose(model,clip,clip->mDuration*fraction,mapped,unresolved);if(unresolved)throw std::runtime_error("Unresolved animation channels in "+name);const auto palette=model.skinningMatrices(local);for(const auto& matrix:palette)if(!finite(matrix))throw std::runtime_error("Nonfinite palette");const auto delta=matrixDelta(palette,bind);
-                    // Full-body front/back at all samples; face closeups at midpoint.
-                    for(unsigned v=0;v<(deep?ViewCount:((practical?fraction==.875:fraction==.5)?4u:2u));++v){const auto pixels=render(v,palette);const auto difference=changed(reference[v],pixels);clipChanged|=difference>0;const std::string file="gpu_"+std::to_string(a)+"_"+name+"_"+std::to_string(static_cast<int>(fraction*100))+"_"+viewNames[v]+".ppm";save(out/file,pixels);csv<<a<<','<<name<<','<<fraction<<','<<clip->mDuration*fraction<<','<<mapped<<','<<unresolved<<','<<delta<<','<<viewNames[v]<<','<<difference<<','<<file<<'\n';++rendered;}
+                const auto authored=blinkSamples(clip->mName.C_Str());const bool blink=authored.finalFrame>1;
+                std::vector<AuditSample> auditSamples;
+                if(blink){
+                    for(const auto& sample:customSamples)if(std::string(clip->mName.C_Str()).ends_with(sample.suffix))auditSamples.push_back({(sample.frame-1)/(authored.finalFrame-1),sample.frame,sample.label});
+                    if(auditSamples.empty())for(double frame:authored.frames)auditSamples.push_back({(frame-1)/(authored.finalFrame-1),frame,"authored"});
+                }else for(double fraction:deep?std::vector<double>{1./12,3./12,5./12,7./12,9./12,11./12}:practical?std::vector<double>{.125,.375,.625,.875}:std::vector<double>{.25,.5,.75})auditSamples.push_back({fraction,0,"legacy"});
+                for(const auto& auditSample:auditSamples){const double fraction=auditSample.fraction;if(!std::isfinite(fraction)||fraction<0||fraction>1)throw std::runtime_error("Audit frame outside clip range");unsigned mapped=0,unresolved=0;const auto local=localPose(model,clip,clip->mDuration*fraction,mapped,unresolved);if(unresolved)throw std::runtime_error("Unresolved animation channels in "+name);const auto palette=model.skinningMatrices(local);for(const auto& matrix:palette)if(!finite(matrix))throw std::runtime_error("Nonfinite palette");const auto delta=matrixDelta(palette,bind);
+                    std::vector<unsigned> views;
+                    if(blink)views={0,1,2,EyeView};else for(unsigned v=0;v<(deep?BodyViewCount:((practical?fraction==.875:fraction==.5)?4u:2u));++v)views.push_back(v);
+                    const std::string timeLabel=blink?"f"+std::to_string(static_cast<long long>(std::llround(auditSample.authoredFrame*10000)))+"_"+auditSample.label:std::to_string(static_cast<int>(fraction*100));
+                    for(unsigned v:views){const auto pixels=render(v,palette);const auto difference=changed(reference[v],pixels);clipChanged|=difference>0;const std::string file="gpu_"+std::to_string(a)+"_"+name+"_"+timeLabel+"_"+viewNames[v]+".ppm";save(out/file,pixels);csv<<a<<','<<name<<','<<std::setprecision(12)<<fraction<<','<<clip->mDuration*fraction<<','<<mapped<<','<<unresolved<<','<<delta<<','<<viewNames[v]<<','<<difference<<','<<file<<','<<(blink?std::to_string(auditSample.authoredFrame):"")<<','<<auditSample.label<<'\n';++rendered;}
                 }
                 unsigned mapped=0,unresolved=0;const auto firstPalette=model.skinningMatrices(localPose(model,clip,0,mapped,unresolved));const auto lastPalette=model.skinningMatrices(localPose(model,clip,clip->mDuration,mapped,unresolved));std::size_t endpointChanged=0;
                 for(unsigned v=0;v<ViewCount;++v){const auto first=render(v,firstPalette);const auto last=render(v,lastPalette);const auto change=changed(first,last);endpointChanged+=change;endpoints<<a<<','<<name<<','<<viewNames[v]<<','<<changed(reference[v],first)<<','<<change<<','<<matrixDelta(firstPalette,bind)<<','<<matrixDelta(lastPalette,firstPalette)<<'\n';}

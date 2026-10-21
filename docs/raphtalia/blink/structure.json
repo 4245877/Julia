@@ -1,0 +1,694 @@
+{
+  "bones": 429,
+  "original_refit_heads": [
+    {
+      "bone": "forearm_stretch.l_0159",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "hand.l_0160",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "c_index1.l_0173",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "c_index2.l_0174",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "c_index3.l_0155",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "c_middle1.l_0170",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "c_middle2.l_0171",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "c_middle3.l_0172",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "c_pinky1.l_0164",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "c_pinky2.l_0165",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "c_pinky3.l_0166",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "c_ring1.l_0167",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "c_ring2.l_0168",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "c_ring3.l_0169",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "c_thumb1.l_0161",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "c_thumb2.l_0162",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "c_thumb3.l_0163",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "forearm_stretch.r_0138",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "hand.r_0139",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "c_index1.r_0152",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "c_index2.r_0153",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "c_index3.r_0154",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "c_middle1.r_0149",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "c_middle2.r_0150",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "c_middle3.r_0151",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "c_pinky1.r_0143",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "c_pinky2.r_0144",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "c_pinky3.r_0145",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "c_ring1.r_0146",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "c_ring2.r_0147",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "c_ring3.r_0148",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "c_thumb1.r_0140",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "c_thumb2.r_0141",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "c_thumb3.r_0142",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "leg_stretch.l_03",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "foot.l_04",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "leg_stretch.r_09",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "foot.r_010",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "toes_01.l_05",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "toes_01.r_011",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "hair.d.000_093",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "hair.d.001_095",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "hair.e.000_097",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "hair.e.001_098",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "hair.f.000_0100",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "hair.f.001_0101",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "hair.f.002_0102",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "hair.g.000_0104",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "hair.g.001_0105",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "hair.g.002_0106",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "hair.h.000_0108",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "hair.i.000_0122",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "arm_twist.l_0177",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "forearm_twist.l_0176",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "thigh_twist.l_07",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "leg_twist.l_06",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "arm_twist.r_0156",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "forearm_twist.r_0135",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "thigh_twist.r_013",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    },
+    {
+      "bone": "leg_twist.r_012",
+      "head_delta_source_units": 0.0,
+      "matches": true
+    }
+  ],
+  "cloth_links": [
+    {
+      "bone": "cloth.a.003_0224",
+      "actual_parent": "root.x_01",
+      "matches": true
+    },
+    {
+      "bone": "cloth.b.003_0229",
+      "actual_parent": "root.x_01",
+      "matches": true
+    },
+    {
+      "bone": "cloth.b.006_0232",
+      "actual_parent": "root.x_01",
+      "matches": true
+    },
+    {
+      "bone": "cloth.c.003_0185",
+      "actual_parent": "root.x_01",
+      "matches": true
+    },
+    {
+      "bone": "cloth.e.003_0194",
+      "actual_parent": "root.x_01",
+      "matches": true
+    },
+    {
+      "bone": "cloth.f.003_0200",
+      "actual_parent": "root.x_01",
+      "matches": true
+    },
+    {
+      "bone": "cloth.h.003_0209",
+      "actual_parent": "root.x_01",
+      "matches": true
+    },
+    {
+      "bone": "cloth.i.003_0195",
+      "actual_parent": "root.x_01",
+      "matches": true
+    },
+    {
+      "bone": "cloth.i.006_0218",
+      "actual_parent": "root.x_01",
+      "matches": true
+    }
+  ],
+  "tail_repairs": [
+    {
+      "bone": "head.x_018",
+      "matches": true
+    },
+    {
+      "bone": "hair.d.002_096",
+      "matches": true
+    },
+    {
+      "bone": "hair.e.002_099",
+      "matches": true
+    },
+    {
+      "bone": "hair.f.003_0103",
+      "matches": true
+    },
+    {
+      "bone": "hair.g.003_0107",
+      "matches": true
+    }
+  ],
+  "roots": [
+    "Skeleton_4_rootJoint"
+  ],
+  "degenerate_bones": [],
+  "invalid_rest_matrices": [],
+  "lbs_modifiers": {
+    "armor_tex_armor_0": [
+      {
+        "preserve_volume": false,
+        "armature": "Raphtalia_Rig"
+      }
+    ],
+    "belt_tex_belt_0": [
+      {
+        "preserve_volume": false,
+        "armature": "Raphtalia_Rig"
+      }
+    ],
+    "body_tex_skin2_0": [
+      {
+        "preserve_volume": false,
+        "armature": "Raphtalia_Rig"
+      }
+    ],
+    "body_tex_skin_0": [
+      {
+        "preserve_volume": false,
+        "armature": "Raphtalia_Rig"
+      }
+    ],
+    "bow_tex_bow_0": [
+      {
+        "preserve_volume": false,
+        "armature": "Raphtalia_Rig"
+      }
+    ],
+    "cuff.001_tex_cuff_0": [
+      {
+        "preserve_volume": false,
+        "armature": "Raphtalia_Rig"
+      }
+    ],
+    "cuff_tex_cuff_0": [
+      {
+        "preserve_volume": false,
+        "armature": "Raphtalia_Rig"
+      }
+    ],
+    "ear.001_tex_ear2_0": [
+      {
+        "preserve_volume": false,
+        "armature": "Raphtalia_Rig"
+      }
+    ],
+    "ear_tex_ear_0": [
+      {
+        "preserve_volume": false,
+        "armature": "Raphtalia_Rig"
+      }
+    ],
+    "eye_tex_eyes_0": [
+      {
+        "preserve_volume": false,
+        "armature": "Raphtalia_Rig"
+      }
+    ],
+    "eyelashes_tex_eyelashes_0": [
+      {
+        "preserve_volume": false,
+        "armature": "Raphtalia_Rig"
+      }
+    ],
+    "hair.mesh.000_tex_hair1_0": [
+      {
+        "preserve_volume": false,
+        "armature": "Raphtalia_Rig"
+      }
+    ],
+    "hair_band_tex_band_0": [
+      {
+        "preserve_volume": false,
+        "armature": "Raphtalia_Rig"
+      }
+    ],
+    "hightlight_hightlight_0": [
+      {
+        "preserve_volume": false,
+        "armature": "Raphtalia_Rig"
+      }
+    ],
+    "long_gloves_tex_glove_0": [
+      {
+        "preserve_volume": false,
+        "armature": "Raphtalia_Rig"
+      }
+    ],
+    "NurbsPath.001_tex_hair3_0": [
+      {
+        "preserve_volume": false,
+        "armature": "Raphtalia_Rig"
+      }
+    ],
+    "NurbsPath.002_tex_hair4_0": [
+      {
+        "preserve_volume": false,
+        "armature": "Raphtalia_Rig"
+      }
+    ],
+    "NurbsPath.003_tex_hair5_0": [
+      {
+        "preserve_volume": false,
+        "armature": "Raphtalia_Rig"
+      }
+    ],
+    "NurbsPath.006_tex_hair6_0": [
+      {
+        "preserve_volume": false,
+        "armature": "Raphtalia_Rig"
+      }
+    ],
+    "NurbsPath.007_tex_hair7_0": [
+      {
+        "preserve_volume": false,
+        "armature": "Raphtalia_Rig"
+      }
+    ],
+    "NurbsPath_tex_hair2_0": [
+      {
+        "preserve_volume": false,
+        "armature": "Raphtalia_Rig"
+      }
+    ],
+    "shirt.001_tex_shirt_0": [
+      {
+        "preserve_volume": false,
+        "armature": "Raphtalia_Rig"
+      }
+    ],
+    "shirt_tex_shirt_0": [
+      {
+        "preserve_volume": false,
+        "armature": "Raphtalia_Rig"
+      }
+    ],
+    "shoes_tex_shoes_0": [
+      {
+        "preserve_volume": false,
+        "armature": "Raphtalia_Rig"
+      }
+    ],
+    "shoulder_armor_tex_shoulderarmor_0": [
+      {
+        "preserve_volume": false,
+        "armature": "Raphtalia_Rig"
+      }
+    ],
+    "stocking_tex_sock_0": [
+      {
+        "preserve_volume": false,
+        "armature": "Raphtalia_Rig"
+      }
+    ],
+    "tail_tex_tail_0": [
+      {
+        "preserve_volume": false,
+        "armature": "Raphtalia_Rig"
+      }
+    ],
+    "underwear_tex_underwear_0": [
+      {
+        "preserve_volume": false,
+        "armature": "Raphtalia_Rig"
+      }
+    ]
+  },
+  "bones_with_constraints": {
+    "forearm_stretch.l_0159": [
+      "IK"
+    ],
+    "forearm_twist.l_0176": [
+      "COPY_ROTATION"
+    ],
+    "hand.l_0160": [
+      "COPY_ROTATION"
+    ],
+    "c_index1.l_0173": [
+      "COPY_ROTATION"
+    ],
+    "c_index2.l_0174": [
+      "COPY_ROTATION"
+    ],
+    "c_index3.l_0155": [
+      "COPY_ROTATION"
+    ],
+    "c_middle1.l_0170": [
+      "COPY_ROTATION"
+    ],
+    "c_middle2.l_0171": [
+      "COPY_ROTATION"
+    ],
+    "c_middle3.l_0172": [
+      "COPY_ROTATION"
+    ],
+    "c_pinky1.l_0164": [
+      "COPY_ROTATION"
+    ],
+    "c_pinky2.l_0165": [
+      "COPY_ROTATION"
+    ],
+    "c_pinky3.l_0166": [
+      "COPY_ROTATION"
+    ],
+    "c_ring1.l_0167": [
+      "COPY_ROTATION"
+    ],
+    "c_ring2.l_0168": [
+      "COPY_ROTATION"
+    ],
+    "c_ring3.l_0169": [
+      "COPY_ROTATION"
+    ],
+    "c_thumb1.l_0161": [
+      "COPY_ROTATION"
+    ],
+    "c_thumb2.l_0162": [
+      "COPY_ROTATION"
+    ],
+    "c_thumb3.l_0163": [
+      "COPY_ROTATION"
+    ],
+    "forearm_stretch.r_0138": [
+      "IK"
+    ],
+    "forearm_twist.r_0135": [
+      "COPY_ROTATION"
+    ],
+    "hand.r_0139": [
+      "COPY_ROTATION"
+    ],
+    "c_index1.r_0152": [
+      "COPY_ROTATION"
+    ],
+    "c_index2.r_0153": [
+      "COPY_ROTATION"
+    ],
+    "c_index3.r_0154": [
+      "COPY_ROTATION"
+    ],
+    "c_middle1.r_0149": [
+      "COPY_ROTATION"
+    ],
+    "c_middle2.r_0150": [
+      "COPY_ROTATION"
+    ],
+    "c_middle3.r_0151": [
+      "COPY_ROTATION"
+    ],
+    "c_pinky1.r_0143": [
+      "COPY_ROTATION"
+    ],
+    "c_pinky2.r_0144": [
+      "COPY_ROTATION"
+    ],
+    "c_pinky3.r_0145": [
+      "COPY_ROTATION"
+    ],
+    "c_ring1.r_0146": [
+      "COPY_ROTATION"
+    ],
+    "c_ring2.r_0147": [
+      "COPY_ROTATION"
+    ],
+    "c_ring3.r_0148": [
+      "COPY_ROTATION"
+    ],
+    "c_thumb1.r_0140": [
+      "COPY_ROTATION"
+    ],
+    "c_thumb2.r_0141": [
+      "COPY_ROTATION"
+    ],
+    "c_thumb3.r_0142": [
+      "COPY_ROTATION"
+    ],
+    "leg_stretch.l_03": [
+      "IK"
+    ],
+    "foot.l_04": [
+      "COPY_ROTATION"
+    ],
+    "leg_stretch.r_09": [
+      "IK"
+    ],
+    "foot.r_010": [
+      "COPY_ROTATION"
+    ]
+  },
+  "new_brows": {
+    "L": 17,
+    "R": 17
+  },
+  "cuffs": {
+    "vertices": 548,
+    "nonrigid": 0
+  },
+  "protected_files": [
+    {
+      "path": "assets/models/Raphtalia.fbx",
+      "sha256": "a602086ac9e580f2d265a489478922b75aae00410313b17a89bd846ad4f3b34c"
+    },
+    {
+      "path": "assets/models/backups/Raphtalia.original.fbx",
+      "sha256": "a602086ac9e580f2d265a489478922b75aae00410313b17a89bd846ad4f3b34c"
+    },
+    {
+      "path": "assets/models/Raphtalia1.fbx",
+      "sha256": "99ebbcca5fdf52b0c285f5fb68cdaa37c2eeeb98989fe3e2c4a2772d46de40df"
+    }
+  ],
+  "result": "PASS"
+}

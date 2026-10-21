@@ -1,6 +1,7 @@
 param(
     [string]$InputModel = 'assets/models/Raphtalia_prepared.fbx',
     [string]$OutputDirectory = 'build/raphtalia_tools/gpu_prepared',
+    [string]$BlinkSamplesCsv = '',
     [switch]$SkipBuild,
     [switch]$BuildOnly
 )
@@ -37,7 +38,10 @@ $previousPath = $env:PATH
 $inputBefore = (Get-FileHash -LiteralPath $inputAbsolute -Algorithm SHA256).Hash.ToLowerInvariant()
 try {
     $env:PATH = "$vcpkg\bin;$previousPath"
-    & $executable $inputAbsolute $assets $outputAbsolute
+    if ($BlinkSamplesCsv) {
+        $samplesAbsolute = if ([System.IO.Path]::IsPathRooted($BlinkSamplesCsv)) { $BlinkSamplesCsv } else { Join-Path $workspace $BlinkSamplesCsv }
+        & $executable $inputAbsolute $assets $outputAbsolute $samplesAbsolute
+    } else { & $executable $inputAbsolute $assets $outputAbsolute }
     if ($LASTEXITCODE -ne 0) { throw "GPU audit failed: $LASTEXITCODE" }
     $inputAfter = (Get-FileHash -LiteralPath $inputAbsolute -Algorithm SHA256).Hash.ToLowerInvariant()
     if ($inputBefore -ne $inputAfter) { throw 'Input model changed during GPU audit' }

@@ -1,7 +1,7 @@
 # Raphtalia: подготовка, управление и воспроизводимые проверки
 
 Рабочая папка — `C:\Julia`. Актуальный итог: [REPORT_RU.md](../../docs/raphtalia/REPORT_RU.md).
-Текущая модель: **241 deform bone, 11 TEST Actions**. Третий этап меняет только локальные веса тела/одежды и добавляет диагностический `TEST_deep_body_cloth`; скелет и прежние 10 Actions сохранены. Исходный `Raphtalia.fbx` и его backup не перезаписываются.
+Текущая модель после этапа моргания: **429 deform bones, 15 TEST Actions**. Сохранены исходные 241 кость, 11 прежних клипов, IK/FK, управление глазами/бровями и исправленные веса тела/одежды. Добавлены 188 костей век и локальной поверхности, независимые параметры моргания и четыре диагностических клипа. Исходный `Raphtalia.fbx` и резервные копии сохраняются.
 
 ## Управление `.blend`
 
@@ -11,11 +11,25 @@
 - В коллекции `Animation controls (Blender only)` перемещайте `CTRL_hand.L/R`, `CTRL_foot.L/R` и соответствующие `CTRL_pole_*`. Вращение target управляет ориентацией кисти/стопы. Stretch выключен. Перед переходом из произвольной FK-позы совместите targets с текущими концами цепочек: автоматического matching нет.
 - `CTRL_curl_index/middle/ring/pinky/thumb.L/R` → custom property `curl_degrees`: добавочное сгибание трёх фаланг. Начинайте с 0..30°, особенно для уже согнутой левой руки. +60° — стресс, не сертифицированный кулак.
 - `auto_forearm_twist` (по умолчанию 1) добавляет половину локального Y-twist кисти на соответствующий forearm helper. Можно отключить для полностью ручного FK. Upper-arm/leg twist остаются ручными.
-- Для положения тела используйте существующий `root.x_01`. Коллекция костей Face содержит eye/ear/brow. `brow.L/R` можно перемещать/поворачивать в Pose Mode; нет фиктивных blink/jaw controllers.
+- `Blink_L`, `Blink_R`: независимое закрытие левого/правого глаза от 0 до 1. Значение 0 открывает глаз, 1 закрывает; одинаковые значения закрывают оба глаза. Стороны соответствуют персонажу. Параметры находятся на `Raphtalia_Rig`, а не на материалах; drivers действительно перемещают деформирующие кости век. Перед ручной настройкой отключите активный TEST Action, иначе его ключи переустановят значения при смене кадра.
+- Для положения тела используйте существующий `root.x_01`. Коллекция Face содержит eye/ear/brow; `brow.L/R` перемещаются/поворачиваются в Pose Mode. Новые кости находятся в коллекции `Eyelids`. Риг рта/челюсти и речевая мимика в этот этап не входят.
 
 `Constraint helpers (no export)` скрыта в viewport; helpers обеспечивают реальные ограничения. Коллекция исходных transform helpers остаётся архивной. Drivers используют стандартные выражения Blender и не требуют регистрации внешних Python-функций. [Документация swing/twist](https://docs.blender.org/api/4.2/bpy_types_enum_items/driver_target_rotation_mode_items.html).
 
-Прежние 10 Actions сохранены без изменения ключей. `TEST_practical_ranges` имеет 241 кадр (8 секунд), `TEST_brows_wrist` и `TEST_toes_30` — 61 кадр. Новый `TEST_deep_body_cloth` имеет 361 кадр (12 секунд): шесть пиков отдельных/комбинированных поз и нейтральные начало/конец. Timeline расширен до 361. Для тела используется linear blend skinning, Preserve Volume отключён, как в JULIA. Лицевые контроллеры сохранены; лицевой авторинг в этот этап не входит.
+Прежние 11 Actions сохранены без изменения ключей, включая `TEST_deep_body_cloth` с диапазоном 1..361. Новые клипы при 30 fps:
+
+| Action | Кадры | Время между первым и последним кадром | Проверка |
+| --- | --- | --- | --- |
+| `TEST_blink_natural` | 1..31 | 1 с | Оба глаза; закрывание быстрее открывания |
+| `TEST_blink_independent` | 1..61 | 2 с | Левый, затем правый глаз |
+| `TEST_blink_gaze` | 1..121 | 4 с | Моргание при разных направлениях взгляда |
+| `TEST_blink_head` | 1..121 | 4 с | Голова, взгляд, существующие брови и моргание |
+
+Выберите нужный Action и его диапазон кадров: сохранённый timeline нового теста не ограничивает длину старых клипов. Для деформации используется linear blend skinning без Preserve Volume, максимум четыре влияния на вершину. Shape Keys не требуются.
+
+Исходные глазницы имеют по 16 узлов, а ресницы включают отдельные ribbon, нижние акценты, складки и брови. `blink_local_surface.py` дважды делит только окологлазные треугольники и ресничные полосы; новые точки лежат на исходной поверхности. Исходные индексы/координаты вершин сохранены, UV интерполируются по исходным треугольникам. Provenance каждой вершины/грани записан в `docs/raphtalia/blink/patch.json`. Локальные custom normals и sharp edges скорректированы для век; остальная модель не сглаживается глобально. Дополнительные 188 костей состоят из 124 контурных и 64 костей двух внутренних рядов поверхности.
+
+Небольшой pinch в уголках остаётся ограничением стилизованной исходной топологии. Численные смены знака проекции почти edge-on треугольников при полном закрытии следует отличать от видимых складок; учитывайте реальные площади, 3D dihedral, закрытие ресницами и контрольные изображения.
 
 ## Зависимости
 
@@ -28,33 +42,54 @@ $env:PYTHONPATH = "$PWD/build/raphtalia_tools/bpy"
 
 MSVC, Assimp и GL-зависимости используются из существующего `build/vs-release/vcpkg_installed/x64-windows`. GPU-аудит линкуется с готовыми Release-библиотеками JULIA; после изменения C++ сначала пересоберите их. Основное приложение не получает проигрыватель от запуска аудита.
 
-## Проверить текущие файлы без изменения модели
+## Проверить текущий этап моргания без изменения модели
+
+Для сравнения сохранности один раз извлеките точный снимок 241/11 из `assets/models/backups/Raphtalia_prepared.pre_blink_2026-10-21.zip` в `build/raphtalia_tools/blink/base`. Архив содержит BLEND и FBX; не извлекайте его поверх актуальных assets.
 
 ```powershell
 $env:PYTHONPATH = "$PWD/build/raphtalia_tools/bpy"
-python tools/raphtalia/verify_prepared.py --output docs/raphtalia/deep_deformation/structure.json
-python tools/raphtalia/deep_pose_audit.py --output docs/raphtalia/deep_deformation/after.json --render
-python tools/raphtalia/reaudit.py --output docs/raphtalia/deep_deformation/legacy_after.json
-python tools/raphtalia/control_check.py --output docs/raphtalia/deep_deformation/controls.json
-python tools/raphtalia/deep_integrity.py
-python tools/raphtalia/joint_sweep.py
-python tools/raphtalia/roundtrip_check.py
-./tools/raphtalia/build_assimp_audit.ps1 -InputModel assets/models/Raphtalia_prepared.fbx -OutputJson docs/raphtalia/deep_deformation/assimp_after.json
-./tools/raphtalia/build_gpu_audit.ps1 -InputModel assets/models/Raphtalia_prepared.fbx -OutputDirectory build/raphtalia_tools/deep/gpu_final
-python tools/raphtalia/convert_gpu_evidence.py build/raphtalia_tools/deep/gpu_final docs/raphtalia/deep_deformation/gpu_after
-python tools/raphtalia/create_deep_comparison.py
-python tools/raphtalia/write_report.py
+Expand-Archive -LiteralPath assets/models/backups/Raphtalia_prepared.pre_blink_2026-10-21.zip -DestinationPath build/raphtalia_tools/blink/base
+python tools/raphtalia/blink_integrity.py --base build/raphtalia_tools/blink/base/Raphtalia_prepared.blend --candidate assets/models/Raphtalia_prepared.blend --patch docs/raphtalia/blink/patch.json --output docs/raphtalia/blink/integrity.json
+python tools/raphtalia/blink_visibility.py --blend assets/models/Raphtalia_prepared.blend --output docs/raphtalia/blink/visibility.json
+python tools/raphtalia/blink_render_suite.py --blend assets/models/Raphtalia_prepared.blend --output docs/raphtalia/blink
+python tools/raphtalia/blink_corner_audit.py --blend assets/models/Raphtalia_prepared.blend --dense --winks --output docs/raphtalia/blink/corner_audit.json
+python tools/raphtalia/roundtrip_check.py --blend assets/models/Raphtalia_prepared.blend --fbx assets/models/Raphtalia_prepared.fbx --output docs/raphtalia/blink/roundtrip.json
+./tools/raphtalia/build_assimp_audit.ps1 -InputModel assets/models/Raphtalia_prepared.fbx -OutputJson docs/raphtalia/blink/assimp.json
+python tools/raphtalia/blink_gpu_samples.py --blend assets/models/Raphtalia_prepared.blend --output build/raphtalia_tools/blink/gpu_samples.csv
+./tools/raphtalia/build_gpu_audit.ps1 -InputModel assets/models/Raphtalia_prepared.fbx -OutputDirectory build/raphtalia_tools/blink/gpu -BlinkSamplesCsv build/raphtalia_tools/blink/gpu_samples.csv
 ```
 
-Проверки читают модель и пишут evidence/CSV/отчёт. Для `deep_integrity.py` нужна распакованная исходная модель этапа в `build/raphtalia_tools/deep/base` (см. ниже). `write_report.py` сверяет SHA256 текущих моделей с Blender/roundtrip/Assimp/GPU evidence, сравнивает исходный архив и проверяет хэши кадров. При устаревшем evidence публикация отчёта прекращается. Результат finite/импорта не означает отсутствие коллизий; смотрите локальные изображения и `worst`/`worst_edge` в JSON.
+Эти проверки не сохраняют открытый BLEND и не перезаписывают FBX; они записывают evidence и изображения. Повторную распаковку уже подготовленного baseline пропустите. `blink_integrity.py` проверяет исходные кости/клипы/контроллеры, provenance subdivision, UV, материалы и веса; отдельно сообщает bit-exact и сравнение с допуском float. Небольшая погрешность хранения новых midpoint и LBS не является изменением координат исходных вершин.
 
-`face_blink_probe.py`, `face_geometry.py` и лицевые данные `reaudit/` относятся к прежнему этапу. Для текущей проверки тела/одежды они не запускаются. Сохранённые лицевые Actions проверяются только на сохранность и совместимость экспорта.
+Для GPU before/after и компактных изображений нужен также аудит исходного FBX 241/11:
 
-`deep_pose_audit.py --blend ... --output ... [--render] [--only pose ...]`, `reaudit.py --blend ... --output ... [--render]`, `control_check.py --blend ... --output ...`, `verify_prepared.py --blend ... --output ...`, `joint_sweep.py --blend ... --output ...` позволяют проверять отдельного кандидата. `roundtrip_check.py` принимает `--blend`, `--fbx`, `--output`: новый клип сравнивается в 25 точках, `TEST_practical_ranges` — в 17, остальные — в пяти, всего 87. `verify_prepared.py` также обновляет текущий skeleton CSV.
+```powershell
+./tools/raphtalia/build_gpu_audit.ps1 -InputModel build/raphtalia_tools/blink/base/Raphtalia_prepared.fbx -OutputDirectory build/raphtalia_tools/blink/gpu_before
+python tools/raphtalia/convert_blink_gpu.py --source build/raphtalia_tools/blink/gpu --before build/raphtalia_tools/blink/gpu_before --samples build/raphtalia_tools/blink/gpu_samples.csv --output docs/raphtalia/blink/gpu
+```
 
-Текущая выборка: 50 body/clothing поз, прежний аудит 53/54 поз, 723 отдельных вращения костей. GPU проверяет все 11 экспортированных клипов и сохраняет 166 изображений, включая шесть пиков нового клипа с близкими видами тела/одежды. `limb_validation.json` содержит независимые промежуточные углы для чулок/обуви; `sleeve_validation.json` — отдельную проверку рукавов. Численные показатели не заменяют визуальное сравнение.
+CSV выбирает реальные моменты 0/25/50/75/100% управляющих кривых, в том числе между целыми кадрами. Успешный импорт Assimp не заменяет воспроизведение этих состояний в GPU. Различайте три проверки: Blender-деформация; сохранение костей/анимаций в FBX и импорт; воспроизведение экспортированных TRS отдельным OpenGL-аудитором. Desktop JULIA остаётся статическим просмотрщиком: запуск GPU-аудита не добавляет в него пользовательский проигрыватель или интерфейс `Blink_L/R`.
 
-## Воспроизвести локальные изменения третьего этапа
+GPU clay-материалы обусловлены прежним prepared FBX с нулём Assimp texture slots. Этап моргания не добавляет и не удаляет исходные текстуры/материалы. Workbench/GPU кадры служат диагностикой деформаций, а не подтверждением текстурированного beauty render.
+
+`write_report.py` — исторический генератор отчёта тела/одежды, рассчитанный на этап 241/11. **Не запускайте его для публикации этапа моргания: он перезаписывает новый `REPORT_RU.md` старым body-only содержимым.** `deep_integrity.py` и `joint_sweep.py` также рассчитаны на прежние снимки/число костей и не являются проверками актуального 429-костного файла. Их прежние метрики и assertions используйте только с соответствующими архивами. `face_blink_probe.py` сохраняет отклонённый эксперимент; это не реализация текущего моргания.
+
+## Воспроизвести этап моргания отдельным кандидатом
+
+Вход — только извлечённый pre-blink BLEND 241/11, выход — отдельный путь в `build`. Не применяйте генератор повторно к 429/15.
+
+```powershell
+$env:PYTHONPATH = "$PWD/build/raphtalia_tools/bpy"
+python tools/raphtalia/build_blink.py --input build/raphtalia_tools/blink/base/Raphtalia_prepared.blend --output build/raphtalia_tools/blink/rebuilt.blend --export
+python tools/raphtalia/blink_integrity.py --base build/raphtalia_tools/blink/base/Raphtalia_prepared.blend --candidate build/raphtalia_tools/blink/rebuilt.blend --patch build/raphtalia_tools/blink/rebuilt.patch.json --output build/raphtalia_tools/blink/rebuilt_integrity.json
+python tools/raphtalia/roundtrip_check.py --blend build/raphtalia_tools/blink/rebuilt.blend --fbx build/raphtalia_tools/blink/rebuilt.fbx --output build/raphtalia_tools/blink/rebuilt_roundtrip.json
+```
+
+`build_blink.py` не меняет вход и пишет `*.blend`, `*.patch.json`, а с `--export` также `*.fbx`. Перед заменой prepared assets сравнивайте одинаковые позы, сохранность, roundtrip, Assimp и GPU. `blink_topology_audit.py` читает исходный снимок, `blink_lash_mapping.py` разделяет ресничные части, `blink_local_surface.py` передаёт поверхность с provenance. Ни один из этих помощников не заменяет визуальную оценку.
+
+Итоговый blink-экспорт использует `bake_step=.25` (120 samples/sec при 30 fps), simplify 0. В 216 roundtrip-позах максимальная ошибка составила 0,03192 мм, против 1,006 мм при прежнем шаге 1 кадр. Это увеличивает размер FBX примерно до 170 МБ. Сами авторские Actions остаются при 30 fps. В `patch.json` также сохранены стандартные выражения всех drivers век и единицы движения для будущего переноса независимых параметров в JULIA.
+
+## История: локальные изменения тела/одежды, этап 241/10 → 241/11
 
 Распакуйте `assets/models/backups/Raphtalia_prepared.pre_deep_deformation_2026-10-21.zip` в отдельную папку `build/raphtalia_tools/deep/base`. Это точная исходная модель 241/10; не распаковывайте её поверх текущих assets.
 
@@ -66,11 +101,11 @@ python tools/raphtalia/roundtrip_check.py --blend build/raphtalia_tools/deep/reb
 python tools/raphtalia/limb_validation.py --output build/raphtalia_tools/deep/rebuilt_limb_validation.json
 ```
 
-`refine_deep_deformation.py` принимает только исходную модель 241/10, запрещает совпадение входного/выходного пути и сохраняет patch рядом с кандидатом. `--baseline` создаёт контрольную копию с тем же новым клипом, но без исправления весов: она нужна для сопоставимого GPU before/after. Статические веса формируют `deep_body.py` и `deep_cloth.py`; runtime-решатель не требуется. Повторно применять скрипт к текущим 241/11 нельзя.
+`refine_deep_deformation.py` принимает только исходную модель 241/10, запрещает совпадение входного/выходного пути и сохраняет patch рядом с кандидатом. `--baseline` создаёт контрольную копию с тем же новым клипом, но без исправления весов: она нужна для сопоставимого GPU before/after. Статические веса формируют `deep_body.py` и `deep_cloth.py`; runtime-решатель не требуется. Повторно применять скрипт к результатам 241/11 или 429/15 нельзя.
 
-Перед заменой prepared assets требуется визуальное сравнение одинаковых поз, полный контроль сохранности и повторный Assimp/GPU. Генератор отчёта рассчитан на окончательно опубликованные assets и соответствующее им evidence. Нейтральная геометрия, UV, материалы, скелет, controls и старые Actions должны оставаться точными.
+Числа 50 body/clothing поз, 723 отдельных вращения и 166 GPU-изображений относятся к этому историческому этапу. Evidence находится в `docs/raphtalia/deep_deformation/`; оно подтверждает прежние исправления тела и одежды и не заменяет текущие проверки моргания.
 
-## Предыдущий этап: уточнение рига
+## История: уточнение рига, этап 239/7 → 241/10
 
 В `assets/models/backups/Raphtalia_prepared.pre_reaudit_2026-10-21.zip` сохранены прежние FBX/BLEND с SHA256 и manifest. Извлеките архив в **отдельную** папку `build/raphtalia_tools/reaudit/base`; не поверх final assets. Затем:
 
@@ -83,24 +118,25 @@ python tools/raphtalia/roundtrip_check.py --blend build/raphtalia_tools/reaudit/
 
 `refine_rig.py` принимает только 239-костный результат первой стадии: повторное применение к 241-костной модели запрещено. Он не меняет входную модель. Точные локальные патчи и конфигурация контроллеров сохраняются рядом с кандидатом в `*.weights.json` / `*.controls.json`. Перед заменой prepared надо сравнить кандидата и повторить Assimp/GPU; оригинал и backup сохраняются всегда.
 
-## Первая стадия из оригинала
+## История: первая стадия из оригинала
 
 Инструменты сохранены для полного воспроизведения: `fbx_audit.py` → `blender_inspect.py` → `joint_geometry.py` → `face_geometry.py` → `prepare_rig.py`. Их исходные измерения — `raw_original.json`, `joint_geometry.json`, `face_geometry.json`. `glove_skinning.py` используется подготовкой, не является мусором.
 
-**`prepare_rig.py` создаёт только старую первую стадию (239 костей / 7 Actions) и перезаписывает prepared assets.** Она не воспроизводит текущий результат. Полная цепочка: первая стадия → `refine_rig.py --controls --export` (241/10) → `refine_deep_deformation.py --export` (241/11), затем все проверки отдельного кандидата. Существующий финальный rig нельзя заменять промежуточной стадией. Для текущей локальной работы используйте точный архив 241/10 выше.
+**`prepare_rig.py` создаёт только старую первую стадию (239 костей / 7 Actions) и перезаписывает prepared assets.** Она не воспроизводит текущий результат. Полная цепочка: первая стадия → `refine_rig.py --controls --export` (241/10) → `refine_deep_deformation.py --export` (241/11) → `build_blink.py --export` (429/15), затем проверки отдельного кандидата. Существующий финальный rig нельзя заменять промежуточной стадией. Для воспроизведения моргания используйте точный архив pre-blink 241/11.
 
 ## Экспорт собственных анимаций
 
-Выбирайте только Armature и meshes персонажа: типы ARMATURE/MESH, `use_armature_deform_only=True`, `add_leaf_bones=False`, `use_mesh_modifiers=False`, bake animations с шагом 1 и simplify 0. Общие параметры — в `refine_rig.export_fbx`. Функция для текущих TEST Actions проверена roundtrip.
+Выбирайте только Armature и meshes персонажа: типы ARMATURE/MESH, `use_armature_deform_only=True`, `add_leaf_bones=False`, `use_mesh_modifiers=False`, simplify 0. Для моргания `build_blink.py --export` вызывает `refine_rig.export_fbx(..., bake_step=.25)`: четверть кадра при 30 fps соответствует 120 Гц. Старый шаг 1 давал на быстрых переходах отклонения порядка 0.001 м между отсчётами. Итоговую точность экспорта с шагом .25 определяет свежий `roundtrip.json`; не переносите в него метрики старого bake.
 
-Если ключи находятся на управляющих объектах, а не только на Armature, экспортируйте **активный** клип со всеми его зависимостями, `bake_anim_use_all_actions=False`, либо сначала сделайте visual bake в копии сцены. Экспорт всех несовместимых object Actions не заменяет сборку клипа. После visual bake отключите внесённые в него аддитивные controls, чтобы не применить их второй раз, и сравните экспорт с исходным control-движением. Нынешние 11 TEST Actions хранят ключи на Armature и экспортированы отдельно.
+Ключи `Blink_L/R` находятся на Armature; FBX получает вычисленные TRS костей, а не Blender drivers и интерфейс custom properties. Для нового клипа с такими параметрами проверяйте результат bake, включая промежуточные значения. Если ключи находятся на внешних управляющих объектах, экспортируйте активный клип со всеми зависимостями, `bake_anim_use_all_actions=False`, либо сделайте visual bake в копии сцены. После bake отключите уже внесённые аддитивные controls и сравните результат с исходным движением. Нынешние 15 TEST Actions сохраняются отдельными клипами.
 
 Будущие morphs в JULIA требуют отдельной поддержки; их наличие в FBX не создаёт playback. Heel roll, авто IK/FK matching, collisions, gait/contact и полноценная мимика остаются следующими задачами.
 
 ## Структура evidence
 
-- `docs/raphtalia/REPORT_RU.md`, `runtime_audit.md`, `skeleton_prepared.csv`, `roundtrip.json`, `joint_sweep.json`, manifest — текущие данные.
-- `docs/raphtalia/deep_deformation/` — текущие before/after, локальные кадры, `comparison.json/png`, weight patch, integrity, локальная валидация, отклонённые варианты и отдельные GPU before/after.
+- `docs/raphtalia/REPORT_RU.md`, `runtime_audit.md` — актуальное описание модели и границ runtime-поддержки.
+- `docs/raphtalia/blink/` — текущие patch/provenance, integrity, visibility, roundtrip, Assimp/GPU и сравнительные изображения глаз. Сверяйте SHA256 evidence с проверяемыми файлами.
+- `docs/raphtalia/deep_deformation/` — сохранённые before/after тела/одежды, weight patch, integrity и GPU предыдущего этапа 241/11. Старые `joint_sweep.json` и подобные корневые evidence также относятся к своим исходным снимкам.
 - `docs/raphtalia/reaudit/` — сохранённые данные предыдущего этапа уточнения рига; количества и метрики оттуда не являются текущим QA.
 - `docs/raphtalia/history/2026-10-20/` — явно исторические отчёты/кадры и промежуточные эксперименты. Они не являются текущим QA.
 - `build/raphtalia_tools/` — зависимости, executables, PPM, логи и кандидаты; в доставку модели не входят. Они не удалялись вслепую.
