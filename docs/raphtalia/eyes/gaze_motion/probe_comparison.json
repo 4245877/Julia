@@ -1,0 +1,202 @@
+{
+  "seconds_per_run": 600,
+  "seeds": [
+    27,
+    12345,
+    1380012104
+  ],
+  "fps": [
+    30,
+    60,
+    120
+  ],
+  "method": "Same read-only EyeBehavior probe source, newly compiled against the updated Release library; baseline files retained unchanged. Movement runs are consecutive position changes above 1e-7 degree. Statistics below consider total displacement >= 0.5 degree. Frame fractions use Euclidean head-local yaw/pitch displacement.",
+  "limitations": "Before and after seeded autonomous schedules differ because fixation timing and optional correction behavior changed. These are distribution comparisons, not matching individual saccades. At 30 FPS some short saccades still travel over half their amplitude in one peak frame, but none over 80 percent. These CPU measurements complement desktop bone and image evidence.",
+  "results": [
+    {
+      "seed": 27,
+      "fps": 30,
+      "before": {
+        "movements": 787,
+        "movements_at_least_half_degree": 244,
+        "median_movement_frames": 3,
+        "fraction_above_half_per_frame": 0.991803,
+        "fraction_above_80_percent_per_frame": 0.196721,
+        "worst_frame_fraction": 0.954608
+      },
+      "after": {
+        "movements": 236,
+        "movements_at_least_half_degree": 223,
+        "median_movement_frames": 4,
+        "fraction_above_half_per_frame": 0.659193,
+        "fraction_above_80_percent_per_frame": 0.0,
+        "worst_frame_fraction": 0.569912
+      }
+    },
+    {
+      "seed": 27,
+      "fps": 60,
+      "before": {
+        "movements": 798,
+        "movements_at_least_half_degree": 244,
+        "median_movement_frames": 5,
+        "fraction_above_half_per_frame": 0.25,
+        "fraction_above_80_percent_per_frame": 0.0,
+        "worst_frame_fraction": 0.625386
+      },
+      "after": {
+        "movements": 236,
+        "movements_at_least_half_degree": 223,
+        "median_movement_frames": 7,
+        "fraction_above_half_per_frame": 0.0,
+        "fraction_above_80_percent_per_frame": 0.0,
+        "worst_frame_fraction": 0.300311
+      }
+    },
+    {
+      "seed": 27,
+      "fps": 120,
+      "before": {
+        "movements": 802,
+        "movements_at_least_half_degree": 244,
+        "median_movement_frames": 9,
+        "fraction_above_half_per_frame": 0.0,
+        "fraction_above_80_percent_per_frame": 0.0,
+        "worst_frame_fraction": 0.334417
+      },
+      "after": {
+        "movements": 236,
+        "movements_at_least_half_degree": 223,
+        "median_movement_frames": 14,
+        "fraction_above_half_per_frame": 0.0,
+        "fraction_above_80_percent_per_frame": 0.0,
+        "worst_frame_fraction": 0.152153
+      }
+    },
+    {
+      "seed": 12345,
+      "fps": 30,
+      "before": {
+        "movements": 799,
+        "movements_at_least_half_degree": 231,
+        "median_movement_frames": 3,
+        "fraction_above_half_per_frame": 0.987013,
+        "fraction_above_80_percent_per_frame": 0.186147,
+        "worst_frame_fraction": 0.949598
+      },
+      "after": {
+        "movements": 247,
+        "movements_at_least_half_degree": 231,
+        "median_movement_frames": 4,
+        "fraction_above_half_per_frame": 0.670996,
+        "fraction_above_80_percent_per_frame": 0.0,
+        "worst_frame_fraction": 0.565337
+      }
+    },
+    {
+      "seed": 12345,
+      "fps": 60,
+      "before": {
+        "movements": 804,
+        "movements_at_least_half_degree": 231,
+        "median_movement_frames": 5,
+        "fraction_above_half_per_frame": 0.294372,
+        "fraction_above_80_percent_per_frame": 0.0,
+        "worst_frame_fraction": 0.617877
+      },
+      "after": {
+        "movements": 247,
+        "movements_at_least_half_degree": 231,
+        "median_movement_frames": 7,
+        "fraction_above_half_per_frame": 0.0,
+        "fraction_above_80_percent_per_frame": 0.0,
+        "worst_frame_fraction": 0.300181
+      }
+    },
+    {
+      "seed": 12345,
+      "fps": 120,
+      "before": {
+        "movements": 810,
+        "movements_at_least_half_degree": 231,
+        "median_movement_frames": 9,
+        "fraction_above_half_per_frame": 0.0,
+        "fraction_above_80_percent_per_frame": 0.0,
+        "worst_frame_fraction": 0.333867
+      },
+      "after": {
+        "movements": 247,
+        "movements_at_least_half_degree": 231,
+        "median_movement_frames": 14,
+        "fraction_above_half_per_frame": 0.0,
+        "fraction_above_80_percent_per_frame": 0.0,
+        "worst_frame_fraction": 0.151931
+      }
+    },
+    {
+      "seed": 1380012104,
+      "fps": 30,
+      "before": {
+        "movements": 799,
+        "movements_at_least_half_degree": 243,
+        "median_movement_frames": 3,
+        "fraction_above_half_per_frame": 1.0,
+        "fraction_above_80_percent_per_frame": 0.218107,
+        "worst_frame_fraction": 0.970025
+      },
+      "after": {
+        "movements": 234,
+        "movements_at_least_half_degree": 216,
+        "median_movement_frames": 4,
+        "fraction_above_half_per_frame": 0.657407,
+        "fraction_above_80_percent_per_frame": 0.0,
+        "worst_frame_fraction": 0.569087
+      }
+    },
+    {
+      "seed": 1380012104,
+      "fps": 60,
+      "before": {
+        "movements": 808,
+        "movements_at_least_half_degree": 243,
+        "median_movement_frames": 5,
+        "fraction_above_half_per_frame": 0.226337,
+        "fraction_above_80_percent_per_frame": 0.0,
+        "worst_frame_fraction": 0.61729
+      },
+      "after": {
+        "movements": 234,
+        "movements_at_least_half_degree": 216,
+        "median_movement_frames": 7,
+        "fraction_above_half_per_frame": 0.0,
+        "fraction_above_80_percent_per_frame": 0.0,
+        "worst_frame_fraction": 0.300351
+      }
+    },
+    {
+      "seed": 1380012104,
+      "fps": 120,
+      "before": {
+        "movements": 815,
+        "movements_at_least_half_degree": 243,
+        "median_movement_frames": 9,
+        "fraction_above_half_per_frame": 0.0,
+        "fraction_above_80_percent_per_frame": 0.0,
+        "worst_frame_fraction": 0.332826
+      },
+      "after": {
+        "movements": 234,
+        "movements_at_least_half_degree": 216,
+        "median_movement_frames": 14,
+        "fraction_above_half_per_frame": 0.0,
+        "fraction_above_80_percent_per_frame": 0.0,
+        "worst_frame_fraction": 0.152383
+      }
+    }
+  ],
+  "worst_60hz_csv": {
+    "seed": 1380012104,
+    "before": "before_worst_60hz_samples.csv",
+    "after": "after_worst_60hz_samples.csv"
+  }
+}

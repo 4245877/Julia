@@ -108,7 +108,6 @@ namespace julia::render_opengl
         if (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z))
             throw std::invalid_argument("Non-finite gaze target");
         target_ = point;
-        if (!targeted_) targetGaze_ = behavior_.output().gazeDegrees;
         targeted_ = true;
     }
 
@@ -116,19 +115,25 @@ namespace julia::render_opengl
     {
         if (targeted_)
         {
-            behavior_.releaseGazeFrom(targetGaze_);
+            behavior_.releaseGaze();
         }
         targeted_ = false;
     }
 
     void EyePoseLayer::update(double seconds)
     {
-        elapsed_ = seconds >= 0 && seconds <= .5 ? seconds : 0;
-        if (enabled_) behavior_.update(seconds);
+        if (!std::isfinite(seconds) || seconds < 0)
+            throw std::invalid_argument("Eye layer delta must be finite and nonnegative");
+        elapsed_ = enabled_ && targeted_ ? seconds : 0;
+        // A scene target depends on the freshly sampled head pose. Advance its
+        // motion only after projecting that target in apply().
+        if (enabled_ && !targeted_) behavior_.update(seconds);
     }
 
     void EyePoseLayer::apply(std::span<glm::mat4> locals, const AnimationClip* baseClip)
     {
+        const double elapsed = elapsed_;
+        elapsed_ = 0; // Re-evaluation/seek or a bypass cannot reuse pending time.
         if (!enabled_ || authoredEyes(baseClip)) return;
         if (locals.size() != model_.nodes().size()) throw std::invalid_argument("Eye layer pose size mismatch");
         auto gaze = behavior_.output().gazeDegrees;
@@ -148,10 +153,10 @@ namespace julia::render_opengl
                 desired = glm::degrees(glm::vec2{std::atan2(direction.x, direction.z),
                     std::atan2(direction.y, std::hypot(direction.x, direction.z))});
             desired = safeGaze(desired, behavior_.settings());
-            targetGaze_ = glm::mix(targetGaze_, desired, static_cast<float>(-std::expm1(-elapsed_ / .045)));
-            gaze = targetGaze_;
+            behavior_.trackGazeDegrees(desired);
+            behavior_.update(elapsed);
+            gaze = behavior_.output().gazeDegrees;
         }
-        elapsed_ = 0; // Re-evaluation/seek must not advance a target twice.
         gaze = safeGaze(gaze, behavior_.settings());
         const auto headBind = orientation(model_.nodes()[head_].globalBindTransform);
         const auto delta = glm::inverse(headBind) *

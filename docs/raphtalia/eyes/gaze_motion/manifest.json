@@ -1,0 +1,77 @@
+[
+  {
+    "file": "after_worst_60hz_samples.csv",
+    "bytes": 464,
+    "sha256": "33b50274f2d997a9f55fafc2ad18432d27710526466b2d3f798a88d9d2792b4f"
+  },
+  {
+    "file": "all_samples.csv.gz",
+    "bytes": 383722,
+    "sha256": "e559468f637d6850d320bff0e172ef5ca80ca673d17e92b96e4d04fd3297a4c1"
+  },
+  {
+    "file": "automatic_blink.mp4",
+    "bytes": 97715,
+    "sha256": "0c5b983c6d6b3a42a89ec7bf7643c1471943249ce69f56c95cbad82ee0f8e551"
+  },
+  {
+    "file": "before_worst_60hz_samples.csv",
+    "bytes": 321,
+    "sha256": "d5ad7b4ae0f643105fc69c458b2072522f733d766341b6418bb96e71f3747268"
+  },
+  {
+    "file": "position_speed.png",
+    "bytes": 172006,
+    "sha256": "e0ca8b21f98237e1996e8f1367b94be010f5a268c53d5eb68550ce9bd7b56853"
+  },
+  {
+    "file": "probe_comparison.json",
+    "bytes": 6678,
+    "sha256": "fd1d27086ee711199815b98cefb9fba9a1f4844a2fa67ac5d4d0b39e1d0040e5"
+  },
+  {
+    "file": "pursuit.mp4",
+    "bytes": 32300,
+    "sha256": "423e42e99a9814810fab6cd498a78279110abc8b8e8cf29b4f405a2036ad71a9"
+  },
+  {
+    "file": "samples.csv",
+    "bytes": 507059,
+    "sha256": "7878088aa0c70d2de10dc6cb5836165669c002e3d99ee982e3c387f988fd68ab"
+  },
+  {
+    "file": "short.gif",
+    "bytes": 80149,
+    "sha256": "84195cfdc1a531784ae9dbaccee28ca3a55f3c2070409cdb1a1e2850209b031f"
+  },
+  {
+    "file": "short.mp4",
+    "bytes": 24241,
+    "sha256": "63d04c61f6c4cced48df414cb37f6d16d6e8cf774ebc535d7a58dd4006dae381"
+  },
+  {
+    "file": "summary.json",
+    "bytes": 1911,
+    "sha256": "6cebc8bf148655190f62f3adf4e45d44bd60f7034ff260796a23168e13c1acd8"
+  },
+  {
+    "file": "tracking_automatic_blink.png",
+    "bytes": 130123,
+    "sha256": "0ddd84bd117c189c9c02cb443ee0a80a18f32f3a00cd20770c556180a464cdb0"
+  },
+  {
+    "file": "wide.gif",
+    "bytes": 224025,
+    "sha256": "68f762c1207b4e34383589bf0fdb819b8547a49fa09aa183c7820e9bc5d78b5a"
+  },
+  {
+    "file": "wide.mp4",
+    "bytes": 31934,
+    "sha256": "d9d12c28815a1750068b6d6c7139373ee720a3108676a5bcf3fcb2449b5315eb"
+  },
+  {
+    "file": "wide_sequence.png",
+    "bytes": 441133,
+    "sha256": "9c360c83716b79c946e23ed6b69edfc6ed660f689d4c580f723df67b1a0449f4"
+  }
+]

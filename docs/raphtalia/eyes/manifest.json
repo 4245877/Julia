@@ -1,5 +1,5 @@
 {
-  "source": "build/vs-release/verification/desktop_eyes",
+  "source": "build/gaze_visible_final",
   "capture": "Actual julia_desktop GL_BACK RGB; simulated 60Hz time, 30fps GIF; imported diffuse materials",
   "files": [
     {
@@ -14,28 +14,28 @@
     },
     {
       "path": "docs/raphtalia/eyes/body_target.png",
-      "bytes": 310339,
-      "sha256": "5bf450a1e95b25f86ab0f508bf78c301529c4a62a9768966ef5f80f1bfd58621"
+      "bytes": 310338,
+      "sha256": "e2627f66933f5aa16968f90780839183a3a72e1f6d5cf6492b71c511dbbc642c"
     },
     {
       "path": "docs/raphtalia/eyes/ctest_debug.txt",
-      "bytes": 3553,
-      "sha256": "41ce3f9b60ceb8716d123f827bc5a9158cbcc57075597f63d56c5a2f9e825615"
+      "bytes": 16345,
+      "sha256": "a31ff139d364d4ad194cb92ffeef0a0f33511a362798087917c1161db1b34b7c"
     },
     {
       "path": "docs/raphtalia/eyes/ctest_release.txt",
-      "bytes": 13940,
-      "sha256": "40676aa166f570951c69379835dae57624684ade359a7fecfd1c76983b84aff4"
+      "bytes": 14126,
+      "sha256": "b2c72dd7e50ded19e1afd642f18f46e79949bdfa3634c3c659e9e7a442358354"
     },
     {
       "path": "docs/raphtalia/eyes/desktop_eyes.txt",
-      "bytes": 1161,
-      "sha256": "18a57dcdf114d47b7b83e0deb7096074e39f6e4bd8b45b5e3ac89a222af1547a"
+      "bytes": 2320,
+      "sha256": "6f568ae9c2cc1e02e8dc76f0354a2750cfdec8876e3db58bb4e42bdbfae0f52f"
     },
     {
       "path": "docs/raphtalia/eyes/eye_samples.csv",
-      "bytes": 4161,
-      "sha256": "916778086634b172a07479031fad1d1db1b55dc21b037961eb62402598b01f7e"
+      "bytes": 4229,
+      "sha256": "dad320ee70dbf742535f9d6419009b0fb2332e6004db7db04c386f07c2e95e44"
     },
     {
       "path": "docs/raphtalia/eyes/gaze.png",
@@ -49,8 +49,8 @@
     },
     {
       "path": "docs/raphtalia/eyes/natural.gif",
-      "bytes": 1730961,
-      "sha256": "d4d6bceb529239d61fa7605b8f4d8472d885a9b2f6e0b0d19793a56b19b9a353"
+      "bytes": 1165103,
+      "sha256": "015d912ab633906c855c6a0c4f1fd4616cc4fa1516b8998ddbafcf80251700c6"
     },
     {
       "path": "docs/raphtalia/eyes/neutral.png",
@@ -64,8 +64,8 @@
     },
     {
       "path": "docs/raphtalia/eyes/visible_desktop_eyes.txt",
-      "bytes": 1160,
-      "sha256": "af4e58481d9e1e243486203f86cc808d66e31f90568191d32998ba39c916d020"
+      "bytes": 2320,
+      "sha256": "6f568ae9c2cc1e02e8dc76f0354a2750cfdec8876e3db58bb4e42bdbfae0f52f"
     }
   ]
 }

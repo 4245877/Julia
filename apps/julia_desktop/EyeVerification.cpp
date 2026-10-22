@@ -3,6 +3,7 @@
 #include <glm/gtc/matrix_inverse.hpp>
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <fstream>
@@ -10,6 +11,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <thread>
 #include <vector>
 
 namespace
@@ -84,6 +86,38 @@ namespace
     bool eyeNode(const std::string& name)
     {
         return name.starts_with("eye.") || name.starts_with("lid.");
+    }
+
+    glm::quat rotation(const glm::mat4& matrix)
+    {
+        glm::mat3 basis{matrix};
+        for (int axis = 0; axis < 3; ++axis) basis[axis] = glm::normalize(basis[axis]);
+        return glm::normalize(glm::quat_cast(basis));
+    }
+
+    glm::vec3 gazeDirection(glm::vec2 degrees)
+    {
+        const auto angles = glm::radians(degrees);
+        return {std::sin(angles.x) * std::cos(angles.y), std::sin(angles.y),
+            std::cos(angles.x) * std::cos(angles.y)};
+    }
+
+    float angularDistance(glm::vec3 a, glm::vec3 b)
+    {
+        // atan2 remains accurate for tiny corrections, unlike acos(dot(float)).
+        return glm::degrees(std::atan2(glm::length(glm::cross(a, b)), glm::dot(a, b)));
+    }
+
+    const char* gazeState(julia::render::GazeState state)
+    {
+        using julia::render::GazeState;
+        switch (state)
+        {
+        case GazeState::Fixating: return "Fixating";
+        case GazeState::Saccading: return "Saccading";
+        case GazeState::Tracking: return "Tracking";
+        }
+        return "Unknown";
     }
 }
 
@@ -408,6 +442,260 @@ void verifyDesktopEyes(GLFWwindow* window, OpenGLRenderer& renderer,
     require(maxTriggeredClosure > .95f && behavior.output().blinkLeft == 0 && behavior.output().blinkRight == 0,
         "programmatic blink did not fully close and reopen");
     report << "desktop_pause_stop_resume=PASS\nprogrammatic_blink_peak=" << maxTriggeredClosure << '\n';
+
+    // Measure the transforms that the renderer actually receives. Endpoint-only
+    // screenshots cannot detect a saccade compressed into one presentation frame.
+    using julia::render::GazeState;
+    std::array<std::size_t, 2> eyeIndices{};
+    std::size_t headIndex = model.nodes().size();
+    for (std::size_t index = 0; index < model.nodes().size(); ++index)
+    {
+        const auto& name = model.nodes()[index].name;
+        if (name == "eye.L") eyeIndices[0] = index;
+        if (name == "eye.R") eyeIndices[1] = index;
+        if (name == "head.x_018") headIndex = index;
+    }
+    require(headIndex < model.nodes().size(), "missing temporal gaze head reference");
+    const auto headBind = rotation(model.nodes()[headIndex].globalBindTransform);
+    const auto actualDirections = [&] {
+        std::array<glm::vec3, 2> result{};
+        for (std::size_t side = 0; side < result.size(); ++side)
+        {
+            const auto index = eyeIndices[side];
+            const auto relative = rotation(player.localTransforms()[index]) *
+                glm::inverse(model.nodes()[index].bindTRS.rotation);
+            result[side] = glm::normalize((headBind * relative * glm::inverse(headBind)) * glm::vec3{0, 0, 1});
+        }
+        return result;
+    };
+    const auto degreesOf = [](glm::vec3 direction) {
+        return glm::degrees(glm::vec2{std::atan2(direction.x, direction.z),
+            std::atan2(direction.y, std::hypot(direction.x, direction.z))});
+    };
+    std::ofstream motionSamples(output / "gaze_motion_samples.csv");
+    motionSamples << std::setprecision(10)
+        << "sequence,frame,time_seconds,delta_seconds,current_yaw,current_pitch,target_yaw,target_pitch,"
+        << "remaining_degrees,actual_speed_degrees_per_second,state,elapsed_seconds,duration_seconds,"
+        << "left_yaw,left_pitch,right_yaw,right_pitch,actual_step_degrees,blink_left,blink_right\n";
+    auto previousActual = actualDirections();
+    float maxBoneOutputError = 0, maxBinocularError = 0, maxPresentationSpeed = 0;
+    const auto recordMotion = [&](const std::string& sequence, int frame, double time, double dt) {
+        const auto actual = actualDirections();
+        const auto left = degreesOf(actual[0]), right = degreesOf(actual[1]);
+        const auto& pose = behavior.output();
+        const auto& motion = behavior.motion();
+        const float step = angularDistance(previousActual[0], actual[0]);
+        const float speed = dt > 0 ? step / static_cast<float>(dt) : 0;
+        const float expectedError = angularDistance(actual[0], gazeDirection(pose.gazeDegrees));
+        maxBoneOutputError = std::max(maxBoneOutputError, expectedError);
+        maxBinocularError = std::max(maxBinocularError, angularDistance(actual[0], actual[1]));
+        maxPresentationSpeed = std::max(maxPresentationSpeed, speed);
+        require(expectedError < .002f, "actual bone direction differs from interpolated gaze: " + sequence);
+        require(angularDistance(actual[0], actual[1]) < .002f, "eyes diverged: " + sequence);
+        motionSamples << sequence << ',' << frame << ',' << time << ',' << dt << ','
+            << pose.gazeDegrees.x << ',' << pose.gazeDegrees.y << ','
+            << motion.targetDegrees.x << ',' << motion.targetDegrees.y << ','
+            << angularDistance(actual[0], gazeDirection(motion.targetDegrees)) << ',' << speed << ','
+            << gazeState(motion.state) << ',' << motion.elapsedSeconds << ',' << motion.durationSeconds << ','
+            << left.x << ',' << left.y << ',' << right.x << ',' << right.y << ',' << step << ','
+            << pose.blinkLeft << ',' << pose.blinkRight << '\n';
+        previousActual = actual;
+        return step;
+    };
+    const auto prepareMotion = [&](glm::vec2 start) {
+        eyes.clearTargetPoint();
+        eyes.setEnabled(true);
+        behavior.reset(0x52415048u);
+        behavior.setAutoBlink(false);
+        behavior.setAutoGaze(false);
+        behavior.setBlink(0, 0);
+        behavior.setGazeDegrees(start);
+        player.stop();
+        for (int tick = 0; tick < 240; ++tick) player.update(1.0 / 240.0);
+        previousActual = actualDirections();
+    };
+    struct Transition { const char* name; glm::vec2 start; glm::vec2 finish; };
+    const std::array transitions{
+        Transition{"forward_left", {0, 0}, {8, 0}}, Transition{"left_right", {8, 0}, {-8, 0}},
+        Transition{"forward_up", {0, 0}, {0, 5}}, Transition{"up_down", {0, 5}, {0, -5}},
+        Transition{"forward_diagonal", {0, 0}, {6, 4}}, Transition{"diagonal_forward", {6, 4}, {0, 0}},
+        Transition{"nearby", {1, 1}, {1.35f, .8f}}, Transition{"distant", {-7, -4}, {7, 4}}};
+    float peakFraction30 = 0, peakFraction60 = 0, peakFraction120 = 0, peakFractionJitter = 0;
+    int transitionCases = 0;
+    for (int rate : {30, 60, 120, 0})
+        for (const auto& transition : transitions)
+        {
+            prepareMotion(transition.start);
+            const std::string name = std::string{transition.name} + (rate ? "_" + std::to_string(rate) : "_jitter");
+            behavior.setGazeDegrees(transition.finish);
+            const float amplitude = angularDistance(gazeDirection(transition.start), gazeDirection(transition.finish));
+            const auto duration = behavior.motion().durationSeconds;
+            recordMotion(name, 0, 0, 0);
+            float priorDistance = amplitude;
+            float peakFraction = 0;
+            int intermediateFrames = 0;
+            double time = 0;
+            for (int frame = 1; time < .5; ++frame)
+            {
+                constexpr std::array jitter{1.0 / 50, 1.0 / 90, 1.0 / 45, 1.0 / 120, 1.0 / 60};
+                const double dt = rate ? 1.0 / rate : jitter[static_cast<std::size_t>(frame - 1) % jitter.size()];
+                time += dt;
+                player.update(dt);
+                const float step = recordMotion(name, frame, time, dt);
+                const float remaining = angularDistance(actualDirections()[0], gazeDirection(transition.finish));
+                require(remaining <= priorDistance + .002f, "saccade overshot or reversed: " + name);
+                require(step <= behavior.settings().saccadeMaxSpeedDegrees * static_cast<float>(dt + 1.0 / 240) + .002f,
+                    "saccade exceeded angular speed bound: " + name);
+                if (remaining > .002f && remaining < amplitude - .002f) ++intermediateFrames;
+                peakFraction = std::max(peakFraction, step / amplitude);
+                priorDistance = remaining;
+            }
+            require(intermediateFrames >= 2, "saccade has too few actual intermediate bone poses: " + name);
+            require(priorDistance < .002f && behavior.motion().state == GazeState::Fixating,
+                "saccade did not finish exactly: " + name);
+            require(duration >= behavior.settings().saccadeMinSeconds && duration <= behavior.settings().saccadeMaxSeconds,
+                "saccade duration outside configured bounds");
+            require(peakFraction < .65f, "one ordinary frame contains most of a gaze transition: " + name);
+            auto& ratePeak = rate == 30 ? peakFraction30 : rate == 60 ? peakFraction60 : rate == 120 ? peakFraction120 : peakFractionJitter;
+            ratePeak = std::max(ratePeak, peakFraction);
+            ++transitionCases;
+        }
+
+    prepareMotion({-7, -3});
+    behavior.setGazeDegrees({7, 3});
+    player.update(.05);
+    previousActual = actualDirections();
+    const auto beforeRetarget = previousActual;
+    behavior.setGazeDegrees({0, 5});
+    player.update(0);
+    require(angularDistance(beforeRetarget[0], actualDirections()[0]) < .0001f, "retarget snapped actual eye bones");
+    require(glm::length(behavior.motion().startDegrees - behavior.output().gazeDegrees) < .0001f,
+        "retarget did not start from the currently rendered gaze");
+    recordMotion("retarget", 0, 0, 0);
+    for (int frame = 1; frame <= 30; ++frame)
+    {
+        player.update(1.0 / 60);
+        recordMotion("retarget", frame, frame / 60.0, 1.0 / 60);
+    }
+    require(glm::length(behavior.output().gazeDegrees - glm::vec2{0, 5}) < .001f, "retarget missed final direction");
+
+    prepareMotion({0, 0});
+    glm::vec2 lastTrackingTarget{0};
+    float maxTrackingStep = 0;
+    for (int frame = 1; frame <= 300; ++frame)
+    {
+        const double time = frame / 60.0;
+        if (frame <= 180)
+            lastTrackingTarget = {static_cast<float>(4 * std::sin(time * 1.7)), static_cast<float>(2 * std::sin(time * 1.1))};
+        behavior.trackGazeDegrees(lastTrackingTarget);
+        player.update(1.0 / 60);
+        maxTrackingStep = std::max(maxTrackingStep, recordMotion("tracking_stop", frame, time, 1.0 / 60));
+    }
+    require(maxTrackingStep <= behavior.settings().pursuitMaxSpeedDegrees / 60.0f + .002f,
+        "smooth pursuit exceeded its speed limit");
+    require(glm::length(behavior.output().gazeDegrees - lastTrackingTarget) < .01f,
+        "pursuit did not settle after the target stopped");
+
+    prepareMotion({0, 0});
+    behavior.setGazeDegrees({8, 4});
+    player.update(.025);
+    const auto beforeGap = actualDirections();
+    player.update(2.0); // The documented suspend policy freezes procedural time.
+    player.update(0);
+    require(angularDistance(beforeGap[0], actualDirections()[0]) < .0001f, "suspend or zero-dt changed actual eyes");
+    player.update(.25); // A real short stall advances to the correct finite endpoint.
+    require(glm::length(behavior.output().gazeDegrees - glm::vec2{8, 4}) < .001f, "frame gap left gaze stuck in transit");
+
+    prepareMotion({-4, -2});
+    player.selectClip(headClip);
+    player.play();
+    behavior.setGazeDegrees({5, 3});
+    behavior.triggerBlink(true, false);
+    for (int frame = 1; frame <= 120; ++frame)
+    {
+        if (frame == 45) behavior.triggerBlink(false, true);
+        player.update(1.0 / 60);
+        recordMotion("head_independent_blink", frame, frame / 60.0, 1.0 / 60);
+    }
+
+    // Ten minutes include the complete player/pose layer, not just behavior output.
+    prepareMotion({0, 0});
+    behavior.releaseGaze();
+    behavior.releaseBlink();
+    behavior.setAutoGaze(true);
+    behavior.setAutoBlink(true);
+    for (int frame = 1; frame <= 600 * 60; ++frame)
+    {
+        player.update(1.0 / 60);
+        const float step = recordMotion("automatic_10min", frame, frame / 60.0, 1.0 / 60);
+        require(step < behavior.settings().saccadeMaxSpeedDegrees / 60.0f + .002f,
+            "automatic gaze exceeded physical speed bound");
+    }
+    report << "temporal_transition_cases=" << transitionCases
+        << "\nmax_frame_fraction_30hz=" << peakFraction30 << "\nmax_frame_fraction_60hz=" << peakFraction60
+        << "\nmax_frame_fraction_120hz=" << peakFraction120 << "\nmax_frame_fraction_jitter=" << peakFractionJitter
+        << "\nmax_actual_bone_vs_behavior_degrees=" << maxBoneOutputError
+        << "\nmax_binocular_direction_error_degrees=" << maxBinocularError
+        << "\nmax_actual_gaze_speed_degrees_per_second=" << maxPresentationSpeed
+        << "\nactual_bone_retarget_continuity=PASS\npursuit_stop=PASS\nframe_gap_policy=PASS"
+        << "\nactual_pose_automatic_soak_seconds=600\nactual_pose_temporal_checks=PASS\n";
+
+    // --review-eyes also presents these sequences at normal wall-clock speed.
+    // Hidden CTest verification captures the identical poses without waiting.
+    const bool pacedReview = glfwGetWindowAttrib(window, GLFW_VISIBLE) == GLFW_TRUE;
+    const auto focusedDirectory = output / "gaze_motion";
+    std::filesystem::create_directories(focusedDirectory);
+    for (const std::string name : {"short", "wide", "pursuit", "automatic_blink"})
+    {
+        const int frameCount = name == "automatic_blink" ? 720 : name == "pursuit" ? 240 : 150;
+        const auto directory = focusedDirectory / name;
+        std::filesystem::create_directories(directory);
+        prepareMotion(name == "wide" ? glm::vec2{-7, -3} : glm::vec2{0});
+        if (name == "automatic_blink")
+        {
+            behavior.releaseGaze();
+            behavior.releaseBlink();
+            behavior.setAutoGaze(true);
+            behavior.setAutoBlink(true);
+        }
+        if (pacedReview)
+            glfwSetWindowTitle(window, ("JULIA gaze review | " + name + " | 60 Hz").c_str());
+        const auto playbackStart = Clock::now();
+        int saccadeBlinkFrames = 0;
+        for (int frame = 0; frame < frameCount; ++frame)
+        {
+            const double time = frame / 60.0;
+            if (name == "short" && (frame == 36 || frame == 90))
+                behavior.setGazeDegrees(frame == 36 ? glm::vec2{2, 1} : glm::vec2{0});
+            else if (name == "wide" && (frame == 36 || frame == 90))
+                behavior.setGazeDegrees(frame == 36 ? glm::vec2{7, 3} : glm::vec2{-7, -3});
+            else if (name == "pursuit")
+                behavior.trackGazeDegrees(time < 3.0 ? glm::vec2{static_cast<float>(4 * std::sin(time * 2)),
+                    static_cast<float>(2 * std::sin(time * 1.2))} : lastTrackingTarget);
+            if (name == "pursuit" && time < 3.0)
+                lastTrackingTarget = behavior.motion().targetDegrees;
+            // Keep the first wide arc unobstructed; the return demonstrates
+            // real eye movement continuing underneath a complete blink.
+            if (name == "wide" && frame == 90) behavior.triggerBlink();
+            player.update(1.0 / 60);
+            if (behavior.motion().state == GazeState::Saccading &&
+                std::max(behavior.output().blinkLeft, behavior.output().blinkRight) > .01f)
+                ++saccadeBlinkFrames;
+            recordMotion("visual_" + name, frame, (frame + 1) / 60.0, 1.0 / 60);
+            if (pacedReview)
+                std::this_thread::sleep_until(playbackStart + std::chrono::duration<double>{(frame + 1) / 60.0});
+            saveHalfSize(directory / ("frame_" + std::to_string(frame) + ".ppm"), render(0), width, height);
+        }
+        const double wallSeconds = std::chrono::duration<double>(Clock::now() - playbackStart).count();
+        report << "visual_" << name << "_frames=" << frameCount
+            << "\nvisual_" << name << "_wall_seconds=" << wallSeconds
+            << "\nvisual_" << name << "_measured_fps=" << frameCount / wallSeconds
+            << "\nvisual_" << name << "_saccade_blink_overlap_frames=" << saccadeBlinkFrames << '\n';
+        if (name == "wide") require(saccadeBlinkFrames >= 3, "wide review did not show movement during blinking");
+    }
+    report << "visual_gaze_fps=60\nvisual_paced_review=" << pacedReview << '\n';
+    motionSamples.flush();
+    require(static_cast<bool>(motionSamples), "cannot flush gaze temporal samples");
 
     for (int cycle = 0; cycle < 1000; ++cycle)
     {

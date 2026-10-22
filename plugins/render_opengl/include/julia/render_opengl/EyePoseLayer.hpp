@@ -46,7 +46,6 @@ namespace julia::render_opengl
         std::vector<const AnimationClip*> gazeClips_;
         std::vector<glm::mat4> globals_;
         glm::vec3 target_{0}, eyeCenter_{0};
-        glm::vec2 targetGaze_{0};
         double elapsed_ = 0;
     };
 }

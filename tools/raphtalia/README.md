@@ -153,6 +153,8 @@ python tools/raphtalia/roundtrip_check.py --blend build/raphtalia_tools/reaudit/
 
 ## Структура evidence
 
+Покадровая проверка временной динамики взгляда запускается через основной desktop: `julia_desktop/julia_desktop.exe --verify-eyes build/eyes_check`; `--review-eyes build/eyes_visible` показывает те же focused-эпизоды в видимом окне с pacing 60 Гц. `python tools/raphtalia/gaze_evidence.py --input build/eyes_visible` упаковывает реальные framebuffer кадры в MP4/GIF, графики и CSV в `docs/raphtalia/eyes/gaze_motion/`. Нужны только offline Pillow, matplotlib и ffmpeg; runtime зависимостей не добавляется. Алгоритм, параметры и результаты описаны в едином `docs/raphtalia/runtime_audit.md`.
+
 - `docs/raphtalia/REPORT_RU.md`, `runtime_audit.md` — актуальное описание модели и границ runtime-поддержки.
 - `docs/raphtalia/blink/` — текущие patch/provenance, integrity, visibility, roundtrip, Assimp/GPU и сравнительные изображения глаз. Сверяйте SHA256 evidence с проверяемыми файлами.
 - `docs/raphtalia/deep_deformation/` — сохранённые before/after тела/одежды, weight patch, integrity и GPU предыдущего этапа 241/11. Старые `joint_sweep.json` и подобные корневые evidence также относятся к своим исходным снимкам.

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
+#include <glm/geometric.hpp>
 
 namespace julia::render
 {
@@ -41,9 +42,14 @@ namespace julia::render
 
     glm::vec2 EyeBehavior::limitGaze(glm::vec2 gaze) const noexcept
     {
-        gaze.x = std::clamp(gaze.x, -settings_.gazeYawDegrees, settings_.gazeYawDegrees);
-        gaze.y = std::clamp(gaze.y, -settings_.gazePitchDegrees, settings_.gazePitchDegrees);
-        return gaze;
+        const float yaw = std::min(12.0f, settings_.gazeYawDegrees);
+        const float pitch = std::min(8.0f, settings_.gazePitchDegrees);
+        gaze.x = std::clamp(gaze.x, -yaw, yaw);
+        gaze.y = std::clamp(gaze.y, -pitch, pitch);
+        // Use the same audited envelope as the pose layer, so motion is planned
+        // from the direction actually applied, even with expanded settings.
+        const float radius = glm::length(gaze / glm::vec2{12, 8});
+        return radius > 1 ? gaze / radius : gaze;
     }
 
     void EyeBehavior::setSettings(const EyeBehaviorSettings& value)
@@ -53,13 +59,23 @@ namespace julia::render
             !std::isfinite(value.doubleBlinkProbability) || value.doubleBlinkProbability < 0.0 || value.doubleBlinkProbability > 0.25 ||
             !std::isfinite(value.slowBlinkProbability) || value.slowBlinkProbability < 0.0 || value.slowBlinkProbability > 0.25 ||
             !std::isfinite(value.gazeYawDegrees) || value.gazeYawDegrees < 0.0f || value.gazeYawDegrees > 15.0f ||
-            !std::isfinite(value.gazePitchDegrees) || value.gazePitchDegrees < 0.0f || value.gazePitchDegrees > 10.0f)
+            !std::isfinite(value.gazePitchDegrees) || value.gazePitchDegrees < 0.0f || value.gazePitchDegrees > 10.0f ||
+            !std::isfinite(value.saccadeMinSeconds) || value.saccadeMinSeconds < 0.03 || value.saccadeMinSeconds > 0.3 ||
+            !std::isfinite(value.saccadeMaxSeconds) || value.saccadeMaxSeconds < value.saccadeMinSeconds || value.saccadeMaxSeconds > 0.5 ||
+            !std::isfinite(value.saccadeSecondsPerDegree) || value.saccadeSecondsPerDegree < 0.0 || value.saccadeSecondsPerDegree > 0.02 ||
+            !std::isfinite(value.saccadeMaxSpeedDegrees) || value.saccadeMaxSpeedDegrees < 30.0 || value.saccadeMaxSpeedDegrees > 1000.0 ||
+            !std::isfinite(value.pursuitTimeConstant) || value.pursuitTimeConstant < 0.01 || value.pursuitTimeConstant > 0.3 ||
+            !std::isfinite(value.pursuitMaxSpeedDegrees) || value.pursuitMaxSpeedDegrees < 1.0 || value.pursuitMaxSpeedDegrees > 360.0 ||
+            !std::isfinite(value.fixationMinSeconds) || value.fixationMinSeconds < 0.3 || value.fixationMinSeconds > 15.0 ||
+            !std::isfinite(value.fixationMaxSeconds) || value.fixationMaxSeconds < value.fixationMinSeconds || value.fixationMaxSeconds > 30.0 ||
+            !std::isfinite(value.correctionAmplitudeDegrees) || value.correctionAmplitudeDegrees < 0.0f || value.correctionAmplitudeDegrees > 0.2f)
             throw std::invalid_argument("EyeBehavior settings outside safe ranges");
         settings_ = value;
         output_.gazeDegrees = limitGaze(output_.gazeDegrees);
         fixation_ = limitGaze(fixation_);
-        gazeStart_ = limitGaze(gazeStart_);
-        gazeTarget_ = limitGaze(gazeTarget_);
+        motion_.startDegrees = limitGaze(motion_.startDegrees);
+        motion_.targetDegrees = limitGaze(motion_.targetDegrees);
+        if (motion_.state == GazeState::Saccading) moveGaze(motion_.targetDegrees);
         if (!blinking_ && !nextIsDouble_) nextBlink_ = blinkInterval();
     }
 
@@ -71,20 +87,28 @@ namespace julia::render
         accumulator_ = 0.0;
         manualBlink_ = manualGaze_ = blinking_ = recovering_ = false;
         pendingDouble_ = nextIsDouble_ = false;
-        blinkElapsed_ = recoveryElapsed_ = gazeElapsed_ = gazeDuration_ = 0.0;
+        blinkElapsed_ = recoveryElapsed_ = 0.0;
         blinkStart_ = recoveryStart_ = glm::vec2{0.0f};
-        fixation_ = gazeStart_ = gazeTarget_ = glm::vec2{0.0f};
+        fixation_ = glm::vec2{0.0f};
+        motion_ = {};
         nextBlink_ = blinkInterval();
-        nextFixation_ = range(1.0, 2.5);
-        nextCorrection_ = range(0.4, 1.2);
+        nextFixation_ = range(settings_.fixationMinSeconds, settings_.fixationMaxSeconds);
+        nextCorrection_ = range(0.9, 2.0);
     }
 
-    void EyeBehavior::moveGaze(glm::vec2 target, double seconds) noexcept
+    void EyeBehavior::moveGaze(glm::vec2 target) noexcept
     {
-        gazeStart_ = output_.gazeDegrees;
-        gazeTarget_ = limitGaze(target);
-        gazeElapsed_ = 0.0;
-        gazeDuration_ = seconds;
+        motion_.startDegrees = output_.gazeDegrees;
+        motion_.targetDegrees = limitGaze(target);
+        motion_.elapsedSeconds = 0.0;
+        motion_.velocityDegreesPerSecond = glm::vec2{0};
+        // Small head-local angles have no wrap discontinuity. Their Euclidean
+        // arc length also conservatively bounds the composed eye rotation.
+        const double amplitude = glm::length(motion_.targetDegrees - motion_.startDegrees);
+        motion_.durationSeconds = std::max(std::clamp(settings_.saccadeMinSeconds +
+            settings_.saccadeSecondsPerDegree * amplitude, settings_.saccadeMinSeconds,
+            settings_.saccadeMaxSeconds), 1.875 * amplitude / settings_.saccadeMaxSpeedDegrees);
+        motion_.state = amplitude == 0.0 ? GazeState::Fixating : GazeState::Saccading;
     }
 
     void EyeBehavior::setGazeDegrees(glm::vec2 target)
@@ -92,10 +116,25 @@ namespace julia::render
         if (!std::isfinite(target.x) || !std::isfinite(target.y))
             throw std::invalid_argument("EyeBehavior gaze must be finite");
         target = limitGaze(target);
-        if (manualGaze_ && fixation_ == target) return;
+        if (manualGaze_ && motion_.state != GazeState::Tracking && fixation_ == target) return;
         manualGaze_ = true;
         fixation_ = target;
-        moveGaze(fixation_, 0.12);
+        moveGaze(fixation_);
+    }
+
+    void EyeBehavior::trackGazeDegrees(glm::vec2 target)
+    {
+        if (!std::isfinite(target.x) || !std::isfinite(target.y))
+            throw std::invalid_argument("EyeBehavior tracking gaze must be finite");
+        if (motion_.state != GazeState::Tracking)
+        {
+            motion_.startDegrees = output_.gazeDegrees;
+            motion_.elapsedSeconds = motion_.durationSeconds = 0.0;
+            motion_.velocityDegreesPerSecond = glm::vec2{0};
+        }
+        manualGaze_ = true;
+        fixation_ = motion_.targetDegrees = limitGaze(target);
+        motion_.state = GazeState::Tracking;
     }
 
     void EyeBehavior::neutral() { setGazeDegrees(glm::vec2{0.0f}); }
@@ -104,8 +143,10 @@ namespace julia::render
     {
         manualGaze_ = false;
         fixation_ = output_.gazeDegrees;
-        nextFixation_ = range(0.8, 1.8);
-        nextCorrection_ = range(0.4, 1.0);
+        motion_ = {};
+        motion_.startDegrees = motion_.targetDegrees = fixation_;
+        nextFixation_ = range(settings_.fixationMinSeconds, settings_.fixationMaxSeconds);
+        nextCorrection_ = range(0.9, 2.0);
     }
 
     void EyeBehavior::releaseGazeFrom(glm::vec2 currentDegrees)
@@ -113,8 +154,6 @@ namespace julia::render
         if (!std::isfinite(currentDegrees.x) || !std::isfinite(currentDegrees.y))
             throw std::invalid_argument("EyeBehavior gaze handoff must be finite");
         output_.gazeDegrees = limitGaze(currentDegrees);
-        gazeStart_ = gazeTarget_ = output_.gazeDegrees;
-        gazeElapsed_ = gazeDuration_ = 0.0;
         releaseGaze();
     }
 
@@ -123,8 +162,9 @@ namespace julia::render
         autoGaze_ = enabled;
         if (!enabled && !manualGaze_)
         {
-            fixation_ = gazeStart_ = gazeTarget_ = output_.gazeDegrees;
-            gazeDuration_ = 0.0;
+            fixation_ = output_.gazeDegrees;
+            motion_ = {};
+            motion_.startDegrees = motion_.targetDegrees = fixation_;
         }
     }
 
@@ -220,7 +260,7 @@ namespace julia::render
             }
         }
 
-        if (!manualGaze_ && autoGaze_)
+        if (!manualGaze_ && autoGaze_ && motion_.state == GazeState::Fixating)
         {
             nextFixation_ -= Step;
             nextCorrection_ -= Step;
@@ -231,23 +271,47 @@ namespace julia::render
                 const float amplitude = choice < 0.75 ? 0.33f : (choice < 0.95 ? 0.6f : 0.85f);
                 fixation_ = {static_cast<float>(random01() + random01() - 1.0) * settings_.gazeYawDegrees * amplitude,
                     static_cast<float>(random01() + random01() - 1.0) * settings_.gazePitchDegrees * amplitude};
-                moveGaze(fixation_, range(0.045, 0.085));
-                nextFixation_ = range(1.0, 3.8);
-                nextCorrection_ = range(0.4, 1.2);
+                moveGaze(fixation_);
+                nextFixation_ = range(settings_.fixationMinSeconds, settings_.fixationMaxSeconds);
+                nextCorrection_ = range(0.9, 2.0);
             }
-            else if (nextCorrection_ <= 0.0)
+            else if (settings_.correctionAmplitudeDegrees > 0 && nextCorrection_ <= 0.0)
             {
-                const glm::vec2 correction{static_cast<float>(range(-0.12, 0.12)), static_cast<float>(range(-0.08, 0.08))};
-                moveGaze(fixation_ + correction, range(0.035, 0.055));
-                nextCorrection_ = range(0.45, 1.4);
+                const float amount = settings_.correctionAmplitudeDegrees;
+                const glm::vec2 correction{static_cast<float>(range(-amount, amount)), static_cast<float>(range(-amount, amount)) * .67f};
+                moveGaze(fixation_ + correction);
+                nextCorrection_ = range(0.9, 2.0);
             }
         }
-        if (gazeDuration_ > 0.0)
+        if (motion_.state == GazeState::Saccading)
         {
-            gazeElapsed_ += Step;
-            const float t = ease(gazeElapsed_ / gazeDuration_);
-            output_.gazeDegrees = gazeStart_ + (gazeTarget_ - gazeStart_) * t;
-            if (gazeElapsed_ >= gazeDuration_) gazeDuration_ = 0.0;
+            motion_.elapsedSeconds += Step;
+            const double u = std::clamp(motion_.elapsedSeconds / motion_.durationSeconds, 0.0, 1.0);
+            const glm::vec2 arc = motion_.targetDegrees - motion_.startDegrees;
+            output_.gazeDegrees = motion_.startDegrees + arc * ease(u);
+            motion_.velocityDegreesPerSecond = arc * static_cast<float>(30 * u * u * (1 - u) * (1 - u) / motion_.durationSeconds);
+            if (motion_.elapsedSeconds + 1e-10 >= motion_.durationSeconds)
+            {
+                output_.gazeDegrees = motion_.targetDegrees; // Exact endpoint, no drift.
+                motion_.velocityDegreesPerSecond = glm::vec2{0};
+                motion_.state = GazeState::Fixating;
+            }
+        }
+        else if (motion_.state == GazeState::Tracking)
+        {
+            motion_.elapsedSeconds += Step;
+            const glm::vec2 error = motion_.targetDegrees - output_.gazeDegrees;
+            const double distance = glm::length(error);
+            const double gain = -std::expm1(-Step / settings_.pursuitTimeConstant);
+            const double travel = std::min(distance * gain, settings_.pursuitMaxSpeedDegrees * Step);
+            const glm::vec2 movement = distance > 0 ? error * static_cast<float>(travel / distance) : glm::vec2{0};
+            motion_.velocityDegreesPerSecond = movement / static_cast<float>(Step);
+            output_.gazeDegrees += movement;
+            if (distance <= 1e-5)
+            {
+                output_.gazeDegrees = motion_.targetDegrees;
+                motion_.velocityDegreesPerSecond = glm::vec2{0};
+            }
         }
     }
 

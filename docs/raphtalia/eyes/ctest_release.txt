@@ -1,17 +1,17 @@
-Start testing: Oct 22 08:28 Финляндия (лето)
+Start testing: Oct 22 09:40 Р¤РёРЅР»СЏРЅРґРёСЏ (Р»РµС‚Рѕ)
 ----------------------------------------------------------
 1/15 Testing: core
 1/15 Test: core
 Command: "C:/Julia/build/vs-release/tests/julia_test_core.exe"
 Directory: C:/Julia/build/vs-release/tests
-"core" start time: Oct 22 08:28 Финляндия (лето)
+"core" start time: Oct 22 09:40 Р¤РёРЅР»СЏРЅРґРёСЏ (Р»РµС‚Рѕ)
 Output:
 ----------------------------------------------------------
 <end of output>
 Test time =   0.01 sec
 ----------------------------------------------------------
 Test Passed.
-"core" end time: Oct 22 08:28 Финляндия (лето)
+"core" end time: Oct 22 09:40 Р¤РёРЅР»СЏРЅРґРёСЏ (Р»РµС‚Рѕ)
 "core" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -19,14 +19,14 @@ Test Passed.
 2/15 Test: events
 Command: "C:/Julia/build/vs-release/tests/julia_test_events.exe"
 Directory: C:/Julia/build/vs-release/tests
-"events" start time: Oct 22 08:28 Финляндия (лето)
+"events" start time: Oct 22 09:40 Р¤РёРЅР»СЏРЅРґРёСЏ (Р»РµС‚Рѕ)
 Output:
 ----------------------------------------------------------
 <end of output>
 Test time =   0.01 sec
 ----------------------------------------------------------
 Test Passed.
-"events" end time: Oct 22 08:28 Финляндия (лето)
+"events" end time: Oct 22 09:40 Р¤РёРЅР»СЏРЅРґРёСЏ (Р»РµС‚Рѕ)
 "events" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -34,14 +34,14 @@ Test Passed.
 3/15 Test: orbit_camera
 Command: "C:/Julia/build/vs-release/tests/julia_test_orbit_camera.exe"
 Directory: C:/Julia/build/vs-release/tests
-"orbit_camera" start time: Oct 22 08:28 Финляндия (лето)
+"orbit_camera" start time: Oct 22 09:40 Р¤РёРЅР»СЏРЅРґРёСЏ (Р»РµС‚Рѕ)
 Output:
 ----------------------------------------------------------
 <end of output>
-Test time =   0.02 sec
+Test time =   0.01 sec
 ----------------------------------------------------------
 Test Passed.
-"orbit_camera" end time: Oct 22 08:28 Финляндия (лето)
+"orbit_camera" end time: Oct 22 09:40 Р¤РёРЅР»СЏРЅРґРёСЏ (Р»РµС‚Рѕ)
 "orbit_camera" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -49,19 +49,19 @@ Test Passed.
 4/15 Test: opengl
 Command: "C:/Julia/build/vs-release/tests/julia_test_opengl.exe" "C:/Julia/build/vs-release/verification"
 Directory: C:/Julia/build/vs-release/tests
-"opengl" start time: Oct 22 08:28 Финляндия (лето)
+"opengl" start time: Oct 22 09:40 Р¤РёРЅР»СЏРЅРґРёСЏ (Р»РµС‚Рѕ)
 Output:
 ----------------------------------------------------------
-Stress: 360 frames at 640x480, GPU average 0.150568 ms, wall average 0.151154 ms
+Stress: 360 frames at 640x480, GPU average 0.140504 ms, wall average 0.141478 ms
 Rigged FBX: 28 meshes, 235 palette entries, 372 nodes
 Renderer: NVIDIA GeForce RTX 4070 SUPER/PCIe/SSE2
 OpenGL: 3.3.0 NVIDIA 617.42
 Meshes: 19, bones: 0, background RGB: 128
 <end of output>
-Test time =   0.73 sec
+Test time =   0.69 sec
 ----------------------------------------------------------
 Test Passed.
-"opengl" end time: Oct 22 08:28 Финляндия (лето)
+"opengl" end time: Oct 22 09:40 Р¤РёРЅР»СЏРЅРґРёСЏ (Р»РµС‚Рѕ)
 "opengl" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -69,7 +69,7 @@ Test Passed.
 5/15 Test: desktop_launch
 Command: "C:/Julia/julia_desktop/julia_desktop.exe" "--verify"
 Directory: C:/Julia/build/vs-release
-"desktop_launch" start time: Oct 22 08:28 Финляндия (лето)
+"desktop_launch" start time: Oct 22 09:40 Р¤РёРЅР»СЏРЅРґРёСЏ (Р»РµС‚Рѕ)
 Output:
 ----------------------------------------------------------
 OpenGL version: 3.3.0 NVIDIA 617.42
@@ -105,10 +105,10 @@ numpad 1..9 gaze, Home forward, T hold camera point, [/] blink interval, F8 fixe
 14: Raphtalia_Rig|TEST_toes_30 (2 s)
 Desktop verification completed: orbit, zoom, pan, 120 frames
 <end of output>
-Test time =   2.90 sec
+Test time =   2.87 sec
 ----------------------------------------------------------
 Test Passed.
-"desktop_launch" end time: Oct 22 08:29 Финляндия (лето)
+"desktop_launch" end time: Oct 22 09:40 Р¤РёРЅР»СЏРЅРґРёСЏ (Р»РµС‚Рѕ)
 "desktop_launch" time elapsed: 00:00:02
 ----------------------------------------------------------
 
@@ -116,14 +116,14 @@ Test Passed.
 6/15 Test: animation
 Command: "C:/Julia/build/vs-release/tests/julia_test_animation.exe"
 Directory: C:/Julia/build/vs-release/tests
-"animation" start time: Oct 22 08:29 Финляндия (лето)
+"animation" start time: Oct 22 09:40 Р¤РёРЅР»СЏРЅРґРёСЏ (Р»РµС‚Рѕ)
 Output:
 ----------------------------------------------------------
 <end of output>
-Test time =   0.03 sec
+Test time =   0.01 sec
 ----------------------------------------------------------
 Test Passed.
-"animation" end time: Oct 22 08:29 Финляндия (лето)
+"animation" end time: Oct 22 09:40 Р¤РёРЅР»СЏРЅРґРёСЏ (Р»РµС‚Рѕ)
 "animation" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -131,15 +131,16 @@ Test Passed.
 7/15 Test: eye_behavior
 Command: "C:/Julia/build/vs-release/tests/julia_test_eye_behavior.exe"
 Directory: C:/Julia/build/vs-release/tests
-"eye_behavior" start time: Oct 22 08:29 Финляндия (лето)
+"eye_behavior" start time: Oct 22 09:40 Р¤РёРЅР»СЏРЅРґРёСЏ (Р»РµС‚Рѕ)
 Output:
 ----------------------------------------------------------
-EyeBehavior 1h: 910 blinks, 69 doubles, 50 slow; main intervals 2.512..5.929 s (mean 4.251), max closure 0.375 s
+EyeBehavior 1h: 905 blinks, 65 doubles, 63 slow; main intervals 2.471..5.912 s (mean 4.256), max closure 0.367 s
+EyeBehavior 1h gaze: 1429 completed saccades, max 240Hz step 0.514344 deg, fixation drift 0.000000 deg
 <end of output>
-Test time =   0.07 sec
+Test time =   0.03 sec
 ----------------------------------------------------------
 Test Passed.
-"eye_behavior" end time: Oct 22 08:29 Финляндия (лето)
+"eye_behavior" end time: Oct 22 09:40 Р¤РёРЅР»СЏРЅРґРёСЏ (Р»РµС‚Рѕ)
 "eye_behavior" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -147,7 +148,7 @@ Test Passed.
 8/15 Test: desktop_animation
 Command: "C:/Julia/julia_desktop/julia_desktop.exe" "--verify-animations" "C:/Julia/build/vs-release/verification/desktop_animation"
 Directory: C:/Julia/build/vs-release
-"desktop_animation" start time: Oct 22 08:29 Финляндия (лето)
+"desktop_animation" start time: Oct 22 09:40 Р¤РёРЅР»СЏРЅРґРёСЏ (Р»РµС‚Рѕ)
 Output:
 ----------------------------------------------------------
 OpenGL version: 3.3.0 NVIDIA 617.42
@@ -183,10 +184,10 @@ numpad 1..9 gaze, Home forward, T hold camera point, [/] blink interval, F8 fixe
 14: Raphtalia_Rig|TEST_toes_30 (2 s)
 Desktop animation verification PASS: 15 clips, 334 images
 <end of output>
-Test time =   5.79 sec
+Test time =   5.67 sec
 ----------------------------------------------------------
 Test Passed.
-"desktop_animation" end time: Oct 22 08:29 Финляндия (лето)
+"desktop_animation" end time: Oct 22 09:40 Р¤РёРЅР»СЏРЅРґРёСЏ (Р»РµС‚Рѕ)
 "desktop_animation" time elapsed: 00:00:05
 ----------------------------------------------------------
 
@@ -194,7 +195,7 @@ Test Passed.
 9/15 Test: desktop_eyes
 Command: "C:/Julia/julia_desktop/julia_desktop.exe" "--verify-eyes" "C:/Julia/build/vs-release/verification/desktop_eyes"
 Directory: C:/Julia/build/vs-release
-"desktop_eyes" start time: Oct 22 08:29 Финляндия (лето)
+"desktop_eyes" start time: Oct 22 09:40 Р¤РёРЅР»СЏРЅРґРёСЏ (Р»РµС‚Рѕ)
 Output:
 ----------------------------------------------------------
 OpenGL version: 3.3.0 NVIDIA 617.42
@@ -230,25 +231,25 @@ numpad 1..9 gaze, Home forward, T hold camera point, [/] blink interval, F8 fixe
 14: Raphtalia_Rig|TEST_toes_30 (2 s)
 Desktop eye verification PASS: 65 framebuffer images
 <end of output>
-Test time =   5.30 sec
+Test time =  10.05 sec
 ----------------------------------------------------------
 Test Passed.
-"desktop_eyes" end time: Oct 22 08:29 Финляндия (лето)
-"desktop_eyes" time elapsed: 00:00:05
+"desktop_eyes" end time: Oct 22 09:40 Р¤РёРЅР»СЏРЅРґРёСЏ (Р»РµС‚Рѕ)
+"desktop_eyes" time elapsed: 00:00:10
 ----------------------------------------------------------
 
 10/15 Testing: model_math
 10/15 Test: model_math
 Command: "C:/Julia/build/vs-release/tests/julia_test_model_math.exe" "C:/Julia/build/vs-release/verification"
 Directory: C:/Julia/build/vs-release/tests
-"model_math" start time: Oct 22 08:29 Финляндия (лето)
+"model_math" start time: Oct 22 09:40 Р¤РёРЅР»СЏРЅРґРёСЏ (Р»РµС‚Рѕ)
 Output:
 ----------------------------------------------------------
 <end of output>
-Test time =   0.02 sec
+Test time =   0.01 sec
 ----------------------------------------------------------
 Test Passed.
-"model_math" end time: Oct 22 08:29 Финляндия (лето)
+"model_math" end time: Oct 22 09:40 Р¤РёРЅР»СЏРЅРґРёСЏ (Р»РµС‚Рѕ)
 "model_math" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -256,16 +257,16 @@ Test Passed.
 11/15 Test: model_import
 Command: "C:/Julia/build/vs-release/tests/julia_test_model_import.exe" "C:/Julia/build/vs-release/verification"
 Directory: C:/Julia/build/vs-release/tests
-"model_import" start time: Oct 22 08:29 Финляндия (лето)
+"model_import" start time: Oct 22 09:40 Р¤РёРЅР»СЏРЅРґРёСЏ (Р»РµС‚Рѕ)
 Output:
 ----------------------------------------------------------
 Loaded texture: C:/Julia/build/vs-release/verification\textures\body_color.png
 Loaded texture: C:/Julia/build/vs-release/verification\textures\hair_color.png
 <end of output>
-Test time =   0.30 sec
+Test time =   0.28 sec
 ----------------------------------------------------------
 Test Passed.
-"model_import" end time: Oct 22 08:29 Финляндия (лето)
+"model_import" end time: Oct 22 09:40 Р¤РёРЅР»СЏРЅРґРёСЏ (Р»РµС‚Рѕ)
 "model_import" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -273,14 +274,14 @@ Test Passed.
 12/15 Test: gpu_resources
 Command: "C:/Julia/build/vs-release/tests/julia_test_gpu_resources.exe" "C:/Julia/build/vs-release/verification"
 Directory: C:/Julia/build/vs-release/tests
-"gpu_resources" start time: Oct 22 08:29 Финляндия (лето)
+"gpu_resources" start time: Oct 22 09:40 Р¤РёРЅР»СЏРЅРґРёСЏ (Р»РµС‚Рѕ)
 Output:
 ----------------------------------------------------------
 <end of output>
-Test time =   0.24 sec
+Test time =   0.22 sec
 ----------------------------------------------------------
 Test Passed.
-"gpu_resources" end time: Oct 22 08:29 Финляндия (лето)
+"gpu_resources" end time: Oct 22 09:40 Р¤РёРЅР»СЏРЅРґРёСЏ (Р»РµС‚Рѕ)
 "gpu_resources" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -288,15 +289,15 @@ Test Passed.
 13/15 Test: shader_pipeline
 Command: "C:/Julia/build/vs-release/tests/julia_test_shader_pipeline.exe" "C:/Julia/build/vs-release/verification"
 Directory: C:/Julia/build/vs-release/tests
-"shader_pipeline" start time: Oct 22 08:29 Финляндия (лето)
+"shader_pipeline" start time: Oct 22 09:40 Р¤РёРЅР»СЏРЅРґРёСЏ (Р»РµС‚Рѕ)
 Output:
 ----------------------------------------------------------
 Shader pipeline verified on 3.3.0 NVIDIA 617.42
 <end of output>
-Test time =   0.29 sec
+Test time =   0.27 sec
 ----------------------------------------------------------
 Test Passed.
-"shader_pipeline" end time: Oct 22 08:29 Финляндия (лето)
+"shader_pipeline" end time: Oct 22 09:40 Р¤РёРЅР»СЏРЅРґРёСЏ (Р»РµС‚Рѕ)
 "shader_pipeline" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -304,14 +305,14 @@ Test Passed.
 14/15 Test: outline_normals
 Command: "C:/Julia/build/vs-release/tests/julia_test_outline_normals.exe"
 Directory: C:/Julia/build/vs-release/tests
-"outline_normals" start time: Oct 22 08:29 Финляндия (лето)
+"outline_normals" start time: Oct 22 09:40 Р¤РёРЅР»СЏРЅРґРёСЏ (Р»РµС‚Рѕ)
 Output:
 ----------------------------------------------------------
 <end of output>
-Test time =   0.03 sec
+Test time =   0.01 sec
 ----------------------------------------------------------
 Test Passed.
-"outline_normals" end time: Oct 22 08:29 Финляндия (лето)
+"outline_normals" end time: Oct 22 09:40 Р¤РёРЅР»СЏРЅРґРёСЏ (Р»РµС‚Рѕ)
 "outline_normals" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -319,15 +320,15 @@ Test Passed.
 15/15 Test: toon_render
 Command: "C:/Julia/build/vs-release/tests/julia_test_toon_render.exe"
 Directory: C:/Julia/build/vs-release/tests
-"toon_render" start time: Oct 22 08:29 Финляндия (лето)
+"toon_render" start time: Oct 22 09:40 Р¤РёРЅР»СЏРЅРґРёСЏ (Р»РµС‚Рѕ)
 Output:
 ----------------------------------------------------------
 <end of output>
-Test time =   0.25 sec
+Test time =   0.24 sec
 ----------------------------------------------------------
 Test Passed.
-"toon_render" end time: Oct 22 08:29 Финляндия (лето)
+"toon_render" end time: Oct 22 09:40 Р¤РёРЅР»СЏРЅРґРёСЏ (Р»РµС‚Рѕ)
 "toon_render" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-End testing: Oct 22 08:29 Финляндия (лето)
+End testing: Oct 22 09:40 Р¤РёРЅР»СЏРЅРґРёСЏ (Р»РµС‚Рѕ)

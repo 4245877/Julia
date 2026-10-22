@@ -16,6 +16,29 @@ namespace julia::render
         // Per-axis head-local limits: yaw [0,15], pitch [0,10] degrees.
         float gazeYawDegrees = 8.0f;
         float gazePitchDegrees = 5.0f;
+        // Stylized, visible saccades. The speed bound may extend the nominal maximum.
+        double saccadeMinSeconds = 0.100;
+        double saccadeMaxSeconds = 0.220;
+        double saccadeSecondsPerDegree = 0.004;
+        double saccadeMaxSpeedDegrees = 240.0;
+        double pursuitTimeConstant = 0.065;
+        double pursuitMaxSpeedDegrees = 60.0;
+        double fixationMinSeconds = 1.0;
+        double fixationMaxSeconds = 3.8;
+        // Zero gives stable fixations; optional rare corrections, in degrees.
+        float correctionAmplitudeDegrees = 0.0f;
+    };
+
+    enum class GazeState { Fixating, Saccading, Tracking };
+
+    struct EyeMotion
+    {
+        GazeState state = GazeState::Fixating;
+        glm::vec2 startDegrees{0.0f};
+        glm::vec2 targetDegrees{0.0f};
+        glm::vec2 velocityDegreesPerSecond{0.0f};
+        double elapsedSeconds = 0.0;
+        double durationSeconds = 0.0;
     };
 
     struct EyeBehaviorOutput
@@ -48,6 +71,8 @@ namespace julia::render
         bool autoGaze() const noexcept { return autoGaze_; }
 
         void setGazeDegrees(glm::vec2 yawPitch);
+        // An updated moving target; does not restart a finite saccade every frame.
+        void trackGazeDegrees(glm::vec2 yawPitch);
         void releaseGaze() noexcept;
         // Handoff from an external tracking layer without exposing a hidden idle pose.
         void releaseGazeFrom(glm::vec2 currentDegrees);
@@ -63,6 +88,7 @@ namespace julia::render
         void reset(std::uint32_t seed = 0x52415048u) noexcept;
         const EyeBehaviorOutput& output() const noexcept { return output_; }
         const EyeBehaviorStats& stats() const noexcept { return stats_; }
+        const EyeMotion& motion() const noexcept { return motion_; }
 
     private:
         EyeBehaviorSettings settings_{};
@@ -91,10 +117,7 @@ namespace julia::render
         glm::vec2 recoveryStart_{0.0f};
 
         glm::vec2 fixation_{0.0f};
-        glm::vec2 gazeStart_{0.0f};
-        glm::vec2 gazeTarget_{0.0f};
-        double gazeElapsed_ = 0.0;
-        double gazeDuration_ = 0.0;
+        EyeMotion motion_{};
         double nextFixation_ = 0.0;
         double nextCorrection_ = 0.0;
 
@@ -102,7 +125,7 @@ namespace julia::render
         double range(double low, double high) noexcept;
         double blinkInterval() noexcept;
         glm::vec2 limitGaze(glm::vec2 gaze) const noexcept;
-        void moveGaze(glm::vec2 target, double seconds) noexcept;
+        void moveGaze(glm::vec2 target) noexcept;
         void beginBlink(bool left, bool right, bool automatic, bool second) noexcept;
         void tick() noexcept;
     };
