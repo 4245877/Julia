@@ -12,6 +12,7 @@
 namespace julia::render_opengl
 {
     class GLModel;
+    class EyePoseLayer;
 
     struct NodeTRS
     {
@@ -61,10 +62,13 @@ namespace julia::render_opengl
         void selectClip(std::size_t index);
         void play();
         void pause();
-        void stop(); // Exact imported bind, preserving the selected clip.
+        void stop(); // Bind base, preserving selection; exact bind when the optional eye layer is disabled.
         void seek(double seconds); // Clamp to endpoints; a stopped player becomes paused.
         void update(double deltaSeconds);
         void setLooping(bool enabled) { looping_ = enabled; }
+        // Optional non-owning, model-specific layer. Null preserves the exact
+        // original Animation Player behavior, including stop/bind diagnostics.
+        void setEyeLayer(EyePoseLayer* layer);
 
         bool looping() const { return looping_; }
         PlaybackState state() const { return state_; }
@@ -81,6 +85,7 @@ namespace julia::render_opengl
         bool looping_ = true;
         PlaybackState state_ = PlaybackState::Stopped;
         std::vector<glm::mat4> locals_, globals_, palette_;
+        EyePoseLayer* eyeLayer_ = nullptr;
         void evaluate();
     };
 }

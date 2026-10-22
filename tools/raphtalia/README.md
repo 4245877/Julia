@@ -5,6 +5,21 @@
 
 Основной desktop теперь воспроизводит эти 15 клипов. Сборка, управление, архитектура, результаты и ограничения материалов: [runtime_audit.md](../../docs/raphtalia/runtime_audit.md). Быстрая проверка: `julia_desktop/julia_desktop.exe`, клавиши 1–4 — моргание, Space — pause/play, PgUp/PgDn — clip, X — exact bind, F/B — лицо/общий вид. `--verify-animations output_directory` проверяет именно desktop. Исходные карты этой модели пока отсутствуют; импортированные однотонные материалы не являются восстановленной текстурированной внешностью.
 
+## Runtime глаз — 22 октября 2026
+
+Desktop запускается с автономным idle. G включает его повторно, H/J переключают auto blink/gaze, K/U/I вызывают оба/левый/правый глаз, numpad 1..9 и Home удерживают направление, T фиксирует позицию камеры как пространственную цель, [/] меняют средний интервал, F8 задаёт фиксированный seed. X/R отключают слой и восстанавливают точный bind. `--no-eyes` запускает без слоя. Четыре TEST blink clips сохраняют полный приоритет; body/head clips допускают независимое моргание. Это ограниченный eye/lid overlay.
+
+```powershell
+.\tools\build.ps1 -UseInstalledDependencies -Configuration Debug
+.\tools\build.ps1 -UseInstalledDependencies -Configuration Release
+.\julia_desktop\julia_desktop.exe --verify-eyes build/eyes_check
+.\julia_desktop\julia_desktop.exe --review-eyes build/eyes_visible
+python tools/raphtalia/runtime_eye_audit.py
+python tools/raphtalia/eye_evidence.py
+```
+
+`runtime_eye_audit.py` только читает FBX/BLEND и сверяет семь сохранённых SHA256; использует установленные Assimp/MSVC и локальный bpy. `eye_evidence.py` собирает PNG/GIF из CTest `build/vs-release/verification/desktop_eyes`. C++ runtime не требует Blender, Pillow или новых зависимостей. API и границы проверки описаны в [runtime_audit.md](../../docs/raphtalia/runtime_audit.md).
+
 ## Управление `.blend`
 
 В Object custom properties объекта `Raphtalia_Rig`:

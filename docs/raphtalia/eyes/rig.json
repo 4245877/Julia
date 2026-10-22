@@ -1,0 +1,828 @@
+{
+  "clips": [
+    {
+      "channels": 430,
+      "duration_ticks": 120,
+      "gaze_keys": [
+        {
+          "eye.L": [
+            0.707106590271,
+            -0.707106947899,
+            0,
+            0
+          ],
+          "eye.R": [
+            0.707106590271,
+            -0.707106947899,
+            0,
+            0
+          ],
+          "ticks": 0
+        },
+        {
+          "eye.L": [
+            0.754709422588,
+            -0.656059205532,
+            0,
+            0
+          ],
+          "eye.R": [
+            0.754709422588,
+            -0.656059205532,
+            0,
+            0
+          ],
+          "ticks": 23
+        },
+        {
+          "eye.L": [
+            0.656058847904,
+            -0.754709780216,
+            0,
+            0
+          ],
+          "eye.R": [
+            0.656058847904,
+            -0.754709780216,
+            0,
+            0
+          ],
+          "ticks": 41
+        },
+        {
+          "eye.L": [
+            0.703232944012,
+            -0.703233420849,
+            0.073912769556,
+            0.0739128068089
+          ],
+          "eye.R": [
+            0.703232944012,
+            -0.703233420849,
+            0.073912769556,
+            0.0739128068089
+          ],
+          "ticks": 59
+        },
+        {
+          "eye.L": [
+            0.703232944012,
+            -0.703233420849,
+            -0.073912769556,
+            -0.0739128068089
+          ],
+          "eye.R": [
+            0.703232944012,
+            -0.703233420849,
+            -0.073912769556,
+            -0.0739128068089
+          ],
+          "ticks": 77
+        },
+        {
+          "eye.L": [
+            0.740316808224,
+            -0.66658449173,
+            0.0647693127394,
+            0.0583185777068
+          ],
+          "eye.R": [
+            0.740316808224,
+            -0.66658449173,
+            0.0647693127394,
+            0.0583185777068
+          ],
+          "ticks": 95
+        },
+        {
+          "eye.L": [
+            0.707106590271,
+            -0.707106947899,
+            0,
+            0
+          ],
+          "eye.R": [
+            0.707106590271,
+            -0.707106947899,
+            0,
+            0
+          ],
+          "ticks": 114
+        }
+      ],
+      "max_eye_rotation_deg": 12.0000419617,
+      "max_lid_translation_change": 4.39583826065,
+      "name": "Raphtalia_Rig|TEST_blink_gaze",
+      "tps": 30
+    },
+    {
+      "channels": 430,
+      "duration_ticks": 120,
+      "max_eye_rotation_deg": 8.00015068054,
+      "max_lid_translation_change": 4.39593410492,
+      "name": "Raphtalia_Rig|TEST_blink_head",
+      "tps": 30
+    },
+    {
+      "channels": 430,
+      "duration_ticks": 60,
+      "max_eye_rotation_deg": 0,
+      "max_lid_translation_change": 4.39583826065,
+      "name": "Raphtalia_Rig|TEST_blink_independent",
+      "tps": 30
+    },
+    {
+      "channels": 430,
+      "duration_ticks": 30,
+      "max_eye_rotation_deg": 0,
+      "max_lid_translation_change": 4.39583826065,
+      "name": "Raphtalia_Rig|TEST_blink_natural",
+      "tps": 30,
+      "upper_center_keys": [
+        {
+          "position": [
+            8.97639942169,
+            21.1514911652,
+            17.6295108795
+          ],
+          "ticks": 8,
+          "closure_from_local_y": -0.0,
+          "authored_closure": 0.0
+        },
+        {
+          "position": [
+            8.97592830658,
+            21.0703144073,
+            17.6692523956
+          ],
+          "ticks": 8.25,
+          "closure_from_local_y": 0.019675429403840917,
+          "authored_closure": 0.019675929099321365
+        },
+        {
+          "position": [
+            8.97462558746,
+            20.8458881378,
+            17.7785797119
+          ],
+          "ticks": 8.5,
+          "closure_from_local_y": 0.07407133453907969,
+          "authored_closure": 0.07407408207654953
+        },
+        {
+          "position": [
+            8.97265815735,
+            20.5068378448,
+            17.9397354126
+          ],
+          "ticks": 8.75,
+          "closure_from_local_y": 0.15624953771998168,
+          "authored_closure": 0.15625
+        },
+        {
+          "position": [
+            8.97019100189,
+            20.0818500519,
+            18.128911972
+          ],
+          "ticks": 9,
+          "closure_from_local_y": 0.25925706762156897,
+          "authored_closure": 0.25925928354263306
+        },
+        {
+          "position": [
+            8.96739196777,
+            19.5995502472,
+            18.3176670074
+          ],
+          "ticks": 9.25,
+          "closure_from_local_y": 0.37615574655810613,
+          "authored_closure": 0.37615740299224854
+        },
+        {
+          "position": [
+            8.96442604065,
+            19.0885944366,
+            18.4798603058
+          ],
+          "ticks": 9.5,
+          "closure_from_local_y": 0.5000000000121186,
+          "authored_closure": 0.5
+        },
+        {
+          "position": [
+            8.9614610672,
+            18.5776386261,
+            18.6002025604
+          ],
+          "ticks": 9.75,
+          "closure_from_local_y": 0.6238442534418939,
+          "authored_closure": 0.6238425374031067
+        },
+        {
+          "position": [
+            8.95866203308,
+            18.0953388214,
+            18.6781387329
+          ],
+          "ticks": 10,
+          "closure_from_local_y": 0.7407429323784319,
+          "authored_closure": 0.7407408356666565
+        },
+        {
+          "position": [
+            8.95619487762,
+            17.6703510284,
+            18.7239685059
+          ],
+          "ticks": 10.25,
+          "closure_from_local_y": 0.8437504623042565,
+          "authored_closure": 0.84375
+        },
+        {
+          "position": [
+            8.95422744751,
+            17.3313007355,
+            18.7502880096
+          ],
+          "ticks": 10.4999999994,
+          "closure_from_local_y": 0.9259286654609203,
+          "authored_closure": 0.9259259700775146
+        },
+        {
+          "position": [
+            8.95292472839,
+            17.1068744659,
+            18.7650642395
+          ],
+          "ticks": 10.75,
+          "closure_from_local_y": 0.9803245706203972,
+          "authored_closure": 0.9803241491317749
+        },
+        {
+          "position": [
+            8.95245361328,
+            17.0256977081,
+            18.7702102661
+          ],
+          "ticks": 10.9999999994,
+          "closure_from_local_y": 1.0,
+          "authored_closure": 1.0
+        }
+      ]
+    },
+    {
+      "channels": 430,
+      "duration_ticks": 60,
+      "max_eye_rotation_deg": 0,
+      "max_lid_translation_change": 0,
+      "name": "Raphtalia_Rig|TEST_brows_wrist",
+      "tps": 30
+    },
+    {
+      "channels": 430,
+      "duration_ticks": 360,
+      "max_eye_rotation_deg": 0,
+      "max_lid_translation_change": 0.000124069323647,
+      "name": "Raphtalia_Rig|TEST_deep_body_cloth",
+      "tps": 30
+    },
+    {
+      "channels": 430,
+      "duration_ticks": 60,
+      "max_eye_rotation_deg": 0,
+      "max_lid_translation_change": 0,
+      "name": "Raphtalia_Rig|TEST_elbows_90",
+      "tps": 30
+    },
+    {
+      "channels": 430,
+      "duration_ticks": 60,
+      "max_eye_rotation_deg": 7.99995517731,
+      "max_lid_translation_change": 0,
+      "name": "Raphtalia_Rig|TEST_eyes_ears",
+      "tps": 30
+    },
+    {
+      "channels": 430,
+      "duration_ticks": 60,
+      "max_eye_rotation_deg": 0,
+      "max_lid_translation_change": 0,
+      "name": "Raphtalia_Rig|TEST_fingers_35",
+      "tps": 30
+    },
+    {
+      "channels": 430,
+      "duration_ticks": 60,
+      "max_eye_rotation_deg": 0,
+      "max_lid_translation_change": 0,
+      "name": "Raphtalia_Rig|TEST_hair_tail_cloth",
+      "tps": 30
+    },
+    {
+      "channels": 430,
+      "duration_ticks": 60,
+      "max_eye_rotation_deg": 0,
+      "max_lid_translation_change": 6.3072417106e-05,
+      "name": "Raphtalia_Rig|TEST_head_torso",
+      "tps": 30
+    },
+    {
+      "channels": 430,
+      "duration_ticks": 60,
+      "max_eye_rotation_deg": 0,
+      "max_lid_translation_change": 0,
+      "name": "Raphtalia_Rig|TEST_knees_90",
+      "tps": 30
+    },
+    {
+      "channels": 430,
+      "duration_ticks": 240,
+      "max_eye_rotation_deg": 12.0000419617,
+      "max_lid_translation_change": 0.000141159907798,
+      "name": "Raphtalia_Rig|TEST_practical_ranges",
+      "tps": 30
+    },
+    {
+      "channels": 430,
+      "duration_ticks": 60,
+      "max_eye_rotation_deg": 0,
+      "max_lid_translation_change": 0,
+      "name": "Raphtalia_Rig|TEST_shoulders_hips_ankles",
+      "tps": 30
+    },
+    {
+      "channels": 430,
+      "duration_ticks": 60,
+      "max_eye_rotation_deg": 0,
+      "max_lid_translation_change": 0,
+      "name": "Raphtalia_Rig|TEST_toes_30",
+      "tps": 30
+    }
+  ],
+  "eye_weights": [
+    {
+      "mesh": "eye_tex_eyes_0",
+      "positive_assignments": 672,
+      "weight_sum": 672
+    },
+    {
+      "mesh": "hightlight_hightlight_0",
+      "positive_assignments": 96,
+      "weight_sum": 96
+    }
+  ],
+  "lid_count": 188,
+  "lid_parents": [
+    "head.x_018"
+  ],
+  "nodes": [
+    {
+      "global": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "index": 0,
+      "local": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "local_q": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "name": "RootNode",
+      "parent": "none",
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "translation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "global": [
+        0.00999999977648,
+        0,
+        0,
+        0,
+        0,
+        -1.62920676949e-09,
+        0.00999999977648,
+        0,
+        0,
+        -0.00999999977648,
+        -1.62920676949e-09,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "index": 1,
+      "local": [
+        0.00999999977648,
+        0,
+        0,
+        0,
+        0,
+        -1.62920676949e-09,
+        0.00999999977648,
+        0,
+        0,
+        -0.00999999977648,
+        -1.62920676949e-09,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "local_q": [
+        0.70710670948,
+        -0.70710682869,
+        0,
+        0
+      ],
+      "name": "Raphtalia_Rig",
+      "parent": "RootNode",
+      "scale": [
+        0.00999999977648,
+        0.00999999977648,
+        0.00999999977648
+      ],
+      "translation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "global": [
+        0.00999999977648,
+        -5.57887069874e-15,
+        -3.60630436624e-09,
+        -4.77290651446e-09,
+        9.23623995686e-16,
+        0.0100000007078,
+        -1.29221007228e-08,
+        3.59926152229,
+        3.60630481033e-09,
+        1.29221007228e-08,
+        0.0100000007078,
+        -0.00818219408393,
+        0,
+        0,
+        0,
+        1
+      ],
+      "index": 66,
+      "local": [
+        1,
+        0,
+        0,
+        1.7763568394e-14,
+        0,
+        0.997933268547,
+        0.064258672297,
+        14.5444383621,
+        0,
+        -0.064258672297,
+        0.997933268547,
+        7.7486038208e-07,
+        0,
+        0,
+        0,
+        1
+      ],
+      "local_q": [
+        0.999483168125,
+        -0.0321459509432,
+        0,
+        0
+      ],
+      "name": "head.x_018",
+      "parent": "neck.x_017",
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "translation": [
+        1.7763568394e-14,
+        14.5444383621,
+        7.7486038208e-07
+      ]
+    },
+    {
+      "global": [
+        0.00999999977648,
+        3.60630436624e-09,
+        -3.70161444763e-15,
+        0.0699683576822,
+        9.23623995686e-16,
+        7.71661490262e-09,
+        0.0100000007078,
+        3.78557395935,
+        3.60630481033e-09,
+        -0.0100000007078,
+        7.71661490262e-09,
+        0.0851194262505,
+        0,
+        0,
+        0,
+        1
+      ],
+      "index": 183,
+      "local": [
+        1,
+        0,
+        0,
+        6.99684047699,
+        0,
+        -5.20548553595e-07,
+        1,
+        18.6312561035,
+        0,
+        -1,
+        -5.20548553595e-07,
+        9.33013439178,
+        0,
+        0,
+        0,
+        1
+      ],
+      "local_q": [
+        0.707106590271,
+        -0.707106947899,
+        0,
+        0
+      ],
+      "name": "eye.L",
+      "parent": "head.x_018",
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "translation": [
+        6.99684047699,
+        18.6312561035,
+        9.33013439178
+      ]
+    },
+    {
+      "global": [
+        0.00999999977648,
+        3.60630436624e-09,
+        -3.70161444763e-15,
+        -0.0824976190925,
+        9.23623995686e-16,
+        7.71661490262e-09,
+        0.0100000007078,
+        3.78517246246,
+        3.60630481033e-09,
+        -0.0100000007078,
+        7.71661490262e-09,
+        0.0867151916027,
+        0,
+        0,
+        0,
+        1
+      ],
+      "index": 185,
+      "local": [
+        1,
+        0,
+        0,
+        -8.24975776672,
+        0,
+        -5.20548553595e-07,
+        1,
+        18.5910949707,
+        0,
+        -1,
+        -5.20548553595e-07,
+        9.48971652985,
+        0,
+        0,
+        0,
+        1
+      ],
+      "local_q": [
+        0.707106590271,
+        -0.707106947899,
+        0,
+        0
+      ],
+      "name": "eye.R",
+      "parent": "head.x_018",
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "translation": [
+        -8.24975776672,
+        18.5910949707,
+        9.48971652985
+      ]
+    },
+    {
+      "global": [
+        0.00999999977648,
+        3.60630436624e-09,
+        -4.99132925949e-15,
+        0.0897639170289,
+        9.23623995686e-16,
+        1.12928937313e-08,
+        0.0100000007078,
+        3.81077623367,
+        3.60630481033e-09,
+        -0.0100000007078,
+        1.12928937313e-08,
+        0.168113231659,
+        0,
+        0,
+        0,
+        1
+      ],
+      "index": 204,
+      "local": [
+        1,
+        0,
+        0,
+        8.97639942169,
+        0,
+        -1.62920684943e-07,
+        1,
+        21.1514911652,
+        0,
+        -1,
+        -1.62920684943e-07,
+        17.6295108795,
+        0,
+        0,
+        0,
+        1
+      ],
+      "local_q": [
+        0.70710670948,
+        -0.70710682869,
+        0,
+        0
+      ],
+      "name": "lid.upper.L.16",
+      "parent": "head.x_018",
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "translation": [
+        8.97639942169,
+        21.1514911652,
+        17.6295108795
+      ]
+    }
+  ],
+  "lid_count_by_side": {
+    "L": 94,
+    "R": 94
+  },
+  "blender_source": {
+    "bpy_version": "4.2.0",
+    "deforming_bones": 429,
+    "actions": 15,
+    "eyelid_location_drivers": 564,
+    "eyelid_rotation_scale_locked": true,
+    "driver_form": "delta * clamp(Blink_side,0,1) + depth_arc * sin(pi * clamp(Blink_side,0,1)); each side independent"
+  },
+  "blink_parameterization": {
+    "source_clip_suffix": "TEST_blink_natural",
+    "probe_bone": "lid.upper.L.16",
+    "linear_coordinate": "local translation Y",
+    "source_ticks": [
+      8,
+      11
+    ],
+    "source_seconds": [
+      0.26666666666666666,
+      0.36666666666666664
+    ],
+    "authored_frames": [
+      9,
+      12
+    ],
+    "open_y": 21.1514911652,
+    "closed_y": 17.0256977081,
+    "key_count": 13,
+    "max_error_against_blender_curve": 2.747537469843797e-06,
+    "strictly_monotone": true,
+    "center_half_closed_depth_arc_source_units": 0.27999973300000036,
+    "mapping": "b = (sampled_local_Y - open_Y) / (closed_Y - open_Y); invert piecewise linear exported keys, then sample all 188 lid channels at that source time",
+    "depth_arc": "Local Z carries the nonlinear depth arc; a direct linear open/closed blend drops it."
+  },
+  "runtime_axes_contract": {
+    "space": "Assimp scene/model space before the desktop fit/model transform",
+    "head_rest_axes": "+X horizontal, +Y up, +Z forward (within imported float tolerance)",
+    "eye_local_axes": "+X horizontal, +Z up, -Y forward; same on both eyes",
+    "eye_bind_rotation_wxyz": [
+      0.707106590271,
+      -0.707106947899,
+      0,
+      0
+    ],
+    "gaze_rotation_in_head_local": "R_y(yaw) * R_x(-pitch_up) * eye_bind_R",
+    "authored_pitch_sign": "Positive authored X pitch lowers gaze. A positive-up API must negate it.",
+    "previously_visual_checked_limits_degrees": {
+      "yaw": 12,
+      "pitch": 8,
+      "diagonal": [
+        10,
+        6
+      ]
+    },
+    "composition": "Base animation local matrices; eye-only gaze; additive lid translation relative to source-open; parent-first globals; existing palette. Suppress layers for authored competing eye/blink channels."
+  },
+  "deliverable_manifest": [
+    {
+      "path": "assets/models/Raphtalia.fbx",
+      "bytes": 9276700,
+      "sha256": "a602086ac9e580f2d265a489478922b75aae00410313b17a89bd846ad4f3b34c",
+      "matches_manifest": true
+    },
+    {
+      "path": "assets/models/backups/Raphtalia.original.fbx",
+      "bytes": 9276700,
+      "sha256": "a602086ac9e580f2d265a489478922b75aae00410313b17a89bd846ad4f3b34c",
+      "matches_manifest": true
+    },
+    {
+      "path": "assets/models/Raphtalia_prepared.blend",
+      "bytes": 30354620,
+      "sha256": "c1c0db17b06cdf1d0c621dbaa1916e6a452e50464d8baab2155e44f7aea897c6",
+      "matches_manifest": true
+    },
+    {
+      "path": "assets/models/Raphtalia_prepared.fbx",
+      "bytes": 169903772,
+      "sha256": "b98e2063f3226c369a66e711b0dc61ed1a2c1da6b93b6dc117c2e4c923882dbe",
+      "matches_manifest": true
+    },
+    {
+      "path": "assets/models/backups/Raphtalia_prepared.pre_deep_deformation_2026-10-21.zip",
+      "bytes": 10481779,
+      "sha256": "dd39fde112f58c98624520b05a9e67bd3b478d0b8af8f20190eda019717b5b53",
+      "matches_manifest": true
+    },
+    {
+      "path": "assets/models/backups/Raphtalia_prepared.pre_reaudit_2026-10-21.zip",
+      "bytes": 9036770,
+      "sha256": "45dcaf850ef345f77f7e7384987c0de1e4b0d7e5c444f73381cb5dc053f7155b",
+      "matches_manifest": true
+    },
+    {
+      "path": "assets/models/backups/Raphtalia_prepared.pre_blink_2026-10-21.zip",
+      "bytes": 11453052,
+      "sha256": "8060ee02d7b8732cbb3e9b2e3b8477050642611f8cd069314f9897b0bd8dec1e",
+      "matches_manifest": true
+    }
+  ],
+  "all_seven_deliverables_unchanged": true,
+  "audit_scope": "Fresh read-only Assimp import and saved Blender controls; this rig audit does not claim visual validation of the new desktop behavior."
+}

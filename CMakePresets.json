@@ -30,6 +30,15 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
       }
+    },
+    {
+      "name": "vs-debug",
+      "displayName": "Visual Studio Debug x64",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "VCPKG_INSTALLED_DIR": "${sourceDir}/build/vs-release/vcpkg_installed"
+      }
     }
   ],
   "buildPresets": [
@@ -37,6 +46,11 @@
       "name": "build-release",
       "configurePreset": "vs-release",
       "configuration": "Release"
+    },
+    {
+      "name": "build-debug",
+      "configurePreset": "vs-debug",
+      "configuration": "Debug"
     }
   ],
   "testPresets": [
@@ -44,6 +58,14 @@
       "name": "test-release",
       "configurePreset": "vs-release",
       "configuration": "Release",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "test-debug",
+      "configurePreset": "vs-debug",
+      "configuration": "Debug",
       "output": {
         "outputOnFailure": true
       }

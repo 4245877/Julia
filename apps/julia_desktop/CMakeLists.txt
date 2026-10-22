@@ -1,6 +1,7 @@
 add_executable(julia_desktop
     main.cpp
     AnimationVerification.cpp
+    EyeVerification.cpp
 )
 
 # The only runnable application bundle, shared by all build configurations.

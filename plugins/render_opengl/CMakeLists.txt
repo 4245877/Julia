@@ -18,6 +18,7 @@ target_sources(julia_render_opengl
         src/GLTexture.cpp
         src/GLModelLoader.cpp
         src/Animation.cpp
+        src/EyePoseLayer.cpp
 )
 
 target_include_directories(julia_render_opengl

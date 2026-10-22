@@ -1,5 +1,6 @@
 ﻿[CmdletBinding()]
-param([switch]$SkipTests, [switch]$UseInstalledDependencies)
+param([switch]$SkipTests, [switch]$UseInstalledDependencies,
+    [ValidateSet('Release', 'Debug')][string]$Configuration = 'Release')
 
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
@@ -19,12 +20,13 @@ try {
     # warnings must not abort a successful CMake invocation. Check exit codes.
     $ErrorActionPreference = 'Continue'
     $installManifest = if ($UseInstalledDependencies) { 'OFF' } else { 'ON' }
-    & cmake --preset vs-release "-DVCPKG_MANIFEST_INSTALL=$installManifest"
+    $configurationName = $Configuration.ToLowerInvariant()
+    & cmake --preset "vs-$configurationName" "-DVCPKG_MANIFEST_INSTALL=$installManifest"
     if ($LASTEXITCODE -ne 0) { throw 'CMake configuration failed.' }
-    & cmake --build --preset build-release --parallel 4
+    & cmake --build --preset "build-$configurationName" --parallel 4
     if ($LASTEXITCODE -ne 0) { throw 'JULIA build failed.' }
     if (-not $SkipTests) {
-        & ctest --preset test-release
+        & ctest --preset "test-$configurationName"
         if ($LASTEXITCODE -ne 0) { throw 'JULIA verification failed.' }
     }
     Write-Host 'Ready: julia_desktop\julia_desktop.exe'

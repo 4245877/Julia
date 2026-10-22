@@ -1,0 +1,71 @@
+{
+  "source": "build/vs-release/verification/desktop_eyes",
+  "capture": "Actual julia_desktop GL_BACK RGB; simulated 60Hz time, 30fps GIF; imported diffuse materials",
+  "files": [
+    {
+      "path": "docs/raphtalia/eyes/blink_angles.png",
+      "bytes": 683762,
+      "sha256": "65918d7f2ef1daf85f50409b89c46d901d8e06a9c2987219a8a0e4687f188b48"
+    },
+    {
+      "path": "docs/raphtalia/eyes/blink_full.png",
+      "bytes": 119472,
+      "sha256": "006d9d18ba319af9c33b84b5e668b8113699358bb31383deebc04c102f6f77a5"
+    },
+    {
+      "path": "docs/raphtalia/eyes/body_target.png",
+      "bytes": 310339,
+      "sha256": "5bf450a1e95b25f86ab0f508bf78c301529c4a62a9768966ef5f80f1bfd58621"
+    },
+    {
+      "path": "docs/raphtalia/eyes/ctest_debug.txt",
+      "bytes": 3553,
+      "sha256": "41ce3f9b60ceb8716d123f827bc5a9158cbcc57075597f63d56c5a2f9e825615"
+    },
+    {
+      "path": "docs/raphtalia/eyes/ctest_release.txt",
+      "bytes": 13940,
+      "sha256": "40676aa166f570951c69379835dae57624684ade359a7fecfd1c76983b84aff4"
+    },
+    {
+      "path": "docs/raphtalia/eyes/desktop_eyes.txt",
+      "bytes": 1161,
+      "sha256": "18a57dcdf114d47b7b83e0deb7096074e39f6e4bd8b45b5e3ac89a222af1547a"
+    },
+    {
+      "path": "docs/raphtalia/eyes/eye_samples.csv",
+      "bytes": 4161,
+      "sha256": "916778086634b172a07479031fad1d1db1b55dc21b037961eb62402598b01f7e"
+    },
+    {
+      "path": "docs/raphtalia/eyes/gaze.png",
+      "bytes": 365669,
+      "sha256": "a8c3ac55c2bec6e0f0bf01c769056194891e43639f96346685fad0bbb10ddb48"
+    },
+    {
+      "path": "docs/raphtalia/eyes/gaze_diagonal_blink_half.png",
+      "bytes": 119112,
+      "sha256": "b59cc77232eccb62805a9fb3f753b07e28ea2f9a621ec4796f617894bc0effda"
+    },
+    {
+      "path": "docs/raphtalia/eyes/natural.gif",
+      "bytes": 1730961,
+      "sha256": "d4d6bceb529239d61fa7605b8f4d8472d885a9b2f6e0b0d19793a56b19b9a353"
+    },
+    {
+      "path": "docs/raphtalia/eyes/neutral.png",
+      "bytes": 121452,
+      "sha256": "013dc676fad58b704ebf5b1166e75ab8c8d563201de7bb5b851c1bbd14c02e78"
+    },
+    {
+      "path": "docs/raphtalia/eyes/rig.json",
+      "bytes": 19462,
+      "sha256": "727fd879d24503e9a304d12d274042b1d45f0a66c5596d780200805a8b5bf508"
+    },
+    {
+      "path": "docs/raphtalia/eyes/visible_desktop_eyes.txt",
+      "bytes": 1160,
+      "sha256": "af4e58481d9e1e243486203f86cc808d66e31f90568191d32998ba39c916d020"
+    }
+  ]
+}

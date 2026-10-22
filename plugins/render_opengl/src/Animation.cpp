@@ -1,5 +1,6 @@
 #include "julia/render_opengl/Animation.hpp"
 #include "julia/render_opengl/GLModel.hpp"
+#include "julia/render_opengl/EyePoseLayer.hpp"
 
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -110,7 +111,14 @@ namespace julia::render_opengl
     {
         if (!std::isfinite(deltaSeconds) || deltaSeconds < 0.0)
             throw std::invalid_argument("Animation delta must be finite and nonnegative");
-        if (state_ != PlaybackState::Playing || !clip() || deltaSeconds == 0.0) return;
+        const auto* base = state_ == PlaybackState::Stopped ? nullptr : clip();
+        if (eyeLayer_ && state_ != PlaybackState::Paused && !EyePoseLayer::authoredEyes(base))
+            eyeLayer_->update(deltaSeconds);
+        if (state_ != PlaybackState::Playing || !clip() || deltaSeconds == 0.0)
+        {
+            if (eyeLayer_) evaluate();
+            return;
+        }
         const double duration = clip()->durationSeconds();
         if (duration <= 0.0)
         {
@@ -135,6 +143,14 @@ namespace julia::render_opengl
         else
             for (std::size_t i = 0; i < locals_.size(); ++i)
                 locals_[i] = model_.nodes()[i].localTransform;
+        if (eyeLayer_)
+            eyeLayer_->apply(locals_, state_ == PlaybackState::Stopped ? nullptr : clip());
         model_.skinningMatrices(locals_, globals_, palette_);
+    }
+
+    void AnimationPlayer::setEyeLayer(EyePoseLayer* layer)
+    {
+        eyeLayer_ = layer;
+        evaluate();
     }
 }

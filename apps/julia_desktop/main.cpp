@@ -5,6 +5,8 @@
 #include "julia/render_opengl/GLModelLoader.hpp"
 #include "julia/render_opengl/OpenGLRenderer.hpp"
 #include "AnimationVerification.hpp"
+#include "EyeVerification.hpp"
+#include "julia/render_opengl/EyePoseLayer.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -48,6 +50,7 @@ namespace
         julia::render_opengl::OpenGLRenderer* renderer = nullptr;
         julia::render::OrbitCamera* orbitCamera = nullptr;
         julia::render_opengl::AnimationPlayer* player = nullptr;
+        julia::render_opengl::EyePoseLayer* eyes = nullptr;
         const julia::render_opengl::GLModel* model = nullptr;
         julia::render_opengl::CameraConfig cameraConfig{};
         int dragButton = -1;
@@ -212,7 +215,11 @@ namespace
             if (player.state() == julia::render_opengl::PlaybackState::Playing) player.pause();
             else player.play();
         }
-        else if (key == GLFW_KEY_X || key == GLFW_KEY_R) player.stop();
+        else if (key == GLFW_KEY_X || key == GLFW_KEY_R)
+        {
+            if (state->eyes) state->eyes->setEnabled(false);
+            player.stop();
+        }
         else if (key == GLFW_KEY_L) player.setLooping(!player.looping());
         else if (key == GLFW_KEY_COMMA || key == GLFW_KEY_PERIOD)
         {
@@ -246,6 +253,53 @@ namespace
             for (std::size_t i = 0; i < state->model->animations().size(); ++i)
                 std::cout << i << ": " << state->model->animations()[i].name << " ("
                     << state->model->animations()[i].durationSeconds() << " s)\n";
+        }
+        else if (state->eyes && key == GLFW_KEY_G)
+        {
+            auto& eyes = *state->eyes;
+            eyes.setEnabled(true);
+            eyes.clearTargetPoint();
+            eyes.behavior().releaseBlink();
+            eyes.behavior().releaseGaze();
+            eyes.behavior().setAutoBlink(true);
+            eyes.behavior().setAutoGaze(true);
+            if (julia::render_opengl::EyePoseLayer::authoredEyes(player.clip())) player.stop();
+        }
+        else if (state->eyes && (key == GLFW_KEY_H || key == GLFW_KEY_J || key == GLFW_KEY_K ||
+            key == GLFW_KEY_U || key == GLFW_KEY_I || key == GLFW_KEY_HOME || key == GLFW_KEY_T ||
+            (key >= GLFW_KEY_KP_1 && key <= GLFW_KEY_KP_9) || key == GLFW_KEY_F8 ||
+            key == GLFW_KEY_LEFT_BRACKET || key == GLFW_KEY_RIGHT_BRACKET))
+        {
+            auto& eyes = *state->eyes;
+            auto& behavior = eyes.behavior();
+            if (key == GLFW_KEY_H) behavior.setAutoBlink(!behavior.autoBlink());
+            else if (key == GLFW_KEY_J) behavior.setAutoGaze(!behavior.autoGaze());
+            else if (key == GLFW_KEY_K) behavior.triggerBlink();
+            else if (key == GLFW_KEY_U || key == GLFW_KEY_I)
+                behavior.triggerBlink(key == GLFW_KEY_U, key == GLFW_KEY_I);
+            else if (key == GLFW_KEY_HOME) { eyes.clearTargetPoint(); behavior.neutral(); }
+            else if (key == GLFW_KEY_T)
+            {
+                if (eyes.hasTargetPoint()) eyes.clearTargetPoint();
+                else eyes.setTargetPoint(glm::vec3{glm::inverse(state->model->fitToHeightTransform(2.2f)) *
+                    glm::vec4{state->orbitCamera->position(),1}});
+            }
+            else if (key == GLFW_KEY_F8) behavior.reset(0x52415048u);
+            else if (key == GLFW_KEY_LEFT_BRACKET || key == GLFW_KEY_RIGHT_BRACKET)
+            {
+                auto settings = behavior.settings();
+                settings.blinkMeanSeconds = std::clamp(settings.blinkMeanSeconds +
+                    (key == GLFW_KEY_RIGHT_BRACKET ? .5 : -.5), 1.0, 15.0);
+                behavior.setSettings(settings);
+            }
+            else
+            {
+                const int direction = key - GLFW_KEY_KP_1;
+                eyes.clearTargetPoint();
+                behavior.setGazeDegrees({static_cast<float>(direction % 3 - 1) * 8,
+                    static_cast<float>(direction / 3 - 1) * 5});
+            }
+            player.update(0);
         }
         else if (key == GLFW_KEY_F || key == GLFW_KEY_B)
         {
@@ -304,10 +358,18 @@ int main(int argc, char** argv)
         std::cerr << "Usage: julia_desktop --verify-animations|--review-animations output_directory\n";
         return 2;
     }
+    const bool eyeVerification = argc > 1 &&
+        (std::string_view{argv[1]} == "--verify-eyes" || std::string_view{argv[1]} == "--review-eyes");
+    const bool noEyes = argc > 1 && std::string_view{argv[1]} == "--no-eyes";
+    if (eyeVerification && argc != 3)
+    {
+        std::cerr << "Usage: julia_desktop --verify-eyes|--review-eyes output_directory\n";
+        return 2;
+    }
     // Модель можно передать аргументом командной строки; иначе берётся
     // ассет по умолчанию из каталога ресурсов.
     const std::filesystem::path modelPath =
-        (argc > 1 && !verification && !animationVerification)
+        (argc > 1 && !verification && !animationVerification && !eyeVerification && !noEyes)
             ? std::filesystem::path{argv[1]}
             : assetDirectory(argv[0]) / "models" / "Raphtalia_prepared.fbx";
 
@@ -330,12 +392,13 @@ int main(int argc, char** argv)
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 
     // Сглаживание краёв модели и обводки.
-    glfwWindowHint(GLFW_SAMPLES, animationVerification ? 4 : 8);
+    glfwWindowHint(GLFW_SAMPLES, animationVerification || eyeVerification ? 4 : 8);
 
-    const bool hidden = verification || (animationVerification && std::string_view{argv[1]} == "--verify-animations");
+    const bool hidden = verification || (animationVerification && std::string_view{argv[1]} == "--verify-animations") ||
+        (eyeVerification && std::string_view{argv[1]} == "--verify-eyes");
     glfwWindowHint(GLFW_VISIBLE, hidden ? GLFW_FALSE : GLFW_TRUE);
-    GLFWwindow* window = glfwCreateWindow(verification ? 640 : animationVerification ? 768 : 1280,
-        verification ? 480 : animationVerification ? 768 : 900, "Julia", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(verification ? 640 : animationVerification || eyeVerification ? 768 : 1280,
+        verification ? 480 : animationVerification || eyeVerification ? 768 : 900, "Julia", nullptr, nullptr);
     if (!window)
     {
         std::cerr << "Failed to create GLFW window\n";
@@ -344,7 +407,7 @@ int main(int argc, char** argv)
     }
 
     glfwMakeContextCurrent(window);
-    glfwSwapInterval(verification || animationVerification ? 0 : 1);
+    glfwSwapInterval(verification || animationVerification || eyeVerification ? 0 : 1);
 
     if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)))
     {
@@ -404,6 +467,10 @@ int main(int argc, char** argv)
         if (texturedMeshes == 0)
             std::cerr << "Material diagnostic: this asset has no assigned images; using imported diffuse values.\n";
         julia::render_opengl::AnimationPlayer player{model};
+        julia::render_opengl::EyePoseLayer eyes{model};
+        eyes.setEnabled(!animationVerification && !noEyes);
+        player.setEyeLayer(&eyes);
+        std::cout << "Procedural eyes: " << (eyes.available() ? "ready (188 baked eyelid bones)" : "unavailable for this rig") << '\n';
 
         const glm::mat4 fitModel = model.fitToHeightTransform(2.2f);
 
@@ -428,6 +495,7 @@ int main(int argc, char** argv)
         windowState.orbitCamera = &orbitCamera;
         windowState.cameraConfig = cameraConfig;
         windowState.player = &player;
+        windowState.eyes = &eyes;
         windowState.model = &model;
 
         glfwSetWindowUserPointer(window, &windowState);
@@ -445,12 +513,18 @@ int main(int argc, char** argv)
             << "or Shift+left drag to pan; WASD/QE or arrows to move; Esc to exit\n";
         std::cout << "Animation: PgUp/PgDn select, Space play/pause, X/R stop + bind, L loop,\n"
             << "1..4 blink clips, comma/period step 1/30 s, F face / B body, F1 list clips.\n";
+        std::cout << "Eyes: G natural/resume, H auto blink, J auto gaze, K blink, U/I wink,\n"
+            << "numpad 1..9 gaze, Home forward, T hold camera point, [/] blink interval, F8 fixed seed.\n";
         keyCallback(window, GLFW_KEY_F1, 0, GLFW_PRESS, 0);
-        keyCallback(window, GLFW_KEY_1, 0, GLFW_PRESS, 0);
-        if (player.state() == julia::render_opengl::PlaybackState::Stopped) player.play();
         if (animationVerification)
         {
             verifyDesktopAnimations(window, renderer, model, player, fitModel,
+                std::filesystem::path{argv[2]}, keyCallback);
+            glfwSetWindowShouldClose(window, GLFW_TRUE);
+        }
+        if (eyeVerification)
+        {
+            verifyDesktopEyes(window, renderer, model, player, eyes, fitModel,
                 std::filesystem::path{argv[2]}, keyCallback);
             glfwSetWindowShouldClose(window, GLFW_TRUE);
         }
@@ -513,7 +587,9 @@ int main(int argc, char** argv)
                     << std::fixed << std::setprecision(2) << player.timeSeconds() << '/'
                     << (player.clip() ? player.clip()->durationSeconds() : 0.0) << " s | loop "
                     << (player.looping() ? "on" : "off") << " | " << std::setprecision(0)
-                    << titleFrames / (now - titleTime) << " FPS | PgUp/Dn Space X L 1-4 F/B F1";
+                    << titleFrames / (now - titleTime) << " FPS | eyes " << (eyes.enabled() ? "on" : "off")
+                    << " blink " << eyes.behavior().output().blinkLeft << '/' << eyes.behavior().output().blinkRight
+                    << " | G H J K T | PgUp/Dn Space X 1-4 F/B";
                 glfwSetWindowTitle(window, title.str().c_str());
                 titleFrames = 0;
                 titleTime = now;
