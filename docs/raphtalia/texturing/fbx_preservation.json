@@ -1,0 +1,16 @@
+{
+  "source": "C:\\Julia\\assets\\models\\Raphtalia_prepared.fbx",
+  "output": "C:\\Julia\\build\\raphtalia_tools\\texturing\\Raphtalia_textured.fbx",
+  "version": 7400,
+  "preserved_non_material_objects": 90414,
+  "changed_non_material_objects": [],
+  "original_connections_preserved": 121761,
+  "materials": 26,
+  "textures": 25,
+  "videos": 24,
+  "new_connections": 50,
+  "sha256": "927571e3bb620fd41e796c430f479b3391e25a971df75e50b9502a59eb79e844",
+  "final": "assets/models/Raphtalia_prepared.fbx",
+  "final_sha256": "927571e3bb620fd41e796c430f479b3391e25a971df75e50b9502a59eb79e844",
+  "final_matches_verified_candidate": true
+}

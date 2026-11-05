@@ -1,0 +1,362 @@
+[
+  {
+    "material": "hightlight",
+    "image": null,
+    "constant_linear_rgba": [
+      0.8,
+      0.8,
+      0.8,
+      1
+    ]
+  },
+  {
+    "material": "tex_armor",
+    "image": "tex_armor.png",
+    "uv_map": "UVMap",
+    "uv_scale": [
+      1,
+      1
+    ],
+    "uv_offset": [
+      0,
+      0
+    ],
+    "alpha": "OPAQUE"
+  },
+  {
+    "material": "tex_band",
+    "image": "tex_band.png",
+    "uv_map": "UVMap",
+    "uv_scale": [
+      1,
+      1
+    ],
+    "uv_offset": [
+      0,
+      0
+    ],
+    "alpha": "OPAQUE"
+  },
+  {
+    "material": "tex_belt",
+    "image": "tex_belt.png",
+    "uv_map": "UVMap",
+    "uv_scale": [
+      1,
+      1
+    ],
+    "uv_offset": [
+      0,
+      0
+    ],
+    "alpha": "OPAQUE"
+  },
+  {
+    "material": "tex_bow",
+    "image": "tex_bow.png",
+    "uv_map": "UVMap",
+    "uv_scale": [
+      1,
+      1
+    ],
+    "uv_offset": [
+      0,
+      0
+    ],
+    "alpha": "OPAQUE"
+  },
+  {
+    "material": "tex_cuff",
+    "image": "tex_cuff.png",
+    "uv_map": "UVMap",
+    "uv_scale": [
+      1,
+      1
+    ],
+    "uv_offset": [
+      0,
+      0
+    ],
+    "alpha": "OPAQUE"
+  },
+  {
+    "material": "tex_ear",
+    "image": "tex_ear.png",
+    "uv_map": "UVMap",
+    "uv_scale": [
+      1,
+      1
+    ],
+    "uv_offset": [
+      0,
+      0
+    ],
+    "alpha": "OPAQUE"
+  },
+  {
+    "material": "tex_ear2",
+    "image": "tex_ear2.png",
+    "uv_map": "UVMap",
+    "uv_scale": [
+      1,
+      1
+    ],
+    "uv_offset": [
+      0,
+      0
+    ],
+    "alpha": "OPAQUE"
+  },
+  {
+    "material": "tex_eyelashes",
+    "image": "tex_eyelashes.png",
+    "uv_map": "UVMap",
+    "uv_scale": [
+      1,
+      1
+    ],
+    "uv_offset": [
+      0,
+      0
+    ],
+    "alpha": "OPAQUE"
+  },
+  {
+    "material": "tex_eyes",
+    "image": "tex_eyes.png",
+    "uv_map": "UVMap",
+    "uv_scale": [
+      1,
+      1
+    ],
+    "uv_offset": [
+      0,
+      0
+    ],
+    "alpha": "OPAQUE"
+  },
+  {
+    "material": "tex_glove",
+    "image": "tex_glove.png",
+    "uv_map": "UVMap",
+    "uv_scale": [
+      1,
+      1
+    ],
+    "uv_offset": [
+      0,
+      0
+    ],
+    "alpha": "OPAQUE"
+  },
+  {
+    "material": "tex_hair1",
+    "image": "tex_hair1.png",
+    "uv_map": "UVMap",
+    "uv_scale": [
+      1,
+      1
+    ],
+    "uv_offset": [
+      0,
+      0
+    ],
+    "alpha": "OPAQUE"
+  },
+  {
+    "material": "tex_hair2",
+    "image": "tex_hair2.png",
+    "uv_map": "UVMap",
+    "uv_scale": [
+      1,
+      1
+    ],
+    "uv_offset": [
+      0,
+      0
+    ],
+    "alpha": "OPAQUE"
+  },
+  {
+    "material": "tex_hair3",
+    "image": "tex_hair3.png",
+    "uv_map": "UVMap",
+    "uv_scale": [
+      1,
+      1
+    ],
+    "uv_offset": [
+      0,
+      0
+    ],
+    "alpha": "OPAQUE"
+  },
+  {
+    "material": "tex_hair4",
+    "image": "tex_hair4.png",
+    "uv_map": "UVMap",
+    "uv_scale": [
+      1,
+      1
+    ],
+    "uv_offset": [
+      0,
+      0
+    ],
+    "alpha": "OPAQUE"
+  },
+  {
+    "material": "tex_hair5",
+    "image": "tex_hair5.png",
+    "uv_map": "UVMap",
+    "uv_scale": [
+      1,
+      1
+    ],
+    "uv_offset": [
+      0,
+      0
+    ],
+    "alpha": "OPAQUE"
+  },
+  {
+    "material": "tex_hair6",
+    "image": "tex_hair6.png",
+    "uv_map": "UVMap",
+    "uv_scale": [
+      1,
+      1
+    ],
+    "uv_offset": [
+      0,
+      0
+    ],
+    "alpha": "OPAQUE"
+  },
+  {
+    "material": "tex_hair7",
+    "image": "tex_hair7.png",
+    "uv_map": "UVMap",
+    "uv_scale": [
+      1,
+      1
+    ],
+    "uv_offset": [
+      0,
+      0
+    ],
+    "alpha": "OPAQUE"
+  },
+  {
+    "material": "tex_shirt",
+    "image": "tex_shirt.png",
+    "uv_map": "UVMap",
+    "uv_scale": [
+      1,
+      1
+    ],
+    "uv_offset": [
+      0,
+      0
+    ],
+    "alpha": "OPAQUE"
+  },
+  {
+    "material": "tex_shoes",
+    "image": "tex_shoes.png",
+    "uv_map": "UVMap",
+    "uv_scale": [
+      1,
+      1
+    ],
+    "uv_offset": [
+      0,
+      0
+    ],
+    "alpha": "OPAQUE"
+  },
+  {
+    "material": "tex_shoulderarmor",
+    "image": "tex_shoulderarmor.png",
+    "uv_map": "UVMap",
+    "uv_scale": [
+      1,
+      1
+    ],
+    "uv_offset": [
+      0,
+      0
+    ],
+    "alpha": "OPAQUE"
+  },
+  {
+    "material": "tex_skin",
+    "image": "tex_skin.png",
+    "uv_map": "UVMap",
+    "uv_scale": [
+      1,
+      1
+    ],
+    "uv_offset": [
+      0,
+      0
+    ],
+    "alpha": "OPAQUE"
+  },
+  {
+    "material": "tex_skin2",
+    "image": "tex_skin.png",
+    "uv_map": "UVMap",
+    "uv_scale": [
+      1,
+      1
+    ],
+    "uv_offset": [
+      0,
+      0
+    ],
+    "alpha": "OPAQUE"
+  },
+  {
+    "material": "tex_sock",
+    "image": "tex_sock.png",
+    "uv_map": "UVMap",
+    "uv_scale": [
+      1,
+      1
+    ],
+    "uv_offset": [
+      0,
+      0
+    ],
+    "alpha": "OPAQUE"
+  },
+  {
+    "material": "tex_tail",
+    "image": "tex_tail.png",
+    "uv_map": "UVMap",
+    "uv_scale": [
+      1,
+      1
+    ],
+    "uv_offset": [
+      0,
+      0
+    ],
+    "alpha": "OPAQUE"
+  },
+  {
+    "material": "tex_underwear",
+    "image": "tex_underwear.png",
+    "uv_map": "UVMap",
+    "uv_scale": [
+      1,
+      1
+    ],
+    "uv_offset": [
+      0,
+      0
+    ],
+    "alpha": "OPAQUE"
+  }
+]

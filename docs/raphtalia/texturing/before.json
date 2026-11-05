@@ -1,0 +1,2702 @@
+{
+  "source": "assets/models/Raphtalia_prepared.blend",
+  "blender": "4.2.0",
+  "images": [],
+  "meshes": {
+    "armor_tex_armor_0": {
+      "vertices": 921,
+      "polygons": 1014,
+      "loops": 3042,
+      "positions": "95f7a68dc57de975f51869041b0bdce0455eaf47a30488659c2c98e0def63538",
+      "edges": "e8a0913706ab10bd538664b56a30642633ffff309e0642c1d598649eb0995e59",
+      "loop_vertices": "53a38079671bf98cc5e081fe89adf5847e19838007046d7966891f3c0a84df07",
+      "material_indices": "b4510677f19d4349cf61024c2e122ce5cf6c8cc674dd70b6a55a856331e4c0ce",
+      "uv": {
+        "UVMap": "86b4978a7d865d36f1dc93b6081a4b5ec5b72fb85ceab622d16f27816cc2fb16"
+      },
+      "weights": "1c0620620385aad6429a5943467b65043433e9e139fa1e5c3136d9ce0594abca",
+      "vertex_groups": [
+        "root.x_01",
+        "spine_01.x_014",
+        "spine_02.x_015",
+        "spine_03.x_016",
+        "shoulder.l_0157",
+        "arm_twist.l_0177",
+        "shoulder.r_0136",
+        "arm_twist.r_0156"
+      ],
+      "matrix_world": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.009999999776482582,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "materials": [
+        "tex_armor"
+      ]
+    },
+    "belt_tex_belt_0": {
+      "vertices": 452,
+      "polygons": 492,
+      "loops": 1476,
+      "positions": "ed05ed10defe1f3a413caf3aabce63d222f5d2a8f4fe6ef939175d4839467695",
+      "edges": "36cd06047b9ee82a082c5a9f4a5f38b7e6e0530048549247560d29522eaaf24e",
+      "loop_vertices": "4d609f64ab6c12398d75eeb206e7d2754a3a7c2aa23500b0d14038094493da42",
+      "material_indices": "ad03396ba1f4627e67e662a75714170df3466d9aca8a4c3a8485f906fa8ebfe6",
+      "uv": {
+        "UVMap": "1cf82cfc15c66d46b1deee8e9085db70e57d31679ff2dec9318cf0a625c19393"
+      },
+      "weights": "556dfeec5b7fb68fed2e78d5b383038c4afd5833db6d8ba4ee62a56234f3cd80",
+      "vertex_groups": [
+        "root.x_01",
+        "c_tail_00.x_0178",
+        "cloth.a.000_0221",
+        "cloth.a.003_0224",
+        "cloth.b.003_0229",
+        "cloth.b.006_0232",
+        "cloth.c.000_0182",
+        "cloth.c.003_0185",
+        "cloth.d.000_0188",
+        "cloth.e.003_0194",
+        "cloth.f.003_0200",
+        "cloth.g.000_0203",
+        "cloth.h.000_0206",
+        "cloth.h.003_0209",
+        "cloth.i.003_0195",
+        "cloth.i.006_0218",
+        "spine_01.x_014"
+      ],
+      "matrix_world": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.009999999776482582,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "materials": [
+        "tex_belt"
+      ]
+    },
+    "body_tex_skin2_0": {
+      "vertices": 274,
+      "polygons": 512,
+      "loops": 1536,
+      "positions": "323c5900f4e259ee76228a52d7a8a3aeea58549280ad9446f4fe5cd9b7f90442",
+      "edges": "2face7a76a01816ccbfa2516f6d43c76ad2886328df0d514474217621ade9534",
+      "loop_vertices": "9eaa5a3a39af35953c017d59d8adf61d233de8cdc5e6531127d7e56769763126",
+      "material_indices": "e5a00aa9991ac8a5ee3109844d84a55583bd20572ad3ffcd42792f3c36b183ad",
+      "uv": {
+        "UVMap": "a101dde30048e33147ff6152be6e6577af1acda92d9d9bcbf8906defd00ee71d"
+      },
+      "weights": "600f3b61e0c88ac76c6b895a6f6299f251d4423b9f6065be25e2bfe26218c870",
+      "vertex_groups": [
+        "head.x_018"
+      ],
+      "matrix_world": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.009999999776482582,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "materials": [
+        "tex_skin2"
+      ]
+    },
+    "body_tex_skin_0": {
+      "vertices": 16299,
+      "polygons": 30494,
+      "loops": 91482,
+      "positions": "e4d6dd4f389323713873a01d54a93a8a2121d5178a630b7e3f24b7ba7d5de8c8",
+      "edges": "660de7435a394584c9d45768f57f24c8561412739279bf58bc2cbc486348d224",
+      "loop_vertices": "f743a397960ce7be831f7f973567d5763925d2c14b986ff9c4f8a9aa990dbd18",
+      "material_indices": "4856cfbf7a6390aaec2595fa941c56b64c70cecb61ec85abc6db45e0c587b351",
+      "uv": {
+        "UVMap": "aa926215577cb0e73377aa95e5dac6580a9812b1b52b1ebcd32bd5f514d72075"
+      },
+      "weights": "5f051c9e0d393ef47afb9f70934ac04f43a24707cab242d7f49c9ec0b96c6322",
+      "vertex_groups": [
+        "root.x_01",
+        "spine_01.x_014",
+        "spine_02.x_015",
+        "spine_03.x_016",
+        "neck.x_017",
+        "head.x_018",
+        "shoulder.l_0157",
+        "arm_stretch.l_0158",
+        "arm_twist.l_0177",
+        "forearm_stretch.l_0159",
+        "forearm_twist.l_0176",
+        "hand.l_0160",
+        "c_index1.l_0173",
+        "c_index2.l_0174",
+        "c_index3.l_0155",
+        "c_middle1.l_0170",
+        "c_middle2.l_0171",
+        "c_middle3.l_0172",
+        "c_pinky1.l_0164",
+        "c_pinky2.l_0165",
+        "c_pinky3.l_0166",
+        "c_ring1.l_0167",
+        "c_ring2.l_0168",
+        "c_ring3.l_0169",
+        "c_thumb1.l_0161",
+        "c_thumb2.l_0162",
+        "c_thumb3.l_0163",
+        "shoulder.r_0136",
+        "arm_stretch.r_0137",
+        "arm_twist.r_0156",
+        "forearm_stretch.r_0138",
+        "forearm_twist.r_0135",
+        "hand.r_0139",
+        "c_index1.r_0152",
+        "c_index2.r_0153",
+        "c_index3.r_0154",
+        "c_middle1.r_0149",
+        "c_middle2.r_0150",
+        "c_middle3.r_0151",
+        "c_pinky1.r_0143",
+        "c_pinky2.r_0144",
+        "c_pinky3.r_0145",
+        "c_ring1.r_0146",
+        "c_ring2.r_0147",
+        "c_ring3.r_0148",
+        "c_thumb1.r_0140",
+        "c_thumb2.r_0141",
+        "c_thumb3.r_0142",
+        "thigh_stretch.l_02",
+        "leg_stretch.l_03",
+        "foot.l_04",
+        "toes_01.l_05",
+        "leg_twist.l_06",
+        "thigh_twist.l_07",
+        "thigh_stretch.r_08",
+        "leg_stretch.r_09",
+        "foot.r_010",
+        "toes_01.r_011",
+        "leg_twist.r_012",
+        "thigh_twist.r_013",
+        "lid.upper.L.28",
+        "lid.surface.L.1.10",
+        "lid.upper.L.24",
+        "lid.surface.L.1.11",
+        "lid.upper.L.20",
+        "lid.surface.L.1.12",
+        "lid.upper.L.16",
+        "lid.surface.L.1.13",
+        "lid.upper.L.12",
+        "lid.surface.L.1.14",
+        "lid.upper.L.08",
+        "lid.surface.L.1.15",
+        "lid.upper.L.04",
+        "lid.surface.L.1.00",
+        "lid.surface.L.1.01",
+        "lid.lower.L.04",
+        "lid.surface.L.1.02",
+        "lid.lower.L.08",
+        "lid.surface.L.1.03",
+        "lid.lower.L.12",
+        "lid.surface.L.1.04",
+        "lid.lower.L.16",
+        "lid.surface.L.1.05",
+        "lid.lower.L.20",
+        "lid.surface.L.1.06",
+        "lid.lower.L.24",
+        "lid.surface.L.1.07",
+        "lid.lower.L.28",
+        "lid.surface.L.1.08",
+        "lid.surface.L.1.09",
+        "lid.surface.L.2.09",
+        "lid.surface.L.2.10",
+        "lid.surface.L.2.11",
+        "lid.surface.L.2.12",
+        "lid.surface.L.2.13",
+        "lid.surface.L.2.14",
+        "lid.surface.L.2.15",
+        "lid.surface.L.2.00",
+        "lid.surface.L.2.01",
+        "lid.surface.L.2.02",
+        "lid.surface.L.2.03",
+        "lid.surface.L.2.04",
+        "lid.surface.L.2.05",
+        "lid.surface.L.2.06",
+        "lid.surface.L.2.07",
+        "lid.surface.L.2.08",
+        "lid.surface.R.2.13",
+        "lid.surface.R.2.14",
+        "lid.surface.R.2.15",
+        "lid.surface.R.2.00",
+        "lid.surface.R.2.01",
+        "lid.surface.R.2.02",
+        "lid.surface.R.2.03",
+        "lid.surface.R.1.02",
+        "lid.surface.R.1.01",
+        "lid.surface.R.1.00",
+        "lid.surface.R.1.15",
+        "lid.surface.R.1.14",
+        "lid.surface.R.1.13",
+        "lid.upper.R.08",
+        "lid.upper.R.04",
+        "lid.lower.R.04",
+        "lid.lower.R.08",
+        "lid.lower.R.12",
+        "lid.surface.R.1.03",
+        "lid.lower.R.16",
+        "lid.surface.R.2.04",
+        "lid.surface.R.2.05",
+        "lid.surface.R.1.04",
+        "lid.lower.R.20",
+        "lid.surface.R.1.05",
+        "lid.lower.R.24",
+        "lid.surface.R.1.06",
+        "lid.lower.R.28",
+        "lid.surface.R.1.07",
+        "lid.surface.R.2.06",
+        "lid.surface.R.2.07",
+        "lid.surface.R.2.12",
+        "lid.surface.R.2.11",
+        "lid.surface.R.2.10",
+        "lid.surface.R.2.09",
+        "lid.surface.R.2.08",
+        "lid.surface.R.1.08",
+        "lid.upper.R.28",
+        "lid.surface.R.1.09",
+        "lid.surface.R.1.10",
+        "lid.upper.R.24",
+        "lid.upper.R.20",
+        "lid.surface.R.1.11",
+        "lid.surface.R.1.12",
+        "lid.upper.R.12",
+        "lid.upper.R.16",
+        "lid.upper.L.26",
+        "lid.upper.L.30",
+        "lid.upper.L.22",
+        "lid.upper.L.18",
+        "lid.upper.L.14",
+        "lid.upper.L.10",
+        "lid.upper.L.06",
+        "lid.upper.L.02",
+        "lid.lower.L.02",
+        "lid.lower.L.06",
+        "lid.lower.L.10",
+        "lid.lower.L.14",
+        "lid.lower.L.18",
+        "lid.lower.L.22",
+        "lid.lower.L.26",
+        "lid.upper.R.06",
+        "lid.upper.R.10",
+        "lid.upper.R.02",
+        "lid.lower.R.06",
+        "lid.lower.R.10",
+        "lid.lower.R.14",
+        "lid.lower.R.18",
+        "lid.lower.R.22",
+        "lid.lower.R.26",
+        "lid.lower.R.30",
+        "lid.upper.R.30",
+        "lid.upper.R.26",
+        "lid.upper.R.22",
+        "lid.upper.R.18",
+        "lid.upper.R.14",
+        "lid.upper.L.27",
+        "lid.upper.L.29",
+        "lid.upper.L.25",
+        "lid.upper.L.23",
+        "lid.upper.L.21",
+        "lid.upper.L.19",
+        "lid.upper.L.17",
+        "lid.upper.L.15",
+        "lid.upper.L.13",
+        "lid.upper.L.11",
+        "lid.upper.L.09",
+        "lid.upper.L.07",
+        "lid.upper.L.05",
+        "lid.upper.L.03",
+        "lid.upper.L.01",
+        "lid.lower.L.01",
+        "lid.lower.L.03",
+        "lid.lower.L.05",
+        "lid.lower.L.07",
+        "lid.lower.L.09",
+        "lid.lower.L.11",
+        "lid.lower.L.13",
+        "lid.lower.L.15",
+        "lid.lower.L.17",
+        "lid.lower.L.19",
+        "lid.lower.L.21",
+        "lid.lower.L.23",
+        "lid.lower.L.25",
+        "lid.lower.L.27",
+        "lid.upper.L.31",
+        "lid.upper.R.07",
+        "lid.upper.R.09",
+        "lid.upper.R.05",
+        "lid.upper.R.03",
+        "lid.upper.R.01",
+        "lid.lower.R.05",
+        "lid.lower.R.07",
+        "lid.lower.R.09",
+        "lid.lower.R.11",
+        "lid.lower.R.13",
+        "lid.lower.R.15",
+        "lid.lower.R.17",
+        "lid.lower.R.19",
+        "lid.lower.R.21",
+        "lid.lower.R.23",
+        "lid.lower.R.25",
+        "lid.lower.R.27",
+        "lid.lower.R.29",
+        "lid.lower.R.31",
+        "lid.upper.R.31",
+        "lid.upper.R.29",
+        "lid.upper.R.27",
+        "lid.upper.R.25",
+        "lid.upper.R.23",
+        "lid.upper.R.21",
+        "lid.upper.R.19",
+        "lid.upper.R.11",
+        "lid.upper.R.13",
+        "lid.upper.R.17",
+        "lid.upper.R.15"
+      ],
+      "matrix_world": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.009999999776482582,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "materials": [
+        "tex_skin"
+      ]
+    },
+    "bow_tex_bow_0": {
+      "vertices": 584,
+      "polygons": 732,
+      "loops": 2196,
+      "positions": "1fd4beea10348df5df7bc929823bbeb50738a261071eb796296b2abda625ad93",
+      "edges": "ba4e00e03c3dd40b3433aae4fb6489d834a29e8c0da3ea6dcb1b70892b730f8f",
+      "loop_vertices": "2616bf9e24dae2fa8f0c9046083ae61bf8d924e365a55cd28ac0392ce880b4ac",
+      "material_indices": "e96664fb07aec667ccc49803398759e66f4ec2f4ac6511ec2ea0dd35b350a16c",
+      "uv": {
+        "UVMap": "e9e065ac0d947eb59248b289835b20387c2bae29f6f4d1928c8e60473eac614c"
+      },
+      "weights": "18219f1dd0ba7f0b11409e162b0ac0b8ab79f2739bbf930aa131f364730bdc93",
+      "vertex_groups": [
+        "spine_03.x_016",
+        "shoulder.l_0157",
+        "arm_twist.l_0177",
+        "shoulder.r_0136",
+        "arm_twist.r_0156"
+      ],
+      "matrix_world": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.009999999776482582,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "materials": [
+        "tex_bow"
+      ]
+    },
+    "cuff.001_tex_cuff_0": {
+      "vertices": 548,
+      "polygons": 568,
+      "loops": 1704,
+      "positions": "02f76a7160ac7699c7d6dfac84ab86cc072414a42d224f42e7e5d183ca95f4e1",
+      "edges": "97c8331a826a6a75588fb6c1c3f60d358dc4815227c33761ccafb0dbc37a1297",
+      "loop_vertices": "20a77be1da1a22f95b55276ce50fc597815ad4e5e9436e9335ac02c13a67cf31",
+      "material_indices": "d718e5d6300a8945e388a38dd85273c8e7afafaa0008b995a72c58cbe3032d7b",
+      "uv": {
+        "UVMap": "09ae20cee9a16b75d515e8a9e12393b578f5c38bb2f2898a2a8dd2ef5d7af061"
+      },
+      "weights": "beea18765639938a46bda22a46454bf708e42b07cd4f579d1a16086817c2369d",
+      "vertex_groups": [
+        "forearm_stretch.l_0159",
+        "forearm_twist.l_0176",
+        "hand.l_0160",
+        "forearm_stretch.r_0138",
+        "forearm_twist.r_0135",
+        "hand.r_0139"
+      ],
+      "matrix_world": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.009999999776482582,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "materials": [
+        "tex_cuff"
+      ]
+    },
+    "cuff_tex_cuff_0": {
+      "vertices": 548,
+      "polygons": 568,
+      "loops": 1704,
+      "positions": "2dcceca0607051c655483631714e6b8c74d80204ca50670984d9048a9b6fb900",
+      "edges": "581f7f2a7381c3f9b00e071791fea6bac8798ce1e7ac8791dbf2df24213dc89d",
+      "loop_vertices": "1817accf8dfd664df0785bf0c101c62505b547a14682513b762a82923fc2d6c5",
+      "material_indices": "d718e5d6300a8945e388a38dd85273c8e7afafaa0008b995a72c58cbe3032d7b",
+      "uv": {
+        "UVMap": "3508bc7d798b38f9753b040ab3692891549a233774d5019135b79ddf6f9972e4"
+      },
+      "weights": "24c59d6c69c53a8f1b26baaebe3e7e5486d76d88865e21ac033b3085913eb7ca",
+      "vertex_groups": [
+        "arm_stretch.l_0158",
+        "arm_twist.l_0177",
+        "arm_stretch.r_0137",
+        "arm_twist.r_0156"
+      ],
+      "matrix_world": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.009999999776482582,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "materials": [
+        "tex_cuff"
+      ]
+    },
+    "ear.001_tex_ear2_0": {
+      "vertices": 538,
+      "polygons": 624,
+      "loops": 1872,
+      "positions": "66005d49012318a6e1811e553cf4673b240ddd31ace56b0dc79fd14f975bd2f1",
+      "edges": "406378075e73c6c6d0dceb7130bb93f990651707c43dab8bf7e064ded0bab34c",
+      "loop_vertices": "c968cacb598472371387be42bba27080483555406d7f9bea6a269889dca0f19b",
+      "material_indices": "89f71694141dedff4a8c78b5db40be02ac451aa869ecc708ff8313e5525dd433",
+      "uv": {
+        "UVMap": "745c3ea92e035f4870661c44be432ab699aa19ba4f8cb9dfa6d9ddaa547ba31b"
+      },
+      "weights": "2704e787d060428a74d6aaeebc2711a8ea2b7ca2e34dac44e24b54014425ca5e",
+      "vertex_groups": [
+        "head.x_018",
+        "ear.L",
+        "ear.R"
+      ],
+      "matrix_world": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.009999999776482582,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "materials": [
+        "tex_ear2"
+      ]
+    },
+    "ear_tex_ear_0": {
+      "vertices": 312,
+      "polygons": 474,
+      "loops": 1422,
+      "positions": "fdf4951bb7483555e9e73f65e4b9af7480fb21ecd9195333f417b2b5443d3be6",
+      "edges": "004e83b21fc4b06d49ded90f1049ffce43a0c5ee2ad03001582ff8917f608666",
+      "loop_vertices": "728d373200be47ae7e72ef7eb1758d528612c3730df380f47414248415ead5b4",
+      "material_indices": "43a994de8e61bfab3e4e655ff5d064edd5459c4c3bccc3c114794d193d46930d",
+      "uv": {
+        "UVMap": "90d4124e4256a2df4292cb52d0e6d3d00f260ce11f15a11b6c5ef1143bdc468d"
+      },
+      "weights": "7b46a98286297766289d0ebeee120478d932302921cb51672d2e7b4972a75cc0",
+      "vertex_groups": [
+        "head.x_018",
+        "ear.L",
+        "ear.R"
+      ],
+      "matrix_world": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.009999999776482582,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "materials": [
+        "tex_ear"
+      ]
+    },
+    "eye_tex_eyes_0": {
+      "vertices": 194,
+      "polygons": 224,
+      "loops": 672,
+      "positions": "35f2d387e950948c6ec57304badecc539e69cce11d29ae4101b85a71852ff8f9",
+      "edges": "354ee7ff1ee1ec1b5922b0eba707a4312c4ce758ef97fb4c188c645d1a534317",
+      "loop_vertices": "30a0cf5a78b43b7c3f52bba810e4d4f8bebeef2bdb25ca2fff468f1114295c64",
+      "material_indices": "d54f02b97ed5bc2a642756268b41d4b8f7a077e73224e1580d22436834a14db5",
+      "uv": {
+        "UVMap": "22775e31cecd03f27977e9ba4de40f92f3c747bc5461863af3530a5423062613"
+      },
+      "weights": "de75e7c7ca4b97981e8a508102571ffbd35bfbee9924f41ba9250d9808747581",
+      "vertex_groups": [
+        "head.x_018",
+        "eye.L",
+        "eye.R"
+      ],
+      "matrix_world": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.009999999776482582,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "materials": [
+        "tex_eyes"
+      ]
+    },
+    "eyelashes_tex_eyelashes_0": {
+      "vertices": 2082,
+      "polygons": 3488,
+      "loops": 10464,
+      "positions": "d4f5a5693c22c7d91645fdc2529007bdfda10932fcba7847aea6e7c09a28d543",
+      "edges": "66ce7d4a891ed7683a3313ff88fb00c4ca0f1ff2f14727d5744904cc45e2253c",
+      "loop_vertices": "2172bad2ea96522a4fdc8394fb5e85238513bc403eddd4930521dc03e409de49",
+      "material_indices": "35286664740e173fcc6a3fb3e36da4345f232547376927ec76539d48cb6f870c",
+      "uv": {
+        "UVMap": "aeb858f6e4184769430488100d3227b5018bd8d390786278614ee836949ea399"
+      },
+      "weights": "8f07e58a993613c9b5878918339c7ea79f853e1cd3c848ed44ab0c3afb75745f",
+      "vertex_groups": [
+        "head.x_018",
+        "brow.L",
+        "brow.R",
+        "lid.lower.L.23",
+        "lid.lower.L.24",
+        "lid.lower.L.25",
+        "lid.lower.L.26",
+        "lid.lower.L.27",
+        "lid.lower.L.28",
+        "lid.lower.L.29",
+        "lid.lower.L.30",
+        "lid.lower.L.31",
+        "lid.upper.L.29",
+        "lid.upper.L.30",
+        "lid.upper.L.27",
+        "lid.upper.L.28",
+        "lid.upper.L.26",
+        "lid.upper.L.24",
+        "lid.upper.L.25",
+        "lid.upper.L.23",
+        "lid.upper.L.20",
+        "lid.upper.L.21",
+        "lid.upper.L.19",
+        "lid.upper.L.16",
+        "lid.upper.L.17",
+        "lid.upper.L.15",
+        "lid.upper.L.11",
+        "lid.upper.L.12",
+        "lid.upper.L.13",
+        "lid.upper.L.07",
+        "lid.upper.L.08",
+        "lid.upper.L.09",
+        "lid.upper.L.06",
+        "lid.upper.L.04",
+        "lid.upper.L.05",
+        "lid.upper.L.03",
+        "lid.lower.L.14",
+        "lid.lower.L.15",
+        "lid.lower.L.11",
+        "lid.lower.L.12",
+        "lid.lower.L.13",
+        "lid.lower.L.16",
+        "lid.lower.L.17",
+        "lid.lower.L.18",
+        "lid.lower.L.19",
+        "lid.surface.L.2.13",
+        "lid.surface.L.2.12",
+        "lid.surface.L.2.14",
+        "lid.lower.R.08",
+        "lid.lower.R.09",
+        "lid.lower.R.07",
+        "lid.lower.R.05",
+        "lid.lower.R.06",
+        "lid.lower.R.03",
+        "lid.lower.R.04",
+        "lid.lower.R.02",
+        "lid.upper.R.02",
+        "lid.upper.R.03",
+        "lid.upper.R.04",
+        "lid.upper.R.05",
+        "lid.upper.R.06",
+        "lid.upper.R.07",
+        "lid.upper.R.08",
+        "lid.upper.R.09",
+        "lid.upper.R.11",
+        "lid.upper.R.12",
+        "lid.upper.R.15",
+        "lid.upper.R.16",
+        "lid.upper.R.17",
+        "lid.upper.R.20",
+        "lid.upper.R.21",
+        "lid.upper.R.19",
+        "lid.upper.R.24",
+        "lid.upper.R.25",
+        "lid.upper.R.23",
+        "lid.upper.R.26",
+        "lid.upper.R.27",
+        "lid.upper.R.28",
+        "lid.lower.R.17",
+        "lid.lower.R.18",
+        "lid.lower.R.20",
+        "lid.lower.R.21",
+        "lid.lower.R.19",
+        "lid.lower.R.16",
+        "lid.lower.R.15",
+        "lid.lower.R.13",
+        "lid.lower.R.14",
+        "lid.surface.R.2.11",
+        "lid.surface.R.2.12",
+        "lid.surface.R.2.10",
+        "lid.lower.L.22",
+        "lid.upper.R.13",
+        "lid.lower.R.10",
+        "lid.upper.L.31",
+        "lid.upper.L.22",
+        "lid.upper.L.18",
+        "lid.upper.L.14",
+        "lid.upper.L.10",
+        "lid.upper.L.01",
+        "lid.upper.L.02",
+        "lid.lower.R.01",
+        "lid.upper.R.01",
+        "lid.upper.R.10",
+        "lid.upper.R.14",
+        "lid.upper.R.18",
+        "lid.upper.R.22",
+        "lid.upper.R.29"
+      ],
+      "matrix_world": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.009999999776482582,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "materials": [
+        "tex_eyelashes"
+      ]
+    },
+    "hair.mesh.000_tex_hair1_0": {
+      "vertices": 1009,
+      "polygons": 1676,
+      "loops": 5028,
+      "positions": "b41173b9fc4ba583d593dfbb48c4cdea150e56d7f3e523c003f6341ef0f0e5b9",
+      "edges": "65dfd6281bb7468d75dfda4a900b1ff18c4cd79530a401e01f172a66714a1597",
+      "loop_vertices": "6475135f6b2b330b5c78ab11e5efe292c6ee8eb13002f6263d6a4ef42ffe3abc",
+      "material_indices": "43ee68939d15b371cdccb07de4094d65e3eb47bf573673d5a8ea8416bca6a96f",
+      "uv": {
+        "UVMap": "376dc32a79f7d1189b653bf4b0584aa7e66af28c6184c6d5ac164c9ba6aa8d2f"
+      },
+      "weights": "01f4282db7c05e05d903eb7f385a61b6f105a4717b8112ce329cd2ca60b5a8c6",
+      "vertex_groups": [
+        "head.x_018",
+        "hair.a.000_019",
+        "hair.a.001_020",
+        "hair.a.002_021",
+        "hair.a.003_022",
+        "hair.b.000_023",
+        "hair.b.001_024",
+        "hair.b.002_025",
+        "hair.c.000_026",
+        "hair.c.001_027",
+        "hair.c.002_028"
+      ],
+      "matrix_world": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.009999999776482582,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "materials": [
+        "tex_hair1"
+      ]
+    },
+    "hair_band_tex_band_0": {
+      "vertices": 340,
+      "polygons": 448,
+      "loops": 1344,
+      "positions": "46d84c33da9faae961aacb0b0354e5dfefcf636d31b4a835f25cdfc5331d1b3a",
+      "edges": "9c46133840370d240d3ebd7696f16549baa90e0ba6d7587e8f8856fc60abef7f",
+      "loop_vertices": "1688beda6dd223de80d18ef63f88254e3d21f0484a4d8901602eb4a90434267b",
+      "material_indices": "7b4fc1a8dbe6b6121f16ada516e2ac27e02964716bacea5fb7d07cf30595948e",
+      "uv": {
+        "UVMap": "dad086def4d4c1b9795cd33cefa69fc7049c52490a3e6f5f57ccdd3350d8d27e"
+      },
+      "weights": "47baa88be6d1434d49ca02c4b57beac0ca0fe36b5ed9cf56142635bb5b153d13",
+      "vertex_groups": [
+        "hair.h.012_0120",
+        "hair.h.013_0121",
+        "hair.i.012_0134",
+        "hair.i.013_0115"
+      ],
+      "matrix_world": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.009999999776482582,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "materials": [
+        "tex_band"
+      ]
+    },
+    "hightlight_hightlight_0": {
+      "vertices": 96,
+      "polygons": 32,
+      "loops": 96,
+      "positions": "9637e51169442b1703d648f3aaef3737c9810cc9ec1864ad131cefddec4fad6f",
+      "edges": "c647ae0ad51c28257ff98553d99c1ad957e41ba893930233648206bc649db7b5",
+      "loop_vertices": "4d332933618739fa5c2be64ea9724802aabd263c227f76452b1f648a5634bcf4",
+      "material_indices": "38723a2e5e8a17aa7950dc008209944e898f69a7bd10a23c839d341e935fd5ca",
+      "uv": {},
+      "weights": "15e902f02e766a742a769c174a4aace8d41403b2e093f7d92b63e6ad2cc6042d",
+      "vertex_groups": [
+        "head.x_018",
+        "eye.L",
+        "eye.R"
+      ],
+      "matrix_world": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.009999999776482582,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "materials": [
+        "hightlight"
+      ]
+    },
+    "long_gloves_tex_glove_0": {
+      "vertices": 3142,
+      "polygons": 5128,
+      "loops": 15384,
+      "positions": "0fc9dc7851d626b9dbbc5fe8b08838200fc0b0f8539b2f818999a8c335f89f0e",
+      "edges": "5d48775bfb2a55d4b01c3313bac841153f01e47eb2d6f56123d989b1f0bd2337",
+      "loop_vertices": "e3678c722172bcdd387d9b7688aa22b577834092ea846446ed085ad5b639d8b8",
+      "material_indices": "a326071b606f974bb57c48d4d6abaf80088a83c113ba4c361568e9f827406fbb",
+      "uv": {
+        "UVMap": "28641251aec0e569e55ad8ee2eaa36747cf3a774b2b9c4a907d1fdebbca073d8"
+      },
+      "weights": "8e4d26f151a07b8c312fed2b419fba3718e82de27b0f41d0cf9d56e68a863940",
+      "vertex_groups": [
+        "arm_stretch.l_0158",
+        "forearm_stretch.l_0159",
+        "forearm_twist.l_0176",
+        "hand.l_0160",
+        "c_index1.l_0173",
+        "c_index2.l_0174",
+        "c_index3.l_0155",
+        "c_middle1.l_0170",
+        "c_middle2.l_0171",
+        "c_middle3.l_0172",
+        "c_pinky1.l_0164",
+        "c_pinky2.l_0165",
+        "c_pinky3.l_0166",
+        "c_ring1.l_0167",
+        "c_ring2.l_0168",
+        "c_ring3.l_0169",
+        "c_thumb1.l_0161",
+        "c_thumb2.l_0162",
+        "c_thumb3.l_0163",
+        "arm_stretch.r_0137",
+        "forearm_stretch.r_0138",
+        "forearm_twist.r_0135",
+        "hand.r_0139",
+        "c_index1.r_0152",
+        "c_index2.r_0153",
+        "c_index3.r_0154",
+        "c_middle1.r_0149",
+        "c_middle2.r_0150",
+        "c_middle3.r_0151",
+        "c_pinky1.r_0143",
+        "c_pinky2.r_0144",
+        "c_pinky3.r_0145",
+        "c_ring1.r_0146",
+        "c_ring2.r_0147",
+        "c_ring3.r_0148",
+        "c_thumb1.r_0140",
+        "c_thumb2.r_0141",
+        "c_thumb3.r_0142"
+      ],
+      "matrix_world": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.009999999776482582,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "materials": [
+        "tex_glove"
+      ]
+    },
+    "NurbsPath.001_tex_hair3_0": {
+      "vertices": 270,
+      "polygons": 448,
+      "loops": 1344,
+      "positions": "d90aeaa804d99be06b50fed7848a58603c18a9b0fb82edde5603b29da6e2adc4",
+      "edges": "dadcfb34f58824dc2831018deb458405f60f5b2e51021194a92f64de4ba53ec1",
+      "loop_vertices": "7a0529b096da551b0f06afffc1ab982debd6cdb771abe0db8b48a1c9de7e3154",
+      "material_indices": "7b4fc1a8dbe6b6121f16ada516e2ac27e02964716bacea5fb7d07cf30595948e",
+      "uv": {
+        "UVMap": "07e82cbbea9bf71a5dd5e7e171210ac740d5deef188a794ccaaa9421af8c8da9"
+      },
+      "weights": "41115b63f503d7b2c6feb41aa2777f70d5ab2c7ac43a0a366df2a4d3726c3d03",
+      "vertex_groups": [
+        "head.x_018"
+      ],
+      "matrix_world": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.009999999776482582,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "materials": [
+        "tex_hair3"
+      ]
+    },
+    "NurbsPath.002_tex_hair4_0": {
+      "vertices": 1030,
+      "polygons": 1576,
+      "loops": 4728,
+      "positions": "5b1f6601ddc52c75f8e58e6f86102ef67d3840284a1741e90e8ef4e5c8a2e3f2",
+      "edges": "2d674020a1521ae21b0ee54ba3f252d1f5a33cadc9e51dadc569d6420eab27ec",
+      "loop_vertices": "6ab0e9e3d6de24315227474e5eefd3a455a93555d82b934430176341a35fa3a6",
+      "material_indices": "71f7630d28ce02cc1ca8b15c44953f84a39e1478445395247ae04dfa213c0efc",
+      "uv": {
+        "UVMap": "917889e5e19e7059e50e77f4e1a5b290ca5769a5be0fa4c89634b1e74aab67e1"
+      },
+      "weights": "f7ed7b4a5c04406b16bf84dfe5cfe8d65f86eba60b7bd9968697ee78508cbfda",
+      "vertex_groups": [
+        "head.x_018",
+        "hair.d.002_096",
+        "hair.e.002_099"
+      ],
+      "matrix_world": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.009999999776482582,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "materials": [
+        "tex_hair4"
+      ]
+    },
+    "NurbsPath.003_tex_hair5_0": {
+      "vertices": 901,
+      "polygons": 1320,
+      "loops": 3960,
+      "positions": "15007062a6870d7817f8335accc83d6376659e8729c612a3ef8740f5c0289b5a",
+      "edges": "0bc589b959b26a78f7c35635e947eb5fda06f32277270df97bff23618454fe61",
+      "loop_vertices": "ac140c2e3422c73bf26d4ef1c5af1b160e4a04ed1e09619892599411b0d38dff",
+      "material_indices": "569cfdcf139f915b2f1dabdfbc86320ec1c7d54e28c12a93132dae8ef4f91c83",
+      "uv": {
+        "UVMap": "674b53dd0e87749d21dc4a7dea82c0e306a9ca35b8e59c7f8a4513c0a88b0caa"
+      },
+      "weights": "3bc072bed7d78336842493d82c88a334ca7292071f02d1c1a009d412a8d19514",
+      "vertex_groups": [
+        "head.x_018",
+        "hair.f.003_0103",
+        "hair.g.003_0107"
+      ],
+      "matrix_world": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.009999999776482582,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "materials": [
+        "tex_hair5"
+      ]
+    },
+    "NurbsPath.006_tex_hair6_0": {
+      "vertices": 1127,
+      "polygons": 1680,
+      "loops": 5040,
+      "positions": "0034b406358cdca904f07c9f0701e61121b04861700f45ba93ff73a9208cbc9a",
+      "edges": "340dc3da96ac5b89d8e6bbf5e680967a8baa8b685ef5b0280da8d04d9fc31d34",
+      "loop_vertices": "b9566d0031a83f51e506183f387c333e99d25d8b8ee1db24f92dc77a4ff8de6e",
+      "material_indices": "53192a12b178687771e5a607727c1a7102e095fc05515a6e827a4eeff529a280",
+      "uv": {
+        "UVMap": "2b2117955c54d9e239ba3e2b25687702fb2d36905c26566e687ccdc3f49de3c5"
+      },
+      "weights": "95b81565104c587c9fcfb9b084342842b1906fb9af8377f7e7acb318920fffd9",
+      "vertex_groups": [
+        "head.x_018",
+        "hair.h.001_0109",
+        "hair.h.002_0110",
+        "hair.h.003_0111",
+        "hair.h.004_0112",
+        "hair.h.005_0113",
+        "hair.h.006_0114",
+        "hair.h.007_094",
+        "hair.h.008_0116",
+        "hair.h.009_0117",
+        "hair.h.010_0118",
+        "hair.h.011_0119",
+        "hair.h.012_0120",
+        "hair.h.013_0121",
+        "hair.i.001_0123",
+        "hair.i.002_0124",
+        "hair.i.003_0125",
+        "hair.i.004_0126",
+        "hair.i.005_0127",
+        "hair.i.006_0128",
+        "hair.i.007_0129",
+        "hair.i.008_0130",
+        "hair.i.009_0131",
+        "hair.i.010_0132",
+        "hair.i.011_0133",
+        "hair.i.012_0134",
+        "hair.i.013_0115"
+      ],
+      "matrix_world": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.009999999776482582,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "materials": [
+        "tex_hair6"
+      ]
+    },
+    "NurbsPath.007_tex_hair7_0": {
+      "vertices": 4049,
+      "polygons": 6788,
+      "loops": 20364,
+      "positions": "edc67b0bd72cbfbc21f23f1a1c0cf4ffb0aa81bcb756cf3a13046e54f7734a6a",
+      "edges": "4788cf5fb778ab53c02d8def25d5a5eada032cc8a320d90abe6b6b7f74ddad77",
+      "loop_vertices": "5b3661fa13a21da8c3e66f40999f5b988136a5dba788ef9f149ee94aac110824",
+      "material_indices": "195b3d3c052eaf5e08bab31816684d331935cc62181b4de62d1e881509be06fd",
+      "uv": {
+        "UVMap": "a30aee4437c353424cc743ea7139468e48633966c14e3e11bf644893b9e63047"
+      },
+      "weights": "580c5533b2659f22fcd5f87e39e3e076953e04f2397c3b83c71fd4893c57c30e",
+      "vertex_groups": [
+        "head.x_018",
+        "hair.j.000_061",
+        "hair.j.001_062",
+        "hair.j.002_063",
+        "hair.j.003_064",
+        "hair.j.004_065",
+        "hair.j.005_066",
+        "hair.j.006_067",
+        "hair.j.007_068",
+        "hair.k.000_053",
+        "hair.k.001_054",
+        "hair.k.002_055",
+        "hair.k.003_056",
+        "hair.k.004_057",
+        "hair.k.005_058",
+        "hair.k.006_059",
+        "hair.k.007_060",
+        "hair.l.000_045",
+        "hair.l.001_046",
+        "hair.l.002_047",
+        "hair.l.003_048",
+        "hair.l.004_049",
+        "hair.l.005_050",
+        "hair.l.006_051",
+        "hair.l.007_052",
+        "hair.m.000_037",
+        "hair.m.001_038",
+        "hair.m.002_039",
+        "hair.m.003_040",
+        "hair.m.004_041",
+        "hair.m.005_042",
+        "hair.m.006_043",
+        "hair.m.007_044",
+        "hair.n.000_029",
+        "hair.n.001_030",
+        "hair.n.002_031",
+        "hair.n.003_032",
+        "hair.n.004_033",
+        "hair.n.005_034",
+        "hair.n.006_035",
+        "hair.n.007_036",
+        "hair.o.000_069",
+        "hair.o.001_070",
+        "hair.o.002_071",
+        "hair.o.003_072",
+        "hair.o.004_073",
+        "hair.o.005_074",
+        "hair.o.006_075",
+        "hair.o.007_076",
+        "hair.p.000_077",
+        "hair.p.001_078",
+        "hair.p.002_079",
+        "hair.p.003_080",
+        "hair.p.004_081",
+        "hair.p.005_082",
+        "hair.p.006_083",
+        "hair.p.007_084",
+        "hair.q.000_085",
+        "hair.q.001_086",
+        "hair.q.002_087",
+        "hair.q.003_088",
+        "hair.q.004_089",
+        "hair.q.005_090",
+        "hair.q.006_091",
+        "hair.q.007_092"
+      ],
+      "matrix_world": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.009999999776482582,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "materials": [
+        "tex_hair7"
+      ]
+    },
+    "NurbsPath_tex_hair2_0": {
+      "vertices": 270,
+      "polygons": 448,
+      "loops": 1344,
+      "positions": "2a2e9f5434652681cc06d0f50ac5da295591efa86e40b6119bb62397c02178a3",
+      "edges": "9499de36e4e9ab22fe9d847fef2b6013674a90cbabfd1b9a86e49d0bb4099692",
+      "loop_vertices": "61dfe794919ad46fe2a8755aafbbf5e1f5e18837e23b834e2f2df824ce890b45",
+      "material_indices": "7b4fc1a8dbe6b6121f16ada516e2ac27e02964716bacea5fb7d07cf30595948e",
+      "uv": {
+        "UVMap": "1c940a1cd0e6fcc6c675ad47bd6fab59456310668e2103dc2e95e2eea7e7a2a8"
+      },
+      "weights": "41115b63f503d7b2c6feb41aa2777f70d5ab2c7ac43a0a366df2a4d3726c3d03",
+      "vertex_groups": [
+        "head.x_018"
+      ],
+      "matrix_world": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.009999999776482582,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "materials": [
+        "tex_hair2"
+      ]
+    },
+    "shirt.001_tex_shirt_0": {
+      "vertices": 420,
+      "polygons": 672,
+      "loops": 2016,
+      "positions": "47229cdd81299b1b30dd8ac7bc233abb6c628b54a5ac93d416efa48762b5a6e5",
+      "edges": "b62ead6c4445b0c4a72617be0ab7bdbf7c274f51fdf4556825b1dcfce087015a",
+      "loop_vertices": "e808b0e6fbe56ff2b9f2ec10b3bc4eb5396d320d85800200521133cd4fb30e0e",
+      "material_indices": "bb270d5b01806f81489807bec2d3a07d07d3df4ecca188d9390cf4323ddbbee1",
+      "uv": {
+        "UVMap": "ace613ea10cb19f431b71e88ebe9acbe17436f6a7066532d34323f49ad481061"
+      },
+      "weights": "2f00db8020bb20248683ba76a27aa6b0b904f3f20835a81fd85ac1d2e6c3d99c",
+      "vertex_groups": [
+        "root.x_01",
+        "cloth.a.000_0221",
+        "cloth.a.001_0222",
+        "cloth.a.002_0223",
+        "cloth.b.000_0227",
+        "cloth.b.001_0228",
+        "cloth.b.002_00",
+        "cloth.c.000_0182",
+        "cloth.c.001_0183",
+        "cloth.c.002_0184",
+        "cloth.d.000_0188",
+        "cloth.d.001_0189",
+        "cloth.d.002_0190",
+        "cloth.e.000_0191",
+        "cloth.e.001_0192",
+        "cloth.e.002_0193",
+        "cloth.f.000_0197",
+        "cloth.f.001_0198",
+        "cloth.f.002_0199",
+        "cloth.g.000_0203",
+        "cloth.g.001_0204",
+        "cloth.g.002_0205",
+        "cloth.h.000_0206",
+        "cloth.h.001_0207",
+        "cloth.h.002_0208",
+        "cloth.i.000_0212",
+        "cloth.i.001_0213",
+        "cloth.i.002_0214",
+        "spine_01.x_014"
+      ],
+      "matrix_world": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.009999999776482582,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "materials": [
+        "tex_shirt"
+      ]
+    },
+    "shirt_tex_shirt_0": {
+      "vertices": 1975,
+      "polygons": 2771,
+      "loops": 8313,
+      "positions": "47c0db42f7be21075006bcfe10a278e9377cd8611ce801844ccd6850e8e184ec",
+      "edges": "926ff91f726fe7bfdd3051c621b70c52b0cc5e6dc3cb9a97182033609e0ed9e0",
+      "loop_vertices": "dcd703f701069c50bd0b4bce6526ab2bc6561d561d0a5a2f3b7e2afeb8f718a0",
+      "material_indices": "484ee0967bf8a71f70e4ef4352f8ae8b280d3e72fab54ce00fabe347aab70033",
+      "uv": {
+        "UVMap": "f778c4bdebc9cfb5bc1283c744e6d80c3bcba8728762b21438a9119b14433605"
+      },
+      "weights": "c86adb149f9e97d40c735843faa8258be0e1534cf8648d9b608fa527c527bb51",
+      "vertex_groups": [
+        "root.x_01",
+        "cloth.a.003_0224",
+        "cloth.a.004_0225",
+        "cloth.a.005_0226",
+        "cloth.b.000_0227",
+        "cloth.b.003_0229",
+        "cloth.b.004_0230",
+        "cloth.b.005_0231",
+        "cloth.b.006_0232",
+        "cloth.b.007_0233",
+        "cloth.b.008_0215",
+        "cloth.c.003_0185",
+        "cloth.c.004_0186",
+        "cloth.c.005_0187",
+        "cloth.e.003_0194",
+        "cloth.e.004_0175",
+        "cloth.e.005_0196",
+        "cloth.f.003_0200",
+        "cloth.f.004_0201",
+        "cloth.f.005_0202",
+        "cloth.h.003_0209",
+        "cloth.h.004_0210",
+        "cloth.h.005_0211",
+        "cloth.i.003_0195",
+        "cloth.i.004_0216",
+        "cloth.i.005_0217",
+        "cloth.i.006_0218",
+        "cloth.i.007_0219",
+        "cloth.i.008_0220",
+        "spine_01.x_014",
+        "spine_02.x_015",
+        "spine_03.x_016",
+        "neck.x_017",
+        "shoulder.l_0157",
+        "arm_stretch.l_0158",
+        "arm_twist.l_0177",
+        "forearm_stretch.l_0159",
+        "forearm_twist.l_0176",
+        "shoulder.r_0136",
+        "arm_stretch.r_0137",
+        "arm_twist.r_0156",
+        "forearm_stretch.r_0138",
+        "forearm_twist.r_0135"
+      ],
+      "matrix_world": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.009999999776482582,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "materials": [
+        "tex_shirt"
+      ]
+    },
+    "shoes_tex_shoes_0": {
+      "vertices": 708,
+      "polygons": 936,
+      "loops": 2808,
+      "positions": "e83d2fd7bb02cce2f68a60343c0b2a067213a7645b9255715559777090348cb5",
+      "edges": "91a91af606085ab53cc8b2831da111ba927c6f9947732d1bed079569a2468a32",
+      "loop_vertices": "bde104adcfb1fe44dfc316e39fd2835a79d4f7e74fd43c460bb91465b1019b00",
+      "material_indices": "72ec3570721e1cd0ad873a1c8c7ed33ce0e5e849551dfb84aa781082657160e9",
+      "uv": {
+        "UVMap": "d066c3ebeae3818062608a77c9cbb9fe9bffd92f387e0dcd151ccb8e4194ad50"
+      },
+      "weights": "afaeb9e4407345fc98883731835545110fb47edf097a2b60e11460818d9589cd",
+      "vertex_groups": [
+        "leg_stretch.l_03",
+        "foot.l_04",
+        "toes_01.l_05",
+        "leg_twist.l_06",
+        "leg_stretch.r_09",
+        "foot.r_010",
+        "toes_01.r_011",
+        "leg_twist.r_012"
+      ],
+      "matrix_world": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.009999999776482582,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "materials": [
+        "tex_shoes"
+      ]
+    },
+    "shoulder_armor_tex_shoulderarmor_0": {
+      "vertices": 1032,
+      "polygons": 1432,
+      "loops": 4296,
+      "positions": "a7a6a29eb65053087bf2c3e7317dabaf17dde0dac8e7f9b2ff717b1e7e9eb107",
+      "edges": "5b0b836c33c8155a170ef3ffb07e23273d1778d977fca6cd8d7d7beb50d5ae55",
+      "loop_vertices": "a00c5fe91557fd1c64b22359c0a968105b198eace29fde1b2b0f2677dbe746ff",
+      "material_indices": "9d5c75a5bc689ce375e06e8530236708ecb04300792ba9a385c1ca44e432b556",
+      "uv": {
+        "UVMap": "d406ce686a7bb2c9058ec5675a905c5f9a33cbe02e1cef93da902b62804326af"
+      },
+      "weights": "7cee02d305b46078c27f1501d13ed130d59106f267c51552625604de6a88e162",
+      "vertex_groups": [
+        "neck.x_017",
+        "head.x_018",
+        "shoulder.r_0136",
+        "arm_stretch.r_0137",
+        "arm_twist.r_0156"
+      ],
+      "matrix_world": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.009999999776482582,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "materials": [
+        "tex_shoulderarmor"
+      ]
+    },
+    "stocking_tex_sock_0": {
+      "vertices": 2265,
+      "polygons": 3398,
+      "loops": 10194,
+      "positions": "745abe42659b03c0169cc859352aba0b1c4079b07883f7166b6758cc2b9443d5",
+      "edges": "ffdc472f79e48a38a03146555836ed73201d5823afa379569d6c76dad8ef1610",
+      "loop_vertices": "38d413fda087751d2ed74127cf5ed0a59e5d958ad4ed222fb740a11f88ee5805",
+      "material_indices": "76df03b2216dd767abeb62e8e98f53442ad37e097738422f41e117e42653ff7c",
+      "uv": {
+        "UVMap": "83750abcbe050cb8a733091b8174c18c1fa90904f68c666b502305812a19160a"
+      },
+      "weights": "967e8fc02e2889bc4559e419af3d7d3ceb9bb2029224b0f13ebacbadfd9a06b2",
+      "vertex_groups": [
+        "thigh_stretch.l_02",
+        "leg_stretch.l_03",
+        "foot.l_04",
+        "leg_twist.l_06",
+        "thigh_twist.l_07",
+        "thigh_stretch.r_08",
+        "leg_stretch.r_09",
+        "foot.r_010",
+        "leg_twist.r_012",
+        "thigh_twist.r_013"
+      ],
+      "matrix_world": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.009999999776482582,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "materials": [
+        "tex_sock"
+      ]
+    },
+    "tail_tex_tail_0": {
+      "vertices": 516,
+      "polygons": 777,
+      "loops": 2331,
+      "positions": "f66af573963772727da155ad8d290f6feff82fb745db55ecb02ea4fc632fa338",
+      "edges": "0d417672354ead723686c0a391444f322fe9d49d2a56114253e3db1992649eb0",
+      "loop_vertices": "5f9473d68966ff84464b4f3d72ca8e4d0de26229e0c29752ab312a50fe03f403",
+      "material_indices": "477fe78c84fe865607dc24007157da6de9d46dec940210c61ecc235ebe75846f",
+      "uv": {
+        "UVMap": "8ab8755a6f8a61bb31da33f91d16b276a12539aaa4c6ef47395c088ecb5e80e4"
+      },
+      "weights": "07e0346276203ba209d6c2429c598b6ba0e53ec5913516a60ecf2133a8c11d1a",
+      "vertex_groups": [
+        "root.x_01",
+        "c_tail_00.x_0178",
+        "c_tail_01.x_0179",
+        "c_tail_02.x_0180",
+        "c_tail_03.x_0181"
+      ],
+      "matrix_world": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.009999999776482582,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "materials": [
+        "tex_tail"
+      ]
+    },
+    "underwear_tex_underwear_0": {
+      "vertices": 139,
+      "polygons": 224,
+      "loops": 672,
+      "positions": "f1c548547e948060b0bbe2944858accbfb9e890d09b7f7e43e3d9010d431a6fc",
+      "edges": "e46575a8aa0184b25cce73df5435ff3a7f2f12729083970a8202c327841da5dc",
+      "loop_vertices": "5d7c4a5e33eeb79ab7ed2666caaa422ca45c8f1f0d710f810ad356ffe244cb5a",
+      "material_indices": "d54f02b97ed5bc2a642756268b41d4b8f7a077e73224e1580d22436834a14db5",
+      "uv": {
+        "UVMap": "e0bb6dbf4d52cb8698b6f51fc3042d27e1155e279fdfd9be9ac97f9090fae1a8"
+      },
+      "weights": "6d7ffbf339031cb664d471db253944bb26256ac34b40fbf3574d7545c49686b4",
+      "vertex_groups": [
+        "root.x_01",
+        "spine_01.x_014",
+        "thigh_stretch.l_02",
+        "thigh_twist.l_07",
+        "thigh_stretch.r_08",
+        "thigh_twist.r_013"
+      ],
+      "matrix_world": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.009999999776482582,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "materials": [
+        "tex_underwear"
+      ]
+    }
+  },
+  "materials": {
+    "tex_armor": [
+      {
+        "mesh": "armor_tex_armor_0",
+        "faces": 1014,
+        "uv_min": [
+          0.014094400219619274,
+          0.011795878410339355
+        ],
+        "uv_max": [
+          0.9943605065345764,
+          0.9589785933494568
+        ],
+        "outside_0_1": 0,
+        "nodes": [
+          {
+            "type": "BSDF_PRINCIPLED",
+            "name": "Principled BSDF"
+          },
+          {
+            "type": "OUTPUT_MATERIAL",
+            "name": "Material Output"
+          },
+          {
+            "type": "NORMAL_MAP",
+            "name": "Normal Map"
+          }
+        ]
+      }
+    ],
+    "tex_belt": [
+      {
+        "mesh": "belt_tex_belt_0",
+        "faces": 492,
+        "uv_min": [
+          0.023915700614452362,
+          0.018010616302490234
+        ],
+        "uv_max": [
+          0.9884387254714966,
+          0.9555032849311829
+        ],
+        "outside_0_1": 0,
+        "nodes": [
+          {
+            "type": "BSDF_PRINCIPLED",
+            "name": "Principled BSDF"
+          },
+          {
+            "type": "OUTPUT_MATERIAL",
+            "name": "Material Output"
+          },
+          {
+            "type": "NORMAL_MAP",
+            "name": "Normal Map"
+          }
+        ]
+      }
+    ],
+    "tex_skin2": [
+      {
+        "mesh": "body_tex_skin2_0",
+        "faces": 512,
+        "uv_min": [
+          0.5290330052375793,
+          0.4565340280532837
+        ],
+        "uv_max": [
+          0.7623295783996582,
+          0.5334909558296204
+        ],
+        "outside_0_1": 0,
+        "nodes": [
+          {
+            "type": "BSDF_PRINCIPLED",
+            "name": "Principled BSDF"
+          },
+          {
+            "type": "OUTPUT_MATERIAL",
+            "name": "Material Output"
+          },
+          {
+            "type": "NORMAL_MAP",
+            "name": "Normal Map"
+          }
+        ]
+      }
+    ],
+    "tex_skin": [
+      {
+        "mesh": "body_tex_skin_0",
+        "faces": 30494,
+        "uv_min": [
+          0.016413500532507896,
+          0.012894690036773682
+        ],
+        "uv_max": [
+          0.983426570892334,
+          0.9885492920875549
+        ],
+        "outside_0_1": 0,
+        "nodes": [
+          {
+            "type": "BSDF_PRINCIPLED",
+            "name": "Principled BSDF"
+          },
+          {
+            "type": "OUTPUT_MATERIAL",
+            "name": "Material Output"
+          },
+          {
+            "type": "NORMAL_MAP",
+            "name": "Normal Map"
+          }
+        ]
+      }
+    ],
+    "tex_bow": [
+      {
+        "mesh": "bow_tex_bow_0",
+        "faces": 732,
+        "uv_min": [
+          0.015451000072062016,
+          0.028724193572998047
+        ],
+        "uv_max": [
+          0.9844954609870911,
+          0.9807313680648804
+        ],
+        "outside_0_1": 0,
+        "nodes": [
+          {
+            "type": "BSDF_PRINCIPLED",
+            "name": "Principled BSDF"
+          },
+          {
+            "type": "OUTPUT_MATERIAL",
+            "name": "Material Output"
+          },
+          {
+            "type": "NORMAL_MAP",
+            "name": "Normal Map"
+          }
+        ]
+      }
+    ],
+    "tex_cuff": [
+      {
+        "mesh": "cuff.001_tex_cuff_0",
+        "faces": 568,
+        "uv_min": [
+          0.014009100385010242,
+          0.03639727830886841
+        ],
+        "uv_max": [
+          0.9457681179046631,
+          0.972980797290802
+        ],
+        "outside_0_1": 0,
+        "nodes": [
+          {
+            "type": "BSDF_PRINCIPLED",
+            "name": "Principled BSDF"
+          },
+          {
+            "type": "OUTPUT_MATERIAL",
+            "name": "Material Output"
+          },
+          {
+            "type": "NORMAL_MAP",
+            "name": "Normal Map"
+          }
+        ]
+      },
+      {
+        "mesh": "cuff_tex_cuff_0",
+        "faces": 568,
+        "uv_min": [
+          0.014009100385010242,
+          0.03639727830886841
+        ],
+        "uv_max": [
+          0.9457681179046631,
+          0.972980797290802
+        ],
+        "outside_0_1": 0,
+        "nodes": [
+          {
+            "type": "BSDF_PRINCIPLED",
+            "name": "Principled BSDF"
+          },
+          {
+            "type": "OUTPUT_MATERIAL",
+            "name": "Material Output"
+          },
+          {
+            "type": "NORMAL_MAP",
+            "name": "Normal Map"
+          }
+        ]
+      }
+    ],
+    "tex_ear2": [
+      {
+        "mesh": "ear.001_tex_ear2_0",
+        "faces": 624,
+        "uv_min": [
+          0.023739300668239594,
+          0.10728597640991211
+        ],
+        "uv_max": [
+          0.9888111352920532,
+          0.9509999752044678
+        ],
+        "outside_0_1": 0,
+        "nodes": [
+          {
+            "type": "BSDF_PRINCIPLED",
+            "name": "Principled BSDF"
+          },
+          {
+            "type": "OUTPUT_MATERIAL",
+            "name": "Material Output"
+          },
+          {
+            "type": "NORMAL_MAP",
+            "name": "Normal Map"
+          }
+        ]
+      }
+    ],
+    "tex_ear": [
+      {
+        "mesh": "ear_tex_ear_0",
+        "faces": 474,
+        "uv_min": [
+          0.03589769825339317,
+          0.03342229127883911
+        ],
+        "uv_max": [
+          0.927160382270813,
+          0.9571541547775269
+        ],
+        "outside_0_1": 0,
+        "nodes": [
+          {
+            "type": "BSDF_PRINCIPLED",
+            "name": "Principled BSDF"
+          },
+          {
+            "type": "OUTPUT_MATERIAL",
+            "name": "Material Output"
+          },
+          {
+            "type": "NORMAL_MAP",
+            "name": "Normal Map"
+          }
+        ]
+      }
+    ],
+    "tex_eyes": [
+      {
+        "mesh": "eye_tex_eyes_0",
+        "faces": 224,
+        "uv_min": [
+          0.08501649647951126,
+          0.02352142333984375
+        ],
+        "uv_max": [
+          0.9057382941246033,
+          0.9756350517272949
+        ],
+        "outside_0_1": 0,
+        "nodes": [
+          {
+            "type": "BSDF_PRINCIPLED",
+            "name": "Principled BSDF"
+          },
+          {
+            "type": "OUTPUT_MATERIAL",
+            "name": "Material Output"
+          },
+          {
+            "type": "NORMAL_MAP",
+            "name": "Normal Map"
+          }
+        ]
+      }
+    ],
+    "tex_eyelashes": [
+      {
+        "mesh": "eyelashes_tex_eyelashes_0",
+        "faces": 3488,
+        "uv_min": [
+          0.02149830013513565,
+          0.28122299909591675
+        ],
+        "uv_max": [
+          0.9721457362174988,
+          0.7336446642875671
+        ],
+        "outside_0_1": 0,
+        "nodes": [
+          {
+            "type": "BSDF_PRINCIPLED",
+            "name": "Principled BSDF"
+          },
+          {
+            "type": "OUTPUT_MATERIAL",
+            "name": "Material Output"
+          },
+          {
+            "type": "NORMAL_MAP",
+            "name": "Normal Map"
+          }
+        ]
+      }
+    ],
+    "tex_hair1": [
+      {
+        "mesh": "hair.mesh.000_tex_hair1_0",
+        "faces": 1676,
+        "uv_min": [
+          0.013496600091457367,
+          0.018700480461120605
+        ],
+        "uv_max": [
+          0.9876358509063721,
+          0.940204381942749
+        ],
+        "outside_0_1": 0,
+        "nodes": [
+          {
+            "type": "BSDF_PRINCIPLED",
+            "name": "Principled BSDF"
+          },
+          {
+            "type": "OUTPUT_MATERIAL",
+            "name": "Material Output"
+          },
+          {
+            "type": "NORMAL_MAP",
+            "name": "Normal Map"
+          }
+        ]
+      }
+    ],
+    "tex_band": [
+      {
+        "mesh": "hair_band_tex_band_0",
+        "faces": 448,
+        "uv_min": [
+          0.05076960101723671,
+          0.06001472473144531
+        ],
+        "uv_max": [
+          0.9740673303604126,
+          0.9317500591278076
+        ],
+        "outside_0_1": 0,
+        "nodes": [
+          {
+            "type": "BSDF_PRINCIPLED",
+            "name": "Principled BSDF"
+          },
+          {
+            "type": "OUTPUT_MATERIAL",
+            "name": "Material Output"
+          },
+          {
+            "type": "NORMAL_MAP",
+            "name": "Normal Map"
+          }
+        ]
+      }
+    ],
+    "hightlight": [
+      {
+        "mesh": "hightlight_hightlight_0",
+        "faces": 32,
+        "uv_min": null,
+        "uv_max": null,
+        "outside_0_1": 0,
+        "nodes": [
+          {
+            "type": "BSDF_PRINCIPLED",
+            "name": "Principled BSDF"
+          },
+          {
+            "type": "OUTPUT_MATERIAL",
+            "name": "Material Output"
+          },
+          {
+            "type": "NORMAL_MAP",
+            "name": "Normal Map"
+          }
+        ]
+      }
+    ],
+    "tex_glove": [
+      {
+        "mesh": "long_gloves_tex_glove_0",
+        "faces": 5128,
+        "uv_min": [
+          0.027903499081730843,
+          0.007262706756591797
+        ],
+        "uv_max": [
+          0.9918285608291626,
+          0.9714252948760986
+        ],
+        "outside_0_1": 0,
+        "nodes": [
+          {
+            "type": "BSDF_PRINCIPLED",
+            "name": "Principled BSDF"
+          },
+          {
+            "type": "OUTPUT_MATERIAL",
+            "name": "Material Output"
+          },
+          {
+            "type": "NORMAL_MAP",
+            "name": "Normal Map"
+          }
+        ]
+      }
+    ],
+    "tex_hair3": [
+      {
+        "mesh": "NurbsPath.001_tex_hair3_0",
+        "faces": 448,
+        "uv_min": [
+          0.16185200214385986,
+          0.018541395664215088
+        ],
+        "uv_max": [
+          0.8214961886405945,
+          0.9568859934806824
+        ],
+        "outside_0_1": 0,
+        "nodes": [
+          {
+            "type": "BSDF_PRINCIPLED",
+            "name": "Principled BSDF"
+          },
+          {
+            "type": "OUTPUT_MATERIAL",
+            "name": "Material Output"
+          },
+          {
+            "type": "NORMAL_MAP",
+            "name": "Normal Map"
+          }
+        ]
+      }
+    ],
+    "tex_hair4": [
+      {
+        "mesh": "NurbsPath.002_tex_hair4_0",
+        "faces": 1576,
+        "uv_min": [
+          0.012759000062942505,
+          0.059567928314208984
+        ],
+        "uv_max": [
+          0.9824013710021973,
+          0.9887385368347168
+        ],
+        "outside_0_1": 0,
+        "nodes": [
+          {
+            "type": "BSDF_PRINCIPLED",
+            "name": "Principled BSDF"
+          },
+          {
+            "type": "OUTPUT_MATERIAL",
+            "name": "Material Output"
+          },
+          {
+            "type": "NORMAL_MAP",
+            "name": "Normal Map"
+          }
+        ]
+      }
+    ],
+    "tex_hair5": [
+      {
+        "mesh": "NurbsPath.003_tex_hair5_0",
+        "faces": 1320,
+        "uv_min": [
+          0.031051000580191612,
+          0.030473291873931885
+        ],
+        "uv_max": [
+          0.9840001463890076,
+          0.9658199548721313
+        ],
+        "outside_0_1": 0,
+        "nodes": [
+          {
+            "type": "BSDF_PRINCIPLED",
+            "name": "Principled BSDF"
+          },
+          {
+            "type": "OUTPUT_MATERIAL",
+            "name": "Material Output"
+          },
+          {
+            "type": "NORMAL_MAP",
+            "name": "Normal Map"
+          }
+        ]
+      }
+    ],
+    "tex_hair6": [
+      {
+        "mesh": "NurbsPath.006_tex_hair6_0",
+        "faces": 1680,
+        "uv_min": [
+          0.062467098236083984,
+          0.0423504114151001
+        ],
+        "uv_max": [
+          0.8726692199707031,
+          0.9700630307197571
+        ],
+        "outside_0_1": 0,
+        "nodes": [
+          {
+            "type": "BSDF_PRINCIPLED",
+            "name": "Principled BSDF"
+          },
+          {
+            "type": "OUTPUT_MATERIAL",
+            "name": "Material Output"
+          },
+          {
+            "type": "NORMAL_MAP",
+            "name": "Normal Map"
+          }
+        ]
+      }
+    ],
+    "tex_hair7": [
+      {
+        "mesh": "NurbsPath.007_tex_hair7_0",
+        "faces": 6788,
+        "uv_min": [
+          0.024247799068689346,
+          0.011254310607910156
+        ],
+        "uv_max": [
+          0.9385517835617065,
+          0.9913156628608704
+        ],
+        "outside_0_1": 0,
+        "nodes": [
+          {
+            "type": "BSDF_PRINCIPLED",
+            "name": "Principled BSDF"
+          },
+          {
+            "type": "OUTPUT_MATERIAL",
+            "name": "Material Output"
+          },
+          {
+            "type": "NORMAL_MAP",
+            "name": "Normal Map"
+          }
+        ]
+      }
+    ],
+    "tex_hair2": [
+      {
+        "mesh": "NurbsPath_tex_hair2_0",
+        "faces": 448,
+        "uv_min": [
+          0.16681399941444397,
+          0.014275074005126953
+        ],
+        "uv_max": [
+          0.8386103510856628,
+          0.9739981889724731
+        ],
+        "outside_0_1": 0,
+        "nodes": [
+          {
+            "type": "BSDF_PRINCIPLED",
+            "name": "Principled BSDF"
+          },
+          {
+            "type": "OUTPUT_MATERIAL",
+            "name": "Material Output"
+          },
+          {
+            "type": "NORMAL_MAP",
+            "name": "Normal Map"
+          }
+        ]
+      }
+    ],
+    "tex_shirt": [
+      {
+        "mesh": "shirt.001_tex_shirt_0",
+        "faces": 672,
+        "uv_min": [
+          0.01512760017067194,
+          0.018389403820037842
+        ],
+        "uv_max": [
+          0.4780665338039398,
+          0.4028012156486511
+        ],
+        "outside_0_1": 0,
+        "nodes": [
+          {
+            "type": "BSDF_PRINCIPLED",
+            "name": "Principled BSDF"
+          },
+          {
+            "type": "OUTPUT_MATERIAL",
+            "name": "Material Output"
+          },
+          {
+            "type": "NORMAL_MAP",
+            "name": "Normal Map"
+          }
+        ]
+      },
+      {
+        "mesh": "shirt_tex_shirt_0",
+        "faces": 2771,
+        "uv_min": [
+          0.03526480123400688,
+          0.009843111038208008
+        ],
+        "uv_max": [
+          0.9907613396644592,
+          0.9705245494842529
+        ],
+        "outside_0_1": 0,
+        "nodes": [
+          {
+            "type": "BSDF_PRINCIPLED",
+            "name": "Principled BSDF"
+          },
+          {
+            "type": "OUTPUT_MATERIAL",
+            "name": "Material Output"
+          },
+          {
+            "type": "NORMAL_MAP",
+            "name": "Normal Map"
+          }
+        ]
+      }
+    ],
+    "tex_shoes": [
+      {
+        "mesh": "shoes_tex_shoes_0",
+        "faces": 936,
+        "uv_min": [
+          0.005429009906947613,
+          0.03646141290664673
+        ],
+        "uv_max": [
+          0.9803955554962158,
+          0.9840536117553711
+        ],
+        "outside_0_1": 0,
+        "nodes": [
+          {
+            "type": "BSDF_PRINCIPLED",
+            "name": "Principled BSDF"
+          },
+          {
+            "type": "OUTPUT_MATERIAL",
+            "name": "Material Output"
+          },
+          {
+            "type": "NORMAL_MAP",
+            "name": "Normal Map"
+          }
+        ]
+      }
+    ],
+    "tex_shoulderarmor": [
+      {
+        "mesh": "shoulder_armor_tex_shoulderarmor_0",
+        "faces": 1432,
+        "uv_min": [
+          0.015324399806559086,
+          0.016659796237945557
+        ],
+        "uv_max": [
+          0.9927482604980469,
+          0.9591899514198303
+        ],
+        "outside_0_1": 0,
+        "nodes": [
+          {
+            "type": "BSDF_PRINCIPLED",
+            "name": "Principled BSDF"
+          },
+          {
+            "type": "OUTPUT_MATERIAL",
+            "name": "Material Output"
+          },
+          {
+            "type": "NORMAL_MAP",
+            "name": "Normal Map"
+          }
+        ]
+      }
+    ],
+    "tex_sock": [
+      {
+        "mesh": "stocking_tex_sock_0",
+        "faces": 3398,
+        "uv_min": [
+          0.017748799175024033,
+          0.044184982776641846
+        ],
+        "uv_max": [
+          0.988423228263855,
+          0.9949143528938293
+        ],
+        "outside_0_1": 0,
+        "nodes": [
+          {
+            "type": "BSDF_PRINCIPLED",
+            "name": "Principled BSDF"
+          },
+          {
+            "type": "OUTPUT_MATERIAL",
+            "name": "Material Output"
+          },
+          {
+            "type": "NORMAL_MAP",
+            "name": "Normal Map"
+          }
+        ]
+      }
+    ],
+    "tex_tail": [
+      {
+        "mesh": "tail_tex_tail_0",
+        "faces": 777,
+        "uv_min": [
+          0.016865400597453117,
+          0.022898614406585693
+        ],
+        "uv_max": [
+          0.9804219007492065,
+          0.9845383763313293
+        ],
+        "outside_0_1": 0,
+        "nodes": [
+          {
+            "type": "BSDF_PRINCIPLED",
+            "name": "Principled BSDF"
+          },
+          {
+            "type": "OUTPUT_MATERIAL",
+            "name": "Material Output"
+          },
+          {
+            "type": "NORMAL_MAP",
+            "name": "Normal Map"
+          }
+        ]
+      }
+    ],
+    "tex_underwear": [
+      {
+        "mesh": "underwear_tex_underwear_0",
+        "faces": 224,
+        "uv_min": [
+          0.0,
+          0.0
+        ],
+        "uv_max": [
+          0.9999982118606567,
+          0.953940212726593
+        ],
+        "outside_0_1": 0,
+        "nodes": [
+          {
+            "type": "BSDF_PRINCIPLED",
+            "name": "Principled BSDF"
+          },
+          {
+            "type": "OUTPUT_MATERIAL",
+            "name": "Material Output"
+          },
+          {
+            "type": "NORMAL_MAP",
+            "name": "Normal Map"
+          }
+        ]
+      }
+    ]
+  }
+}

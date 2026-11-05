@@ -3,7 +3,9 @@
 Рабочая папка — `C:\Julia`. Актуальный итог: [REPORT_RU.md](../../docs/raphtalia/REPORT_RU.md).
 Текущая модель после этапа моргания: **429 deform bones, 15 TEST Actions**. Сохранены исходные 241 кость, 11 прежних клипов, IK/FK, управление глазами/бровями и исправленные веса тела/одежды. Добавлены 188 костей век и локальной поверхности, независимые параметры моргания и четыре диагностических клипа. Исходный `Raphtalia.fbx` и резервные копии сохраняются.
 
-Основной desktop теперь воспроизводит эти 15 клипов. Сборка, управление, архитектура, результаты и ограничения материалов: [runtime_audit.md](../../docs/raphtalia/runtime_audit.md). Быстрая проверка: `julia_desktop/julia_desktop.exe`, клавиши 1–4 — моргание, Space — pause/play, PgUp/PgDn — clip, X — exact bind, F/B — лицо/общий вид. `--verify-animations output_directory` проверяет именно desktop. Исходные карты этой модели пока отсутствуют; импортированные однотонные материалы не являются восстановленной текстурированной внешностью.
+Основной desktop воспроизводит эти 15 клипов. Сборка, управление и архитектура: [runtime_audit.md](../../docs/raphtalia/runtime_audit.md). Быстрая проверка: `julia_desktop/julia_desktop.exe`, клавиши 1–4 — моргание, Space — pause/play, PgUp/PgDn — clip, X — exact bind, F/B — лицо/общий вид. `--verify-animations output_directory` проверяет именно desktop. **5 ноября 2026 восстановлены 24 карты 4K по референсу Newtaw, подключены 26 материалов, обновлены BLEND/FBX и runtime assets.** [Анализ, превью и проверки текстур](../../docs/raphtalia/texturing/REPORT_RU.md).
+
+Текстуры: `restore_reference_textures.py` восстанавливает PNG из сохранённого публичного манифеста; `texture_materials.py` подключает карты в BLEND; `texture_fbx.py` переносит только material/texture records без повторного bake анимаций; `verify_texturing.py` проверяет точную сохранность; `texture_evidence.py` собирает превью. Для повторной сборки FBX используйте `--source` с **нетекстурированным FBX из pre_texturing ZIP**. Для BLEND можно передать `--input` из того же архива. Исходные контрольные суммы сохранены в `docs/raphtalia/texturing/backup_manifest.json`.
 
 ## Runtime глаз — 22 октября 2026
 

@@ -1,0 +1,43 @@
+{
+  "base": "build/raphtalia_tools/texturing/Raphtalia_before.blend",
+  "candidate": "assets/models/Raphtalia_prepared.blend",
+  "base_sha256": "c1c0db17b06cdf1d0c621dbaa1916e6a452e50464d8baab2155e44f7aea897c6",
+  "candidate_sha256": "6f3eb9ae68d9d16912b0c3d84a6f4972e407c0d9626b5616bfad8de51fca18ac",
+  "checks": {
+    "bones": true,
+    "pose_constraints": true,
+    "actions": true,
+    "drivers": true,
+    "meshes": true,
+    "weights": true,
+    "object_constraints": true,
+    "evaluated_neutral_vertices_exact": true,
+    "24_images_4k_packed": true,
+    "texture_files_match_manifest": true,
+    "26_material_bindings": true,
+    "28_meshes": true,
+    "429_bones_15_actions": true
+  },
+  "all_pass": true,
+  "meshes": 28,
+  "vertices": 42041,
+  "faces": 68944,
+  "bones": 429,
+  "actions": [
+    "TEST_blink_gaze",
+    "TEST_blink_head",
+    "TEST_blink_independent",
+    "TEST_blink_natural",
+    "TEST_brows_wrist",
+    "TEST_deep_body_cloth",
+    "TEST_elbows_90",
+    "TEST_eyes_ears",
+    "TEST_fingers_35",
+    "TEST_hair_tail_cloth",
+    "TEST_head_torso",
+    "TEST_knees_90",
+    "TEST_practical_ranges",
+    "TEST_shoulders_hips_ankles",
+    "TEST_toes_30"
+  ]
+}

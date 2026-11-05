@@ -1,0 +1,13 @@
+{
+  "meshes": 28,
+  "materials": 26,
+  "clips": 15,
+  "texture_slots": 25,
+  "missing_files": [],
+  "runtime_textured_meshes": 27,
+  "runtime_total_meshes": 28,
+  "runtime_bones": 429,
+  "runtime_clips": 15,
+  "desktop_smoke_test": "PASS: orbit, zoom, pan, 120 frames",
+  "desktop_eye_verification": "PASS: 65 framebuffer images, including independent blink and gaze"
+}

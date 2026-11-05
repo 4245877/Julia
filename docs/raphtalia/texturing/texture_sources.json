@@ -1,0 +1,560 @@
+{
+  "reference": "https://skfb.ly/ouUGR",
+  "canonical_reference": "https://sketchfab.com/3d-models/raphtalia-the-rising-of-the-shield-hero-4b283bf024c3405ea6b8a9c68d0e1c5b",
+  "author": "Newtaw",
+  "method": "Lossless colour maps restored from the public reference viewer; no generated artwork or geometry downloaded.",
+  "maps": [
+    {
+      "material": "tex_band",
+      "file": "assets/textures/raphtalia/tex_band.png",
+      "size": [
+        4096,
+        4096
+      ],
+      "mode": "RGB",
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "03e03c33198277d4fb8d94d1915e8d04149d2c4222963be61d5bf38b52cf5098",
+      "source_bytes_sha256": "1c2d58f81b94cf5560f84e1a2c0ac1b179499b34349fb4ff903a6f48862a5cf5",
+      "public_pixel_layout": {
+        "pv": 1,
+        "pk": 19966
+      },
+      "uv_orientation": "Raster adapted to the unchanged local FBX UV V direction",
+      "source_texture_uid": "31ba1d0d27fe4c9f9938920aaa95b380",
+      "source_url": "https://media.sketchfab.com/models/4b283bf024c3405ea6b8a9c68d0e1c5b/655e0e0d1a0f47649cc29e4dbd816550/textures/31ba1d0d27fe4c9f9938920aaa95b380/dcb9656f9f13437191bebe804b0a0252.png",
+      "source_mode": "RGBA"
+    },
+    {
+      "material": "tex_hair4",
+      "file": "assets/textures/raphtalia/tex_hair4.png",
+      "size": [
+        4096,
+        4096
+      ],
+      "mode": "RGB",
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "9044ba1f36c27122491de87aabf2b7f06f699eff3d37a0ea8c2d9569b73cf321",
+      "source_bytes_sha256": "c1d82e35b9f841841c02f62a56ba6433cf9f52621ebb442c5624e566f618a3a6",
+      "public_pixel_layout": {
+        "pv": 1,
+        "pk": 90813
+      },
+      "uv_orientation": "Raster adapted to the unchanged local FBX UV V direction",
+      "source_texture_uid": "49dd74d73fd84ee3b9516d9486fd6e97",
+      "source_url": "https://media.sketchfab.com/models/4b283bf024c3405ea6b8a9c68d0e1c5b/655e0e0d1a0f47649cc29e4dbd816550/textures/49dd74d73fd84ee3b9516d9486fd6e97/2eaa41f77a4e439991efef76fcdb073a.png",
+      "source_mode": "RGB"
+    },
+    {
+      "material": "tex_shoulderarmor",
+      "file": "assets/textures/raphtalia/tex_shoulderarmor.png",
+      "size": [
+        4096,
+        4096
+      ],
+      "mode": "RGB",
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "f989281f24be6f520e04bd42f990e45797544591e4e7aa303c48dec8462577a5",
+      "source_bytes_sha256": "09d7380d47624661bf5f8c3dcfba59ab162bc9278fe50b26969c786f8904078b",
+      "public_pixel_layout": {
+        "pv": 1,
+        "pk": 31341
+      },
+      "uv_orientation": "Raster adapted to the unchanged local FBX UV V direction",
+      "source_texture_uid": "3992e94c2a804312b32e845274184aa5",
+      "source_url": "https://media.sketchfab.com/models/4b283bf024c3405ea6b8a9c68d0e1c5b/655e0e0d1a0f47649cc29e4dbd816550/textures/3992e94c2a804312b32e845274184aa5/dbc1651c701949a9ac97205feb3ae686.png",
+      "source_mode": "RGB"
+    },
+    {
+      "material": "tex_skin",
+      "file": "assets/textures/raphtalia/tex_skin.png",
+      "size": [
+        4096,
+        4096
+      ],
+      "mode": "RGBA",
+      "alpha_range": [
+        251,
+        255
+      ],
+      "sha256": "db6d1a887740caef9d645d7143fb79c92d5fe7fa65db27e515337d5c025dd169",
+      "source_bytes_sha256": "7dca4713b815488ca27791ad3e98f9cb05c080fc06c64a65ff54991b82409a45",
+      "public_pixel_layout": {
+        "pv": 1,
+        "pk": 52003
+      },
+      "uv_orientation": "Raster adapted to the unchanged local FBX UV V direction",
+      "source_texture_uid": "e749a33580514abea6b8cef5bd0e21d1",
+      "source_url": "https://media.sketchfab.com/models/4b283bf024c3405ea6b8a9c68d0e1c5b/655e0e0d1a0f47649cc29e4dbd816550/textures/e749a33580514abea6b8cef5bd0e21d1/1d667f95b5f94966b816616b995def36.png",
+      "source_mode": "RGBA"
+    },
+    {
+      "material": "tex_hair2",
+      "file": "assets/textures/raphtalia/tex_hair2.png",
+      "size": [
+        4096,
+        4096
+      ],
+      "mode": "RGB",
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "4e02f69099099d3866c82937b3e2f408d63bb762c7e0e982a8334ec16f0e96a3",
+      "source_bytes_sha256": "a40880bd8311b6302ec8d707f736a63beb96e057c63c080f73ba40ed5afa3030",
+      "public_pixel_layout": {
+        "pv": 1,
+        "pk": 36121
+      },
+      "uv_orientation": "Raster adapted to the unchanged local FBX UV V direction",
+      "source_texture_uid": "2c776779479043d59351f93cd22e6a2e",
+      "source_url": "https://media.sketchfab.com/models/4b283bf024c3405ea6b8a9c68d0e1c5b/655e0e0d1a0f47649cc29e4dbd816550/textures/2c776779479043d59351f93cd22e6a2e/6d44f1cb575c43928c64bfafef27ad79.png",
+      "source_mode": "RGBA"
+    },
+    {
+      "material": "tex_armor",
+      "file": "assets/textures/raphtalia/tex_armor.png",
+      "size": [
+        4096,
+        4096
+      ],
+      "mode": "RGB",
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "e5372ff0109b0d479b4df6100cab37c792b79f50282f11bacfec0e3aad4d46af",
+      "source_bytes_sha256": "e199798159940cda44f343147e77c00bc6e7b14101909cc7bb6e96f8b3cb1123",
+      "public_pixel_layout": {
+        "pv": 1,
+        "pk": 70875
+      },
+      "uv_orientation": "Raster adapted to the unchanged local FBX UV V direction",
+      "source_texture_uid": "614f3d0bef9c4eef89a0a52550d09384",
+      "source_url": "https://media.sketchfab.com/models/4b283bf024c3405ea6b8a9c68d0e1c5b/655e0e0d1a0f47649cc29e4dbd816550/textures/614f3d0bef9c4eef89a0a52550d09384/4c85225e98e64972b04ca048e103c729.png",
+      "source_mode": "RGB"
+    },
+    {
+      "material": "tex_hair3",
+      "file": "assets/textures/raphtalia/tex_hair3.png",
+      "size": [
+        4096,
+        4096
+      ],
+      "mode": "RGB",
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "29e00e1fd2cf6c1c8586c25f37eb20b92b30f777f79fce260bebcdd5c063daeb",
+      "source_bytes_sha256": "51e942ce612f39540d0f4ab8f08c6a6b5505336a66f946d904d8b354e3ff155f",
+      "public_pixel_layout": {
+        "pv": 1,
+        "pk": 179887
+      },
+      "uv_orientation": "Raster adapted to the unchanged local FBX UV V direction",
+      "source_texture_uid": "8cc29fb3b6de43eaaab0a02b45999103",
+      "source_url": "https://media.sketchfab.com/models/4b283bf024c3405ea6b8a9c68d0e1c5b/655e0e0d1a0f47649cc29e4dbd816550/textures/8cc29fb3b6de43eaaab0a02b45999103/6d6ae966a0e6415387de5b85933ff3f2.png",
+      "source_mode": "RGB"
+    },
+    {
+      "material": "tex_hair6",
+      "file": "assets/textures/raphtalia/tex_hair6.png",
+      "size": [
+        4096,
+        4096
+      ],
+      "mode": "RGB",
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "c010056e44ffb96b8bcacc2c4855fe19909360699e1bd7887f242749b217af41",
+      "source_bytes_sha256": "19a8b56cdcf78114a658f1ca6509417eb0d7e63e0e13d530bfd220700d854349",
+      "public_pixel_layout": {
+        "pv": 1,
+        "pk": 217751
+      },
+      "uv_orientation": "Raster adapted to the unchanged local FBX UV V direction",
+      "source_texture_uid": "10b0f0ca3d944a2c97a9d301b41efbee",
+      "source_url": "https://media.sketchfab.com/models/4b283bf024c3405ea6b8a9c68d0e1c5b/655e0e0d1a0f47649cc29e4dbd816550/textures/10b0f0ca3d944a2c97a9d301b41efbee/05a3745dd1a140d5a0ca9329fb1e5456.png",
+      "source_mode": "RGB"
+    },
+    {
+      "material": "tex_underwear",
+      "file": "assets/textures/raphtalia/tex_underwear.png",
+      "size": [
+        4096,
+        4096
+      ],
+      "mode": "RGB",
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "52afc1a07f290874c3b4b22a621ac3e13abbfe5bea982fb88c1c854eb4af5850",
+      "source_bytes_sha256": "1b4cd82d250b5a89a0d2e89b410644076da319b180a2893c502e78850b175c5b",
+      "public_pixel_layout": {
+        "pv": 1,
+        "pk": 183933
+      },
+      "uv_orientation": "Raster adapted to the unchanged local FBX UV V direction",
+      "source_texture_uid": "3f60051e0b7a4dc8a8b6e6dabc1129c3",
+      "source_url": "https://media.sketchfab.com/models/4b283bf024c3405ea6b8a9c68d0e1c5b/655e0e0d1a0f47649cc29e4dbd816550/textures/3f60051e0b7a4dc8a8b6e6dabc1129c3/a90fe72a8d014cbca43ebecf9d552f09.png",
+      "source_mode": "P"
+    },
+    {
+      "material": "tex_cuff",
+      "file": "assets/textures/raphtalia/tex_cuff.png",
+      "size": [
+        4096,
+        4096
+      ],
+      "mode": "RGB",
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "54fa7d845517cfb8e0c27e49b2f9b9af53b3c71ecfab6a261c4ab7ed3028805f",
+      "source_bytes_sha256": "29a2920b40212ff7ba35546416639163d4c35000d15c5b8e87cba9a0b539e7d1",
+      "public_pixel_layout": {
+        "pv": 1,
+        "pk": 191698
+      },
+      "uv_orientation": "Raster adapted to the unchanged local FBX UV V direction",
+      "source_texture_uid": "5d2d00798f0941abb1c89e0190d6f46d",
+      "source_url": "https://media.sketchfab.com/models/4b283bf024c3405ea6b8a9c68d0e1c5b/655e0e0d1a0f47649cc29e4dbd816550/textures/5d2d00798f0941abb1c89e0190d6f46d/bcef5c9e50c944ef88de11869f166c73.png",
+      "source_mode": "RGB"
+    },
+    {
+      "material": "tex_hair5",
+      "file": "assets/textures/raphtalia/tex_hair5.png",
+      "size": [
+        4096,
+        4096
+      ],
+      "mode": "RGB",
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "2c6703891f8a1c77b63ce8789ccf055846c467b0743284c09160d0c5808b0448",
+      "source_bytes_sha256": "6c3aa87068e14123b2e8f4fe06daa66b9e2531c4076739526e20ab2e02fb1e29",
+      "public_pixel_layout": {
+        "pv": 1,
+        "pk": 155317
+      },
+      "uv_orientation": "Raster adapted to the unchanged local FBX UV V direction",
+      "source_texture_uid": "c1b6ca2ef551460cb971b42e57dc37c2",
+      "source_url": "https://media.sketchfab.com/models/4b283bf024c3405ea6b8a9c68d0e1c5b/655e0e0d1a0f47649cc29e4dbd816550/textures/c1b6ca2ef551460cb971b42e57dc37c2/69ca99ef5d564367b28eeab3ac373a0d.png",
+      "source_mode": "RGBA"
+    },
+    {
+      "material": "tex_hair1",
+      "file": "assets/textures/raphtalia/tex_hair1.png",
+      "size": [
+        4096,
+        4096
+      ],
+      "mode": "RGB",
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "cd3d3949c3a467c6800cc9530f950e178da0341f3885876c655196315f500154",
+      "source_bytes_sha256": "4688beb1134a05f478b4ed3b0c78bbcc763024ef5ec9db2dbf5ddef0d0e61431",
+      "public_pixel_layout": {
+        "pv": 1,
+        "pk": 249320
+      },
+      "uv_orientation": "Raster adapted to the unchanged local FBX UV V direction",
+      "source_texture_uid": "5a4b8634b5444a6fa804faca5822f38d",
+      "source_url": "https://media.sketchfab.com/models/4b283bf024c3405ea6b8a9c68d0e1c5b/655e0e0d1a0f47649cc29e4dbd816550/textures/5a4b8634b5444a6fa804faca5822f38d/7785ccfd3be84549802bc85208f02a0d.png",
+      "source_mode": "RGB"
+    },
+    {
+      "material": "tex_shoes",
+      "file": "assets/textures/raphtalia/tex_shoes.png",
+      "size": [
+        4096,
+        4096
+      ],
+      "mode": "RGB",
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "e7a34bbac71a8343698a695a56cd162c824f243946e96d3cf5e777a940b11bdc",
+      "source_bytes_sha256": "02b2a47ce4f44d8a6415659dfe7596fcff49effacfb9c1d42a9a09a821260fb7",
+      "public_pixel_layout": {
+        "pv": 1,
+        "pk": 146775
+      },
+      "uv_orientation": "Raster adapted to the unchanged local FBX UV V direction",
+      "source_texture_uid": "1d87c2d99879430d86dd69256a309fcc",
+      "source_url": "https://media.sketchfab.com/models/4b283bf024c3405ea6b8a9c68d0e1c5b/655e0e0d1a0f47649cc29e4dbd816550/textures/1d87c2d99879430d86dd69256a309fcc/fb7c7b96859940fc8a84033560872e5a.png",
+      "source_mode": "RGBA"
+    },
+    {
+      "material": "tex_hair7",
+      "file": "assets/textures/raphtalia/tex_hair7.png",
+      "size": [
+        4096,
+        4096
+      ],
+      "mode": "RGB",
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "d0f1a36629883312d993a245f6605e71c921babc69b65988a1888ddcc719fb02",
+      "source_bytes_sha256": "0fd493310660057b71f7f9d319382b6559ae1c5547ace6169997afa388e267f7",
+      "public_pixel_layout": {
+        "pv": 1,
+        "pk": 35260
+      },
+      "uv_orientation": "Raster adapted to the unchanged local FBX UV V direction",
+      "source_texture_uid": "53ffee2206f74b81bf38f7782997db4f",
+      "source_url": "https://media.sketchfab.com/models/4b283bf024c3405ea6b8a9c68d0e1c5b/655e0e0d1a0f47649cc29e4dbd816550/textures/53ffee2206f74b81bf38f7782997db4f/97a586224aa5494db03289bc93dae50a.png",
+      "source_mode": "RGBA"
+    },
+    {
+      "material": "tex_sock",
+      "file": "assets/textures/raphtalia/tex_sock.png",
+      "size": [
+        4096,
+        4096
+      ],
+      "mode": "RGB",
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "02dd8940ad460b23d4cdf5915c463b280c1913bf8997d2b1ba10db923c183760",
+      "source_bytes_sha256": "364549d2a52560609128b95a326acefd0b0d70fff28f2bd6a3033ad6ec3cef4c",
+      "public_pixel_layout": {
+        "pv": 1,
+        "pk": 210474
+      },
+      "uv_orientation": "Raster adapted to the unchanged local FBX UV V direction",
+      "source_texture_uid": "cb9ce0f61b324953ad3e8a21c811dc6b",
+      "source_url": "https://media.sketchfab.com/models/4b283bf024c3405ea6b8a9c68d0e1c5b/655e0e0d1a0f47649cc29e4dbd816550/textures/cb9ce0f61b324953ad3e8a21c811dc6b/8a8b8e7cb8964a788b3e04b1b0ba9361.png",
+      "source_mode": "RGBA"
+    },
+    {
+      "material": "tex_glove",
+      "file": "assets/textures/raphtalia/tex_glove.png",
+      "size": [
+        4096,
+        4096
+      ],
+      "mode": "RGB",
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "ab8bd5e5db9b9c15f32b5431a1349b5071e8f86afbf2326d903fb572573790ca",
+      "source_bytes_sha256": "16ae88ba4dd24421cfbd69e899f8669d3574b3642f6a942bacec8b7be55ed27b",
+      "public_pixel_layout": {
+        "pv": 1,
+        "pk": 13486
+      },
+      "uv_orientation": "Raster adapted to the unchanged local FBX UV V direction",
+      "source_texture_uid": "907173a241a54bc9b70a32da9e384242",
+      "source_url": "https://media.sketchfab.com/models/4b283bf024c3405ea6b8a9c68d0e1c5b/655e0e0d1a0f47649cc29e4dbd816550/textures/907173a241a54bc9b70a32da9e384242/a713b347fc4f45df8a7876949eabfb35.png",
+      "source_mode": "RGBA"
+    },
+    {
+      "material": "tex_bow",
+      "file": "assets/textures/raphtalia/tex_bow.png",
+      "size": [
+        4096,
+        4096
+      ],
+      "mode": "RGB",
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "796c6fd0122bf582bd0acb1713fefbc286d74880dab142ee7388bc75092fb2e1",
+      "source_bytes_sha256": "279ce1af0112fc65aafb43b2251012d00e064a30787d3fa88abeeab3a4eecb72",
+      "public_pixel_layout": {
+        "pv": 1,
+        "pk": 222161
+      },
+      "uv_orientation": "Raster adapted to the unchanged local FBX UV V direction",
+      "source_texture_uid": "9f1bc49472854827b3a93a223b424d3f",
+      "source_url": "https://media.sketchfab.com/models/4b283bf024c3405ea6b8a9c68d0e1c5b/655e0e0d1a0f47649cc29e4dbd816550/textures/9f1bc49472854827b3a93a223b424d3f/4c279fd918c943aeabe87ff08498cde9.png",
+      "source_mode": "RGB"
+    },
+    {
+      "material": "tex_eyes",
+      "file": "assets/textures/raphtalia/tex_eyes.png",
+      "size": [
+        4096,
+        4096
+      ],
+      "mode": "RGB",
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "05ec85aa058049a5fb30800b2d89c2515fa73afdfd2bfd51fd87cabd8801d205",
+      "source_bytes_sha256": "2583a41fea1817426b92bd59eb278fbf759307452784c93212a1bd950ac2e313",
+      "public_pixel_layout": {
+        "pv": 1,
+        "pk": 134827
+      },
+      "uv_orientation": "Raster adapted to the unchanged local FBX UV V direction",
+      "source_texture_uid": "9d21c9ff14244d2a82558f85501a8d77",
+      "source_url": "https://media.sketchfab.com/models/4b283bf024c3405ea6b8a9c68d0e1c5b/655e0e0d1a0f47649cc29e4dbd816550/textures/9d21c9ff14244d2a82558f85501a8d77/36e6f2d807ac408cb1e06811fae3e5a7.png",
+      "source_mode": "RGB"
+    },
+    {
+      "material": "tex_eyelashes",
+      "file": "assets/textures/raphtalia/tex_eyelashes.png",
+      "size": [
+        4096,
+        4096
+      ],
+      "mode": "RGB",
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "fdeb7b001e57c12156f6e6dfbbac5000b2e4ef5df8a04bc9bdc63ea9f6f1749c",
+      "source_bytes_sha256": "57f6a9a841d4d1549ad988b7fe381f01ed28dfc0dfec8b78e0583e553c3b6f21",
+      "public_pixel_layout": {
+        "pv": 1,
+        "pk": 41575
+      },
+      "uv_orientation": "Raster adapted to the unchanged local FBX UV V direction",
+      "source_texture_uid": "255b35dc5e4049b496b75649eff6b643",
+      "source_url": "https://media.sketchfab.com/models/4b283bf024c3405ea6b8a9c68d0e1c5b/655e0e0d1a0f47649cc29e4dbd816550/textures/255b35dc5e4049b496b75649eff6b643/4c1ac695894048739744509f6af124b0.png",
+      "source_mode": "RGB"
+    },
+    {
+      "material": "tex_ear2",
+      "file": "assets/textures/raphtalia/tex_ear2.png",
+      "size": [
+        4096,
+        4096
+      ],
+      "mode": "RGB",
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "6a44e428b8784033430fb22f756fe6feb8a20b3e604fea301c5f4bc9b3f5605c",
+      "source_bytes_sha256": "13ff0e7ccfa5c7d95d5db80aed00c18fc8effe0d78e317e77f02e94b08d7753b",
+      "public_pixel_layout": {
+        "pv": 1,
+        "pk": 73085
+      },
+      "uv_orientation": "Raster adapted to the unchanged local FBX UV V direction",
+      "source_texture_uid": "ba1dd538d10b44e0bfc96e75a9275f1a",
+      "source_url": "https://media.sketchfab.com/models/4b283bf024c3405ea6b8a9c68d0e1c5b/655e0e0d1a0f47649cc29e4dbd816550/textures/ba1dd538d10b44e0bfc96e75a9275f1a/b1979fef94fe49bbb939f2bb0cca3ed7.png",
+      "source_mode": "RGB"
+    },
+    {
+      "material": "tex_ear",
+      "file": "assets/textures/raphtalia/tex_ear.png",
+      "size": [
+        4096,
+        4096
+      ],
+      "mode": "RGB",
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "204fbe6393d8ad0df8d01ded8ba20ec2f540c710225dad08ac851b0eff3a846e",
+      "source_bytes_sha256": "8200037c2c29c37283596ba22d5cc3c5dcd5b7fba4aae234c0437c71887e509b",
+      "public_pixel_layout": {
+        "pv": 1,
+        "pk": 25413
+      },
+      "uv_orientation": "Raster adapted to the unchanged local FBX UV V direction",
+      "source_texture_uid": "141fb26f39f64596b1261c45d4d3d1e6",
+      "source_url": "https://media.sketchfab.com/models/4b283bf024c3405ea6b8a9c68d0e1c5b/655e0e0d1a0f47649cc29e4dbd816550/textures/141fb26f39f64596b1261c45d4d3d1e6/e665e6ea0f3a4df5ab99c2e54a160908.png",
+      "source_mode": "RGB"
+    },
+    {
+      "material": "tex_shirt",
+      "file": "assets/textures/raphtalia/tex_shirt.png",
+      "size": [
+        4096,
+        4096
+      ],
+      "mode": "RGB",
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "ad98e0ef17d5495d1c61d3b6691356cffe6e8252d195f3c40d9cfb160d9a48a5",
+      "source_bytes_sha256": "a7579fc97ae433a1265f6ec71f865304be9592e7e34bce6cf3894d493ea5c413",
+      "public_pixel_layout": {
+        "pv": 1,
+        "pk": 166032
+      },
+      "uv_orientation": "Raster adapted to the unchanged local FBX UV V direction",
+      "source_texture_uid": "94c2bfc5b66645ba93c6353c73d3aae1",
+      "source_url": "https://media.sketchfab.com/models/4b283bf024c3405ea6b8a9c68d0e1c5b/655e0e0d1a0f47649cc29e4dbd816550/textures/94c2bfc5b66645ba93c6353c73d3aae1/49cb2d4bf7044c12908195aac55cee2b.png",
+      "source_mode": "RGB"
+    },
+    {
+      "material": "tex_tail",
+      "file": "assets/textures/raphtalia/tex_tail.png",
+      "size": [
+        4096,
+        4096
+      ],
+      "mode": "RGB",
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "b51abddee8cffeb4b3f24a5e222bbefc2c29acf724285ae88e5aa48ea1e36866",
+      "source_bytes_sha256": "a5497ff709dc3693ea89a35c6400cd43206da5b451b26a948b543491a67c00a9",
+      "public_pixel_layout": {
+        "pv": 1,
+        "pk": 88487
+      },
+      "uv_orientation": "Raster adapted to the unchanged local FBX UV V direction",
+      "source_texture_uid": "05258a5e21194c11a95d385e5da111f1",
+      "source_url": "https://media.sketchfab.com/models/4b283bf024c3405ea6b8a9c68d0e1c5b/655e0e0d1a0f47649cc29e4dbd816550/textures/05258a5e21194c11a95d385e5da111f1/03e9ce6e1f7345a7b92847561f622175.png",
+      "source_mode": "RGB"
+    },
+    {
+      "material": "tex_belt",
+      "file": "assets/textures/raphtalia/tex_belt.png",
+      "size": [
+        4096,
+        4096
+      ],
+      "mode": "RGB",
+      "alpha_range": [
+        255,
+        255
+      ],
+      "sha256": "4a0f7627b3a230c5382c1beb2c6537deb4085814d542abb94822cfc412f1232f",
+      "source_bytes_sha256": "42999e4ca4f22190f63124720f06901f89c30ba49073cd96f89307af1074dcb3",
+      "public_pixel_layout": {
+        "pv": 1,
+        "pk": 239820
+      },
+      "uv_orientation": "Raster adapted to the unchanged local FBX UV V direction",
+      "source_texture_uid": "6ef3b06b1a6c4b89b6759c4dd54201a4",
+      "source_url": "https://media.sketchfab.com/models/4b283bf024c3405ea6b8a9c68d0e1c5b/655e0e0d1a0f47649cc29e4dbd816550/textures/6ef3b06b1a6c4b89b6759c4dd54201a4/847f8bd39d354f159752abbf45f42859.png",
+      "source_mode": "RGBA"
+    }
+  ]
+}
