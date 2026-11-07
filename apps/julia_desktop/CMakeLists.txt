@@ -16,9 +16,12 @@ endforeach()
 
 # Always refresh resources, even if only a shader/texture changed.
 add_custom_target(julia_desktop_assets ALL
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_SOURCE_DIR}/assets" "${CMAKE_SOURCE_DIR}/julia_desktop/assets"
+    COMMAND ${CMAKE_COMMAND}
+        "-DJULIA_ASSET_SOURCE=${CMAKE_SOURCE_DIR}/assets"
+        "-DJULIA_ASSET_DESTINATION=${CMAKE_SOURCE_DIR}/julia_desktop/assets"
+        -P "${CMAKE_SOURCE_DIR}/cmake/JuliaRuntimeAssets.cmake"
     COMMENT "Updating JULIA runtime assets"
+    VERBATIM
 )
 add_dependencies(julia_desktop julia_desktop_assets)
 

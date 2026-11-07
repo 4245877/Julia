@@ -17,8 +17,6 @@ All paths default to the repository assets except the output directory, which
 defaults to `build/anime-audit/current`.
 `--no-shadows` disables self-shadowing for diagnosis, separating surface-normal
 artifacts from shadow-map artifacts. It does not change the desktop defaults.
-Use `--no-shadows` for a diagnostic comparison separating the normal-based
-lighting from shadow-map self-shadowing; the report records this setting.
 
 Each run requires a real OpenGL 3.3 context with an sRGB-capable, 1000 x 1000,
 8-sample framebuffer. An unsupported configuration fails instead of silently
@@ -55,3 +53,6 @@ checks establish deterministic rendering and valid GL execution; they do not
 automatically prove the absence of perceptual flicker, subpixel line changes,
 self-shadowing artifacts, or skeletal animation artifacts. Inspect the saved
 views and motion snapshots and use the engine for final animated review.
+
+Captures and timing files are disposable outputs. Delete the chosen output
+directory after review; the executable, tests and source assets do not read it.

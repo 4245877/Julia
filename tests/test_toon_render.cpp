@@ -253,6 +253,39 @@ namespace
         JULIA_CHECK(glint.b > matte.b + 0.2f);
     }
 
+    void testInkAlpha(RenderTarget& target, OpenGLRenderer& renderer)
+    {
+        CameraConfig camera;
+        camera.position = {0.0f, 3.0f, 0.1f};
+        camera.target = glm::vec3{0.0f};
+        renderer.setCamera(camera);
+        ToonStyleConfig style;
+        style.outlineWidthPixels = 0.0f;
+        style.selfShadows = false;
+        renderer.beginFrame();
+        const glm::vec3 solidPoint{-0.5f, 0.0f, 0.0f}, holePoint{0.5f, 0.0f, 0.0f};
+        const auto background = target.sample(holePoint, camera);
+        auto material = matteMaterial();
+        material.toonKind = ToonMaterialKind::Ink;
+        material.diffuseColor = {0.015f, 0.02f, 0.025f};
+        material.minFilter = GL_NEAREST;
+        material.magFilter = GL_NEAREST;
+        constexpr std::array<unsigned char, 8> pixels{255, 255, 255, 255, 255, 255, 255, 0};
+        material.diffuseTexture = std::make_shared<GLTexture>(GLTexture::loadFromPixels(pixels.data(), 2, 1, 4));
+        for (const auto mode : {AlphaMode::Mask, AlphaMode::Blend})
+        {
+            material.alphaMode = mode;
+            material.opacity = mode == AlphaMode::Mask ? 0.75f : 0.25f;
+            GLModel model;
+            model.addMesh(horizontalQuad(1.0f, 0.0f, material));
+            draw(renderer, model, style);
+            const auto expected = mode == AlphaMode::Mask ? material.diffuseColor :
+                glm::mix(background, material.diffuseColor, material.opacity);
+            JULIA_CHECK(glm::length(target.sample(solidPoint, camera) - expected) < 0.003f);
+            JULIA_CHECK(glm::length(target.sample(holePoint, camera) - background) < 0.003f);
+        }
+    }
+
     void testMaterialHighlightSeparation(RenderTarget& target, OpenGLRenderer& renderer)
     {
         CameraConfig camera;
@@ -540,6 +573,7 @@ int main()
         glDisable(GL_DITHER);
         testSelfShadowAndAlpha(target, renderer);
         testLightingAndMaterials(target, renderer);
+        testInkAlpha(target, renderer);
         testMaterialHighlightSeparation(target, renderer);
         testLightingMotionStability(target, renderer);
         testPlanarSelfShadowAcne(target, renderer);

@@ -30,6 +30,9 @@ namespace julia::render_opengl
 
     enum class AlphaMode { Opaque, Mask, Blend };
 
+    // Selects the material inputs consumed by the shared shader in each pass.
+    enum class MeshPass { Fill, Shadow, Outline };
+
     // Shader contract: Generic=0, Skin=1, Hair=2, Eye=3, Metal=4,
     // Fabric=5, Leather=6, Ink=7. Profiles affect lighting, never base color.
     enum class ToonMaterialKind
@@ -85,7 +88,7 @@ namespace julia::render_opengl
         GLMesh(GLMesh&& other) noexcept;
         GLMesh& operator=(GLMesh&& other) noexcept;
 
-        void draw(const GLShader& shader) const;
+        void draw(const GLShader& shader, MeshPass pass = MeshPass::Fill) const;
 
         const Bounds& bounds() const
         {

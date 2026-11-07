@@ -11,6 +11,11 @@ cmake-build-*/
 CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
+CMakeUserPresets.json
+.cache/
+.ccache/
+__pycache__/
+*.py[cod]
 
 # vcpkg generated
 vcpkg_installed/
@@ -22,6 +27,16 @@ vcpkg_installed/
 *.pdb
 *.obj
 *.ilk
+*.o
+*.a
+*.so
+*.dylib
+*.pch
+*.exp
 
 # Logs
 *.log
+
+# Audit captures and generated reports belong in build/, not source assets.
+/anime-audit/
+/verification/

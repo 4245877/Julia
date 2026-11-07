@@ -602,7 +602,7 @@ namespace julia::render_opengl
             shader_.setVec3("uShadowParams", shadow.parameters);
             shader_.setBool("uOutlinePass", false);
             shader_.setBool("uShadowPass", true);
-            model.drawOpaque(shader_);
+            model.drawOpaque(shader_, MeshPass::Shadow);
             shader_.setBool("uShadowPass", false);
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, static_cast<GLuint>(previousState.framebuffer));
             glViewport(previousState.viewport[0], previousState.viewport[1],

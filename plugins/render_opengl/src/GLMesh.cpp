@@ -92,6 +92,9 @@ namespace julia::render_opengl
             static_cast<int>(material_.toonKind) > static_cast<int>(ToonMaterialKind::Ink))
             throw std::invalid_argument("Mesh material has invalid toon parameters");
 
+        // Immutable after upload; normalize the groom axis once, not per pass.
+        material_.strandDirection = glm::vec3{glm::normalize(glm::dvec3{material_.strandDirection})};
+
         const auto outlineNormals = buildOutlineNormals(vertices, indices);
         for (std::size_t i = 0; i < vertices.size(); ++i)
             vertices[i].outlineNormal = outlineNormals[i];
@@ -141,25 +144,31 @@ namespace julia::render_opengl
         return *this;
     }
 
-    void GLMesh::draw(const GLShader& shader) const
+    void GLMesh::draw(const GLShader& shader, MeshPass pass) const
     {
         if (vao_ == 0 || indexCount_ == 0)
             return;
 
-        shader.setVec3("uDiffuseColor", material_.diffuseColor);
-        shader.setFloat("uLightResponse", material_.lightResponse);
-        shader.setFloat("uSpecularStrength", material_.specularStrength);
-        shader.setFloat("uRimStrength", material_.rimStrength);
-        shader.setInt("uMaterialKind", static_cast<int>(material_.toonKind));
-        shader.setFloat("uSpecularPower", material_.specularPower);
-        shader.setFloat("uShadowSoftness", material_.shadowSoftness);
-        shader.setVec3("uStrandDirection", glm::vec3{glm::normalize(glm::dvec3{material_.strandDirection})});
-        shader.setFloat("uOutlineScale", material_.outlineScale);
+        if (pass != MeshPass::Shadow)
+            shader.setVec3("uDiffuseColor", material_.diffuseColor);
+        if (pass == MeshPass::Fill)
+        {
+            shader.setFloat("uLightResponse", material_.lightResponse);
+            shader.setFloat("uSpecularStrength", material_.specularStrength);
+            shader.setFloat("uRimStrength", material_.rimStrength);
+            shader.setInt("uMaterialKind", static_cast<int>(material_.toonKind));
+            shader.setFloat("uSpecularPower", material_.specularPower);
+            shader.setFloat("uShadowSoftness", material_.shadowSoftness);
+            shader.setVec3("uStrandDirection", material_.strandDirection);
+        }
+        if (pass != MeshPass::Shadow)
+            shader.setFloat("uOutlineScale", material_.outlineScale);
         shader.setFloat("uOpacity", material_.opacity);
         shader.setFloat("uAlphaCutoff", material_.alphaCutoff);
         shader.setInt("uAlphaMode", static_cast<int>(material_.alphaMode));
 
         const bool hasDiffuseTexture =
+            (pass != MeshPass::Shadow || material_.alphaMode == AlphaMode::Mask) &&
             material_.diffuseTexture &&
             material_.diffuseTexture->valid();
 

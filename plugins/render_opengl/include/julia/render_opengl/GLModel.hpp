@@ -58,7 +58,7 @@ namespace julia::render_opengl
         const std::vector<AnimationClip>& animations() const { return animations_; }
 
         void draw(const GLShader& shader) const;
-        void drawOpaque(const GLShader& shader) const;
+        void drawOpaque(const GLShader& shader, MeshPass pass = MeshPass::Fill) const;
         void drawOutline(const GLShader& shader) const;
         void drawTransparent(const GLShader& shader, const glm::mat4& viewModel) const;
 

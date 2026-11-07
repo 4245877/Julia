@@ -113,16 +113,17 @@ namespace julia::render_opengl
         }
     }
 
-    void GLModel::drawOpaque(const GLShader& shader) const
+    void GLModel::drawOpaque(const GLShader& shader, MeshPass pass) const
     {
         for (const auto& mesh : meshes_)
-            if (!mesh.transparent()) mesh.draw(shader);
+            if (!mesh.transparent()) mesh.draw(shader, pass);
     }
 
     void GLModel::drawOutline(const GLShader& shader) const
     {
         for (const auto& mesh : meshes_)
-            if (!mesh.transparent() && mesh.material().outlineScale > 0.0f) mesh.draw(shader);
+            if (!mesh.transparent() && mesh.material().outlineScale > 0.0f)
+                mesh.draw(shader, MeshPass::Outline);
     }
 
     void GLModel::drawTransparent(const GLShader& shader, const glm::mat4& viewModel) const

@@ -149,6 +149,15 @@ void main()
         return;
     }
 
+    // A uniform material branch: ink needs no shadow PCF or lighting work.
+    // Texture sampling already happened before the nonuniform alpha discard.
+    if (uMaterialKind == 7)
+    {
+        alphaTest(base.a);
+        FragColor = vec4(albedo, alpha);
+        return;
+    }
+
     vec3 normal = safeNormal(vNormal, vec3(0.0, 1.0, 0.0));
     if (!frontFacing) normal = -normal;
     vec3 viewDirection = safeNormal(uViewPos - vWorldPosition, normal);
@@ -260,7 +269,6 @@ void main()
                    albedo * vec3(1.0, 0.97, 0.90);
     color += rimTint * rim * castVisibility * min(max(uRimStrength, 0.0), 0.25) * 0.35;
 
-    if (uMaterialKind == 7) color = albedo; // Authored brows/lashes retain their ink value.
     // Keep derivative evaluation above nonuniform alpha discard, including at
     // hair-card boundaries, where derivatives after discard are undefined.
     alphaTest(base.a);
