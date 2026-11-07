@@ -363,6 +363,7 @@ namespace julia::render_opengl
              {"uViewPos", GL_FLOAT_VEC3}, {"uLightResponse", GL_FLOAT},
              {"uSpecularStrength", GL_FLOAT}, {"uRimStrength", GL_FLOAT},
              {"uSpecularPower", GL_FLOAT}, {"uMaterialKind", GL_INT}, {"uOutlineScale", GL_FLOAT},
+             {"uShadowSoftness", GL_FLOAT}, {"uStrandDirection", GL_FLOAT_VEC3},
              {"uKeyLightDirection", GL_FLOAT_VEC3}, {"uKeyLightColor", GL_FLOAT_VEC3},
              {"uShadowTint", GL_FLOAT_VEC3}, {"uShadowPass", GL_BOOL}, {"uReceiveShadows", GL_BOOL},
              {"uShadowMap", GL_SAMPLER_2D_SHADOW}, {"uLightViewProjection", GL_FLOAT_MAT4},

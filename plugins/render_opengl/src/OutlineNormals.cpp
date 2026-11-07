@@ -1,4 +1,5 @@
 #include "julia/render_opengl/OutlineNormals.hpp"
+#include "julia/render_opengl/SurfaceNormals.hpp"
 
 #include "julia/render_opengl/GLMesh.hpp"
 
@@ -7,6 +8,8 @@
 #include <bit>
 #include <cmath>
 #include <cstddef>
+#include <limits>
+#include <numeric>
 #include <stdexcept>
 #include <unordered_map>
 
@@ -44,7 +47,7 @@ namespace julia::render_opengl
             return value == 0.0f ? 0u : std::bit_cast<std::uint32_t>(value);
         }
 
-        WeldKey weldKey(const GLVertex& vertex)
+        WeldKey positionKey(const GLVertex& vertex)
         {
             WeldKey key;
             for (int component = 0; component < 3; ++component)
@@ -53,6 +56,12 @@ namespace julia::render_opengl
                     throw std::invalid_argument("Outline vertex position is not finite");
                 key.position[static_cast<std::size_t>(component)] = floatKey(vertex.position[component]);
             }
+            return key;
+        }
+
+        WeldKey weldKey(const GLVertex& vertex)
+        {
+            auto key = positionKey(vertex);
 
             struct Influence { int id; double weight; };
             std::array<Influence, 4> influences{};
@@ -173,5 +182,141 @@ namespace julia::render_opengl
                 result.push_back(fallbackNormal(vertices[vertex].normal));
         }
         return result;
+    }
+
+    void rebuildSurfaceNormals(std::vector<GLVertex>& vertices,
+        std::vector<std::uint32_t>& indices, float creaseAngleDegrees)
+    {
+        if (!std::isfinite(creaseAngleDegrees) || creaseAngleDegrees <= 0.0f || creaseAngleDegrees > 180.0f)
+            throw std::invalid_argument("Surface crease angle must be in (0, 180]");
+        if (indices.size() % 3 != 0)
+            throw std::invalid_argument("Surface triangle index count must be divisible by three");
+        for (const auto index : indices)
+            if (index >= vertices.size())
+                throw std::out_of_range("Surface triangle references a missing vertex");
+
+        std::unordered_map<WeldKey, std::size_t, WeldHash> groups;
+        std::vector<std::size_t> groupOfVertex;
+        groups.reserve(vertices.size());
+        groupOfVertex.reserve(vertices.size());
+        for (const auto& vertex : vertices)
+        {
+            // Lighting normals describe the rest surface. UV copies can have
+            // different bone weights while sharing the same rest normal; the
+            // shader transforms each copy independently during animation.
+            const auto [entry, inserted] = groups.try_emplace(positionKey(vertex), groups.size());
+            (void)inserted;
+            groupOfVertex.push_back(entry->second);
+        }
+
+        struct Edge
+        {
+            std::size_t a, b;
+            bool operator==(const Edge&) const = default;
+        };
+        struct EdgeHash
+        {
+            std::size_t operator()(const Edge& edge) const noexcept
+            {
+                return edge.a ^ (edge.b + std::size_t{0x9e3779b9u} + (edge.a << 6) + (edge.a >> 2));
+            }
+        };
+        struct HalfEdge
+        {
+            std::size_t a, b;
+        };
+        std::unordered_map<Edge, std::vector<HalfEdge>, EdgeHash> edges;
+        edges.reserve(indices.size());
+        std::vector<glm::dvec3> directions(indices.size() / 3, glm::dvec3{0.0});
+        std::vector<double> angles(indices.size(), 0.0);
+        std::vector<std::size_t> parent(indices.size());
+        std::iota(parent.begin(), parent.end(), std::size_t{0});
+        const auto root = [&](std::size_t corner) {
+            while (parent[corner] != corner)
+            {
+                parent[corner] = parent[parent[corner]];
+                corner = parent[corner];
+            }
+            return corner;
+        };
+        const auto unite = [&](std::size_t a, std::size_t b) {
+            a = root(a);
+            b = root(b);
+            if (a != b) parent[b] = a;
+        };
+
+        for (std::size_t triangle = 0; triangle < indices.size(); triangle += 3)
+        {
+            const std::array<glm::dvec3, 3> positions{
+                glm::dvec3{vertices[indices[triangle]].position},
+                glm::dvec3{vertices[indices[triangle + 1]].position},
+                glm::dvec3{vertices[indices[triangle + 2]].position}};
+            const auto cross = glm::cross(positions[1] - positions[0], positions[2] - positions[0]);
+            const double squared = glm::dot(cross, cross);
+            if (!(squared > 0.0) || !std::isfinite(squared)) continue;
+            directions[triangle / 3] = cross / std::sqrt(squared);
+            for (std::size_t corner = 0; corner < 3; ++corner)
+            {
+                const auto first = positions[(corner + 1) % 3] - positions[corner];
+                const auto second = positions[(corner + 2) % 3] - positions[corner];
+                const auto angleCross = glm::cross(first, second);
+                angles[triangle + corner] = std::atan2(std::sqrt(glm::dot(angleCross, angleCross)), glm::dot(first, second));
+                const auto a = triangle + corner;
+                const auto b = triangle + (corner + 1) % 3;
+                const auto groupA = groupOfVertex[indices[a]], groupB = groupOfVertex[indices[b]];
+                edges[{std::min(groupA, groupB), std::max(groupA, groupB)}].push_back({a, b});
+            }
+        }
+
+        const double creaseCosine = std::cos(glm::radians(static_cast<double>(creaseAngleDegrees)));
+        for (const auto& [edge, incident] : edges)
+        {
+            (void)edge;
+            // Ambiguous non-manifold and coincident double-sided surfaces have
+            // no unique smoothing fan. Do not borrow normals from those layers.
+            if (incident.size() != 2) continue;
+            const auto a = incident[0], b = incident[1];
+            if (groupOfVertex[indices[a.a]] != groupOfVertex[indices[b.b]] ||
+                groupOfVertex[indices[a.b]] != groupOfVertex[indices[b.a]]) continue;
+            if (glm::dot(directions[a.a / 3], directions[b.a / 3]) <= creaseCosine) continue;
+            unite(a.a, b.b);
+            unite(a.b, b.a);
+        }
+
+        std::vector<glm::dvec3> sums(indices.size(), glm::dvec3{0.0});
+        for (std::size_t corner = 0; corner < indices.size(); ++corner)
+            sums[root(corner)] += directions[corner / 3] * angles[corner];
+
+        // Keep original vertices for the first fan, only duplicate where a
+        // single index previously straddled a crease or disconnected surface.
+        const auto original = vertices;
+        std::vector<std::unordered_map<std::size_t, std::uint32_t>> fans(vertices.size());
+        for (auto& vertex : vertices) vertex.normal = fallbackNormal(vertex.normal);
+        for (std::size_t corner = 0; corner < indices.size(); ++corner)
+        {
+            const auto source = indices[corner];
+            const auto fan = root(corner);
+            auto& destinations = fans[source];
+            const auto existing = destinations.find(fan);
+            if (existing != destinations.end())
+            {
+                indices[corner] = existing->second;
+                continue;
+            }
+            std::uint32_t destination = source;
+            if (!destinations.empty())
+            {
+                if (vertices.size() >= std::numeric_limits<std::uint32_t>::max())
+                    throw std::length_error("Surface normal repair exceeds the vertex index limit");
+                destination = static_cast<std::uint32_t>(vertices.size());
+                vertices.push_back(original[source]);
+            }
+            const auto& sum = sums[fan];
+            const double squared = glm::dot(sum, sum);
+            vertices[destination].normal = squared > 1e-24 && std::isfinite(squared)
+                ? glm::vec3{sum / std::sqrt(squared)} : fallbackNormal(original[source].normal);
+            destinations.emplace(fan, destination);
+            indices[corner] = destination;
+        }
     }
 }

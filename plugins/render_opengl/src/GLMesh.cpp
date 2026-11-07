@@ -81,9 +81,13 @@ namespace julia::render_opengl
         if (!std::isfinite(material_.opacity) || !std::isfinite(material_.alphaCutoff) ||
             !std::isfinite(material_.lightResponse) || !std::isfinite(material_.specularStrength) ||
             !std::isfinite(material_.rimStrength) || !std::isfinite(material_.specularPower) ||
-            !std::isfinite(material_.outlineScale))
+            !std::isfinite(material_.outlineScale) || !std::isfinite(material_.shadowSoftness) ||
+            !std::isfinite(material_.strandDirection.x) || !std::isfinite(material_.strandDirection.y) ||
+            !std::isfinite(material_.strandDirection.z))
             throw std::invalid_argument("Mesh material has non-finite parameters");
         if (material_.specularPower <= 0.0f || material_.outlineScale < 0.0f ||
+            material_.shadowSoftness < 0.005f || material_.shadowSoftness > 0.5f ||
+            glm::length(glm::dvec3{material_.strandDirection}) < 1e-12 ||
             static_cast<int>(material_.toonKind) < static_cast<int>(ToonMaterialKind::Generic) ||
             static_cast<int>(material_.toonKind) > static_cast<int>(ToonMaterialKind::Ink))
             throw std::invalid_argument("Mesh material has invalid toon parameters");
@@ -148,6 +152,8 @@ namespace julia::render_opengl
         shader.setFloat("uRimStrength", material_.rimStrength);
         shader.setInt("uMaterialKind", static_cast<int>(material_.toonKind));
         shader.setFloat("uSpecularPower", material_.specularPower);
+        shader.setFloat("uShadowSoftness", material_.shadowSoftness);
+        shader.setVec3("uStrandDirection", glm::vec3{glm::normalize(glm::dvec3{material_.strandDirection})});
         shader.setFloat("uOutlineScale", material_.outlineScale);
         shader.setFloat("uOpacity", material_.opacity);
         shader.setFloat("uAlphaCutoff", material_.alphaCutoff);

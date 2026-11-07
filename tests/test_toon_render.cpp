@@ -253,10 +253,121 @@ namespace
         JULIA_CHECK(glint.b > matte.b + 0.2f);
     }
 
+    void testMaterialHighlightSeparation(RenderTarget& target, OpenGLRenderer& renderer)
+    {
+        CameraConfig camera;
+        camera.position = {0.0f, 3.0f, 0.1f};
+        camera.target = glm::vec3{0.0f};
+        renderer.setCamera(camera);
+        ToonStyleConfig style;
+        style.selfShadows = false;
+        style.outlineWidthPixels = 0.0f;
+        style.keyLightDirection = {0.0f, 3.0f, -0.1f};
+
+        const auto renderPatch = [&](ToonMaterialKind kind, float strength) {
+            auto material = matteMaterial();
+            // A dark saturated swatch exposes whitening that a white garment
+            // would hide. Use the same strength and exponent for every kind:
+            // the shader's material response must survive aggressive tuning.
+            material.diffuseColor = {0.20f, 0.08f, 0.03f};
+            material.toonKind = kind;
+            material.specularStrength = strength;
+            material.specularPower = 128.0f;
+            GLModel patch;
+            patch.addMesh(horizontalQuad(1.0f, 0.0f, material));
+            draw(renderer, patch, style);
+            return target.sample(glm::vec3{0.0f}, camera);
+        };
+        const auto gain = [&](ToonMaterialKind kind) {
+            return renderPatch(kind, 1.0f) - renderPatch(kind, 0.0f);
+        };
+        const auto fabric = gain(ToonMaterialKind::Fabric);
+        const auto skin = gain(ToonMaterialKind::Skin);
+        const auto hair = gain(ToonMaterialKind::Hair);
+        const auto metal = gain(ToonMaterialKind::Metal);
+        const auto eye = gain(ToonMaterialKind::Eye);
+        // Cloth has a subdued, dyed sheen; skin cannot turn into a white
+        // plastic mirror even if an imported/exported strength is excessive.
+        JULIA_CHECK(std::max({fabric.r, fabric.g, fabric.b}) < 0.06f);
+        JULIA_CHECK(std::max({skin.r, skin.g, skin.b}) < 0.10f);
+        const auto fabricColor = renderPatch(ToonMaterialKind::Fabric, 1.0f);
+        JULIA_CHECK(fabricColor.r > fabricColor.b * 3.0f);
+        // Eyes retain a distinct glint. Metal and hair are visible but remain
+        // material tinted, instead of sharing the same white response.
+        JULIA_CHECK(eye.b > 0.15f);
+        JULIA_CHECK(metal.r > 0.08f);
+        JULIA_CHECK(hair.r > 0.005f);
+        JULIA_CHECK(hair.b < eye.b * 0.7f);
+        const auto metalColor = renderPatch(ToonMaterialKind::Metal, 1.0f);
+        const auto eyeColor = renderPatch(ToonMaterialKind::Eye, 1.0f);
+        JULIA_CHECK(metalColor.r / metalColor.b > eyeColor.r / eyeColor.b + 0.10f);
+
+        // At grazing incidence, align the mirror half-vector with the plane
+        // again. Cloth must show its dyed sheen rather than a white glint.
+        camera.position = {0.0f, 0.6f, 3.0f};
+        renderer.setCamera(camera);
+        style.keyLightDirection = {0.0f, 0.6f, -3.0f};
+        const auto grazingFabric = gain(ToonMaterialKind::Fabric);
+        JULIA_CHECK(grazingFabric.r > 0.001f);
+        JULIA_CHECK(grazingFabric.r < 0.04f);
+        JULIA_CHECK(grazingFabric.g < grazingFabric.r * 0.6f);
+        JULIA_CHECK(grazingFabric.b < grazingFabric.r * 0.3f);
+    }
+
+    void testLightingMotionStability(RenderTarget& target, OpenGLRenderer& renderer)
+    {
+        auto material = matteMaterial();
+        material.toonKind = ToonMaterialKind::Fabric;
+        GLModel patch;
+        patch.addMesh(horizontalQuad(1.0f, 0.0f, material));
+        ToonStyleConfig style;
+        style.outlineWidthPixels = 0.0f;
+        style.keyLightDirection = {0.6f, 0.8f, 0.3f};
+        CameraConfig camera;
+        camera.position = {0.0f, 3.0f, 2.0f};
+        camera.target = glm::vec3{0.0f};
+        renderer.setCamera(camera);
+        draw(renderer, patch, style);
+        const auto baseline = target.sample(glm::vec3{0.0f}, camera);
+        constexpr std::size_t steps = 24;
+        constexpr float turn = 6.2831853071795864769f;
+        for (std::size_t step = 0; step <= steps; ++step)
+        {
+            const float angle = step == steps ? 0.0f :
+                turn * static_cast<float>(step) / static_cast<float>(steps);
+            camera.position = {std::sin(angle) * 2.0f, 3.0f, std::cos(angle) * 2.0f};
+            renderer.setCamera(camera);
+            draw(renderer, patch, style);
+            // With specular and rim disabled, a camera orbit must not drag
+            // the key illumination or the shadow field around the material.
+            JULIA_CHECK(glm::length(target.sample(glm::vec3{0.0f}, camera) - baseline) < 0.003f);
+            renderer.beginFrame();
+            const auto model = glm::rotate(glm::mat4{1.0f}, angle, glm::vec3{0.0f, 1.0f, 0.0f});
+            renderer.renderModel(patch, model);
+            JULIA_CHECK(glm::length(target.sample(glm::vec3{0.0f}, camera) - baseline) < 0.003f);
+        }
+
+        // Sweep the light through front, grazing and rear illumination, then
+        // replay exactly. This checks changing cel bands and the self-shadow
+        // pass without requiring any driver-specific reference image.
+        std::array<glm::vec3, steps> sweep{};
+        for (int replay = 0; replay < 2; ++replay)
+            for (std::size_t step = 0; step < steps; ++step)
+            {
+                const float angle = turn * static_cast<float>(step) / static_cast<float>(steps);
+                style.keyLightDirection = {std::sin(angle), std::cos(angle), 0.35f};
+                draw(renderer, patch, style);
+                const auto color = target.sample(glm::vec3{0.0f}, camera);
+                JULIA_CHECK(glm::all(glm::greaterThanEqual(color, glm::vec3{0.0f})));
+                JULIA_CHECK(glm::all(glm::lessThanEqual(color, glm::vec3{1.0f})));
+                if (replay == 0) sweep[step] = color;
+                else JULIA_CHECK(glm::length(color - sweep[step]) < 0.002f);
+            }
+        JULIA_CHECK(sweep[0].r > sweep[steps / 2].r + 0.08f);
+    }
+
     void testPlanarSelfShadowAcne(RenderTarget& target, OpenGLRenderer& renderer)
     {
-        GLModel plane;
-        plane.addMesh(horizontalQuad(1.0f, 0.0f, matteMaterial()));
         const auto rotation = glm::rotate(glm::mat4{1.0f}, glm::radians(17.0f), glm::vec3{0.0f, 0.0f, 1.0f}) *
             glm::rotate(glm::mat4{1.0f}, glm::radians(-23.0f), glm::vec3{1.0f, 0.0f, 0.0f});
         const auto basis = glm::mat3{rotation};
@@ -281,35 +392,83 @@ namespace
             for (int x = -2; x <= 2; ++x)
                 points[point++] = u * (static_cast<float>(x) * 0.3f) +
                                   v * (static_cast<float>(z) * 0.3f);
-        for (const auto& direction : directions)
+        for (const auto kind : {ToonMaterialKind::Generic, ToonMaterialKind::Skin})
         {
-            style.keyLightDirection = direction;
-            style.selfShadows = false;
-            renderer.setStyleConfig(style);
-            renderer.beginFrame();
-            renderer.renderModel(plane, rotation);
-            std::array<glm::vec3, 25> baseline{};
-            for (std::size_t i = 0; i < points.size(); ++i)
+            auto material = matteMaterial();
+            material.toonKind = kind;
+            GLModel plane;
+            plane.addMesh(horizontalQuad(1.0f, 0.0f, material));
+            for (const auto& direction : directions)
             {
-                baseline[i] = target.sample(points[i], camera);
-                JULIA_CHECK(baseline[i].r > 0.4f);
+                style.keyLightDirection = direction;
+                style.selfShadows = false;
+                renderer.setStyleConfig(style);
+                renderer.beginFrame();
+                renderer.renderModel(plane, rotation);
+                std::array<glm::vec3, 25> baseline{};
+                for (std::size_t i = 0; i < points.size(); ++i)
+                {
+                    baseline[i] = target.sample(points[i], camera);
+                    JULIA_CHECK(baseline[i].r > 0.4f);
+                }
+                style.selfShadows = true;
+                renderer.setStyleConfig(style);
+                renderer.beginFrame();
+                renderer.renderModel(plane, rotation);
+                for (std::size_t i = 0; i < points.size(); ++i)
+                {
+                    const auto actual = target.sample(points[i], camera);
+                    const auto difference = glm::abs(actual - baseline[i]);
+                    const float worst = std::max({difference.r, difference.g, difference.b});
+                    if (worst >= 0.005f)
+                        std::cerr << "Planar shadow acne: kind " << static_cast<int>(kind)
+                                  << ", sample " << i << ", error " << worst
+                                  << ", normal/light " << glm::dot(normal, glm::normalize(direction)) << '\n';
+                    JULIA_CHECK(worst < 0.005f);
+                }
+                JULIA_CHECK(glGetError() == GL_NO_ERROR);
             }
-            style.selfShadows = true;
-            renderer.setStyleConfig(style);
-            renderer.beginFrame();
-            renderer.renderModel(plane, rotation);
-            for (std::size_t i = 0; i < points.size(); ++i)
-            {
-                const auto actual = target.sample(points[i], camera);
-                const auto difference = glm::abs(actual - baseline[i]);
-                const float worst = std::max({difference.r, difference.g, difference.b});
-                if (worst >= 0.005f)
-                    std::cerr << "Planar shadow acne: sample " << i << ", error " << worst
-                              << ", normal/light " << glm::dot(normal, glm::normalize(direction)) << '\n';
-                JULIA_CHECK(worst < 0.005f);
-            }
-            JULIA_CHECK(glGetError() == GL_NO_ERROR);
         }
+    }
+
+    void testSkinContactShadow(RenderTarget& target, OpenGLRenderer& renderer)
+    {
+        auto skin = matteMaterial();
+        skin.toonKind = ToonMaterialKind::Skin;
+        GLModel skinOnly;
+        skinOnly.addMesh(horizontalQuad(1.0f, 0.0f, skin));
+        GLModel contact;
+        contact.addMesh(horizontalQuad(1.0f, 0.0f, skin));
+        constexpr float casterHeight = 0.025f, casterHalfWidth = 0.25f;
+        auto caster = matteMaterial();
+        caster.diffuseColor = {0.08f, 0.10f, 0.12f};
+        contact.addMesh(horizontalQuad(casterHalfWidth, casterHeight, caster));
+        ToonStyleConfig style;
+        style.keyLightDirection = {0.65f, 1.0f, 0.25f};
+        style.outlineWidthPixels = 0.0f;
+        // Midpoint of the narrow shadow strip exposed just beyond the caster's
+        // -X edge. A close camera from that side sees skin, not the caster.
+        const glm::vec3 receiver{-casterHalfWidth - casterHeight * style.keyLightDirection.x * 0.5f,
+            0.0f, 0.0f};
+        CameraConfig camera;
+        camera.target = receiver;
+        camera.position = receiver + glm::vec3{-0.4f, 0.6f, 0.2f};
+        camera.fovDegrees = 35.0f;
+        renderer.setCamera(camera);
+        style.selfShadows = false;
+        draw(renderer, skinOnly, style);
+        const auto bareSkin = target.sample(receiver, camera);
+        draw(renderer, contact, style);
+        const auto unshadowed = target.sample(receiver, camera);
+        // Establish that the sample actually lies on the receiver and is not
+        // accidentally testing the top of the nearly touching caster.
+        JULIA_CHECK(glm::length(unshadowed - bareSkin) < 0.003f);
+        style.selfShadows = true;
+        draw(renderer, contact, style);
+        const auto shadowed = target.sample(receiver, camera);
+        JULIA_CHECK(shadowed.r < unshadowed.r - 0.05f);
+        draw(renderer, skinOnly, style);
+        JULIA_CHECK(glm::length(target.sample(receiver, camera) - bareSkin) < 0.005f);
     }
 
     void testSkinnedCasterOutsideBindBounds(RenderTarget& target, OpenGLRenderer& renderer)
@@ -381,7 +540,10 @@ int main()
         glDisable(GL_DITHER);
         testSelfShadowAndAlpha(target, renderer);
         testLightingAndMaterials(target, renderer);
+        testMaterialHighlightSeparation(target, renderer);
+        testLightingMotionStability(target, renderer);
         testPlanarSelfShadowAcne(target, renderer);
+        testSkinContactShadow(target, renderer);
         testSkinnedCasterOutsideBindBounds(target, renderer);
         result = JULIA_TEST_RESULT();
     }

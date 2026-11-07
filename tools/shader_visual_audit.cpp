@@ -37,6 +37,7 @@ namespace
         int warmup = 30;
         int frames = 90;
         int motionFrames = 48;
+        bool selfShadows = true;
     };
 
     int positiveInteger(const std::string& value)
@@ -57,10 +58,11 @@ namespace
             if (option == "--help")
             {
                 std::cout << "shader_visual_audit [--shader-assets ROOT] [--model-assets ROOT] "
-                    "[--output-dir DIR] [--warmup N] [--frames N] [--motion-frames N]\n"
+                    "[--output-dir DIR] [--warmup N] [--frames N] [--motion-frames N] [--no-shadows]\n"
                     "ROOT contains shaders/ or models/. Fixed 1000x1000, 8x MSAA, sRGB.\n";
                 std::exit(0);
             }
+            if (option == "--no-shadows") { options.selfShadows = false; continue; }
             if (++i == argc) throw std::invalid_argument("Missing value for " + option);
             if (option == "--shader-assets") options.shaderAssets = argv[i];
             else if (option == "--model-assets") options.modelAssets = argv[i];
@@ -175,7 +177,18 @@ namespace
                << " triangles=" << triangles << " bones=" << model.boneCount()
                << " palette=" << palette.size() << " rebuildSmoothNormals=" << rigged << '\n';
 
-        const auto render = [&](const CameraConfig& camera, const glm::mat4& transform) {
+        std::array<std::size_t, 8> materialKinds{};
+        for (const auto& mesh : model.meshes())
+            ++materialKinds.at(static_cast<std::size_t>(mesh.material().toonKind));
+        report << "material_mesh_counts generic,skin,hair,eye,metal,fabric,leather,ink=";
+        for (const auto count : materialKinds) report << count << ',';
+        report << '\n';
+
+        const auto render = [&](const CameraConfig& camera, const glm::mat4& transform,
+                                const ToonStyleConfig& style = ToonStyleConfig{}) {
+            auto actualStyle = style;
+            actualStyle.selfShadows = options.selfShadows;
+            renderer.setStyleConfig(actualStyle);
             renderer.setCamera(camera);
             renderer.beginFrame();
             renderer.renderModel(model, transform, palette);
@@ -201,9 +214,37 @@ namespace
                    << " repeat_changed_bytes=0 fnv1a64=" << pixelHash(first) << '\n';
         }
 
+        const std::array<std::pair<std::string, glm::vec3>, 4> lights{{
+            {"side", {1.0f, 0.20f, 0.05f}}, {"back", {0.10f, 0.50f, -1.0f}},
+            {"low", {0.65f, -0.20f, 0.65f}}, {"overhead", {0.05f, 1.0f, 0.10f}}}};
+        for (const auto& [lightName, direction] : lights)
+        {
+            ToonStyleConfig style;
+            style.keyLightDirection = direction;
+            for (const auto& [view, camera] : views)
+            {
+                if (view != "full" && view != "face") continue;
+                render(camera, fit, style);
+                const auto first = readFrame();
+                render(camera, fit, style);
+                if (changedBytes(first, readFrame()) != 0 || coloredPixels(first) < 1000)
+                    throw std::runtime_error(name + " " + lightName + " " + view + ": lighting verification failed");
+                saveFrame(first, options.output / (name + "-light-" + lightName + "-" + view + ".ppm"));
+                report << "light=" << lightName << " view=" << view
+                       << " repeat_changed_bytes=0 fnv1a64=" << pixelHash(first) << '\n';
+            }
+        }
+
         render(front, fit);
         const auto reference = readFrame();
-        for (const std::string mode : {"camera", "model"})
+        const auto motionStyle = [](const std::string& mode, float angle) {
+            ToonStyleConfig style;
+            if (mode == "light")
+                style.keyLightDirection = glm::mat3{glm::rotate(glm::mat4{1.0f}, angle,
+                    glm::vec3{0.0f, 1.0f, 0.0f})} * style.keyLightDirection;
+            return style;
+        };
+        for (const std::string mode : {"camera", "model", "light"})
         {
             std::size_t transitions = 0;
             Pixels previous = reference;
@@ -214,7 +255,7 @@ namespace
                 const auto camera = mode == "camera" ? orbitCamera(angle) : front;
                 const auto transform = mode == "model" ?
                     glm::rotate(glm::mat4{1.0f}, angle, {0.0f, 1.0f, 0.0f}) * fit : fit;
-                render(camera, transform);
+                render(camera, transform, motionStyle(mode, angle));
                 auto pixels = readFrame();
                 transitions += changedBytes(previous, pixels) != 0 ? 1u : 0u;
                 if (frame == 0 || frame == options.motionFrames / 4 ||
@@ -232,7 +273,8 @@ namespace
             const double gpu = benchmark([&](int frame, int frames) {
                 const float angle = glm::two_pi<float>() * static_cast<float>(frame) / static_cast<float>(frames);
                 render(mode == "camera" ? orbitCamera(angle) : front,
-                    mode == "model" ? glm::rotate(glm::mat4{1.0f}, angle, {0.0f, 1.0f, 0.0f}) * fit : fit);
+                    mode == "model" ? glm::rotate(glm::mat4{1.0f}, angle, {0.0f, 1.0f, 0.0f}) * fit : fit,
+                    motionStyle(mode, angle));
             }, options.warmup, options.frames, wall);
             timing << name << ',' << mode << ',' << Width << ',' << Height << ',' << Samples << ','
                    << options.warmup << ',' << options.frames << ',' << gpu << ',' << wall << '\n';
@@ -283,11 +325,13 @@ int main(int argc, char** argv)
                << "\nrenderer=" << glGetString(GL_RENDERER) << "\nversion=" << glGetString(GL_VERSION)
                << "\nresolution=" << Width << 'x' << Height << " samples=" << actualSamples
                << "\nwarmup=" << options.warmup << " measured_frames=" << options.frames
+               << "\nself_shadows=" << options.selfShadows
                << "\nfit_height=2.2 front=+Z profile=+X back=-Z face_target_y=1.83\n";
         timing << std::fixed << std::setprecision(6)
                << "model,motion,width,height,samples,warmup,measured_frames,gpu_ms,wall_ms\n";
         auditModel(options, "Raphtalia1", false, report, timing);
         auditModel(options, "Raphtalia", true, report, timing);
+        auditModel(options, "Raphtalia_prepared", true, report, timing);
         checkGl("Final check");
         report << "\nresult=PASS\n";
         glfwDestroyWindow(window);

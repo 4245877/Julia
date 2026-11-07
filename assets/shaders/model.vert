@@ -20,6 +20,7 @@ uniform mat4 uLightViewProjection;
 uniform vec3 uViewport;
 uniform float uOutlineWidthPixels;
 uniform float uOutlineScale = 1.0;
+uniform vec3 uStrandDirection = vec3(0.0, 1.0, 0.0);
 
 out vec3 vWorldPosition;
 out vec3 vNormal;
@@ -93,9 +94,9 @@ void main()
     vec3 worldNormal = safeNormal(uNormalMatrix * localNormal, vec3(0.0, 1.0, 0.0));
     vWorldPosition = worldPosition.xyz;
     vNormal = worldNormal;
-    // An object-space strand axis follows model and skeletal motion. Assets can
-    // supply a dedicated groom/tangent map in a future material extension.
-    vMaterialTangent = safeNormal(mat3(uModel) * mat3(skin) * vec3(0.0, 1.0, 0.0),
+    // Per-material groom direction follows model and skeletal motion. Project
+    // onto the interpolated normal in the fragment stage to avoid vertex seams.
+    vMaterialTangent = safeNormal(mat3(uModel) * mat3(skin) * uStrandDirection,
                                   vec3(0.0, 1.0, 0.0));
     vec4 clipPosition = uProjection * uView * worldPosition;
     if (uOutlinePass && uOutlineScale > 0.0 && clipPosition.w > 0.0)

@@ -1,5 +1,6 @@
 #include "julia/render_opengl/GLModelLoader.hpp"
 #include "julia/render_opengl/GLTexture.hpp"
+#include "julia/render_opengl/SurfaceNormals.hpp"
 
 #include <assimp/Importer.hpp>
 #include <assimp/GltfMaterial.h>
@@ -40,6 +41,7 @@ namespace julia::render_opengl
             std::filesystem::path modelDirectory;
             std::filesystem::path texturesDirectory;
             bool useLegacyMaterialTextureFallback = false;
+            bool rebuildSmoothNormals = false;
 
             std::unordered_map<std::string, std::shared_ptr<GLTexture>> textureCache;
         };
@@ -289,16 +291,18 @@ namespace julia::render_opengl
             {
                 case ToonMaterialKind::Skin:
                     material.lightResponse = 0.78f;
-                    material.specularStrength = 0.035f;
-                    material.rimStrength = 0.030f;
-                    material.specularPower = 48.0f;
+                    material.specularStrength = 0.12f;
+                    material.rimStrength = 0.018f;
+                    material.specularPower = 24.0f;
+                    material.shadowSoftness = 0.14f;
                     material.outlineScale = 0.5f;
                     break;
                 case ToonMaterialKind::Hair:
                     material.lightResponse = 0.84f;
-                    material.specularStrength = 0.16f;
-                    material.rimStrength = 0.042f;
-                    material.specularPower = 64.0f;
+                    material.specularStrength = 0.24f;
+                    material.rimStrength = 0.032f;
+                    material.specularPower = 48.0f;
+                    material.shadowSoftness = 0.075f;
                     material.outlineScale = 0.85f;
                     break;
                 case ToonMaterialKind::Eye:
@@ -306,25 +310,29 @@ namespace julia::render_opengl
                     material.specularStrength = 0.65f;
                     material.rimStrength = 0.015f;
                     material.specularPower = 180.0f;
+                    material.shadowSoftness = 0.10f;
                     material.outlineScale = 0.0f;
                     break;
                 case ToonMaterialKind::Metal:
                     material.lightResponse = 0.90f;
-                    material.specularStrength = 0.50f;
+                    material.specularStrength = 0.42f;
                     material.rimStrength = 0.038f;
                     material.specularPower = 100.0f;
+                    material.shadowSoftness = 0.045f;
                     break;
                 case ToonMaterialKind::Fabric:
                     material.lightResponse = 0.74f;
-                    material.specularStrength = 0.015f;
-                    material.rimStrength = 0.026f;
-                    material.specularPower = 32.0f;
+                    material.specularStrength = 0.08f;
+                    material.rimStrength = 0.014f;
+                    material.specularPower = 12.0f;
+                    material.shadowSoftness = 0.10f;
                     break;
                 case ToonMaterialKind::Leather:
                     material.lightResponse = 0.78f;
-                    material.specularStrength = 0.10f;
-                    material.rimStrength = 0.030f;
-                    material.specularPower = 64.0f;
+                    material.specularStrength = 0.14f;
+                    material.rimStrength = 0.022f;
+                    material.specularPower = 28.0f;
+                    material.shadowSoftness = 0.085f;
                     break;
                 case ToonMaterialKind::Ink:
                     material.specularStrength = 0.0f;
@@ -774,6 +782,9 @@ namespace julia::render_opengl
                 normalizeBoneWeights(vertex);
             }
 
+            if (context.rebuildSmoothNormals)
+                rebuildSurfaceNormals(vertices, indices);
+
             return GLMesh{
                 std::move(vertices),
                 std::move(indices),
@@ -891,11 +902,10 @@ namespace julia::render_opengl
             aiProcess_SortByPType |
             aiProcess_ImproveCacheLocality;
 
-        // GenSmoothNormals alone keeps normals supplied by the asset, including
-        // an accidentally faceted export. Force regeneration only on request.
-        if (options.rebuildSmoothNormals) flags |= aiProcess_ForceGenNormals;
-        importer.SetPropertyFloat(AI_CONFIG_PP_GSN_MAX_SMOOTHING_ANGLE,
-            options.rebuildSmoothNormals ? 45.0f : 75.0f);
+        // Preserve authored normals by default. Explicit repair runs after
+        // scene transforms and skin weights are known, using connected,
+        // angle-weighted surface fans rather than Assimp's position-only weld.
+        importer.SetPropertyFloat(AI_CONFIG_PP_GSN_MAX_SMOOTHING_ANGLE, 75.0f);
         importer.SetPropertyInteger(AI_CONFIG_PP_LBW_MAX_WEIGHTS, 4);
         // Asset units are arbitrary: an absolute 1e-6 area cutoff can erase
         // perfectly valid small triangles before model fitting scales them up.
@@ -931,6 +941,7 @@ namespace julia::render_opengl
         context.modelDirectory = path.parent_path();
         context.texturesDirectory = path.parent_path().parent_path() / "textures";
         context.useLegacyMaterialTextureFallback = options.useLegacyMaterialTextureFallback;
+        context.rebuildSmoothNormals = options.rebuildSmoothNormals;
 
         registerNodes(scene->mRootNode, NoModelNode, context);
         processNode(scene, scene->mRootNode, context);

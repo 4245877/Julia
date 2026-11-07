@@ -56,6 +56,12 @@ namespace julia::render_opengl
         GLenum magFilter = GL_LINEAR;
         ToonMaterialKind toonKind = ToonMaterialKind::Generic;
         float specularPower = 80.0f;
+        // Half-width of the painted terminator in N.L space, before pixel AA.
+        // Wider skin/fabric transitions hide tessellation without blurring UVs.
+        float shadowSoftness = 0.065f;
+        // Groom axis in imported scene space; transformed with the skeleton.
+        // Projected onto the surface for the hair highlight, never camera space.
+        glm::vec3 strandDirection{0.0f, 1.0f, 0.0f};
         // Inverted hull is unsuitable for thin eye/decal/ink layers.
         float outlineScale = 1.0f;
     };

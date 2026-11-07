@@ -445,14 +445,19 @@ int main(int argc, char** argv)
 
         std::cout << "Loading model: " << modelPath.string() << "\n";
 
-        // This bundled export has face normals on every triangle. Keep the
-        // repair local to this asset; other models may have custom toon normals.
-        std::error_code assetComparisonError;
-        const bool repairFacetedNormals = std::filesystem::equivalent(modelPath,
-            assetDirectory(argv[0]) / "models" / "Raphtalia.fbx", assetComparisonError) ||
-            std::filesystem::equivalent(modelPath,
-                std::filesystem::path{JULIA_ASSET_DIR} / "models" / "Raphtalia.fbx",
-                assetComparisonError);
+        // Both bundled rigged exports contain per-face normals, including the
+        // prepared default. Repair these known assets; other models may carry
+        // deliberately authored toon normals that must remain unchanged.
+        const auto isBundledAsset = [&](const char* name) {
+            std::error_code assetComparisonError;
+            return std::filesystem::equivalent(modelPath,
+                assetDirectory(argv[0]) / "models" / name, assetComparisonError) ||
+                std::filesystem::equivalent(modelPath,
+                    std::filesystem::path{JULIA_ASSET_DIR} / "models" / name,
+                    assetComparisonError);
+        };
+        const bool repairFacetedNormals = isBundledAsset("Raphtalia.fbx") ||
+            isBundledAsset("Raphtalia_prepared.fbx");
         auto model = julia::render_opengl::GLModelLoader::loadFromFile(modelPath,
             {.rebuildSmoothNormals = repairFacetedNormals});
 

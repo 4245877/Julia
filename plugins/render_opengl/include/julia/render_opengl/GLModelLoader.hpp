@@ -14,8 +14,9 @@ namespace julia::render_opengl
         bool useLegacyMaterialTextureFallback = false;
 
         // Opt-in repair for assets exported with per-face normals. Rebuild at
-        // import time, smoothing across UV splits but retaining creases >= 45
-        // degrees. Leave authored/custom normals untouched by default.
+        // import time with angle-weighted connected rest-surface fans across UV
+        // and skin-weight splits, retaining creases >= 45 degrees. Vertex copies
+        // keep their own deformation. Authored normals stay untouched by default.
         bool rebuildSmoothNormals = false;
     };
 

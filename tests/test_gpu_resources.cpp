@@ -165,6 +165,32 @@ namespace
             invalidMaterial = {};
             invalidMaterial.outlineScale = -0.1f;
             expectThrow<std::invalid_argument>([&] { GLMesh invalid(vertices, {0, 1, 2}, invalidMaterial); });
+            for (float softness : {0.0f, 0.004f, 0.501f,
+                     std::numeric_limits<float>::infinity(), std::numeric_limits<float>::quiet_NaN()})
+            {
+                invalidMaterial = {};
+                invalidMaterial.shadowSoftness = softness;
+                expectThrow<std::invalid_argument>([&] { GLMesh invalid(vertices, {0, 1, 2}, invalidMaterial); });
+            }
+            for (const auto& direction : {glm::vec3{0.0f}, glm::vec3{1e-14f, 0.0f, 0.0f},
+                     glm::vec3{std::numeric_limits<float>::infinity(), 0.0f, 1.0f},
+                     glm::vec3{1.0f, std::numeric_limits<float>::quiet_NaN(), 0.0f},
+                     glm::vec3{1.0f, 0.0f, std::numeric_limits<float>::quiet_NaN()}})
+            {
+                invalidMaterial = {};
+                invalidMaterial.strandDirection = direction;
+                expectThrow<std::invalid_argument>([&] { GLMesh invalid(vertices, {0, 1, 2}, invalidMaterial); });
+            }
+            // Accepted endpoints and a non-unit, signed groom direction must
+            // remain valid; upload normalizes direction rather than rejecting it.
+            for (float softness : {0.005f, 0.5f})
+            {
+                GLMeshMaterial endpoint;
+                endpoint.shadowSoftness = softness;
+                endpoint.strandDirection = {-3.0f, 0.0f, 4.0f};
+                GLMesh valid(vertices, {0, 1, 2}, endpoint);
+                JULIA_CHECK(valid.indexCount() == 3);
+            }
             invalidMaterial = {};
             invalidMaterial.toonKind = static_cast<ToonMaterialKind>(-1);
             expectThrow<std::invalid_argument>([&] { GLMesh invalid(vertices, {0, 1, 2}, invalidMaterial); });
@@ -277,6 +303,8 @@ namespace
         material.toonKind = ToonMaterialKind::Hair;
         material.specularPower = 64.0f;
         material.outlineScale = 0.5f;
+        material.shadowSoftness = 0.125f;
+        material.strandDirection = {0.0f, 3.0f, 4.0f};
         GLMesh mesh(vertices, {0, 1, 2}, material);
         GLShader shader;
         shader.createFromSource(R"glsl(#version 330 core
@@ -297,11 +325,15 @@ namespace
             uniform int uMaterialKind;
             uniform float uSpecularPower;
             uniform float uOutlineScale;
+            uniform float uShadowSoftness;
+            uniform vec3 uStrandDirection;
             out vec4 color;
             void main() {
                 vec3 value = mode == 0
                     ? vec3(float(uMaterialKind)/7.0, uSpecularPower/256.0, uOutlineScale/2.0)
-                    : (mode == 1 ? lightingNormal : outlineNormal)*0.5+0.5;
+                    : (mode == 1 ? lightingNormal*0.5+0.5
+                    : (mode == 2 ? outlineNormal*0.5+0.5
+                    : (mode == 3 ? vec3(uShadowSoftness*2.0) : uStrandDirection*0.5+0.5)));
                 color = vec4(value, 1.0);
             }
         )glsl");
@@ -313,8 +345,9 @@ namespace
         glDisable(GL_DITHER);
         glDisable(GL_FRAMEBUFFER_SRGB);
         glReadBuffer(GL_BACK);
-        const std::array<std::array<int, 3>, 3> expected{{{73, 64, 64}, {128, 255, 128}, {128, 128, 255}}};
-        for (int mode = 0; mode < 3; ++mode)
+        const std::array<std::array<int, 3>, 5> expected{{
+            {73, 64, 64}, {128, 255, 128}, {128, 128, 255}, {64, 64, 64}, {128, 204, 230}}};
+        for (int mode = 0; mode < 5; ++mode)
         {
             shader.setInt("mode", mode);
             mesh.draw(shader);
