@@ -1,184 +1,229 @@
 #include "julia/render/OrbitCamera.hpp"
-
+#include "../apps/julia_desktop/CameraInput.hpp"
 #include "julia_test.hpp"
-
 #include <cmath>
 #include <limits>
-
-#include <glm/gtc/constants.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 namespace
 {
+    using julia::render::OrbitCamera;
+    using julia::render::CameraSubject;
     constexpr float Epsilon = 0.0001f;
+    bool near(float a, float b) { return std::abs(a - b) < Epsilon; }
+    bool near(glm::vec3 a, glm::vec3 b) { return glm::length(a - b) < Epsilon; }
+    glm::vec3 direction(const OrbitCamera& c) { return glm::normalize(c.position() - c.target()); }
+    CameraSubject subject{{-0.7f, 0, -0.3f}, {0.7f, 2, 0.3f}, glm::vec3{0, 1.73f, 0.05f}};
 
-    bool nearlyEqual(float left, float right)
+    glm::vec3 project(const OrbitCamera& c, const glm::vec3& point, float aspect = 1.0f)
     {
-        return std::abs(left - right) <= Epsilon;
-    }
-
-    bool nearlyEqual(const glm::vec3& left, const glm::vec3& right)
-    {
-        return
-            nearlyEqual(left.x, right.x) &&
-            nearlyEqual(left.y, right.y) &&
-            nearlyEqual(left.z, right.z);
+        const auto clip = glm::perspective(glm::radians(45.0f), aspect, .02f, 200.0f) *
+            glm::lookAt(c.position(), c.target(), c.up()) * glm::vec4{point, 1};
+        return glm::vec3{clip} / clip.w;
     }
 }
 
 int main()
 {
-    using julia::render::OrbitCamera;
-    using julia::render::OrbitCameraSettings;
+    OrbitCamera camera{subject};
+    const auto initial = camera.position();
+    JULIA_CHECK(near(camera.target(), {0,1,0}));
+    JULIA_CHECK(near(direction(camera), {0,0,1}));
 
-    OrbitCameraSettings settings{};
-    settings.rotationRadiansPerPixel = glm::half_pi<float>();
-    settings.zoomExponentPerStep = std::log(2.0f);
-    settings.minDistance = 1.0f;
-    settings.maxDistance = 8.0f;
+    // Full-body fit accounts for both FOV axes, depth, portrait and wide windows.
+    for (const float aspect : {0.3f, 1.0f, 2.4f})
+    {
+        camera.setViewport(1000 * aspect, 1000, 45);
+        camera.frameBody(true);
+        for (int i = 0; i < 8; ++i)
+        {
+            const glm::vec3 corner{(i & 1) ? subject.max.x : subject.min.x,
+                (i & 2) ? subject.max.y : subject.min.y, (i & 4) ? subject.max.z : subject.min.z};
+            const auto p = project(camera, corner, aspect);
+            JULIA_CHECK(std::abs(p.x) < 1 && std::abs(p.y) < 1 && p.z < 1);
+        }
+    }
+    camera.setViewport(1000, 1000, 45);
+    camera.frameBody(true);
+    camera.orbit(-100, -20000);
+    camera.update(1);
+    JULIA_CHECK(near(std::asin(direction(camera).y), camera.settings().maxPitch));
+    JULIA_CHECK(camera.up().y > 0);
+    camera.orbit(-200, 40000);
+    camera.update(1);
+    JULIA_CHECK(near(std::asin(direction(camera).y), camera.settings().minPitch));
+    JULIA_CHECK(camera.up().y > 0);
+    JULIA_CHECK(near(camera.up().x * direction(camera).z - camera.up().z * direction(camera).x, 0));
 
-    const glm::vec3 target{1.0f, 2.0f, 3.0f};
-    OrbitCamera camera{target, target + glm::vec3{0.0f, 0.0f, 4.0f}, settings};
+    // Face focusing preserves the chosen angle, has no immediate discontinuity,
+    // and remains stable without any per-frame animation/bone tracking.
+    const auto beforeFace = camera.position();
+    const auto angle = direction(camera);
+    camera.focusFace();
+    JULIA_CHECK(near(camera.position(), beforeFace));
+    camera.update(1);
+    JULIA_CHECK(near(camera.target(), *subject.face));
+    JULIA_CHECK(near(direction(camera), angle));
+    const auto facePose = camera.position();
+    for (int i = 0; i < 500; ++i) camera.update(1.0 / 144.0);
+    JULIA_CHECK(near(camera.position(), facePose));
+    camera.frameBody();
+    JULIA_CHECK(near(camera.position(), facePose));
+    camera.update(1);
+    JULIA_CHECK(near(camera.position(), initial));
 
-    JULIA_CHECK(nearlyEqual(camera.target(), target));
-    JULIA_CHECK(nearlyEqual(camera.position(), target + glm::vec3{0.0f, 0.0f, 4.0f}));
-    JULIA_CHECK(nearlyEqual(camera.distance(), 4.0f));
+    camera.zoom(10000);
+    camera.update(1);
+    const float closest = camera.distance();
+    camera.zoom(-1);
+    camera.update(1);
+    JULIA_CHECK(camera.distance() > closest * 1.1f);
+    camera.frameBody(true);
 
-    // Horizontal and vertical input move the camera on its orbit while the
-    // target and radius remain unchanged.
-    camera.orbit(-0.5f, -0.25f);
-    camera.update(1.0);
-    JULIA_CHECK(nearlyEqual(camera.target(), target));
-    JULIA_CHECK(nearlyEqual(glm::length(camera.position() - target), 4.0f));
-    JULIA_CHECK(camera.position().x > target.x);
-    JULIA_CHECK(camera.position().y > target.y);
-    JULIA_CHECK(camera.position().z > target.z);
-    JULIA_CHECK(!nearlyEqual(camera.up(), glm::vec3{0.0f, 1.0f, 0.0f}));
+    CameraSubject fallback = subject;
+    fallback.face.reset();
+    OrbitCamera unknownRig{fallback};
+    unknownRig.focusFace();
+    unknownRig.update(1);
+    JULIA_CHECK(near(unknownRig.target().y, 2 * unknownRig.settings().faceHeight));
+    // Scaling and translation of a different model preserve framing proportions.
+    CameraSubject scaled{subject.min * 7.0f + glm::vec3{3,4,5},
+        subject.max * 7.0f + glm::vec3{3,4,5}, *subject.face * 7.0f + glm::vec3{3,4,5}};
+    OrbitCamera big{scaled};
+    JULIA_CHECK(near(big.position(), initial * 7.0f + glm::vec3{3,4,5}));
 
-    camera.zoom(1.0f);
-    camera.update(1.0);
-    JULIA_CHECK(nearlyEqual(camera.distance(), 2.0f));
-    JULIA_CHECK(nearlyEqual(glm::length(camera.position() - target), 2.0f));
+    // Pan is in screen pixels at near/far distances. Orbiting keeps the
+    // character pivot in the same screen location rather than drifting away.
+    for (float zoom : {0.0f, 8.0f})
+    {
+        OrbitCamera pan{subject};
+        pan.zoom(zoom);
+        pan.update(1);
+        const auto pivot = pan.target();
+        const auto p0 = project(pan, pivot);
+        pan.pan(100, 50, 1000);
+        pan.update(1);
+        const auto p1 = project(pan, pivot);
+        JULIA_CHECK(near(p1.x - p0.x, 0.2f));
+        JULIA_CHECK(near(p1.y - p0.y, -0.1f));
+        pan.orbit(-300, -80);
+        pan.update(1);
+        JULIA_CHECK(near(project(pan, pivot), p1));
+        pan.pan(100000, -100000, 1000);
+        pan.update(1);
+        const auto limited = project(pan, pivot);
+        JULIA_CHECK(std::abs(limited.x) <= .651f && std::abs(limited.y) <= .651f);
+    }
 
-    camera.zoom(100.0f);
-    camera.update(1.0);
-    JULIA_CHECK(nearlyEqual(camera.distance(), settings.minDistance));
+    // No eye position enters the inflated bind box, even during rapid zoom,
+    // pan, angle and face/body transitions. This also checks transient limits.
+    for (int i = 0; i < 1500; ++i)
+    {
+        if (i % 101 == 0) camera.focusFace();
+        if (i % 137 == 0) camera.frameBody();
+        camera.orbit(13, (i % 19 < 10) ? -12.0f : 14.0f);
+        camera.zoom(i % 43 < 40 ? 30.0f : -100.0f);
+        camera.pan(2, -1, 1000);
+        camera.update(1.0 / 144.0);
+        const auto p = camera.position();
+        const float margin = 2 * camera.settings().collisionMarginInHeights - Epsilon;
+        JULIA_CHECK(glm::any(glm::lessThanEqual(p, subject.min - glm::vec3{margin})) ||
+            glm::any(glm::greaterThanEqual(p, subject.max + glm::vec3{margin})));
+        JULIA_CHECK(camera.distance() >= 2 * camera.settings().minDistanceInHeights - Epsilon);
+        JULIA_CHECK(camera.distance() <= 2 * camera.settings().maxDistanceInHeights + Epsilon);
+        JULIA_CHECK(camera.up().y > 0);
+        JULIA_CHECK(std::abs(glm::dot(direction(camera), camera.up())) < Epsilon);
+    }
 
-    camera.zoom(-100.0f);
-    camera.update(1.0);
-    JULIA_CHECK(nearlyEqual(camera.distance(), settings.maxDistance));
-
-    const glm::vec3 newTarget{-2.0f, 0.5f, 7.0f};
-    camera.setTarget(newTarget);
-    camera.update(1.0);
-    JULIA_CHECK(nearlyEqual(camera.target(), newTarget));
-    JULIA_CHECK(nearlyEqual(
-        glm::length(camera.position() - newTarget),
-        settings.maxDistance
-    ));
-
-    // A free orbit can cross a pole without making lookAt's up vector
-    // collinear with the view direction.
-    OrbitCamera poleCamera{
-        target,
-        target + glm::vec3{0.0f, 0.0f, 4.0f},
-        settings
-    };
-    poleCamera.orbit(0.0f, -1.0f);
-    poleCamera.update(1.0);
-    const glm::vec3 viewDirection = glm::normalize(
-        poleCamera.target() - poleCamera.position()
-    );
-    JULIA_CHECK(std::abs(glm::dot(viewDirection, poleCamera.up())) <= Epsilon);
-
-    const glm::vec3 positionBeforeHorizontalOrbit = poleCamera.position();
-    poleCamera.orbit(-0.5f, 0.0f);
-    poleCamera.update(1.0);
-    JULIA_CHECK(!nearlyEqual(
-        poleCamera.position(),
-        positionBeforeHorizontalOrbit
-    ));
-    JULIA_CHECK(nearlyEqual(
-        glm::length(poleCamera.position() - poleCamera.target()),
-        4.0f
-    ));
-
-    // Input changes goals only; the visible pose starts gently, then slows
-    // down to the exact destination without perpetual inertia.
-    OrbitCamera smooth{{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 4.0f}};
-    smooth.orbit(-80.0f, 30.0f);
-    smooth.zoom(2.0f);
-    smooth.setTarget({0.5f, -0.2f, 0.3f});
-    JULIA_CHECK(nearlyEqual(smooth.position(), {0.0f, 0.0f, 4.0f}));
-    smooth.update(0.001);
-    const float firstStep = smooth.target().x;
-    smooth.update(0.001);
-    JULIA_CHECK(firstStep > 0.0f && firstStep < 0.001f);
-    JULIA_CHECK(smooth.target().x - firstStep > firstStep);
-    smooth.update(0.148);
-    JULIA_CHECK(smooth.target().x > 0.47f && smooth.target().x < 0.5f);
-    smooth.update(1.0);
-    JULIA_CHECK(nearlyEqual(smooth.target(), {0.5f, -0.2f, 0.3f}));
-    JULIA_CHECK(nearlyEqual(smooth.distance(), 4.0f * std::exp(-0.24f)));
-    const auto settled = smooth.position();
-    smooth.update(1.0);
-    JULIA_CHECK(nearlyEqual(smooth.position(), settled));
-
-    // Compare the transient pose, not only the final pose, at several FPS.
+    // Analytic smoothing agrees during the transient, including irregular dt.
     const auto simulate = [](int fps) {
-        OrbitCamera value{{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 4.0f}};
-        value.orbit(-120.0f, 55.0f);
-        value.zoom(3.0f);
-        value.setTarget({0.5f, -0.2f, 0.3f});
-        for (int i = 0; i < fps / 10; ++i)
-            value.update(1.0 / static_cast<double>(fps));
-        return value;
+        OrbitCamera c{subject};
+        c.orbit(-120, 55);
+        c.zoom(3);
+        c.pan(40, -20, 1000);
+        for (int i = 0; i < fps / 10; ++i) c.update(1.0 / fps);
+        return c;
     };
     const auto reference = simulate(30);
-    for (const int fps : {60, 120, 240})
+    for (const int fps : {60,120,240})
     {
-        const auto value = simulate(fps);
-        JULIA_CHECK(nearlyEqual(reference.position(), value.position()));
-        JULIA_CHECK(nearlyEqual(reference.target(), value.target()));
-        JULIA_CHECK(nearlyEqual(reference.up(), value.up()));
+        const auto c = simulate(fps);
+        JULIA_CHECK(near(c.position(), reference.position()));
+        JULIA_CHECK(near(c.up(), reference.up()));
     }
-    OrbitCamera irregular{{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 4.0f}};
-    irregular.orbit(-120.0f, 55.0f);
-    irregular.zoom(3.0f);
-    irregular.setTarget({0.5f, -0.2f, 0.3f});
-    for (const double dt : {0.007, 0.025, 0.004, 0.041, 0.023})
-        irregular.update(dt);
-    JULIA_CHECK(nearlyEqual(reference.position(), irregular.position()));
-
-    // Pan follows screen axes, and local movement supports all three axes.
-    OrbitCamera panCamera{{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 4.0f}};
-    panCamera.pan(100.0f, -50.0f, 1000.0f, 90.0f);
-    panCamera.update(1.0);
-    JULIA_CHECK(nearlyEqual(panCamera.target(), {-0.8f, -0.4f, 0.0f}));
-    panCamera.moveLocal({1.0f, 2.0f, -3.0f});
-    panCamera.update(1.0);
-    JULIA_CHECK(nearlyEqual(panCamera.target(), {0.2f, 1.6f, -3.0f}));
-    JULIA_CHECK(nearlyEqual(panCamera.position() - panCamera.target(), {0.0f, 0.0f, 4.0f}));
-
-    // Rapid direction changes and extreme wheel input stay inside bounds.
-    for (int i = 0; i < 500; ++i)
-    {
-        camera.zoom((i % 2 == 0) ? 1000.0f : -1000.0f);
-        camera.orbit(3.0f, -2.0f);
-        camera.update(1.0 / 144.0);
-        JULIA_CHECK(camera.distance() >= settings.minDistance - Epsilon);
-        JULIA_CHECK(camera.distance() <= settings.maxDistance + Epsilon);
-        const auto view = glm::normalize(camera.target() - camera.position());
-        JULIA_CHECK(std::abs(glm::dot(view, camera.up())) < Epsilon);
-    }
-    const auto beforeInvalid = camera.position();
+    OrbitCamera irregular{subject};
+    irregular.orbit(-120, 55);
+    irregular.zoom(3);
+    irregular.pan(40, -20, 1000);
+    for (double dt : {.007,.025,.004,.041,.023}) irregular.update(dt);
+    JULIA_CHECK(near(irregular.position(), reference.position()));
+    const auto beforeInvalid = irregular.position();
     const float nan = std::numeric_limits<float>::quiet_NaN();
-    camera.orbit(nan, 0.0f);
-    camera.zoom(nan);
-    camera.moveLocal({nan, 0.0f, 0.0f});
-    camera.update(nan);
-    camera.update(-1.0);
-    camera.update(0.0);
-    JULIA_CHECK(nearlyEqual(camera.position(), beforeInvalid));
+    irregular.orbit(nan,0);
+    irregular.zoom(nan);
+    irregular.pan(nan,0,1000);
+    irregular.setViewport(0,0,nan);
+    irregular.update(nan);
+    irregular.update(-1);
+    JULIA_CHECK(near(irregular.position(), beforeInvalid));
 
+    // Input ownership, click threshold, button chords, capture and cancellation.
+    using julia::desktop::CameraInput;
+    using julia::desktop::CameraInputContext;
+    using Button = CameraInput::Button;
+    CameraInput input;
+    OrbitCamera controlled{subject};
+    input.press(Button::Left, false, 20, 20);
+    input.move(400,300,1000,controlled);
+    controlled.update(1);
+    JULIA_CHECK(near(controlled.position(), initial));
+    input.press(Button::Right, false, 20,20);
+    input.move(22,21,1000,controlled);
+    input.release(Button::Right);
+    controlled.update(1);
+    JULIA_CHECK(near(controlled.position(), initial));
+    input.press(Button::Right, false, 20,20);
+    input.press(Button::Middle, false, 20,20);
+    input.release(Button::Middle);
+    JULIA_CHECK(input.active());
+    input.move(100,30,1000,controlled);
+    input.release(Button::Right);
+    controlled.update(1);
+    JULIA_CHECK(!near(controlled.position(), initial));
+    JULIA_CHECK(near(controlled.target(), {0,1,0}));
+    for (int block = 0; block < 3; ++block)
+    {
+        const auto pose = controlled.position();
+        input.press(Button::Right,false,20,20);
+        CameraInputContext blocked;
+        blocked.focused = block != 0;
+        blocked.inside = block != 1;
+        blocked.mouseCapturedByUi = block == 2;
+        input.setContext(blocked);
+        input.move(300,300,1000,controlled);
+        input.scroll(100,controlled);
+        input.press(Button::Middle,false,20,20);
+        JULIA_CHECK(!input.active());
+        input.setContext({});
+        input.move(500,500,1000,controlled);
+        controlled.update(1);
+        JULIA_CHECK(near(controlled.position(), pose));
+    }
+    CameraInputContext textInput;
+    textInput.keyboardCapturedByUi = true;
+    input.setContext(textInput);
+    JULIA_CHECK(!input.acceptsKeyboard());
+    JULIA_CHECK(input.acceptsMouse());
+    input.setContext({});
+    for (bool middle : {false,true})
+    {
+        controlled.frameBody(true);
+        input.press(middle ? Button::Middle : Button::Right, !middle,20,20);
+        input.move(100,40,1000,controlled);
+        input.release(middle ? Button::Middle : Button::Right);
+        controlled.update(1);
+        JULIA_CHECK(!near(controlled.target(), {0,1,0}));
+        JULIA_CHECK(near(direction(controlled), {0,0,1}));
+    }
     return JULIA_TEST_RESULT();
 }

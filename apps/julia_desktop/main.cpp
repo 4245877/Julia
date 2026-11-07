@@ -6,6 +6,7 @@
 #include "julia/render_opengl/OpenGLRenderer.hpp"
 #include "AnimationVerification.hpp"
 #include "EyeVerification.hpp"
+#include "CameraInput.hpp"
 #include "julia/render_opengl/EyePoseLayer.hpp"
 
 #include <glm/glm.hpp>
@@ -19,6 +20,9 @@
 #include <system_error>
 #include <sstream>
 #include <iomanip>
+#include <cctype>
+#include <fstream>
+#include <vector>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -45,6 +49,42 @@ namespace
             ? bundledAssets : std::filesystem::path{JULIA_ASSET_DIR};
     }
 
+    julia::render::CameraSubject cameraSubject(
+        const julia::render_opengl::GLModel& model, const glm::mat4& fit)
+    {
+        julia::render::CameraSubject subject;
+        subject.min = glm::vec3{fit * glm::vec4{model.bounds().min, 1}};
+        subject.max = glm::vec3{fit * glm::vec4{model.bounds().max, 1}};
+        const float height = subject.max.y - subject.min.y;
+        std::optional<glm::vec3> head;
+        glm::vec3 eyeSum{0};
+        int eyeCount = 0;
+        for (const auto& node : model.nodes())
+        {
+            auto name = node.name;
+            std::transform(name.begin(), name.end(), name.begin(),
+                [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+            // Common rig names, with namespace prefixes removed. Unknown rigs
+            // use the proportional bounds fallback in OrbitCamera.
+            if (const auto colon = name.rfind(':'); colon != std::string::npos)
+                name.erase(0, colon + 1);
+            const auto point = glm::vec3{fit * node.globalBindTransform * glm::vec4{0,0,0,1}};
+            if (point.y < subject.min.y + height * 0.6f ||
+                glm::any(glm::lessThan(point, subject.min)) ||
+                glm::any(glm::greaterThan(point, subject.max))) continue;
+            if (!head && (name == "head" || name.starts_with("head.") || name.starts_with("head_")))
+                head = point + glm::vec3{0, height * 0.055f, 0};
+            if (name == "eye.l" || name == "eye.r" || name == "lefteye" || name == "righteye" ||
+                name == "left_eye" || name == "right_eye")
+            {
+                eyeSum += point;
+                ++eyeCount;
+            }
+        }
+        subject.face = eyeCount == 2 ? std::optional<glm::vec3>{eyeSum * 0.5f} : head;
+        return subject;
+    }
+
     struct WindowState
     {
         julia::render_opengl::OpenGLRenderer* renderer = nullptr;
@@ -53,10 +93,12 @@ namespace
         julia::render_opengl::EyePoseLayer* eyes = nullptr;
         const julia::render_opengl::GLModel* model = nullptr;
         julia::render_opengl::CameraConfig cameraConfig{};
-        int dragButton = -1;
-        bool panning = false;
-        double lastCursorX = 0.0;
-        double lastCursorY = 0.0;
+        julia::desktop::CameraInput cameraInput;
+        julia::desktop::CameraInputContext inputContext;
+        double cursorX = 0, cursorY = 0;
+        // A future UI routes consumed events here before camera callbacks.
+        // The current desktop has only a native title bar and no overlay UI.
+        void syncInputContext() { cameraInput.setContext(inputContext); }
 
         void applyCamera() const
         {
@@ -106,11 +148,15 @@ namespace
 
     void framebufferSizeCallback(GLFWwindow* window, int width, int height)
     {
-        const WindowState* state = getWindowState(window);
+        WindowState* state = getWindowState(window);
 
         if (state && state->renderer)
         {
             state->renderer->resize(width, height);
+            if (state->orbitCamera)
+                state->orbitCamera->setViewport(static_cast<float>(width),
+                    static_cast<float>(height), state->cameraConfig.fovDegrees);
+            state->cameraInput.cancel();
         }
     }
 
@@ -130,53 +176,32 @@ namespace
             return;
         }
 
+        state->syncInputContext();
+        using Button = julia::desktop::CameraInput::Button;
+        const auto cameraButton = button == GLFW_MOUSE_BUTTON_LEFT ? Button::Left :
+            button == GLFW_MOUSE_BUTTON_RIGHT ? Button::Right : Button::Middle;
         if (action == GLFW_PRESS)
         {
-            state->dragButton = button;
-            state->panning = button != GLFW_MOUSE_BUTTON_LEFT ||
-                             (mods & GLFW_MOD_SHIFT) != 0;
-            glfwGetCursorPos(
-                window,
-                &state->lastCursorX,
-                &state->lastCursorY
-            );
+            state->cameraInput.press(cameraButton, (mods & GLFW_MOD_SHIFT) != 0,
+                state->cursorX, state->cursorY);
         }
-        else if (action == GLFW_RELEASE && state->dragButton == button)
-        {
-            state->dragButton = -1;
-        }
+        else if (action == GLFW_RELEASE) state->cameraInput.release(cameraButton);
     }
 
     void cursorPositionCallback(GLFWwindow* window, double x, double y)
     {
         WindowState* state = getWindowState(window);
 
-        if (!state || state->dragButton < 0 || !state->orbitCamera)
-        {
-            return;
-        }
-
-        const double deltaX = x - state->lastCursorX;
-        const double deltaY = y - state->lastCursorY;
-
-        state->lastCursorX = x;
-        state->lastCursorY = y;
-
-        if (state->panning)
-        {
-            int width = 0;
-            int height = 0;
-            // Cursor deltas use logical window pixels, including on HiDPI.
-            glfwGetWindowSize(window, &width, &height);
-            state->orbitCamera->pan(static_cast<float>(deltaX),
-                static_cast<float>(deltaY), static_cast<float>(height),
-                state->cameraConfig.fovDegrees);
-        }
-        else
-        {
-            state->orbitCamera->orbit(
-                static_cast<float>(deltaX), static_cast<float>(deltaY));
-        }
+        if (!state || !state->orbitCamera) return;
+        state->cursorX = x;
+        state->cursorY = y;
+        state->syncInputContext();
+        int width = 0, height = 0;
+        glfwGetWindowSize(window, &width, &height);
+        // Also reject out-of-window positions before GLFW's enter/leave event.
+        if (x < 0 || y < 0 || x >= width || y >= height) state->cameraInput.cancel();
+        // Cursor deltas and height use logical pixels, including on HiDPI.
+        state->cameraInput.move(x, y, static_cast<float>(height), *state->orbitCamera);
     }
 
     void scrollCallback(
@@ -192,15 +217,26 @@ namespace
             return;
         }
 
-        state->orbitCamera->zoom(static_cast<float>(yOffset));
+        state->syncInputContext();
+        state->cameraInput.scroll(yOffset, *state->orbitCamera);
     }
 
     void focusCallback(GLFWwindow* window, int focused)
     {
-        if (!focused)
+        if (auto* state = getWindowState(window))
         {
-            if (auto* state = getWindowState(window))
-                state->dragButton = -1;
+            state->inputContext.focused = focused != 0;
+            state->syncInputContext();
+        }
+    }
+
+    void cursorEnterCallback(GLFWwindow* window, int entered)
+    {
+        if (auto* state = getWindowState(window))
+        {
+            state->inputContext.inside = entered != 0;
+            if (entered) glfwGetCursorPos(window, &state->cursorX, &state->cursorY);
+            state->syncInputContext();
         }
     }
 
@@ -209,6 +245,8 @@ namespace
         if (action != GLFW_PRESS) return;
         auto* state = getWindowState(window);
         if (!state || !state->player) return;
+        state->syncInputContext();
+        if (!state->cameraInput.acceptsKeyboard()) return;
         auto& player = *state->player;
         if (key == GLFW_KEY_SPACE)
         {
@@ -303,48 +341,154 @@ namespace
         }
         else if (key == GLFW_KEY_F || key == GLFW_KEY_B)
         {
-            const auto fit = state->model->fitToHeightTransform(2.2f);
-            auto target = glm::vec3{fit * glm::vec4{state->model->bounds().center(), 1}};
-            auto offset = glm::vec3{0, .1f, 3.6f};
-            if (key == GLFW_KEY_F)
-            {
-                for (const auto& node : state->model->nodes())
-                    if (node.name.starts_with("head.x"))
-                    {
-                        target = glm::vec3{fit * node.globalBindTransform * glm::vec4{0,0,0,1}} + glm::vec3{0,.12f,0};
-                        break;
-                    }
-                offset = {0, .015f, .60f};
-            }
-            *state->orbitCamera = julia::render::OrbitCamera{target, target + offset};
+            state->cameraInput.cancel();
+            if (key == GLFW_KEY_F) state->orbitCamera->focusFace();
+            else state->orbitCamera->frameBody();
         }
     }
 
     void processInput(GLFWwindow* window, double deltaSeconds)
     {
-        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        {
-            glfwSetWindowShouldClose(window, GLFW_TRUE);
-        }
         auto* state = getWindowState(window);
-        if (!state || !state->orbitCamera || !glfwGetWindowAttrib(window, GLFW_FOCUSED))
-            return;
+        if (!state || !state->orbitCamera) return;
+        state->syncInputContext();
+        if (!state->cameraInput.acceptsKeyboard()) return;
+        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+            glfwSetWindowShouldClose(window, GLFW_TRUE);
         const auto pressed = [window](int key) {
             return glfwGetKey(window, key) == GLFW_PRESS;
         };
-        glm::vec3 direction{
+        glm::vec2 direction{
             static_cast<float>(pressed(GLFW_KEY_D) || pressed(GLFW_KEY_RIGHT)) -
                 static_cast<float>(pressed(GLFW_KEY_A) || pressed(GLFW_KEY_LEFT)),
             static_cast<float>(pressed(GLFW_KEY_E) || pressed(GLFW_KEY_UP)) -
-                static_cast<float>(pressed(GLFW_KEY_Q) || pressed(GLFW_KEY_DOWN)),
-            static_cast<float>(pressed(GLFW_KEY_S)) - static_cast<float>(pressed(GLFW_KEY_W))
+                static_cast<float>(pressed(GLFW_KEY_Q) || pressed(GLFW_KEY_DOWN))
         };
         if (glm::length(direction) > 0.0f)
         {
-            const float speed = state->orbitCamera->distance() * 0.8f;
-            state->orbitCamera->moveLocal(glm::normalize(direction) * speed *
+            const float speed = state->orbitCamera->settings().keyboardPanHalfScreensPerSecond;
+            state->orbitCamera->panNormalized(glm::normalize(direction) * speed *
                 static_cast<float>(deltaSeconds));
         }
+        const float zoom = static_cast<float>(pressed(GLFW_KEY_W)) - static_cast<float>(pressed(GLFW_KEY_S));
+        state->orbitCamera->zoom(zoom * state->orbitCamera->settings().keyboardZoomStepsPerSecond *
+            static_cast<float>(deltaSeconds));
+    }
+
+    void verifyCameraCallbacks(GLFWwindow* window)
+    {
+        auto& state = *getWindowState(window);
+        auto& camera = *state.orbitCamera;
+        const auto require = [](bool ok, const char* message) {
+            if (!ok) throw std::runtime_error(message);
+        };
+        const auto same = [](glm::vec3 a, glm::vec3 b) { return glm::length(a - b) < 0.0001f; };
+        const auto begin = [&](int button, int mods = 0) {
+            // GLFW ignores cursor warps in an unfocused/hidden window. Feed the
+            // same position event the native button callback normally follows.
+            cursorPositionCallback(window, 100,100);
+            mouseButtonCallback(window, button, GLFW_PRESS, mods);
+        };
+        const auto capture = [&](const char* name) {
+            int width = 0, height = 0;
+            glfwGetFramebufferSize(window, &width, &height);
+            const std::filesystem::path output{"verification/desktop_camera"};
+            std::filesystem::create_directories(output);
+            state.applyCamera();
+            state.renderer->beginFrame();
+            state.renderer->renderModel(*state.model, state.model->fitToHeightTransform(2.2f),
+                state.player->palette());
+            std::vector<unsigned char> pixels(static_cast<std::size_t>(width) * height * 3);
+            glPixelStorei(GL_PACK_ALIGNMENT, 1);
+            glReadPixels(0,0,width,height,GL_RGB,GL_UNSIGNED_BYTE,pixels.data());
+            std::ofstream file(output / (std::string{name} + ".ppm"), std::ios::binary);
+            file << "P6\n" << width << ' ' << height << "\n255\n";
+            for (int y = height - 1; y >= 0; --y)
+                file.write(reinterpret_cast<const char*>(pixels.data() +
+                    static_cast<std::size_t>(y) * width * 3), width * 3);
+            require(static_cast<bool>(file), "Cannot save camera verification frame");
+        };
+        state.inputContext = {};
+        state.syncInputContext();
+        camera.frameBody(true);
+        const auto initial = camera.position();
+        const auto pivot = camera.target();
+        capture("body");
+        begin(GLFW_MOUSE_BUTTON_LEFT);
+        cursorPositionCallback(window, 220,160);
+        mouseButtonCallback(window, GLFW_MOUSE_BUTTON_LEFT, GLFW_RELEASE, 0);
+        camera.update(1);
+        require(same(camera.position(), initial), "Left interaction moved camera");
+        begin(GLFW_MOUSE_BUTTON_RIGHT);
+        cursorPositionCallback(window, 220,160);
+        mouseButtonCallback(window, GLFW_MOUSE_BUTTON_RIGHT, GLFW_RELEASE, 0);
+        camera.update(1);
+        require(!same(camera.position(), initial) && same(camera.target(), pivot), "Orbit callback failed");
+        const auto beforePan = camera.target();
+        begin(GLFW_MOUSE_BUTTON_MIDDLE);
+        cursorPositionCallback(window, 140,120);
+        mouseButtonCallback(window, GLFW_MOUSE_BUTTON_MIDDLE, GLFW_RELEASE, 0);
+        camera.update(1);
+        require(!same(camera.target(), beforePan), "Pan callback failed");
+        const float distance = camera.distance();
+        scrollCallback(window, 0,2);
+        camera.update(1);
+        require(camera.distance() < distance, "Zoom callback failed");
+        keyCallback(window, GLFW_KEY_F, 0, GLFW_PRESS, 0);
+        camera.update(1);
+        require(camera.target().y > pivot.y, "Face focus callback failed");
+        capture("face_angle");
+        keyCallback(window, GLFW_KEY_B, 0, GLFW_PRESS, 0);
+        camera.update(1);
+        require(same(camera.position(), initial), "Camera reset callback failed");
+        // Cancellation must survive return to the window without a new press.
+        for (int reason = 0; reason < 3; ++reason)
+        {
+            begin(GLFW_MOUSE_BUTTON_RIGHT);
+            if (reason == 0) focusCallback(window, GLFW_FALSE);
+            if (reason == 1) cursorEnterCallback(window, GLFW_FALSE);
+            if (reason == 2) { state.inputContext.mouseCapturedByUi = true; state.syncInputContext(); }
+            scrollCallback(window, 0,10);
+            cursorPositionCallback(window, 250,180);
+            state.inputContext = {};
+            state.syncInputContext();
+            cursorPositionCallback(window, 300,180);
+            camera.update(1);
+            require(!state.cameraInput.active() && same(camera.position(), initial), "Cancelled drag resumed");
+        }
+        state.inputContext.keyboardCapturedByUi = true;
+        keyCallback(window, GLFW_KEY_F, 0, GLFW_PRESS, 0);
+        camera.update(1);
+        require(same(camera.position(), initial), "UI keyboard capture ignored");
+        state.inputContext = {};
+        state.syncInputContext();
+        camera.focusFace();
+        camera.update(1);
+        capture("face_front");
+        camera.zoom(1000);
+        camera.update(1);
+        capture("closest_front");
+        camera.orbit(-glm::radians(90.0f) / camera.settings().rotationRadiansPerPixel, 0);
+        camera.update(1);
+        capture("closest_profile");
+        int width = 0, height = 0;
+        glfwGetWindowSize(window, &width, &height);
+        glfwSetWindowSize(window, 240,900);
+        glfwPollEvents();
+        int portraitWidth = 0, portraitHeight = 0;
+        glfwGetFramebufferSize(window, &portraitWidth, &portraitHeight);
+        framebufferSizeCallback(window, portraitWidth,portraitHeight);
+        camera.frameBody(true);
+        require(camera.distance() > distance, "Portrait window did not affect body fitting");
+        capture("portrait_body");
+        framebufferSizeCallback(window, 0,0);
+        glfwSetWindowSize(window, width,height);
+        glfwPollEvents();
+        glfwGetFramebufferSize(window, &width, &height);
+        framebufferSizeCallback(window, width,height);
+        camera.frameBody(true);
+        state.applyCamera();
+        std::cout << "Camera callbacks verified: ownership, orbit/pan/zoom, F/B, UI capture, focus/leave, resize\n";
     }
 }
 
@@ -479,21 +623,15 @@ int main(int argc, char** argv)
 
         const glm::mat4 fitModel = model.fitToHeightTransform(2.2f);
 
-        const glm::vec3 modelCenter{
-            fitModel * glm::vec4{model.bounds().center(), 1.0f}
-        };
-
         julia::render_opengl::CameraConfig cameraConfig{};
-        const glm::vec3 initialOffset =
-            cameraConfig.position - cameraConfig.target;
-
-        cameraConfig.target = modelCenter;
-        cameraConfig.position = modelCenter + initialOffset;
-
-        julia::render::OrbitCamera orbitCamera{
-            modelCenter,
-            cameraConfig.position
-        };
+        const auto subject = cameraSubject(model, fitModel);
+        const float subjectHeight = subject.max.y - subject.min.y;
+        cameraConfig.nearPlane = subjectHeight * 0.01f;
+        cameraConfig.farPlane = subjectHeight * 100.0f;
+        julia::render::OrbitCamera orbitCamera{subject};
+        orbitCamera.setViewport(static_cast<float>(framebufferWidth),
+            static_cast<float>(framebufferHeight), cameraConfig.fovDegrees);
+        orbitCamera.frameBody(true);
 
         WindowState windowState{};
         windowState.renderer = &renderer;
@@ -502,6 +640,10 @@ int main(int argc, char** argv)
         windowState.player = &player;
         windowState.eyes = &eyes;
         windowState.model = &model;
+        glfwGetCursorPos(window, &windowState.cursorX, &windowState.cursorY);
+        windowState.inputContext.focused = hidden || glfwGetWindowAttrib(window, GLFW_FOCUSED) != 0;
+        windowState.inputContext.inside = hidden || glfwGetWindowAttrib(window, GLFW_HOVERED) != 0;
+        windowState.syncInputContext();
 
         glfwSetWindowUserPointer(window, &windowState);
         glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
@@ -509,18 +651,21 @@ int main(int argc, char** argv)
         glfwSetCursorPosCallback(window, cursorPositionCallback);
         glfwSetScrollCallback(window, scrollCallback);
         glfwSetWindowFocusCallback(window, focusCallback);
+        glfwSetCursorEnterCallback(window, cursorEnterCallback);
         glfwSetKeyCallback(window, keyCallback);
 
         windowState.applyCamera();
 
         std::cout
-            << "Camera controls: left drag to orbit, wheel to zoom, right/middle\n"
-            << "or Shift+left drag to pan; WASD/QE or arrows to move; Esc to exit\n";
+            << "Camera: right drag orbit; middle or Shift+right drag pan; wheel/W/S zoom.\n"
+            << "A/D/Q/E or arrows pan; F face (keep angle); B reset front/body; Esc exit.\n"
+            << "Left mouse is reserved for character interaction.\n";
         std::cout << "Animation: PgUp/PgDn select, Space play/pause, X/R stop + bind, L loop,\n"
             << "1..4 blink clips, comma/period step 1/30 s, F face / B body, F1 list clips.\n";
         std::cout << "Eyes: G natural/resume, H auto blink, J auto gaze, K blink, U/I wink,\n"
             << "numpad 1..9 gaze, Home forward, T hold camera point, [/] blink interval, F8 fixed seed.\n";
         keyCallback(window, GLFW_KEY_F1, 0, GLFW_PRESS, 0);
+        if (verification) verifyCameraCallbacks(window);
         if (animationVerification)
         {
             verifyDesktopAnimations(window, renderer, model, player, fitModel,
@@ -552,10 +697,10 @@ int main(int argc, char** argv)
                 if (verificationFrame == 10 || verificationFrame == 70)
                 {
                     const int button = verificationFrame == 10
-                        ? GLFW_MOUSE_BUTTON_LEFT : GLFW_MOUSE_BUTTON_RIGHT;
+                        ? GLFW_MOUSE_BUTTON_RIGHT : GLFW_MOUSE_BUTTON_MIDDLE;
+                    cursorPositionCallback(window, 100,100);
                     mouseButtonCallback(window, button, GLFW_PRESS, 0);
-                    cursorPositionCallback(window, windowState.lastCursorX + 80.0,
-                                           windowState.lastCursorY + 30.0);
+                    cursorPositionCallback(window, 180.0,130.0);
                     mouseButtonCallback(window, button, GLFW_RELEASE, 0);
                 }
                 if (verificationFrame == 40) scrollCallback(window, 0.0, 2.0);
@@ -564,7 +709,7 @@ int main(int argc, char** argv)
             }
             if (glfwGetWindowAttrib(window, GLFW_ICONIFIED))
             {
-                windowState.dragButton = -1;
+                windowState.cameraInput.cancel();
                 glfwWaitEventsTimeout(0.05);
                 previousTime = glfwGetTime();
                 continue;
@@ -594,7 +739,7 @@ int main(int argc, char** argv)
                     << (player.looping() ? "on" : "off") << " | " << std::setprecision(0)
                     << titleFrames / (now - titleTime) << " FPS | eyes " << (eyes.enabled() ? "on" : "off")
                     << " blink " << eyes.behavior().output().blinkLeft << '/' << eyes.behavior().output().blinkRight
-                    << " | G H J K T | PgUp/Dn Space X 1-4 F/B";
+                    << " | RMB orbit MMB pan Wheel zoom F face B reset | PgUp/Dn Space X";
                 glfwSetWindowTitle(window, title.str().c_str());
                 titleFrames = 0;
                 titleTime = now;

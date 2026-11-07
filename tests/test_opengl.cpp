@@ -79,8 +79,11 @@ int main(int argc, char** argv)
             std::filesystem::path{JULIA_TEST_ASSET_DIR} / "models" / "Raphtalia1.fbx");
         JULIA_CHECK(model.meshCount() > 0);
         const auto fit = model.fitToHeightTransform(2.2f);
-        const glm::vec3 center{fit * glm::vec4{model.bounds().center(), 1.0f}};
-        julia::render::OrbitCamera camera{center, center + glm::vec3{0.0f, 0.1f, 3.6f}};
+        julia::render::OrbitCamera camera{julia::render::CameraSubject{
+            glm::vec3{fit * glm::vec4{model.bounds().min, 1.0f}},
+            glm::vec3{fit * glm::vec4{model.bounds().max, 1.0f}}, std::nullopt}};
+        camera.setViewport(static_cast<float>(Width), static_cast<float>(Height), 45.0f);
+        camera.frameBody(true);
         const auto render = [&] {
             julia::render_opengl::CameraConfig config;
             config.position = camera.position();
@@ -98,7 +101,7 @@ int main(int argc, char** argv)
         {
             if (stage == 1) camera.orbit(-120.0f, 40.0f);
             if (stage == 2) camera.zoom(2.0f);
-            if (stage == 3) camera.pan(45.0f, -25.0f, static_cast<float>(Height), 45.0f);
+            if (stage == 3) camera.pan(45.0f, -25.0f, static_cast<float>(Height));
             // Render actual intermediate frames while motion settles.
             for (int frame = 0; frame < 30; ++frame)
             {
