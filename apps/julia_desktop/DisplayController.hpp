@@ -25,8 +25,6 @@ namespace julia::desktop
         float aspect_;
         std::filesystem::path settingsPath_;
         bool persist_;
-        WorkArea lastArea_{};
-        float lastHeightDip_ = 0;
         void applyMode();
         void captureWindow();
     };

@@ -436,7 +436,11 @@ namespace
         state.inputContext = {};
         state.syncInputContext();
         auto cameraBefore = state.orbitCamera->position();
-        const auto draw = [&](const std::string& name) {
+        const std::filesystem::path output{"verification/desktop_display"};
+        std::filesystem::create_directories(output);
+        std::ofstream metrics(output / "coverage.csv");
+        metrics << "frame,width,height,window_bottom,work_bottom,bottom_empty_rows,top_empty_rows,ortho_height\n";
+        const auto draw = [&](const std::string& name, bool saveFrame = true) {
             int width = 0, height = 0;
             glfwGetFramebufferSize(window, &width, &height);
             framebufferSizeCallback(window, width, height);
@@ -457,6 +461,31 @@ namespace
                 }
                 require(empty > pixels.size() / 40 && opaque > 100 && partial > 10,
                     "Avatar silhouette lacks empty/opaque/antialiased pixels");
+                // Test the rendered character, not just the window rectangle.
+                // OpenGL rows start at the bottom. Ignore barely covered MSAA edges.
+                int bottom = height, top = -1;
+                for (int row = 0; row < height; ++row)
+                    for (int col = 0; col < width; ++col)
+                        if (pixels[(static_cast<std::size_t>(row) * width + col) * 4 + 3] >= 128)
+                        {
+                            bottom = std::min(bottom,row);
+                            top = std::max(top,row);
+                        }
+                julia::desktop::WindowPlatform native{window};
+                const auto area = native.workArea(display.settings().avatarMonitor);
+                int wx = 0, wy = 0, ww = 0, wh = 0;
+                glfwGetWindowPos(window,&wx,&wy);
+                glfwGetWindowSize(window,&ww,&wh);
+                metrics << name << ',' << width << ',' << height << ',' << wy + wh << ','
+                    << area.y + area.height << ',' << bottom << ',' << height - 1 - top << ','
+                    << state.activeCamera().orthographicHeight << '\n';
+                metrics.flush();
+                require(ww == width && wh == height, "Windows framebuffer/client pixel coordinates differ");
+                require(wy + wh == area.y + area.height, "Avatar window is detached from work area bottom");
+                require(wx >= area.x && wy >= area.y && wx + ww <= area.x + area.width,
+                    "Avatar window overlaps reserved system area");
+                require(bottom <= 2, "Rendered avatar has transparent rows below the waist");
+                require(top < height - 1, "Avatar head/ears exceed portrait headroom");
                 display.updateShape(pixels, width, height);
                 surface.present();
             }
@@ -473,24 +502,25 @@ namespace
             }
             else require(rgba[3] == 255 && std::abs(static_cast<int>(rgba[0]) - 128) <= 1,
                 "Full Window grey background changed");
-            const std::filesystem::path output{"verification/desktop_display"};
-            std::filesystem::create_directories(output);
-            std::ofstream file(output / (name + ".pam"), std::ios::binary);
-            file << "P7\nWIDTH " << width << "\nHEIGHT " << height << "\nDEPTH 4\nMAXVAL 255\nTUPLTYPE RGB_ALPHA\nENDHDR\n";
-            for (int y = height - 1; y >= 0; --y)
-                file.write(reinterpret_cast<const char*>(rgba.data() + static_cast<std::size_t>(y) * width * 4), width * 4);
-            require(static_cast<bool>(file), "Cannot save display verification frame");
+            if (saveFrame)
+            {
+                std::ofstream file(output / (name + ".pam"), std::ios::binary);
+                file << "P7\nWIDTH " << width << "\nHEIGHT " << height << "\nDEPTH 4\nMAXVAL 255\nTUPLTYPE RGB_ALPHA\nENDHDR\n";
+                for (int y = height - 1; y >= 0; --y)
+                    file.write(reinterpret_cast<const char*>(rgba.data() + static_cast<std::size_t>(y) * width * 4), width * 4);
+                require(static_cast<bool>(file), "Cannot save display verification frame");
+            }
             require(glGetError() == GL_NO_ERROR, "OpenGL error during display mode verification");
         };
         draw("avatar");
         julia::desktop::WindowPlatform native{window};
-        const auto expectedRect = julia::desktop::avatarLayout(native.primaryWorkArea(),
-            display.settings().avatarHeightDip, state.avatarCamera->aspect());
+        const auto expectedRect = julia::desktop::avatarLayout(native.workArea(display.settings().avatarMonitor),
+            display.settings().avatarHeightDip, state.avatarCamera->aspect(), display.settings().avatarMarginRightDip);
         int x = 0, y = 0, width = 0, height = 0;
         glfwGetWindowPos(window, &x, &y);
         glfwGetWindowSize(window, &width, &height);
         require(x == expectedRect.x && y == expectedRect.y && width == expectedRect.width && height == expectedRect.height,
-            "Desktop Avatar does not follow primary work area / DPI");
+            "Desktop Avatar does not follow selected work area / DPI");
         for (int i = 0; i < 2; ++i)
         {
             keyCallback(window, GLFW_KEY_F9, 0, GLFW_PRESS, 0);
@@ -511,6 +541,28 @@ namespace
         display.execute(julia::desktop::DisplayCommand::Larger);
         draw("avatar_larger");
         display.execute(julia::desktop::DisplayCommand::Smaller);
+        // Exercise real GPU rasterization at portrait pixel sizes derived from
+        // other monitor/DPI configurations, without changing the user's displays.
+        // Place these hidden test windows against the actual monitor work bottom.
+        const auto actualArea = native.workArea(display.settings().avatarMonitor);
+        int layoutSample = 0;
+        for (const auto simulated : {julia::desktop::WorkArea{0,0,1920,1040,1},
+            {0,0,2560,1392,1.25f}, {0,0,2560,1368,1.5f}, {0,0,2560,1356,1.75f},
+            {0,0,3840,2064,2}, {0,0,3840,2112,1}, {0,48,1920,1152,1},
+            {-3440,-200,3440,1392,1.5f}, {0,0,5120,1392,1}, {64,0,960,768,1.25f},
+            {0,0,900,1552,1}, {0,0,321,153,3}})
+        {
+            auto rect = julia::desktop::avatarLayout(simulated,display.settings().avatarHeightDip,
+                state.avatarCamera->aspect(),display.settings().avatarMarginRightDip);
+            if (rect.width > actualArea.width || rect.height > actualArea.height) continue;
+            rect.x = actualArea.x + actualArea.width - rect.width;
+            rect.y = actualArea.y + actualArea.height - rect.height;
+            native.resetShape();
+            native.applyAvatarRect(rect);
+            glfwPollEvents();
+            draw("layout_" + std::to_string(layoutSample++));
+        }
+        display.refreshLayout();
         // A wide-window pan used to be lost if the compact viewport was fed
         // into OrbitCamera and clamped its saved screen-space composition.
         display.toggleMode();
@@ -521,16 +573,16 @@ namespace
         state.orbitCamera->update(1);
         cameraBefore = state.orbitCamera->position();
         display.toggleMode();
-        for (const std::string_view suffix : {"TEST_blink_head", "TEST_head_torso", "TEST_hair_tail_cloth"})
-            for (std::size_t i = 0; i < state.model->animations().size(); ++i)
-                if (state.model->animations()[i].name.ends_with(suffix))
-                {
-                    state.player->selectClip(i);
-                    state.player->play();
-                    state.player->seek(state.player->clip()->durationSeconds() * .5);
-                    draw(std::string{suffix});
-                    break;
-                }
+        for (std::size_t i = 0; i < state.model->animations().size(); ++i)
+        {
+            state.player->selectClip(i);
+            state.player->play();
+            for (int sample = 0; sample <= 8; ++sample)
+            {
+                state.player->seek(state.player->clip()->durationSeconds() * sample / 8.0);
+                draw("clip_" + std::to_string(i) + "_" + std::to_string(sample), sample == 4);
+            }
+        }
         const auto animationTime = state.player->timeSeconds();
         const auto animationClip = state.player->clipIndex();
         for (int i = 0; i < 6; ++i)
@@ -550,7 +602,8 @@ namespace
         require(state.player->clipIndex() == animationClip &&
             state.player->state() == julia::render_opengl::PlaybackState::Playing, "Mode switch changed playback state");
         require(glm::length(state.orbitCamera->position() - cameraBefore) < .0001f, "Mode switch reset orbit camera");
-        std::cout << "Display verification completed: alpha, MSAA, premultiplied sRGB, size, F10, six live switches, shared scene\n";
+        std::cout << "Display verification completed: waist pixel coverage, headroom, all clips at nine times, "
+            "alpha, MSAA, premultiplied sRGB, size, F9/F10, six live switches, shared scene\n";
     }
 
     void verifyCameraCallbacks(GLFWwindow* window)
@@ -766,6 +819,8 @@ int main(int argc, char** argv)
     // Full Window writes alpha=1 and remains the original opaque grey viewer.
     glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
     glfwWindowHint(GLFW_ALPHA_BITS, 8);
+    // avatarLayout owns DIP -> physical pixel conversion, including live DPI changes.
+    glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_FALSE);
     glfwWindowHint(GLFW_DECORATED, displaySettings.mode == julia::desktop::DisplayMode::FullWindow);
 
     // Ask for a debug context so GL_KHR_debug can report errors via callback.

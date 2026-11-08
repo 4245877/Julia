@@ -45,7 +45,6 @@ namespace julia::desktop
         glfwSetWindowAttrib(window_, GLFW_FLOATING, avatar() && settings_.topmost ? GLFW_TRUE : GLFW_FALSE);
         if (avatar())
         {
-            lastHeightDip_ = 0;
             refreshLayout();
         }
         else
@@ -81,6 +80,7 @@ namespace julia::desktop
             return;
         }
         captureWindow();
+        if (!avatar()) settings_.avatarMonitor = platform_.windowMonitorId();
         settings_.mode = avatar() ? DisplayMode::FullWindow : DisplayMode::DesktopAvatar;
         applyMode();
         save();
@@ -108,14 +108,15 @@ namespace julia::desktop
     void DisplayController::refreshLayout()
     {
         if (!avatar()) return;
-        const auto area = platform_.primaryWorkArea();
-        if (area == lastArea_ && lastHeightDip_ == settings_.avatarHeightDip) return;
-        const auto rect = avatarLayout(area, settings_.avatarHeightDip, aspect_);
+        const auto area = platform_.workArea(settings_.avatarMonitor);
+        const auto rect = avatarLayout(area, settings_.avatarHeightDip, aspect_, settings_.avatarMarginRightDip);
+        int x = 0, y = 0, width = 0, height = 0;
+        glfwGetWindowPos(window_, &x, &y);
+        glfwGetWindowSize(window_, &width, &height);
+        // Also repair an OS-adjusted rectangle even when work area/DPI is unchanged.
+        if (x == rect.x && y == rect.y && width == rect.width && height == rect.height) return;
         platform_.resetShape();
-        glfwSetWindowSize(window_, rect.width, rect.height);
-        glfwSetWindowPos(window_, rect.x, rect.y);
-        lastArea_ = area;
-        lastHeightDip_ = settings_.avatarHeightDip;
+        platform_.applyAvatarRect(rect);
     }
 
     void DisplayController::updateShape(std::span<const unsigned char> pixels, int width, int height)

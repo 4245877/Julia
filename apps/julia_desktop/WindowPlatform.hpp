@@ -2,6 +2,7 @@
 
 #include "DisplaySettings.hpp"
 #include <span>
+#include <string_view>
 #include <vector>
 
 struct GLFWwindow;
@@ -18,6 +19,9 @@ namespace julia::desktop
         explicit WindowPlatform(GLFWwindow* window) : window_(window) {}
         bool supportsAvatar() const;
         WorkArea primaryWorkArea() const;
+        WorkArea workArea(std::string_view monitorId = {}) const;
+        std::string windowMonitorId() const;
+        void applyAvatarRect(WindowRect rect);
         void resetShape();
         void updateShape(std::span<const unsigned char> bottomUpRgba, int width, int height);
         DisplayCommand contextMenu(bool topmost) const;

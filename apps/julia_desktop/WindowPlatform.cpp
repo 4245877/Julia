@@ -37,13 +37,58 @@ namespace julia::desktop
 
     WorkArea WindowPlatform::primaryWorkArea() const
     {
+        return workArea();
+    }
+
+    WorkArea WindowPlatform::workArea(std::string_view monitorId) const
+    {
         auto* monitor = glfwGetPrimaryMonitor();
         if (!monitor) throw std::runtime_error("No primary display available");
+#ifdef _WIN32
+        int count = 0;
+        auto** monitors = glfwGetMonitors(&count);
+        for (int i = 0; i < count; ++i)
+            if (const char* id = glfwGetWin32Adapter(monitors[i]); id && monitorId == id)
+            {
+                monitor = monitors[i];
+                break;
+            }
+#else
+        (void)monitorId;
+#endif
         WorkArea area;
         float scaleY = 1;
+        // GLFW's Win32 backend already reads GetMonitorInfo(rcWork) and the
+        // selected monitor's effective DPI. Do not scale rcWork a second time.
         glfwGetMonitorWorkarea(monitor, &area.x, &area.y, &area.width, &area.height);
         glfwGetMonitorContentScale(monitor, &area.scale, &scaleY);
         return area;
+    }
+
+    std::string WindowPlatform::windowMonitorId() const
+    {
+#ifdef _WIN32
+        MONITORINFOEXA info{};
+        info.cbSize = sizeof(info);
+        if (GetMonitorInfoA(MonitorFromWindow(glfwGetWin32Window(window_), MONITOR_DEFAULTTONEAREST),
+            reinterpret_cast<MONITORINFO*>(&info)))
+            return info.szDevice;
+#endif
+        return {};
+    }
+
+    void WindowPlatform::applyAvatarRect(WindowRect rect)
+    {
+#ifdef _WIN32
+        // One atomic client/window placement (avatar has no non-client frame),
+        // including when WM_DPICHANGED is delivered during a monitor transition.
+        if (!SetWindowPos(glfwGetWin32Window(window_), nullptr, rect.x, rect.y, rect.width, rect.height,
+            SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOOWNERZORDER))
+            throw std::runtime_error("Cannot position desktop avatar");
+#else
+        glfwSetWindowSize(window_, rect.width, rect.height);
+        glfwSetWindowPos(window_, rect.x, rect.y);
+#endif
     }
 
     void WindowPlatform::resetShape()
