@@ -11,6 +11,7 @@ add_library(julia_render_opengl STATIC)
 target_sources(julia_render_opengl
     PRIVATE
         src/OpenGLRenderer.cpp
+        src/AvatarSurface.cpp
         src/GLShader.cpp
         src/GLMesh.cpp
         src/OutlineNormals.cpp

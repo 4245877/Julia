@@ -1,3 +1,14 @@
+add_library(julia_desktop_display STATIC
+    DisplaySettings.cpp
+    DisplayController.cpp
+    WindowPlatform.cpp
+)
+target_include_directories(julia_desktop_display PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(julia_desktop_display PUBLIC julia_render_opengl PRIVATE julia::warnings)
+if(WIN32)
+    target_link_libraries(julia_desktop_display PRIVATE user32 gdi32)
+endif()
+
 add_executable(julia_desktop
     main.cpp
     AnimationVerification.cpp
@@ -44,5 +55,6 @@ target_link_libraries(julia_desktop
         julia_core
         julia_render
         julia_render_opengl
+        julia_desktop_display
         julia::warnings
 )

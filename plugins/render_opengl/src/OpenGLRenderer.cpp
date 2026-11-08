@@ -35,9 +35,13 @@ namespace julia::render_opengl
 
         std::pair<glm::mat4, glm::mat4> cameraMatrices(const CameraConfig& camera, int width, int height)
         {
-            const glm::mat4 projection{glm::perspective(glm::radians(static_cast<double>(camera.fovDegrees)),
-                static_cast<double>(width) / std::max(height, 1),
-                static_cast<double>(camera.nearPlane), static_cast<double>(camera.farPlane))};
+            const double aspect = static_cast<double>(width) / std::max(height, 1);
+            const double halfHeight = camera.orthographicHeight * 0.5;
+            const glm::mat4 projection{halfHeight > 0.0
+                ? glm::ortho(-halfHeight * aspect, halfHeight * aspect, -halfHeight, halfHeight,
+                    static_cast<double>(camera.nearPlane), static_cast<double>(camera.farPlane))
+                : glm::perspective(glm::radians(static_cast<double>(camera.fovDegrees)), aspect,
+                    static_cast<double>(camera.nearPlane), static_cast<double>(camera.farPlane))};
             const glm::mat4 view{glm::lookAt(glm::dvec3{camera.position},
                 glm::dvec3{camera.target}, glm::dvec3{camera.up})};
             if (!finite(projection) || !finite(view))
@@ -463,7 +467,8 @@ namespace julia::render_opengl
             glm::length(glm::cross(glm::normalize(forward), glm::normalize(camera.up))) < 1e-6f ||
             !std::isfinite(camera.fovDegrees) || camera.fovDegrees <= 0.0f || camera.fovDegrees >= 180.0f ||
             !std::isfinite(camera.nearPlane) || !std::isfinite(camera.farPlane) ||
-            camera.nearPlane <= 0.0f || camera.farPlane <= camera.nearPlane)
+            camera.nearPlane <= 0.0f || camera.farPlane <= camera.nearPlane ||
+            !std::isfinite(camera.orthographicHeight) || camera.orthographicHeight < 0.0f)
             throw std::invalid_argument("Invalid camera: require finite nondegenerate view and 0 < near < far, 0 < FOV < 180");
         const auto [projection, view] = cameraMatrices(camera, width_, height_);
         camera_ = camera;
@@ -481,7 +486,7 @@ namespace julia::render_opengl
         updateCamera();
     }
 
-    void OpenGLRenderer::beginFrame()
+    void OpenGLRenderer::beginFrame(glm::vec4 background)
     {
         glViewport(0, 0, width_, height_);
         glDepthMask(GL_TRUE);
@@ -491,7 +496,7 @@ namespace julia::render_opengl
         glClearDepth(1.0);
         // Linear 0.21586 maps to neutral sRGB #808080. Clearing a buffer needs
         // no geometry, texture, shader, camera transform, or visual effects.
-        glClearColor(0.21586f, 0.21586f, 0.21586f, 1.0f);
+        glClearColor(background.r, background.g, background.b, background.a);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 

@@ -21,6 +21,9 @@ namespace julia::render_opengl
         // subject sits a few metres from the camera, so 0.1 clips nothing.
         float nearPlane = 0.1f;
         float farPlane = 100.0f;
+        // Zero selects perspective. A positive scene-space height selects an
+        // orthographic portrait without perspective-dependent waist cropping.
+        float orthographicHeight = 0.0f;
     };
 
     struct ToonStyleConfig
@@ -52,7 +55,7 @@ namespace julia::render_opengl
 
         void setCamera(const CameraConfig& camera);
         void setStyleConfig(const ToonStyleConfig& style);
-        void beginFrame();
+        void beginFrame(glm::vec4 background = {0.21586f, 0.21586f, 0.21586f, 1.0f});
         // CPU submission time (not GPU execution), for explicit runtime audits.
         double lastPaletteUploadCpuMilliseconds() const { return paletteUploadCpuMs_; }
 

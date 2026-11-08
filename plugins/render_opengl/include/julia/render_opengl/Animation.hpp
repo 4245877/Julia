@@ -77,6 +77,7 @@ namespace julia::render_opengl
         double timeSeconds() const { return timeSeconds_; }
         std::span<const glm::mat4> palette() const { return palette_; }
         std::span<const glm::mat4> localTransforms() const { return locals_; }
+        std::span<const glm::mat4> globalTransforms() const { return globals_; }
 
     private:
         const GLModel& model_;

@@ -2,6 +2,9 @@
 #include <GLFW/glfw3.h>
 
 #include "julia/render/OrbitCamera.hpp"
+#include "julia/render/AvatarCamera.hpp"
+#include "julia/render_opengl/AvatarSurface.hpp"
+#include "DisplayController.hpp"
 #include "julia/render_opengl/GLModelLoader.hpp"
 #include "julia/render_opengl/OpenGLRenderer.hpp"
 #include "AnimationVerification.hpp"
@@ -89,6 +92,12 @@ namespace
     {
         julia::render_opengl::OpenGLRenderer* renderer = nullptr;
         julia::render::OrbitCamera* orbitCamera = nullptr;
+        const julia::render::AvatarCamera* avatarCamera = nullptr;
+        julia::desktop::DisplayController* display = nullptr;
+        julia::desktop::DisplayCommand displayCommand = julia::desktop::DisplayCommand::None;
+        bool contextMenuRequested = false;
+        std::optional<std::uint32_t> anchorNode;
+        glm::mat4 fitModel{1};
         julia::render_opengl::AnimationPlayer* player = nullptr;
         julia::render_opengl::EyePoseLayer* eyes = nullptr;
         const julia::render_opengl::GLModel* model = nullptr;
@@ -100,18 +109,35 @@ namespace
         // The current desktop has only a native title bar and no overlay UI.
         void syncInputContext() { cameraInput.setContext(inputContext); }
 
+        julia::render_opengl::CameraConfig activeCamera() const
+        {
+            auto updatedConfig = cameraConfig;
+            if (display && display->avatar() && avatarCamera)
+            {
+                glm::vec3 offset{0};
+                if (anchorNode && player && model)
+                {
+                    const auto bind = model->nodes()[*anchorNode].globalBindTransform;
+                    const auto posed = player->globalTransforms()[*anchorNode];
+                    offset = glm::vec3{fitModel * (posed * glm::vec4{0,0,0,1} - bind * glm::vec4{0,0,0,1})};
+                }
+                updatedConfig.position = avatarCamera->position(offset);
+                updatedConfig.target = avatarCamera->target(offset);
+                updatedConfig.up = {0,1,0};
+                updatedConfig.orthographicHeight = avatarCamera->frameHeight();
+            }
+            else
+            {
+                updatedConfig.position = orbitCamera->position();
+                updatedConfig.target = orbitCamera->target();
+                updatedConfig.up = orbitCamera->up();
+            }
+            return updatedConfig;
+        }
+
         void applyCamera() const
         {
-            if (!renderer || !orbitCamera)
-            {
-                return;
-            }
-
-            auto updatedConfig = cameraConfig;
-            updatedConfig.position = orbitCamera->position();
-            updatedConfig.target = orbitCamera->target();
-            updatedConfig.up = orbitCamera->up();
-            renderer->setCamera(updatedConfig);
+            if (renderer && orbitCamera) renderer->setCamera(activeCamera());
         }
     };
 
@@ -153,7 +179,7 @@ namespace
         if (state && state->renderer)
         {
             state->renderer->resize(width, height);
-            if (state->orbitCamera)
+            if (state->orbitCamera && (!state->display || !state->display->avatar()))
                 state->orbitCamera->setViewport(static_cast<float>(width),
                     static_cast<float>(height), state->cameraConfig.fovDegrees);
             state->cameraInput.cancel();
@@ -177,6 +203,14 @@ namespace
         }
 
         state->syncInputContext();
+        if (state->display && state->display->avatar())
+        {
+            // Left clicks remain available to character interaction. Native
+            // silhouette hit testing has already excluded transparent pixels.
+            if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE)
+                state->contextMenuRequested = true;
+            return;
+        }
         using Button = julia::desktop::CameraInput::Button;
         const auto cameraButton = button == GLFW_MOUSE_BUTTON_LEFT ? Button::Left :
             button == GLFW_MOUSE_BUTTON_RIGHT ? Button::Right : Button::Middle;
@@ -195,6 +229,7 @@ namespace
         if (!state || !state->orbitCamera) return;
         state->cursorX = x;
         state->cursorY = y;
+        if (state->display && state->display->avatar()) return;
         state->syncInputContext();
         int width = 0, height = 0;
         glfwGetWindowSize(window, &width, &height);
@@ -218,6 +253,7 @@ namespace
         }
 
         state->syncInputContext();
+        if (state->display && state->display->avatar()) return;
         state->cameraInput.scroll(yOffset, *state->orbitCamera);
     }
 
@@ -247,6 +283,18 @@ namespace
         if (!state || !state->player) return;
         state->syncInputContext();
         if (!state->cameraInput.acceptsKeyboard()) return;
+        if (key == GLFW_KEY_ESCAPE)
+        {
+            glfwSetWindowShouldClose(window, GLFW_TRUE);
+            return;
+        }
+        if (key == GLFW_KEY_F10 || key == GLFW_KEY_F9)
+        {
+            state->displayCommand = key == GLFW_KEY_F10 ? julia::desktop::DisplayCommand::ToggleMode
+                : julia::desktop::DisplayCommand::ToggleTopmost;
+            state->cameraInput.cancel();
+            return;
+        }
         auto& player = *state->player;
         if (key == GLFW_KEY_SPACE)
         {
@@ -319,8 +367,8 @@ namespace
             else if (key == GLFW_KEY_T)
             {
                 if (eyes.hasTargetPoint()) eyes.clearTargetPoint();
-                else eyes.setTargetPoint(glm::vec3{glm::inverse(state->model->fitToHeightTransform(2.2f)) *
-                    glm::vec4{state->orbitCamera->position(),1}});
+                else eyes.setTargetPoint(glm::vec3{glm::inverse(state->fitModel) *
+                    glm::vec4{state->activeCamera().position,1}});
             }
             else if (key == GLFW_KEY_F8) behavior.reset(0x52415048u);
             else if (key == GLFW_KEY_LEFT_BRACKET || key == GLFW_KEY_RIGHT_BRACKET)
@@ -341,6 +389,7 @@ namespace
         }
         else if (key == GLFW_KEY_F || key == GLFW_KEY_B)
         {
+            if (state->display && state->display->avatar()) return;
             state->cameraInput.cancel();
             if (key == GLFW_KEY_F) state->orbitCamera->focusFace();
             else state->orbitCamera->frameBody();
@@ -355,6 +404,7 @@ namespace
         if (!state->cameraInput.acceptsKeyboard()) return;
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
             glfwSetWindowShouldClose(window, GLFW_TRUE);
+        if (state->display && state->display->avatar()) return;
         const auto pressed = [window](int key) {
             return glfwGetKey(window, key) == GLFW_PRESS;
         };
@@ -373,6 +423,134 @@ namespace
         const float zoom = static_cast<float>(pressed(GLFW_KEY_W)) - static_cast<float>(pressed(GLFW_KEY_S));
         state->orbitCamera->zoom(zoom * state->orbitCamera->settings().keyboardZoomStepsPerSecond *
             static_cast<float>(deltaSeconds));
+    }
+
+    void verifyDisplayModes(GLFWwindow* window, julia::render_opengl::AvatarSurface& surface)
+    {
+        auto& state = *getWindowState(window);
+        auto& display = *state.display;
+        const auto require = [](bool ok, const char* message) {
+            if (!ok) throw std::runtime_error(message);
+        };
+        require(display.avatar(), "Desktop Avatar is not available on this machine");
+        state.inputContext = {};
+        state.syncInputContext();
+        auto cameraBefore = state.orbitCamera->position();
+        const auto draw = [&](const std::string& name) {
+            int width = 0, height = 0;
+            glfwGetFramebufferSize(window, &width, &height);
+            framebufferSizeCallback(window, width, height);
+            state.applyCamera();
+            if (display.avatar()) surface.begin(width, height);
+            else glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            state.renderer->beginFrame(display.avatar() ? glm::vec4{0} : glm::vec4{.21586f,.21586f,.21586f,1});
+            state.renderer->renderModel(*state.model, state.fitModel, state.player->palette());
+            if (display.avatar())
+            {
+                const auto pixels = surface.resolveCoverage();
+                std::size_t empty = 0, opaque = 0, partial = 0;
+                for (std::size_t i = 3; i < pixels.size(); i += 4)
+                {
+                    empty += pixels[i] == 0;
+                    opaque += pixels[i] == 255;
+                    partial += pixels[i] > 0 && pixels[i] < 255;
+                }
+                require(empty > pixels.size() / 40 && opaque > 100 && partial > 10,
+                    "Avatar silhouette lacks empty/opaque/antialiased pixels");
+                display.updateShape(pixels, width, height);
+                surface.present();
+            }
+            std::vector<unsigned char> rgba(static_cast<std::size_t>(width) * height * 4);
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+            glReadBuffer(GL_BACK);
+            glReadPixels(0,0,width,height,GL_RGBA,GL_UNSIGNED_BYTE,rgba.data());
+            if (display.avatar())
+            {
+                require(rgba[3] == 0 && rgba[rgba.size() - 1] == 0, "Avatar background is not transparent");
+                for (std::size_t i = 0; i < rgba.size(); i += 4)
+                    require(rgba[i] <= rgba[i + 3] + 1 && rgba[i + 1] <= rgba[i + 3] + 1 &&
+                        rgba[i + 2] <= rgba[i + 3] + 1, "Avatar RGB is not display-premultiplied");
+            }
+            else require(rgba[3] == 255 && std::abs(static_cast<int>(rgba[0]) - 128) <= 1,
+                "Full Window grey background changed");
+            const std::filesystem::path output{"verification/desktop_display"};
+            std::filesystem::create_directories(output);
+            std::ofstream file(output / (name + ".pam"), std::ios::binary);
+            file << "P7\nWIDTH " << width << "\nHEIGHT " << height << "\nDEPTH 4\nMAXVAL 255\nTUPLTYPE RGB_ALPHA\nENDHDR\n";
+            for (int y = height - 1; y >= 0; --y)
+                file.write(reinterpret_cast<const char*>(rgba.data() + static_cast<std::size_t>(y) * width * 4), width * 4);
+            require(static_cast<bool>(file), "Cannot save display verification frame");
+            require(glGetError() == GL_NO_ERROR, "OpenGL error during display mode verification");
+        };
+        draw("avatar");
+        julia::desktop::WindowPlatform native{window};
+        const auto expectedRect = julia::desktop::avatarLayout(native.primaryWorkArea(),
+            display.settings().avatarHeightDip, state.avatarCamera->aspect());
+        int x = 0, y = 0, width = 0, height = 0;
+        glfwGetWindowPos(window, &x, &y);
+        glfwGetWindowSize(window, &width, &height);
+        require(x == expectedRect.x && y == expectedRect.y && width == expectedRect.width && height == expectedRect.height,
+            "Desktop Avatar does not follow primary work area / DPI");
+        for (int i = 0; i < 2; ++i)
+        {
+            keyCallback(window, GLFW_KEY_F9, 0, GLFW_PRESS, 0);
+            require(state.displayCommand == julia::desktop::DisplayCommand::ToggleTopmost, "F9 did not route topmost toggle");
+            display.execute(state.displayCommand);
+            state.displayCommand = julia::desktop::DisplayCommand::None;
+            require((glfwGetWindowAttrib(window, GLFW_FLOATING) != 0) == display.settings().topmost,
+                "Native always-on-top state incorrect");
+        }
+        cursorPositionCallback(window, 100, 100);
+        mouseButtonCallback(window, GLFW_MOUSE_BUTTON_MIDDLE, GLFW_PRESS, 0);
+        cursorPositionCallback(window, 180, 160);
+        scrollCallback(window, 0, 3);
+        processInput(window, 0);
+        state.orbitCamera->update(1);
+        require(glm::length(state.orbitCamera->position() - cameraBefore) < .0001f,
+            "Desktop input changed saved orbit camera");
+        display.execute(julia::desktop::DisplayCommand::Larger);
+        draw("avatar_larger");
+        display.execute(julia::desktop::DisplayCommand::Smaller);
+        // A wide-window pan used to be lost if the compact viewport was fed
+        // into OrbitCamera and clamped its saved screen-space composition.
+        display.toggleMode();
+        int fullWidth = 0, fullHeight = 0;
+        glfwGetFramebufferSize(window, &fullWidth, &fullHeight);
+        framebufferSizeCallback(window, fullWidth, fullHeight);
+        state.orbitCamera->panNormalized({.85f, 0});
+        state.orbitCamera->update(1);
+        cameraBefore = state.orbitCamera->position();
+        display.toggleMode();
+        for (const std::string_view suffix : {"TEST_blink_head", "TEST_head_torso", "TEST_hair_tail_cloth"})
+            for (std::size_t i = 0; i < state.model->animations().size(); ++i)
+                if (state.model->animations()[i].name.ends_with(suffix))
+                {
+                    state.player->selectClip(i);
+                    state.player->play();
+                    state.player->seek(state.player->clip()->durationSeconds() * .5);
+                    draw(std::string{suffix});
+                    break;
+                }
+        const auto animationTime = state.player->timeSeconds();
+        const auto animationClip = state.player->clipIndex();
+        for (int i = 0; i < 6; ++i)
+        {
+            state.inputContext = {};
+            keyCallback(window, GLFW_KEY_F10, 0, GLFW_PRESS, 0);
+            require(state.displayCommand == julia::desktop::DisplayCommand::ToggleMode, "F10 did not route mode switch");
+            display.execute(state.displayCommand);
+            state.displayCommand = julia::desktop::DisplayCommand::None;
+            glfwPollEvents();
+            require(display.avatar() == (i % 2 == 1), "Live mode switch failed");
+            require(glfwGetWindowAttrib(window, GLFW_DECORATED) == !display.avatar(), "Window decorations incorrect");
+            require(glfwGetWindowAttrib(window, GLFW_RESIZABLE) == !display.avatar(), "Window resize state incorrect");
+            draw(display.avatar() ? "avatar_restored" : "full_window");
+        }
+        require(state.player->timeSeconds() == animationTime, "Mode switch reset animation");
+        require(state.player->clipIndex() == animationClip &&
+            state.player->state() == julia::render_opengl::PlaybackState::Playing, "Mode switch changed playback state");
+        require(glm::length(state.orbitCamera->position() - cameraBefore) < .0001f, "Mode switch reset orbit camera");
+        std::cout << "Display verification completed: alpha, MSAA, premultiplied sRGB, size, F10, six live switches, shared scene\n";
     }
 
     void verifyCameraCallbacks(GLFWwindow* window)
@@ -504,7 +682,8 @@ int main(int argc, char** argv)
     }
     const bool eyeVerification = argc > 1 &&
         (std::string_view{argv[1]} == "--verify-eyes" || std::string_view{argv[1]} == "--review-eyes");
-    const bool noEyes = argc > 1 && std::string_view{argv[1]} == "--no-eyes";
+    bool noEyes = false;
+    const bool displayVerification = argc > 1 && std::string_view{argv[1]} == "--verify-display";
     if (eyeVerification && argc != 3)
     {
         std::cerr << "Usage: julia_desktop --verify-eyes|--review-eyes output_directory\n";
@@ -512,10 +691,62 @@ int main(int argc, char** argv)
     }
     // Модель можно передать аргументом командной строки; иначе берётся
     // ассет по умолчанию из каталога ресурсов.
-    const std::filesystem::path modelPath =
-        (argc > 1 && !verification && !animationVerification && !eyeVerification && !noEyes)
-            ? std::filesystem::path{argv[1]}
-            : assetDirectory(argv[0]) / "models" / "Raphtalia_prepared.fbx";
+    std::filesystem::path modelPath = assetDirectory(argv[0]) / "models" / "Raphtalia_prepared.fbx";
+    std::filesystem::path settingsPath = assetDirectory(argv[0]).parent_path() / "display.ini";
+    std::optional<julia::desktop::DisplayMode> requestedMode;
+    std::optional<bool> requestedTopmost;
+    std::optional<int> requestedHeight;
+    bool persist = !verification && !animationVerification && !eyeVerification && !displayVerification;
+    bool suppliedModel = false;
+    for (int i = 1; i < argc && !verification && !animationVerification && !eyeVerification && !displayVerification; ++i)
+    {
+        const std::string_view arg{argv[i]};
+        if (arg == "--desktop") requestedMode = julia::desktop::DisplayMode::DesktopAvatar;
+        else if (arg == "--window") requestedMode = julia::desktop::DisplayMode::FullWindow;
+        else if (arg == "--no-eyes") noEyes = true;
+        else if (arg == "--topmost") requestedTopmost = true;
+        else if (arg == "--no-topmost") requestedTopmost = false;
+        else if (arg == "--no-save") persist = false;
+        else if (arg == "--settings" && i + 1 < argc) settingsPath = argv[++i];
+        else if (arg == "--avatar-height" && i + 1 < argc)
+        {
+            try
+            {
+                std::size_t consumed = 0;
+                const std::string value{argv[++i]};
+                const int height = std::stoi(value, &consumed);
+                if (consumed != value.size() || height < 180 || height > 720) throw std::invalid_argument("height");
+                requestedHeight = height;
+            }
+            catch (const std::exception&)
+            {
+                std::cerr << "--avatar-height requires 180..720 logical pixels\n";
+                return 2;
+            }
+        }
+        else if (arg == "--help")
+        {
+            std::cout << "Julia [--desktop|--window] [--topmost|--no-topmost] [--avatar-height 180..720]\n"
+                << "      [--settings path] [--no-save] [--no-eyes] [model.fbx]\n"
+                << "F10 switches display mode; F9 toggles desktop always-on-top.\n"
+                << "Right-click the desktop character for Full Window, size, topmost and Exit.\n";
+            return 0;
+        }
+        else if (arg.starts_with("--") || suppliedModel)
+        {
+            std::cerr << "Unknown or incomplete argument: " << arg << "; use --help\n";
+            return 2;
+        }
+        else { modelPath = argv[i]; suppliedModel = true; }
+    }
+    auto displaySettings = verification || animationVerification || eyeVerification || displayVerification
+        ? julia::desktop::DisplaySettings{} : julia::desktop::loadDisplaySettings(settingsPath);
+    if (requestedMode) displaySettings.mode = *requestedMode;
+    if (requestedTopmost) displaySettings.topmost = *requestedTopmost;
+    if (requestedHeight) displaySettings.avatarHeightDip = static_cast<float>(*requestedHeight);
+    if (verification || animationVerification || eyeVerification)
+        displaySettings.mode = julia::desktop::DisplayMode::FullWindow;
+    julia::desktop::setAvatarConsoleMode(displaySettings.mode == julia::desktop::DisplayMode::DesktopAvatar);
 
     glfwSetErrorCallback(glfwErrorCallback);
 
@@ -531,6 +762,11 @@ int main(int argc, char** argv)
     // Required on macOS to get a core-profile context; harmless elsewhere.
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
     glfwWindowHint(GLFW_SRGB_CAPABLE, GLFW_TRUE);
+    // Transparency is a creation-only capability, so request it in both modes.
+    // Full Window writes alpha=1 and remains the original opaque grey viewer.
+    glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
+    glfwWindowHint(GLFW_ALPHA_BITS, 8);
+    glfwWindowHint(GLFW_DECORATED, displaySettings.mode == julia::desktop::DisplayMode::FullWindow);
 
     // Ask for a debug context so GL_KHR_debug can report errors via callback.
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
@@ -538,9 +774,12 @@ int main(int argc, char** argv)
     // Сглаживание краёв модели и обводки.
     glfwWindowHint(GLFW_SAMPLES, animationVerification || eyeVerification ? 4 : 8);
 
-    const bool hidden = verification || (animationVerification && std::string_view{argv[1]} == "--verify-animations") ||
+    const bool hidden = verification || displayVerification || (animationVerification && std::string_view{argv[1]} == "--verify-animations") ||
         (eyeVerification && std::string_view{argv[1]} == "--verify-eyes");
-    glfwWindowHint(GLFW_VISIBLE, hidden ? GLFW_FALSE : GLFW_TRUE);
+    // Reveal only after the first correctly composed frame; no grey flash or
+    // transient rectangular input blocker during model loading.
+    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_FOCUS_ON_SHOW, displaySettings.mode == julia::desktop::DisplayMode::FullWindow);
     GLFWwindow* window = glfwCreateWindow(verification ? 640 : animationVerification || eyeVerification ? 768 : 1280,
         verification ? 480 : animationVerification || eyeVerification ? 768 : 900, "Julia", nullptr, nullptr);
     if (!window)
@@ -633,9 +872,40 @@ int main(int argc, char** argv)
             static_cast<float>(framebufferHeight), cameraConfig.fovDegrees);
         orbitCamera.frameBody(true);
 
+        std::optional<std::uint32_t> waistNode;
+        std::optional<glm::vec3> waistPoint;
+        for (std::uint32_t i = 0; i < model.nodes().size(); ++i)
+        {
+            auto name = model.nodes()[i].name;
+            std::transform(name.begin(), name.end(), name.begin(),
+                [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+            if (const auto colon = name.rfind(':'); colon != std::string::npos) name.erase(0, colon + 1);
+            if (name == "spine" || name.starts_with("spine_01") || name == "spine.001")
+            {
+                const auto point = glm::vec3{fitModel * model.nodes()[i].globalBindTransform * glm::vec4{0,0,0,1}};
+                if (point.y > subject.min.y + subjectHeight * .35f &&
+                    point.y < subject.min.y + subjectHeight * .66f)
+                {
+                    waistNode = i;
+                    waistPoint = point;
+                    break;
+                }
+            }
+        }
+        julia::render::AvatarCamera avatarCamera{subject, waistPoint};
+        julia::render_opengl::AvatarSurface avatarSurface;
+        julia::desktop::DisplayController display{window, displaySettings, avatarCamera.aspect(), settingsPath, persist};
+        std::cout << "Avatar portrait: aspect " << avatarCamera.aspect() << ", waist "
+            << avatarCamera.waistHeight() << ", height " << avatarCamera.frameHeight()
+            << (waistNode ? ", rig anchor " + model.nodes()[*waistNode].name : ", bounds fallback") << '\n';
+
         WindowState windowState{};
         windowState.renderer = &renderer;
         windowState.orbitCamera = &orbitCamera;
+        windowState.avatarCamera = &avatarCamera;
+        windowState.display = &display;
+        windowState.anchorNode = waistNode;
+        windowState.fitModel = fitModel;
         windowState.cameraConfig = cameraConfig;
         windowState.player = &player;
         windowState.eyes = &eyes;
@@ -654,9 +924,15 @@ int main(int argc, char** argv)
         glfwSetCursorEnterCallback(window, cursorEnterCallback);
         glfwSetKeyCallback(window, keyCallback);
 
+        if (!verification && !animationVerification && !eyeVerification) display.initialize();
+        glfwGetFramebufferSize(window, &framebufferWidth, &framebufferHeight);
+        framebufferSizeCallback(window, framebufferWidth, framebufferHeight);
+
         windowState.applyCamera();
 
         std::cout
+            << "Display: F10 Desktop Avatar / Full Window; F9 desktop always-on-top.\n"
+            << "Desktop: right-click character for window, size, topmost and Exit.\n"
             << "Camera: right drag orbit; middle or Shift+right drag pan; wheel/W/S zoom.\n"
             << "A/D/Q/E or arrows pan; F face (keep angle); B reset front/body; Esc exit.\n"
             << "Left mouse is reserved for character interaction.\n";
@@ -666,6 +942,11 @@ int main(int argc, char** argv)
             << "numpad 1..9 gaze, Home forward, T hold camera point, [/] blink interval, F8 fixed seed.\n";
         keyCallback(window, GLFW_KEY_F1, 0, GLFW_PRESS, 0);
         if (verification) verifyCameraCallbacks(window);
+        if (displayVerification)
+        {
+            verifyDisplayModes(window, avatarSurface);
+            glfwSetWindowShouldClose(window, GLFW_TRUE);
+        }
         if (animationVerification)
         {
             verifyDesktopAnimations(window, renderer, model, player, fitModel,
@@ -683,13 +964,35 @@ int main(int argc, char** argv)
         double titleTime = previousTime;
         int titleFrames = 0;
         int verificationFrame = 0;
+        bool revealed = false;
+        double layoutTime = -1;
         while (!glfwWindowShouldClose(window))
         {
             // Poll before updating to render the latest input in this frame.
             glfwPollEvents();
+            if (windowState.contextMenuRequested)
+            {
+                windowState.contextMenuRequested = false;
+                julia::desktop::WindowPlatform native{window};
+                windowState.displayCommand = native.contextMenu(display.settings().topmost);
+                windowState.cameraInput.cancel();
+            }
+            if (windowState.displayCommand != julia::desktop::DisplayCommand::None)
+            {
+                display.execute(windowState.displayCommand);
+                windowState.displayCommand = julia::desktop::DisplayCommand::None;
+                windowState.cameraInput.cancel();
+                glfwGetFramebufferSize(window, &framebufferWidth, &framebufferHeight);
+                framebufferSizeCallback(window, framebufferWidth, framebufferHeight);
+            }
             const double now = glfwGetTime();
             const double deltaSeconds = verification ? 1.0 / 120.0 : now - previousTime;
             previousTime = now;
+            if (now - layoutTime >= .5)
+            {
+                display.refreshLayout();
+                layoutTime = now;
+            }
             if (verification)
             {
                 // Exercise the actual desktop input callbacks without depending
@@ -716,17 +1019,27 @@ int main(int argc, char** argv)
             }
             // A long OS pause must not turn held keys into a large jump.
             processInput(window, deltaSeconds <= 0.25 ? deltaSeconds : 0.0);
-            orbitCamera.update(deltaSeconds);
-            windowState.applyCamera();
+            if (!display.avatar()) orbitCamera.update(deltaSeconds);
             player.update(deltaSeconds);
+            windowState.applyCamera();
 
-            renderer.beginFrame();
+            glfwGetFramebufferSize(window, &framebufferWidth, &framebufferHeight);
+            if (framebufferWidth <= 0 || framebufferHeight <= 0) continue;
+            if (display.avatar()) avatarSurface.begin(framebufferWidth, framebufferHeight);
+            else glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            renderer.beginFrame(display.avatar() ? glm::vec4{0} : glm::vec4{0.21586f,0.21586f,0.21586f,1});
 
             glm::mat4 modelMatrix{1.0f};
 
             modelMatrix = modelMatrix * fitModel;
 
             renderer.renderModel(model, modelMatrix, player.palette());
+            if (display.avatar())
+            {
+                const auto coverage = avatarSurface.resolveCoverage();
+                display.updateShape(coverage, framebufferWidth, framebufferHeight);
+                avatarSurface.present();
+            }
             ++titleFrames;
             if (now - titleTime >= .25)
             {
@@ -749,7 +1062,22 @@ int main(int argc, char** argv)
                 throw std::runtime_error("OpenGL error during desktop verification");
 
             glfwSwapBuffers(window);
+            if (!hidden && !revealed)
+            {
+                glfwShowWindow(window);
+                revealed = true;
+            }
+            // A companion should not busy-loop when the driver ignores VSync.
+            // Event-aware pacing keeps input responsive and animations at 60 Hz.
+            if (display.avatar() && !hidden)
+            {
+                const double remaining = 1.0 / 60.0 - (glfwGetTime() - now);
+                if (remaining > 0) glfwWaitEventsTimeout(remaining);
+            }
         }
+        display.save();
+        // Callbacks must not outlive the scene objects during stack unwinding.
+        glfwSetWindowUserPointer(window, nullptr);
         if (verification)
             std::cout << "Desktop verification completed: orbit, zoom, pan, 120 frames\n";
     }

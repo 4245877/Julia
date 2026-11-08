@@ -4,6 +4,7 @@ target_sources(julia_render
     PRIVATE
         src/EyeBehavior.cpp
         src/OrbitCamera.cpp
+        src/AvatarCamera.cpp
         src/RenderSystem.cpp
 )
 
