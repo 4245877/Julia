@@ -1,6 +1,7 @@
 #include "julia/embodiment/Animation.hpp"
 
 #include "julia/embodiment/EyePoseLayer.hpp"
+#include "julia/embodiment/BodyProfile.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -66,12 +67,10 @@ namespace julia::embodiment
     {
         if (!std::isfinite(deltaSeconds) || deltaSeconds < 0.0)
             throw std::invalid_argument("Animation delta must be finite and nonnegative");
-        const auto* base = state_ == PlaybackState::Stopped ? nullptr : clip();
-        if (eyeLayer_ && state_ != PlaybackState::Paused && !EyePoseLayer::authoredEyes(base))
-            eyeLayer_->update(deltaSeconds);
+        if (eyeLayer_) eyeLayer_->update(deltaSeconds);
         if (state_ != PlaybackState::Playing || !clip() || deltaSeconds == 0.0)
         {
-            if (eyeLayer_) evaluate();
+            if (eyeLayer_ || bodyControl_) evaluate();
             return;
         }
         const double duration = clip()->durationSeconds();
@@ -97,8 +96,10 @@ namespace julia::embodiment
             animation::sampleAnimation(model_.skeleton(), *clip(), timeSeconds_, pose_.locals);
         else
             animation::setBindPose(model_.skeleton(), pose_.locals);
+        if (bodyControl_) bodyControl_->apply(pose_.locals);
         if (eyeLayer_)
-            eyeLayer_->apply(pose_.locals, state_ == PlaybackState::Stopped ? nullptr : clip());
+            eyeLayer_->apply(pose_.locals, state_ == PlaybackState::Stopped ||
+                (bodyControl_ && bodyControl_->enabled()) ? nullptr : clip());
         animation::computeGlobalTransforms(model_.skeleton(), pose_.locals, pose_.globals);
         animation::buildSkinningPalette(model_.skeleton(), pose_.globals, pose_.palette);
     }
@@ -108,6 +109,14 @@ namespace julia::embodiment
         if (layer && &layer->asset() != &model_)
             throw std::invalid_argument("Eye layer belongs to a different model asset");
         eyeLayer_ = layer;
+        evaluate();
+    }
+
+    void AnimationPlayer::setBodyControl(DirectBodyControl* control)
+    {
+        if (control && &control->binding().asset()!=&model_)
+            throw std::invalid_argument("Body control belongs to a different model asset");
+        bodyControl_=control;
         evaluate();
     }
 }

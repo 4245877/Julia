@@ -28,6 +28,7 @@ add_subdirectory(libs/animation)
 add_subdirectory(libs/model)
 add_subdirectory(libs/model_import)
 add_subdirectory(libs/embodiment)
+add_subdirectory(apps/julia_body_sim)
 
 if(JULIA_BUILD_DESKTOP)
     add_subdirectory(plugins/render_opengl)

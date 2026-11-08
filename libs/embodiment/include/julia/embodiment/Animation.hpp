@@ -17,6 +17,7 @@ namespace julia::embodiment
 {
     
     class EyePoseLayer;
+    class DirectBodyControl;
 
     // Transitional source-compatible names; data is owned by the CPU module.
     using animation::NodeTRS;
@@ -42,11 +43,15 @@ namespace julia::embodiment
         void pause();
         void stop(); // Bind base, preserving selection; exact bind when the optional eye layer is disabled.
         void seek(double seconds); // Clamp to endpoints; a stopped player becomes paused.
+        // Advances clip and independent procedural eyes. Clip pause/seek does not
+        // pause eyes; BodyInstance is the production fixed-tick owner of this API.
         void update(double deltaSeconds);
         void setLooping(bool enabled) { looping_ = enabled; }
         // Optional non-owning, model-specific layer. Null preserves the exact
         // original Animation Player behavior, including stop/bind diagnostics.
         void setEyeLayer(EyePoseLayer* layer);
+        // Non-owning diagnostic override: clip/bind -> direct body -> eyes -> FK.
+        void setBodyControl(DirectBodyControl* control);
 
         bool looping() const { return looping_; }
         PlaybackState state() const { return state_; }
@@ -65,6 +70,7 @@ namespace julia::embodiment
         PlaybackState state_ = PlaybackState::Stopped;
         animation::Pose pose_;
         EyePoseLayer* eyeLayer_ = nullptr;
+        DirectBodyControl* bodyControl_ = nullptr;
         void evaluate();
     };
 }

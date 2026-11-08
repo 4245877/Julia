@@ -10,6 +10,7 @@
 
 namespace julia::render_opengl
 {
+    struct DebugLineVertex { glm::vec3 position, color; };
     // Параметры камеры. Раньше были захардкожены в updateCamera().
     struct CameraConfig
     {
@@ -71,9 +72,13 @@ namespace julia::render_opengl
             const glm::mat4& modelMatrix,
             std::span<const glm::mat4> boneMatrices = {}
         );
+        // Optional diagnostic overlay in display-world coordinates; pairs form lines.
+        void renderDebugLines(std::span<const DebugLineVertex> vertices);
 
     private:
         GLShader shader_;
+        GLShader debugShader_;
+        GLuint debugVao_ = 0, debugBuffer_ = 0;
         GLuint boneBuffer_ = 0;
         GLuint boneTexture_ = 0;
         GLint maxBoneTexels_ = 0;

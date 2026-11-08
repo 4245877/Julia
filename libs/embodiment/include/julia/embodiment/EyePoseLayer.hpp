@@ -26,6 +26,10 @@ namespace julia::embodiment
         static bool authoredEyes(const AnimationClip* clip);
         void update(double seconds);
         void apply(std::span<glm::mat4> locals, const AnimationClip* baseClip);
+        // Read-only display overlay: never advances tracking, RNG or pending time.
+        void applyOutput(std::span<glm::mat4> locals, const AnimationClip* baseClip,
+            const render::EyeBehaviorOutput& output) const;
+        void reset();
         void apply(animation::Pose& pose, const AnimationClip* clip = nullptr) { apply(pose.locals, clip); }
         const model::ModelAsset& asset() const { return model_; }
         std::size_t lidCount() const { return lids_.size(); }

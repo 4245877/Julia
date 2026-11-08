@@ -134,9 +134,8 @@ namespace julia::embodiment
     {
         const double elapsed = elapsed_;
         elapsed_ = 0; // Re-evaluation/seek or a bypass cannot reuse pending time.
-        if (!enabled_ || authoredEyes(baseClip)) return;
+        if (!enabled_) return;
         if (locals.size() != model_.nodes().size()) throw std::invalid_argument("Eye layer pose size mismatch");
-        auto gaze = behavior_.output().gazeDegrees;
         if (targeted_)
         {
             animation::computeGlobalTransforms(model_.skeleton(), locals, globals_);
@@ -151,9 +150,23 @@ namespace julia::embodiment
             desired = safeGaze(desired, behavior_.settings());
             behavior_.trackGazeDegrees(desired);
             behavior_.update(elapsed);
-            gaze = behavior_.output().gazeDegrees;
         }
-        gaze = safeGaze(gaze, behavior_.settings());
+        applyOutput(locals, baseClip, behavior_.output());
+    }
+
+    void EyePoseLayer::reset()
+    {
+        behavior_ = render::EyeBehavior{};
+        targeted_ = false;
+        elapsed_ = 0;
+    }
+
+    void EyePoseLayer::applyOutput(std::span<glm::mat4> locals, const AnimationClip* baseClip,
+        const render::EyeBehaviorOutput& output) const
+    {
+        if (!enabled_ || authoredEyes(baseClip)) return;
+        if (locals.size() != model_.nodes().size()) throw std::invalid_argument("Eye layer pose size mismatch");
+        const auto gaze = safeGaze(output.gazeDegrees, behavior_.settings());
         const auto headBind = orientation(model_.nodes()[head_].globalBindTransform);
         const auto delta = glm::inverse(headBind) *
             glm::angleAxis(glm::radians(gaze.x), glm::vec3{0,1,0}) *
@@ -176,7 +189,6 @@ namespace julia::embodiment
             const float weight = (amount - closures_[index - 1]) / (closures_[index] - closures_[index - 1]);
             return glm::mix(lid.offsets[index - 1], lid.offsets[index], weight);
         };
-        const auto& output = behavior_.output();
         for (const auto& lid : lids_)
         {
             locals[lid.node] = model_.nodes()[lid.node].localTransform;

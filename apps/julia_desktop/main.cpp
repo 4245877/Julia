@@ -10,6 +10,7 @@
 #include "AnimationVerification.hpp"
 #include "EyeVerification.hpp"
 #include "CameraInput.hpp"
+#include "BodyDiagnostics.hpp"
 #include "julia/render_opengl/EyePoseLayer.hpp"
 
 #include <glm/glm.hpp>
@@ -26,6 +27,7 @@
 #include <cctype>
 #include <fstream>
 #include <vector>
+#include <memory>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -100,6 +102,10 @@ namespace
         glm::mat4 fitModel{1};
         julia::render_opengl::AnimationPlayer* player = nullptr;
         julia::render_opengl::EyePoseLayer* eyes = nullptr;
+        julia::embodiment::BodyInstance* body = nullptr;
+        julia::runtime::FixedStepScheduler* scheduler = nullptr;
+        const julia::embodiment::BodyDisplay* bodyDisplay = nullptr;
+        julia::desktop::BodyDiagnostics* bodyDiagnostics = nullptr;
         const julia::render_opengl::GLModel* model = nullptr;
         julia::render_opengl::CameraConfig cameraConfig{};
         julia::desktop::CameraInput cameraInput;
@@ -115,10 +121,11 @@ namespace
             if (display && display->avatar() && avatarCamera)
             {
                 glm::vec3 offset{0};
-                if (anchorNode && player && model)
+                if (anchorNode && (player || bodyDisplay) && model)
                 {
                     const auto bind = model->nodes()[*anchorNode].globalBindTransform;
-                    const auto posed = player->globalTransforms()[*anchorNode];
+                    const auto posed = bodyDisplay ? body->resourceRoot(bodyDisplay->root) * bodyDisplay->pose.globals[*anchorNode]
+                        : player->globalTransforms()[*anchorNode];
                     offset = glm::vec3{fitModel * (posed * glm::vec4{0,0,0,1} - bind * glm::vec4{0,0,0,1})};
                 }
                 updatedConfig.position = avatarCamera->position(offset);
@@ -276,11 +283,11 @@ namespace
         }
     }
 
-    void keyCallback(GLFWwindow* window, int key, int, int action, int)
+    void keyCallback(GLFWwindow* window, int key, int, int action, int mods)
     {
         if (action != GLFW_PRESS) return;
         auto* state = getWindowState(window);
-        if (!state || !state->player) return;
+        if (!state || (!state->player && !state->body)) return;
         state->syncInputContext();
         if (!state->cameraInput.acceptsKeyboard()) return;
         if (key == GLFW_KEY_ESCAPE)
@@ -295,6 +302,64 @@ namespace
             state->cameraInput.cancel();
             return;
         }
+        if (state->body)
+        {
+            using namespace julia::embodiment;
+            auto& body = *state->body;
+            const auto queue = [&](BodyOperation command) { body.enqueue(std::move(command)); };
+            if (key == GLFW_KEY_PAUSE)
+            { state->scheduler->setPaused(!state->scheduler->paused()); body.collapseHistory(); return; }
+            if (key == GLFW_KEY_F6) { queue(ResetBody{}); return; }
+            if (state->bodyDiagnostics && state->bodyDiagnostics->key(key,mods)) return;
+            if (key == GLFW_KEY_SPACE) queue(ClipCommand{ClipOperation::TogglePlay});
+            else if (key == GLFW_KEY_X || key == GLFW_KEY_R)
+            { queue(EyeCommand{EyeOperation::Enable,{0,0,0}}); queue(ClipCommand{ClipOperation::Stop}); }
+            else if (key == GLFW_KEY_L) queue(ClipCommand{ClipOperation::ToggleLoop});
+            else if (key == GLFW_KEY_COMMA || key == GLFW_KEY_PERIOD)
+                queue(ClipCommand{ClipOperation::Step,(key == GLFW_KEY_PERIOD ? 1.0 : -1.0)/30});
+            else if (key == GLFW_KEY_PAGE_DOWN || key == GLFW_KEY_PAGE_UP)
+                queue(ClipCommand{ClipOperation::Next,key == GLFW_KEY_PAGE_DOWN ? 1.0 : -1.0});
+            else if (key >= GLFW_KEY_1 && key <= GLFW_KEY_4)
+            {
+                constexpr std::string_view names[]{"TEST_blink_natural","TEST_blink_independent","TEST_blink_gaze","TEST_blink_head"};
+                for (std::size_t i=0;i<body.asset().animations().size();++i)
+                    if (body.asset().animations()[i].name.ends_with(names[key-GLFW_KEY_1]))
+                    { queue(ClipCommand{ClipOperation::Select,static_cast<double>(i)}); queue(ClipCommand{ClipOperation::Play}); break; }
+            }
+            else if (key == GLFW_KEY_F1)
+            {
+                for (std::size_t i=0;i<body.asset().animations().size();++i)
+                    std::cout << i << ": " << body.asset().animations()[i].name << '\n';
+            }
+            else if (key == GLFW_KEY_G) queue(EyeCommand{EyeOperation::Natural});
+            else if (key == GLFW_KEY_H) queue(EyeCommand{EyeOperation::AutoBlink});
+            else if (key == GLFW_KEY_J) queue(EyeCommand{EyeOperation::AutoGaze});
+            else if (key == GLFW_KEY_K || key == GLFW_KEY_U || key == GLFW_KEY_I)
+                queue(EyeCommand{EyeOperation::Blink,{key != GLFW_KEY_I ? 1.0f:0,key != GLFW_KEY_U ? 1.0f:0,0}});
+            else if (key == GLFW_KEY_HOME) queue(EyeCommand{EyeOperation::Neutral});
+            else if (key == GLFW_KEY_T)
+            {
+                const auto root = state->bodyDisplay ? body.resourceRoot(state->bodyDisplay->root) : glm::mat4{1};
+                queue(EyeCommand{EyeOperation::Target,glm::vec3{glm::inverse(state->fitModel*root)*
+                    glm::vec4{state->activeCamera().position,1}}});
+            }
+            else if (key == GLFW_KEY_F8) queue(EyeCommand{EyeOperation::ResetSeed});
+            else if (key == GLFW_KEY_LEFT_BRACKET || key == GLFW_KEY_RIGHT_BRACKET)
+                queue(EyeCommand{EyeOperation::BlinkInterval,{key == GLFW_KEY_RIGHT_BRACKET ? .5f:-.5f,0,0}});
+            else if (key >= GLFW_KEY_KP_1 && key <= GLFW_KEY_KP_9)
+            {
+                const int direction=key-GLFW_KEY_KP_1;
+                queue(EyeCommand{EyeOperation::Gaze,{static_cast<float>(direction%3-1)*8,static_cast<float>(direction/3-1)*5,0}});
+            }
+            else if ((key == GLFW_KEY_F || key == GLFW_KEY_B) && !state->display->avatar())
+            {
+                state->cameraInput.cancel();
+                if (key == GLFW_KEY_F) state->orbitCamera->focusFace(); else state->orbitCamera->frameBody();
+            }
+            return;
+        }
+        // Isolated legacy sampling fixtures below are used only by the existing
+        // animation/eye/display verification suites. Interactive input uses BodyInstance.
         auto& player = *state->player;
         if (key == GLFW_KEY_SPACE)
         {
@@ -627,7 +692,7 @@ namespace
             state.applyCamera();
             state.renderer->beginFrame();
             state.renderer->renderModel(*state.model, state.model->fitToHeightTransform(2.2f),
-                state.player->palette());
+                state.bodyDisplay ? std::span<const glm::mat4>{state.bodyDisplay->pose.palette} : state.player->palette());
             std::vector<unsigned char> pixels(static_cast<std::size_t>(width) * height * 3);
             glPixelStorei(GL_PACK_ALIGNMENT, 1);
             glReadPixels(0,0,width,height,GL_RGB,GL_UNSIGNED_BYTE,pixels.data());
@@ -724,6 +789,8 @@ namespace
 
 int main(int argc, char** argv)
 {
+    const bool bodyVerification = argc > 1 && std::string_view{argv[1]} == "--verify-body";
+    if (bodyVerification && argc != 3) { std::cerr << "Usage: julia_desktop --verify-body output_directory\n"; return 2; }
     const bool verification = argc > 1 && std::string_view{argv[1]} == "--verify";
     const bool animationVerification = argc > 1 &&
         (std::string_view{argv[1]} == "--verify-animations" || std::string_view{argv[1]} == "--review-animations");
@@ -748,9 +815,9 @@ int main(int argc, char** argv)
     std::optional<julia::desktop::DisplayMode> requestedMode;
     std::optional<bool> requestedTopmost;
     std::optional<int> requestedHeight;
-    bool persist = !verification && !animationVerification && !eyeVerification && !displayVerification;
+    bool persist = !verification && !animationVerification && !eyeVerification && !displayVerification && !bodyVerification;
     bool suppliedModel = false;
-    for (int i = 1; i < argc && !verification && !animationVerification && !eyeVerification && !displayVerification; ++i)
+    for (int i = 1; i < argc && !verification && !animationVerification && !eyeVerification && !displayVerification && !bodyVerification; ++i)
     {
         const std::string_view arg{argv[i]};
         if (arg == "--desktop") requestedMode = julia::desktop::DisplayMode::DesktopAvatar;
@@ -791,12 +858,12 @@ int main(int argc, char** argv)
         }
         else { modelPath = argv[i]; suppliedModel = true; }
     }
-    auto displaySettings = verification || animationVerification || eyeVerification || displayVerification
+    auto displaySettings = verification || animationVerification || eyeVerification || displayVerification || bodyVerification
         ? julia::desktop::DisplaySettings{} : julia::desktop::loadDisplaySettings(settingsPath);
     if (requestedMode) displaySettings.mode = *requestedMode;
     if (requestedTopmost) displaySettings.topmost = *requestedTopmost;
     if (requestedHeight) displaySettings.avatarHeightDip = static_cast<float>(*requestedHeight);
-    if (verification || animationVerification || eyeVerification)
+    if (verification || animationVerification || eyeVerification || bodyVerification)
         displaySettings.mode = julia::desktop::DisplayMode::FullWindow;
     julia::desktop::setAvatarConsoleMode(displaySettings.mode == julia::desktop::DisplayMode::DesktopAvatar);
 
@@ -826,16 +893,16 @@ int main(int argc, char** argv)
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 
     // Сглаживание краёв модели и обводки.
-    glfwWindowHint(GLFW_SAMPLES, animationVerification || eyeVerification ? 4 : 8);
+    glfwWindowHint(GLFW_SAMPLES, animationVerification || eyeVerification || bodyVerification ? 4 : 8);
 
-    const bool hidden = verification || displayVerification || (animationVerification && std::string_view{argv[1]} == "--verify-animations") ||
+    const bool hidden = verification || displayVerification || bodyVerification || (animationVerification && std::string_view{argv[1]} == "--verify-animations") ||
         (eyeVerification && std::string_view{argv[1]} == "--verify-eyes");
     // Reveal only after the first correctly composed frame; no grey flash or
     // transient rectangular input blocker during model loading.
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
     glfwWindowHint(GLFW_FOCUS_ON_SHOW, displaySettings.mode == julia::desktop::DisplayMode::FullWindow);
-    GLFWwindow* window = glfwCreateWindow(verification ? 640 : animationVerification || eyeVerification ? 768 : 1280,
-        verification ? 480 : animationVerification || eyeVerification ? 768 : 900, "Julia", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(verification ? 640 : animationVerification || eyeVerification || bodyVerification ? 768 : 1280,
+        verification ? 480 : animationVerification || eyeVerification || bodyVerification ? 768 : 900, "Julia", nullptr, nullptr);
     if (!window)
     {
         std::cerr << "Failed to create GLFW window\n";
@@ -844,7 +911,7 @@ int main(int argc, char** argv)
     }
 
     glfwMakeContextCurrent(window);
-    glfwSwapInterval(verification || animationVerification || eyeVerification ? 0 : 1);
+    glfwSwapInterval(verification || animationVerification || eyeVerification || bodyVerification ? 0 : 1);
 
     if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)))
     {
@@ -910,12 +977,39 @@ int main(int argc, char** argv)
         std::cout << "Textured meshes: " << texturedMeshes << '/' << model.meshCount() << "\n";
         if (texturedMeshes == 0)
             std::cerr << "Material diagnostic: this asset has no assigned images; using imported diffuse values.\n";
-        julia::render_opengl::AnimationPlayer player{*asset};
-        julia::render_opengl::EyePoseLayer eyes{*asset};
-        eyes.setEnabled(!animationVerification && !noEyes);
-        player.setEyeLayer(&eyes);
+        std::unique_ptr<julia::desktop::BodyDiagnostics> bodyDiagnostics;
+        const auto bodyProfile=julia::embodiment::raphtaliaBodyProfile();
+        const auto bodyIssues=julia::embodiment::validateBodyProfile(bodyProfile,*asset);
+        julia::embodiment::BodyInstance body{1,asset,bodyIssues.empty() ? &bodyProfile:nullptr,!noEyes};
+        julia::runtime::FixedStepScheduler scheduler;
+        auto bodyDisplay = body.display(1);
+        // Old suites deliberately exercise the standalone player API. Their
+        // fixture exists only in those test processes, never in the live app.
+        const bool legacyVerification = displayVerification || animationVerification || eyeVerification;
+        std::unique_ptr<julia::embodiment::EyePoseLayer> legacyEyes;
+        std::unique_ptr<julia::embodiment::AnimationPlayer> legacyPlayer;
+        if (legacyVerification)
+        {
+            legacyEyes=std::make_unique<julia::embodiment::EyePoseLayer>(*asset);
+            legacyEyes->setEnabled(!animationVerification && !noEyes);
+            legacyPlayer=std::make_unique<julia::embodiment::AnimationPlayer>(*asset);
+            legacyPlayer->setEyeLayer(legacyEyes.get());
+        }
+        const auto& player=legacyPlayer ? *legacyPlayer:body.player();
+        const auto& eyes=legacyEyes ? *legacyEyes:body.eyes();
+        const auto* bodyControl=body.control();
         std::cout << "Procedural eyes: " << (eyes.available() ? "ready (188 baked eyelid bones)" : "unavailable for this rig") << '\n';
-
+        if (bodyIssues.empty())
+        {
+            if (!legacyVerification) bodyDiagnostics=std::make_unique<julia::desktop::BodyDiagnostics>(body);
+        }
+        else
+        {
+            std::cerr << "Body calibration unavailable:";
+            for (const auto& issue:bodyIssues) std::cerr << '\n' << issue.message;
+            std::cerr << '\n';
+            if (bodyVerification) throw std::runtime_error("Prepared body profile could not bind");
+        }
         const glm::mat4 fitModel = model.fitToHeightTransform(2.2f);
 
         julia::render_opengl::CameraConfig cameraConfig{};
@@ -963,8 +1057,12 @@ int main(int argc, char** argv)
         windowState.anchorNode = waistNode;
         windowState.fitModel = fitModel;
         windowState.cameraConfig = cameraConfig;
-        windowState.player = &player;
-        windowState.eyes = &eyes;
+        windowState.player = legacyPlayer.get();
+        windowState.eyes = legacyEyes.get();
+        windowState.body = legacyVerification ? nullptr:&body;
+        windowState.scheduler = &scheduler;
+        windowState.bodyDisplay = legacyVerification ? nullptr:&bodyDisplay;
+        windowState.bodyDiagnostics = bodyDiagnostics.get();
         windowState.model = &model;
         glfwGetCursorPos(window, &windowState.cursorX, &windowState.cursorY);
         windowState.inputContext.focused = hidden || glfwGetWindowAttrib(window, GLFW_FOCUSED) != 0;
@@ -980,7 +1078,7 @@ int main(int argc, char** argv)
         glfwSetCursorEnterCallback(window, cursorEnterCallback);
         glfwSetKeyCallback(window, keyCallback);
 
-        if (!verification && !animationVerification && !eyeVerification) display.initialize();
+        if (!verification && !animationVerification && !eyeVerification && !bodyVerification) display.initialize();
         glfwGetFramebufferSize(window, &framebufferWidth, &framebufferHeight);
         framebufferSizeCallback(window, framebufferWidth, framebufferHeight);
 
@@ -996,7 +1094,14 @@ int main(int argc, char** argv)
             << "1..4 blink clips, comma/period step 1/30 s, F face / B body, F1 list clips.\n";
         std::cout << "Eyes: G natural/resume, H auto blink, J auto gaze, K blink, U/I wink,\n"
             << "numpad 1..9 gaze, Home forward, T hold camera point, [/] blink interval, F8 fixed seed.\n";
+        std::cout << "Body: F2 direct mode, Shift+F3/F3 previous/next joint, F4 coordinate, +/- 5 deg, Backspace zero, F5 axes. Pause full simulation, F6 full reset.\n";
         keyCallback(window, GLFW_KEY_F1, 0, GLFW_PRESS, 0);
+        if (bodyVerification)
+        {
+            julia::desktop::verifyDesktopBody(window,renderer,model,body,*bodyDiagnostics,fitModel,
+                std::filesystem::path{argv[2]},keyCallback);
+            glfwSetWindowShouldClose(window,GLFW_TRUE);
+        }
         if (verification) verifyCameraCallbacks(window, argc > 2 ? std::filesystem::path{argv[2]} :
             std::filesystem::temp_directory_path() / "Julia/verification/desktop_camera");
         if (displayVerification)
@@ -1007,13 +1112,13 @@ int main(int argc, char** argv)
         }
         if (animationVerification)
         {
-            verifyDesktopAnimations(window, renderer, model, player, fitModel,
+            verifyDesktopAnimations(window, renderer, model, *legacyPlayer, fitModel,
                 std::filesystem::path{argv[2]}, keyCallback);
             glfwSetWindowShouldClose(window, GLFW_TRUE);
         }
         if (eyeVerification)
         {
-            verifyDesktopEyes(window, renderer, model, player, eyes, fitModel,
+            verifyDesktopEyes(window, renderer, model, *legacyPlayer, *legacyEyes, fitModel,
                 std::filesystem::path{argv[2]}, keyCallback);
             glfwSetWindowShouldClose(window, GLFW_TRUE);
         }
@@ -1022,6 +1127,7 @@ int main(int argc, char** argv)
         double titleTime = previousTime;
         int titleFrames = 0;
         int verificationFrame = 0;
+        std::uint64_t pausedVerificationTick = 0;
         bool revealed = false;
         double layoutTime = -1;
         while (!glfwWindowShouldClose(window))
@@ -1053,6 +1159,34 @@ int main(int argc, char** argv)
             }
             if (verification)
             {
+                // Stage 4 exercises the production queued-input/scheduler/display
+                // path in the ordinary loop, alongside the existing camera checks.
+                const auto queuedKey=[&](int key)
+                {
+                    const auto saved=body.snapshot();
+                    keyCallback(window,key,0,GLFW_PRESS,0);
+                    if (body.snapshot().tick!=saved.tick || body.snapshot().clipTime!=saved.clipTime ||
+                        body.snapshot().coordinates!=saved.coordinates || body.snapshot().pose.palette!=saved.pose.palette)
+                        throw std::runtime_error("Keyboard changed completed simulation state before tick");
+                };
+                if (verificationFrame==2) queuedKey(GLFW_KEY_G);
+                if (verificationFrame==4) queuedKey(GLFW_KEY_PAGE_DOWN);
+                if (verificationFrame==8) queuedKey(GLFW_KEY_SPACE);
+                if (verificationFrame==9) queuedKey(GLFW_KEY_KP_6);
+                if (verificationFrame==12) queuedKey(GLFW_KEY_K);
+                if (verificationFrame==16) queuedKey(GLFW_KEY_PERIOD);
+                if (bodyControl && verificationFrame==24) queuedKey(GLFW_KEY_F2);
+                if (bodyControl && verificationFrame==25) { queuedKey(GLFW_KEY_EQUAL); queuedKey(GLFW_KEY_EQUAL); }
+                if (bodyControl && verificationFrame==26) queuedKey(GLFW_KEY_MINUS);
+                if (bodyControl && verificationFrame==40) queuedKey(GLFW_KEY_F2);
+                if (verificationFrame==50) queuedKey(GLFW_KEY_T);
+                if (verificationFrame==60) queuedKey(GLFW_KEY_F8);
+                if (verificationFrame==70) body.enqueue(julia::embodiment::SetRoot{{{.03f,0,0},{1,0,0,0}}});
+                if (verificationFrame==80) queuedKey(GLFW_KEY_F6);
+                if (verificationFrame==90) { queuedKey(GLFW_KEY_PAUSE); pausedVerificationTick=body.snapshot().tick; }
+                if (verificationFrame>90 && verificationFrame<94 && body.snapshot().tick!=pausedVerificationTick)
+                    throw std::runtime_error("Full simulation pause advanced body");
+                if (verificationFrame==94) queuedKey(GLFW_KEY_PAUSE);
                 // Exercise the actual desktop input callbacks without depending
                 // on OS focus or synthetic global mouse/keyboard injection.
                 if (verificationFrame == 10 || verificationFrame == 70)
@@ -1071,14 +1205,18 @@ int main(int argc, char** argv)
             if (glfwGetWindowAttrib(window, GLFW_ICONIFIED))
             {
                 windowState.cameraInput.cancel();
+                scheduler.advance(deltaSeconds,[&] { body.step(); },true);
+                body.collapseHistory();
                 glfwWaitEventsTimeout(0.05);
-                previousTime = glfwGetTime();
                 continue;
             }
             // A long OS pause must not turn held keys into a large jump.
             processInput(window, deltaSeconds <= 0.25 ? deltaSeconds : 0.0);
             if (!display.avatar()) orbitCamera.update(deltaSeconds);
-            player.update(deltaSeconds);
+            const auto suspendCount=scheduler.diagnostics().suspendedFrames;
+            scheduler.advance(deltaSeconds,[&] { body.step(); });
+            if (scheduler.diagnostics().suspendedFrames!=suspendCount) body.collapseHistory();
+            bodyDisplay=body.display(scheduler.paused() ? 1:scheduler.alpha());
             windowState.applyCamera();
 
             glfwGetFramebufferSize(window, &framebufferWidth, &framebufferHeight);
@@ -1089,9 +1227,10 @@ int main(int argc, char** argv)
 
             glm::mat4 modelMatrix{1.0f};
 
-            modelMatrix = modelMatrix * fitModel;
+            modelMatrix = fitModel * body.resourceRoot(bodyDisplay.root);
 
-            renderer.renderModel(model, modelMatrix, player.palette());
+            renderer.renderModel(model, modelMatrix, bodyDisplay.pose.palette);
+            if (bodyDiagnostics) bodyDiagnostics->draw(renderer,modelMatrix,bodyDisplay);
             if (display.avatar())
             {
                 const auto coverage = avatarSurface.resolveCoverage();
@@ -1110,7 +1249,10 @@ int main(int argc, char** argv)
                     << (player.looping() ? "on" : "off") << " | " << std::setprecision(0)
                     << titleFrames / (now - titleTime) << " FPS | eyes " << (eyes.enabled() ? "on" : "off")
                     << " blink " << eyes.behavior().output().blinkLeft << '/' << eyes.behavior().output().blinkRight
+                    << " | tick " << body.snapshot().tick << " dropped " << scheduler.diagnostics().discardedSeconds
+                    << " s overload " << scheduler.diagnostics().overloadFrames << (scheduler.paused() ? " SIM PAUSED":"")
                     << " | RMB orbit MMB pan Wheel zoom F face B reset | PgUp/Dn Space X";
+                if (bodyControl && bodyControl->enabled()) title << " | " << bodyDiagnostics->title();
                 glfwSetWindowTitle(window, title.str().c_str());
                 titleFrames = 0;
                 titleTime = now;
@@ -1118,6 +1260,20 @@ int main(int argc, char** argv)
 
             if (verification && glGetError() != GL_NO_ERROR)
                 throw std::runtime_error("OpenGL error during desktop verification");
+            if (verification && verificationFrame==120)
+            {
+                if (body.snapshot().tick!=116 || body.snapshot().epoch!=1 || body.pendingCommands()!=0)
+                    throw std::runtime_error("Desktop fixed-step input/reset/pause integration failed");
+                const auto output=std::filesystem::path{JULIA_ASSET_DIR}.parent_path()/"build/diagnostics/stage4/desktop";
+                std::filesystem::create_directories(output);
+                std::ofstream report(output/"runtime.txt");
+                if (!report) throw std::runtime_error("Cannot write runtime diagnostic evidence");
+                report << "production_loop_frames=120\ncompleted_ticks=" << body.snapshot().tick
+                    << "\nfull_pause_frames=4\nreset_epoch=" << body.snapshot().epoch
+                    << "\ndisplay_from_tick=" << bodyDisplay.fromTick << "\ndisplay_to_tick=" << bodyDisplay.toTick
+                    << "\ndisplay_time=" << std::setprecision(12) << bodyDisplay.time
+                    << "\nqueued_clip_gaze_target_direct_reset=PASS\ncamera_source=same_BodyDisplay_as_render\nGL_errors=0\nresult=PASS\n";
+            }
 
             glfwSwapBuffers(window);
             if (!hidden && !revealed)

@@ -80,7 +80,12 @@ namespace model_snapshot
     template<class Player, class Eyes> void eyes(std::ostream& out, Player& player, Eyes& eyes)
     {
         Hash h;
-        player.setEyeLayer(&eyes);
+        // This immutable stage-2 reference includes its old clock contract.
+        // Drive those clocks explicitly in this test, keeping the production
+        // independent-eye contract covered by body_instance/desktop_eyes.
+        // No reference hashes or tolerances are changed.
+        player.setEyeLayer(nullptr);
+        julia::animation::Pose pose(eyes.asset().skeleton());
         for (std::size_t c = 0; player.clip() && c < 15; ++c)
         {
             eyes.behavior().reset(); eyes.clearTargetPoint();
@@ -92,11 +97,18 @@ namespace model_snapshot
                 if (step == 4) player.pause();
                 if (step == 6) player.seek(.8);
                 if (step == 8) player.stop();
+                const auto* base = player.state() == julia::embodiment::PlaybackState::Stopped ? nullptr : player.clip();
+                if (player.state() != julia::embodiment::PlaybackState::Paused && !Eyes::authoredEyes(base))
+                    eyes.update(1.0 / 60);
                 player.update(1.0 / 60);
+                std::copy(player.localTransforms().begin(),player.localTransforms().end(),pose.locals.begin());
+                if (!Eyes::authoredEyes(base)) eyes.apply(pose.locals,base);
+                julia::animation::computeGlobalTransforms(eyes.asset().skeleton(),pose.locals,pose.globals);
+                julia::animation::buildSkinningPalette(eyes.asset().skeleton(),pose.globals,pose.palette);
                 h.add(player.timeSeconds());
-                for (const auto& m : player.localTransforms()) h.add(m);
-                for (const auto& m : player.globalTransforms()) h.add(m);
-                for (const auto& m : player.palette()) h.add(m);
+                for (const auto& m : pose.locals) h.add(m);
+                for (const auto& m : pose.globals) h.add(m);
+                for (const auto& m : pose.palette) h.add(m);
             }
         }
         out << "eyes " << eyes.available() << ' ' << eyes.lidCount() << ' ' << h.value << '\n';

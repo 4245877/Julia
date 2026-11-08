@@ -36,6 +36,9 @@ namespace julia::animation
     // Stateless, endpoint-clamped sampling. Unanimated/empty channels retain exact
     // bind matrices; sparse components use imported bind TRS. Animated local = T*R*S.
     // No looping or clock ownership here. Output is caller-owned, one per node.
+    // Optional components receive TRS for nonempty animated channels only;
+    // callers retain exact matrices for every other node.
     void sampleAnimation(const Skeleton& skeleton, const AnimationClip& clip,
-        double seconds, std::span<glm::mat4> localTransforms);
+        double seconds, std::span<glm::mat4> localTransforms,
+        std::span<NodeTRS> components = {});
 }

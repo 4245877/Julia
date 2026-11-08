@@ -71,9 +71,10 @@ namespace julia::animation
     }
 
     void sampleAnimation(const Skeleton& model, const AnimationClip& clip,
-        double seconds, std::span<glm::mat4> localTransforms)
+        double seconds, std::span<glm::mat4> localTransforms, std::span<NodeTRS> components)
     {
-        if (!std::isfinite(seconds) || localTransforms.size() != model.nodes().size())
+        if (!std::isfinite(seconds) || localTransforms.size() != model.nodes().size() ||
+            (!components.empty() && components.size() != model.nodes().size()))
             throw std::invalid_argument("Invalid animation sample time/output size");
         const double ticks = std::clamp(seconds, 0.0, clip.durationSeconds()) * clip.ticksPerSecond;
         for (std::size_t i = 0; i < model.nodes().size(); ++i)
@@ -85,10 +86,11 @@ namespace julia::animation
             if (channel.translations.empty() && channel.rotations.empty() && channel.scales.empty())
                 continue;
             const auto& rest = model.nodes()[channel.nodeIndex].bindTRS;
-            localTransforms[channel.nodeIndex] =
-                glm::translate(glm::mat4{1.0f}, sample(channel.translations, ticks, rest.translation)) *
-                glm::mat4_cast(sample(channel.rotations, ticks, rest.rotation)) *
-                glm::scale(glm::mat4{1.0f}, sample(channel.scales, ticks, rest.scale));
+            const NodeTRS value{sample(channel.translations, ticks, rest.translation),
+                sample(channel.rotations, ticks, rest.rotation), sample(channel.scales, ticks, rest.scale)};
+            if (!components.empty()) components[channel.nodeIndex] = value;
+            localTransforms[channel.nodeIndex] = glm::translate(glm::mat4{1.0f}, value.translation) *
+                glm::mat4_cast(value.rotation) * glm::scale(glm::mat4{1.0f}, value.scale);
         }
     }
 

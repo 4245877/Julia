@@ -398,9 +398,11 @@ void verifyDesktopEyes(GLFWwindow* window, OpenGLRenderer& renderer,
     input(window, GLFW_KEY_SPACE, 0, GLFW_PRESS, 0);
     const std::vector<glm::mat4> paused(player.palette().begin(), player.palette().end());
     const double pauseTime = player.timeSeconds();
-    player.update(2.0);
+    behavior.setGazeDegrees({8,0});
+    behavior.triggerBlink();
+    for (int tick=0;tick<12;++tick) player.update(1.0/120.0);
     require(player.state() == PlaybackState::Paused && pauseTime == player.timeSeconds() &&
-        delta(player.palette(), paused) == 0, "desktop pause did not freeze complete eye/body pose");
+        delta(player.palette(), paused) > 1e-5f, "clip pause froze independent procedural eyes");
     input(window, GLFW_KEY_SPACE, 0, GLFW_PRESS, 0);
     player.update(.01);
     require(player.state() == PlaybackState::Playing, "desktop resume callback");

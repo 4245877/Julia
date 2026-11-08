@@ -175,7 +175,7 @@ namespace julia::render_opengl
         struct DrawState
         {
             GLint program{}, vao{}, activeTexture{}, texture0{}, palette1{}, shadow2{},
-                sampler0{}, sampler1{}, sampler2{}, buffer{}, depthFunc{}, cullMode{}, frontFace{},
+                sampler0{}, sampler1{}, sampler2{}, buffer{}, arrayBuffer{}, depthFunc{}, cullMode{}, frontFace{},
                 srcRGB{}, dstRGB{}, srcAlpha{}, dstAlpha{}, equationRGB{}, equationAlpha{};
             GLint framebuffer{}, viewport[4]{};
             GLboolean depthMask{}, depthTest{}, cull{}, blend{}, scissor{}, polygonOffset{};
@@ -184,6 +184,7 @@ namespace julia::render_opengl
             {
                 glGetIntegerv(GL_CURRENT_PROGRAM, &program);
                 glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &vao);
+                glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &arrayBuffer);
                 glGetIntegerv(GL_ACTIVE_TEXTURE, &activeTexture);
                 glActiveTexture(GL_TEXTURE0);
                 glGetIntegerv(GL_TEXTURE_BINDING_2D, &texture0);
@@ -218,6 +219,7 @@ namespace julia::render_opengl
             {
                 glUseProgram(static_cast<GLuint>(program));
                 glBindVertexArray(static_cast<GLuint>(vao));
+                glBindBuffer(GL_ARRAY_BUFFER, static_cast<GLuint>(arrayBuffer));
                 glBindBuffer(GL_TEXTURE_BUFFER, static_cast<GLuint>(buffer));
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(texture0));
@@ -302,10 +304,37 @@ namespace julia::render_opengl
 
     OpenGLRenderer::~OpenGLRenderer()
     {
+        if (debugVao_) glDeleteVertexArrays(1, &debugVao_);
+        if (debugBuffer_) glDeleteBuffers(1, &debugBuffer_);
         if (shadowFramebuffer_) glDeleteFramebuffers(1, &shadowFramebuffer_);
         if (shadowTexture_) glDeleteTextures(1, &shadowTexture_);
         if (boneTexture_) glDeleteTextures(1, &boneTexture_);
         if (boneBuffer_) glDeleteBuffers(1, &boneBuffer_);
+    }
+
+    void OpenGLRenderer::renderDebugLines(std::span<const DebugLineVertex> vertices)
+    {
+        if (vertices.empty()) return;
+        if (vertices.size()%2 || vertices.size()>static_cast<std::size_t>(std::numeric_limits<GLsizei>::max()))
+            throw std::invalid_argument("Debug overlay requires pairs of finite line vertices");
+        for (const auto& v:vertices)
+            if (!finite(v.position) || !finite(v.color)) throw std::invalid_argument("Non-finite debug line");
+        const DrawState saved;
+        if (!debugShader_.valid())
+        {
+            debugShader_.createFromSource(
+                "#version 330 core\nlayout(location=0) in vec3 p; layout(location=1) in vec3 c; uniform mat4 vp; out vec3 color; void main(){color=c;gl_Position=vp*vec4(p,1);}",
+                "#version 330 core\nin vec3 color; out vec4 frag; void main(){frag=vec4(color,1);}");
+            glGenVertexArrays(1,&debugVao_); glGenBuffers(1,&debugBuffer_);
+        }
+        debugShader_.bind(); debugShader_.setMat4("vp",projection_*view_);
+        glBindVertexArray(debugVao_); glBindBuffer(GL_ARRAY_BUFFER,debugBuffer_);
+        glBufferData(GL_ARRAY_BUFFER,static_cast<GLsizeiptr>(vertices.size_bytes()),vertices.data(),GL_STREAM_DRAW);
+        glEnableVertexAttribArray(0); glEnableVertexAttribArray(1);
+        glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,sizeof(DebugLineVertex),nullptr);
+        glVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,sizeof(DebugLineVertex),reinterpret_cast<const void*>(offsetof(DebugLineVertex,color)));
+        glDisable(GL_DEPTH_TEST); glDepthMask(GL_FALSE); glDisable(GL_BLEND); glDisable(GL_CULL_FACE);
+        glDrawArrays(GL_LINES,0,static_cast<GLsizei>(vertices.size()));
     }
 
     void OpenGLRenderer::initialize(int width, int height,
