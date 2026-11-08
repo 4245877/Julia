@@ -1,6 +1,7 @@
 #pragma once
 
 #include "julia/render_opengl/Bounds.hpp"
+#include "julia/model/Geometry.hpp"
 #include "julia/render_opengl/GLTexture.hpp"
 
 #include <glad/glad.h>
@@ -14,59 +15,15 @@ namespace julia::render_opengl
 {
     class GLShader;
 
-    struct GLVertex
-    {
-        glm::vec3 position{0.0f};
-        glm::vec3 normal{0.0f, 1.0f, 0.0f};
-        glm::vec2 texCoord{0.0f};
-
-        // Four strongest normalized influences, shared with model.vert.
-        glm::ivec4 boneIds{-1, -1, -1, -1};
-        glm::vec4 boneWeights{0.0f};
-        // Geometric outline normal, welded across UV and shading-normal seams.
-        // Filled once by GLMesh; authored lighting normals remain untouched.
-        glm::vec3 outlineNormal{0.0f};
-    };
-
-    enum class AlphaMode { Opaque, Mask, Blend };
-
-    // Selects the material inputs consumed by the shared shader in each pass.
+    using GLVertex = model::Vertex;
+    using model::AlphaMode;
+    using model::ToonMaterialKind;
     enum class MeshPass { Fill, Shadow, Outline };
-
-    // Shader contract: Generic=0, Skin=1, Hair=2, Eye=3, Metal=4,
-    // Fabric=5, Leather=6, Ink=7. Profiles affect lighting, never base color.
-    enum class ToonMaterialKind
+    struct GLMeshMaterial : model::MaterialProperties
     {
-        Generic = 0, Skin = 1, Hair = 2, Eye = 3,
-        Metal = 4, Fabric = 5, Leather = 6, Ink = 7
-    };
-
-    struct GLMeshMaterial
-    {
-        glm::vec3 diffuseColor{0.8f, 0.8f, 0.8f};
         std::shared_ptr<GLTexture> diffuseTexture;
-        float lightResponse = 0.80f;
-        float specularStrength = 0.004f;
-        float rimStrength = 0.032f;
-        float opacity = 1.0f;
-        float alphaCutoff = 0.5f;
-        AlphaMode alphaMode = AlphaMode::Opaque;
-        // Sampling belongs to the material: one cached image can be shared by
-        // materials with different wrap/filter settings.
-        GLenum wrapS = GL_REPEAT;
-        GLenum wrapT = GL_REPEAT;
-        GLenum minFilter = GL_LINEAR_MIPMAP_LINEAR;
-        GLenum magFilter = GL_LINEAR;
-        ToonMaterialKind toonKind = ToonMaterialKind::Generic;
-        float specularPower = 80.0f;
-        // Half-width of the painted terminator in N.L space, before pixel AA.
-        // Wider skin/fabric transitions hide tessellation without blurring UVs.
-        float shadowSoftness = 0.065f;
-        // Groom axis in imported scene space; transformed with the skeleton.
-        // Projected onto the surface for the hair highlight, never camera space.
-        glm::vec3 strandDirection{0.0f, 1.0f, 0.0f};
-        // Inverted hull is unsuitable for thin eye/decal/ink layers.
-        float outlineScale = 1.0f;
+        GLenum wrapS = GL_REPEAT, wrapT = GL_REPEAT;
+        GLenum minFilter = GL_LINEAR_MIPMAP_LINEAR, magFilter = GL_LINEAR;
     };
 
     class GLMesh

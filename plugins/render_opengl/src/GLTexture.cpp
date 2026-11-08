@@ -1,7 +1,6 @@
 #include "julia/render_opengl/GLTexture.hpp"
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
+#include "julia/model/Image.hpp"
 
 #include <fstream>
 #include <limits>
@@ -96,49 +95,17 @@ namespace julia::render_opengl
 
     GLTexture GLTexture::loadFromFile(const std::filesystem::path& path)
     {
-        // filesystem::path preserves native Unicode filenames on Windows.
-        std::ifstream file(path, std::ios::binary | std::ios::ate);
-        if (!file)
-            throw std::runtime_error("Failed to open texture: " + path.string());
-        const auto size = file.tellg();
-        if (size <= 0 || size > std::numeric_limits<int>::max())
-            throw std::runtime_error("Texture file is empty or too large: " + path.string());
-        std::vector<unsigned char> data(static_cast<std::size_t>(size));
-        file.seekg(0);
-        if (!file.read(reinterpret_cast<char*>(data.data()), static_cast<std::streamsize>(size)))
-            throw std::runtime_error("Failed to read texture: " + path.string());
-        try
-        {
-            return loadFromMemory(data.data(), data.size());
-        }
-        catch (const std::exception& error)
-        {
-            throw std::runtime_error("Failed to load texture '" + path.string() + "': " + error.what());
-        }
+        const auto image = model::Image::loadFromFile(path);
+        auto texture = uploadRgba(image.pixels().data(), image.width(), image.height());
+        texture.channels_ = image.channels();
+        return texture;
     }
 
     GLTexture GLTexture::loadFromMemory(const unsigned char* data, std::size_t size)
     {
-        if (!data || size == 0 || size > static_cast<std::size_t>(std::numeric_limits<int>::max()))
-            throw std::invalid_argument("Invalid encoded texture buffer size");
-
-        // Assimp already flips UVs. Thread-local stb state avoids changing image
-        // loading behavior in other threads and subsystems.
-        stbi_set_flip_vertically_on_load_thread(false);
-        int width = 0;
-        int height = 0;
-        int channels = 0;
-        const std::unique_ptr<unsigned char, void (*)(void*)> pixels(
-            stbi_load_from_memory(data, static_cast<int>(size), &width, &height,
-                                  &channels, STBI_rgb_alpha),
-            &stbi_image_free);
-        if (!pixels)
-        {
-            const char* reason = stbi_failure_reason();
-            throw std::runtime_error(reason ? reason : "Image decoding failed");
-        }
-        auto texture = uploadRgba(pixels.get(), width, height);
-        texture.channels_ = channels;
+        const auto image = model::Image::decode(data, size);
+        auto texture = uploadRgba(image.pixels().data(), image.width(), image.height());
+        texture.channels_ = image.channels();
         return texture;
     }
 

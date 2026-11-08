@@ -1,7 +1,7 @@
-#include "julia/render_opengl/OutlineNormals.hpp"
-#include "julia/render_opengl/SurfaceNormals.hpp"
+#include "julia/model/OutlineNormals.hpp"
+#include "julia/model/SurfaceNormals.hpp"
 
-#include "julia/render_opengl/GLMesh.hpp"
+#include "julia/model/Geometry.hpp"
 
 #include <algorithm>
 #include <array>
@@ -13,7 +13,7 @@
 #include <stdexcept>
 #include <unordered_map>
 
-namespace julia::render_opengl
+namespace julia::model
 {
     namespace
     {
@@ -47,7 +47,7 @@ namespace julia::render_opengl
             return value == 0.0f ? 0u : std::bit_cast<std::uint32_t>(value);
         }
 
-        WeldKey positionKey(const GLVertex& vertex)
+        WeldKey positionKey(const Vertex& vertex)
         {
             WeldKey key;
             for (int component = 0; component < 3; ++component)
@@ -59,7 +59,7 @@ namespace julia::render_opengl
             return key;
         }
 
-        WeldKey weldKey(const GLVertex& vertex)
+        WeldKey weldKey(const Vertex& vertex)
         {
             auto key = positionKey(vertex);
 
@@ -121,7 +121,7 @@ namespace julia::render_opengl
     }
 
     std::vector<glm::vec3> buildOutlineNormals(
-        std::span<const GLVertex> vertices,
+        std::span<const Vertex> vertices,
         std::span<const std::uint32_t> indices)
     {
         if (indices.size() % 3 != 0)
@@ -184,7 +184,7 @@ namespace julia::render_opengl
         return result;
     }
 
-    void rebuildSurfaceNormals(std::vector<GLVertex>& vertices,
+    void rebuildSurfaceNormals(std::vector<Vertex>& vertices,
         std::vector<std::uint32_t>& indices, float creaseAngleDegrees)
     {
         if (!std::isfinite(creaseAngleDegrees) || creaseAngleDegrees <= 0.0f || creaseAngleDegrees > 180.0f)

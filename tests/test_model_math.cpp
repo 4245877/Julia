@@ -1,4 +1,5 @@
-#include "julia/render_opengl/GLModel.hpp"
+#include "julia/model/ModelAsset.hpp"
+#include "julia/embodiment/Animation.hpp"
 #include "julia_test.hpp"
 
 #include <glm/gtc/matrix_transform.hpp>
@@ -29,9 +30,11 @@ namespace
 
 int main()
 {
-    using namespace julia::render_opengl;
+    using namespace julia::embodiment;
+    using namespace julia::model;
+    constexpr auto NoModelNode = julia::animation::NoNode;
     const glm::mat4 identity{1.0f};
-    GLModel model;
+    ModelAsset model;
     const auto rootTransform = glm::translate(identity, glm::vec3{12.0f, 5.0f, -3.0f}) *
         glm::rotate(identity, 0.3f, glm::vec3{0.0f, 1.0f, 0.0f}) *
         glm::scale(identity, glm::vec3{2.0f, 3.0f, 0.5f});

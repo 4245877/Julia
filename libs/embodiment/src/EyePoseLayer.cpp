@@ -1,5 +1,5 @@
-#include "julia/render_opengl/EyePoseLayer.hpp"
-#include "julia/render_opengl/GLModel.hpp"
+#include "julia/embodiment/EyePoseLayer.hpp"
+
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <algorithm>
@@ -7,7 +7,7 @@
 #include <stdexcept>
 #include <string_view>
 
-namespace julia::render_opengl
+namespace julia::embodiment
 {
     namespace
     {
@@ -37,16 +37,16 @@ namespace julia::render_opengl
         return false;
     }
 
-    EyePoseLayer::EyePoseLayer(const GLModel& model) : model_(model), globals_(model.nodes().size())
+    EyePoseLayer::EyePoseLayer(const model::ModelAsset& model) : model_(model), globals_(model.nodes().size())
     {
         const auto findNode = [&](std::string_view name) {
             for (std::uint32_t i = 0; i < model.nodes().size(); ++i)
                 if (model.nodes()[i].name == name) return i;
-            return NoModelNode;
+            return animation::NoNode;
         };
         head_ = findNode("head.x_018");
         eyes_ = {findNode("eye.L"), findNode("eye.R")};
-        if (head_ == NoModelNode || eyes_[0] == NoModelNode || eyes_[1] == NoModelNode) return;
+        if (head_ == animation::NoNode || eyes_[0] == animation::NoNode || eyes_[1] == animation::NoNode) return;
         for (const auto eye : eyes_) if (model.nodes()[eye].parent != head_) return;
         for (const auto& clip : model.animations())
         {
@@ -62,7 +62,7 @@ namespace julia::render_opengl
         const AnimationClip* source = nullptr;
         for (const auto& clip : model.animations()) if (clip.name.ends_with("TEST_blink_natural")) source = &clip;
         const auto reference = findNode("lid.upper.L.16");
-        if (!source || reference == NoModelNode || std::abs(source->ticksPerSecond - 30) > 1e-6 || source->durationTicks < 11) return;
+        if (!source || reference == animation::NoNode || std::abs(source->ticksPerSecond - 30) > 1e-6 || source->durationTicks < 11) return;
         for (std::uint32_t i = 0; i < model.nodes().size(); ++i)
         {
             const auto& node = model.nodes()[i];
@@ -77,14 +77,14 @@ namespace julia::render_opengl
         // reference's vertical translation is linear in Blender Blink_L;
         // its depth is nonlinear. Read the *actual bake*, not a guessed curve.
         std::vector<glm::mat4> open(model.nodes().size()), closed(open.size()), sampled(open.size());
-        sampleAnimation(model, *source, 8.0 / 30, open);
-        sampleAnimation(model, *source, 11.0 / 30, closed);
+        animation::sampleAnimation(model.skeleton(), *source, 8.0 / 30, open);
+        animation::sampleAnimation(model.skeleton(), *source, 11.0 / 30, closed);
         const float start = open[reference][3].y;
         const float range = closed[reference][3].y - start;
         if (std::abs(range) < 1e-4f) return;
         for (int key = 0; key <= 12; ++key)
         {
-            sampleAnimation(model, *source, (8.0 + key * .25) / 30, sampled);
+            animation::sampleAnimation(model.skeleton(), *source, (8.0 + key * .25) / 30, sampled);
             const float closure = std::clamp((sampled[reference][3].y - start) / range, 0.0f, 1.0f);
             if (!closures_.empty() && closure <= closures_.back()) return;
             closures_.push_back(closure);
@@ -139,11 +139,7 @@ namespace julia::render_opengl
         auto gaze = behavior_.output().gazeDegrees;
         if (targeted_)
         {
-            for (std::size_t i = 0; i < locals.size(); ++i)
-            {
-                const auto parent = model_.nodes()[i].parent;
-                globals_[i] = parent == NoModelNode ? locals[i] : globals_[parent] * locals[i];
-            }
+            animation::computeGlobalTransforms(model_.skeleton(), locals, globals_);
             const auto headDelta = globals_[head_] * glm::inverse(model_.nodes()[head_].globalBindTransform);
             const auto center = glm::vec3{headDelta * glm::vec4{eyeCenter_,1}};
             const auto direction = glm::inverse(glm::mat3{headDelta}) * (target_ - center);

@@ -16,6 +16,48 @@ target_include_directories(julia_test_orbit_camera PRIVATE ${CMAKE_CURRENT_SOURC
 target_link_libraries(julia_test_orbit_camera PRIVATE julia_render julia::warnings)
 add_test(NAME orbit_camera COMMAND julia_test_orbit_camera)
 
+add_executable(julia_test_pose_core test_pose_core.cpp)
+target_include_directories(julia_test_pose_core PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(julia_test_pose_core PRIVATE julia_animation julia::warnings)
+add_test(NAME pose_core COMMAND julia_test_pose_core)
+
+add_executable(julia_test_eye_behavior test_eye_behavior.cpp)
+target_include_directories(julia_test_eye_behavior PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(julia_test_eye_behavior PRIVATE julia_render julia::warnings)
+add_test(NAME eye_behavior COMMAND julia_test_eye_behavior)
+
+add_executable(julia_test_pose_parity test_pose_parity.cpp)
+target_include_directories(julia_test_pose_parity PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_definitions(julia_test_pose_parity PRIVATE
+    JULIA_TEST_ASSET_DIR="${CMAKE_SOURCE_DIR}/assets")
+target_link_libraries(julia_test_pose_parity PRIVATE julia_model_import julia_embodiment julia::warnings)
+add_test(NAME pose_parity COMMAND julia_test_pose_parity)
+set_tests_properties(pose_parity PROPERTIES TIMEOUT 60)
+
+add_executable(julia_test_animation test_animation.cpp)
+target_include_directories(julia_test_animation PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(julia_test_animation PRIVATE julia_embodiment julia::warnings)
+add_test(NAME animation COMMAND julia_test_animation)
+add_executable(julia_test_model_math test_model_math.cpp)
+target_link_libraries(julia_test_model_math PRIVATE julia_embodiment julia::warnings)
+add_test(NAME model_math COMMAND julia_test_model_math)
+
+foreach(suite model_asset model_asset_import)
+    add_executable(julia_test_${suite} test_${suite}.cpp)
+    target_compile_definitions(julia_test_${suite} PRIVATE
+        JULIA_TEST_ASSET_DIR="${CMAKE_SOURCE_DIR}/assets"
+        JULIA_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+    target_link_libraries(julia_test_${suite} PRIVATE julia_model_import julia_embodiment julia::warnings)
+    add_test(NAME ${suite} COMMAND julia_test_${suite} "${CMAKE_SOURCE_DIR}/build/diagnostics/stage2/${suite}")
+    set_tests_properties(${suite} PROPERTIES TIMEOUT 90)
+endforeach()
+find_package(assimp CONFIG REQUIRED)
+target_link_libraries(julia_test_model_asset_import PRIVATE assimp::assimp)
+
+if(NOT JULIA_BUILD_DESKTOP)
+    return()
+endif()
+
 # A real hidden OpenGL window verifies shaders, FBX loading and rendered pixels.
 add_executable(julia_test_opengl test_opengl.cpp)
 target_include_directories(julia_test_opengl PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
@@ -43,14 +85,6 @@ if(WIN32)
     set_tests_properties(desktop_display_modes PROPERTIES WORKING_DIRECTORY "${CMAKE_BINARY_DIR}" TIMEOUT 60 RUN_SERIAL TRUE)
 endif()
 
-add_executable(julia_test_animation test_animation.cpp)
-target_include_directories(julia_test_animation PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(julia_test_animation PRIVATE julia_render_opengl julia::warnings)
-add_test(NAME animation COMMAND julia_test_animation)
-add_executable(julia_test_eye_behavior test_eye_behavior.cpp)
-target_include_directories(julia_test_eye_behavior PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(julia_test_eye_behavior PRIVATE julia_render julia::warnings)
-add_test(NAME eye_behavior COMMAND julia_test_eye_behavior)
 add_test(NAME desktop_animation COMMAND $<TARGET_FILE:julia_desktop>
     --verify-animations "${CMAKE_BINARY_DIR}/verification/desktop_animation")
 set_tests_properties(desktop_animation PROPERTIES
@@ -60,7 +94,7 @@ add_test(NAME desktop_eyes COMMAND $<TARGET_FILE:julia_desktop>
 set_tests_properties(desktop_eyes PROPERTIES
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}" TIMEOUT 180 RUN_SERIAL TRUE)
 
-foreach(suite model_math model_import gpu_resources shader_pipeline)
+foreach(suite model_import gpu_resources shader_pipeline)
     add_executable(julia_test_${suite} test_${suite}.cpp)
     target_include_directories(julia_test_${suite} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
     target_compile_definitions(julia_test_${suite} PRIVATE
@@ -82,3 +116,6 @@ target_include_directories(julia_test_toon_render PRIVATE ${CMAKE_CURRENT_SOURCE
 target_link_libraries(julia_test_toon_render PRIVATE julia_render_opengl julia::warnings)
 add_test(NAME toon_render COMMAND julia_test_toon_render)
 set_tests_properties(toon_render PROPERTIES TIMEOUT 60)
+
+# The GPU fixture exporter is a test-only Assimp dependency.
+target_link_libraries(julia_test_model_import PRIVATE assimp::assimp)

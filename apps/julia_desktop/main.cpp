@@ -895,8 +895,10 @@ int main(int argc, char** argv)
         };
         const bool repairFacetedNormals = isBundledAsset("Raphtalia.fbx") ||
             isBundledAsset("Raphtalia_prepared.fbx");
-        auto model = julia::render_opengl::GLModelLoader::loadFromFile(modelPath,
+        auto asset = julia::model_import::ModelImporter::loadFromFile(modelPath,
             {.rebuildSmoothNormals = repairFacetedNormals});
+
+        auto model = julia::render_opengl::GLModelLoader::upload(asset);
 
         std::cout << "Model loaded\n";
         std::cout << "Meshes: " << model.meshCount() << "\n";
@@ -908,8 +910,8 @@ int main(int argc, char** argv)
         std::cout << "Textured meshes: " << texturedMeshes << '/' << model.meshCount() << "\n";
         if (texturedMeshes == 0)
             std::cerr << "Material diagnostic: this asset has no assigned images; using imported diffuse values.\n";
-        julia::render_opengl::AnimationPlayer player{model};
-        julia::render_opengl::EyePoseLayer eyes{model};
+        julia::render_opengl::AnimationPlayer player{*asset};
+        julia::render_opengl::EyePoseLayer eyes{*asset};
         eyes.setEnabled(!animationVerification && !noEyes);
         player.setEyeLayer(&eyes);
         std::cout << "Procedural eyes: " << (eyes.available() ? "ready (188 baked eyelid bones)" : "unavailable for this rig") << '\n';

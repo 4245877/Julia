@@ -1,4 +1,4 @@
-﻿#include <glad/glad.h>
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 #include "julia/render/OrbitCamera.hpp"
@@ -48,6 +48,8 @@ namespace
 
 int main(int argc, char** argv)
 {
+    const auto cpuAsset = julia::model_import::ModelImporter::loadFromFile(
+        std::filesystem::path{JULIA_TEST_ASSET_DIR} / "models/Raphtalia1.fbx");
     if (!glfwInit()) return 1;
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -75,8 +77,18 @@ int main(int argc, char** argv)
         for (const auto channel : background)
             if (channel != background[0]) { JULIA_CHECK(false); break; }
 
-        auto model = julia::render_opengl::GLModelLoader::loadFromFile(
-            std::filesystem::path{JULIA_TEST_ASSET_DIR} / "models" / "Raphtalia1.fbx");
+        auto model = julia::render_opengl::GLModelLoader::upload(cpuAsset);
+        JULIA_CHECK(model.assetHandle() == cpuAsset);
+        JULIA_CHECK(&model.skeleton() == &cpuAsset->skeleton());
+        {
+            auto secondUpload = julia::render_opengl::GLModelLoader::upload(cpuAsset);
+            JULIA_CHECK(secondUpload.meshCount() == model.meshCount());
+            bool rejected = false;
+            try { secondUpload.addNode({"mutation"}); }
+            catch (const std::logic_error&) { rejected = true; }
+            JULIA_CHECK(rejected);
+        }
+        JULIA_CHECK(glGetError() == GL_NO_ERROR);
         JULIA_CHECK(model.meshCount() > 0);
         const auto fit = model.fitToHeightTransform(2.2f);
         julia::render::OrbitCamera camera{julia::render::CameraSubject{
@@ -191,5 +203,11 @@ int main(int argc, char** argv)
     }
     glfwDestroyWindow(window);
     glfwTerminate();
+    JULIA_CHECK(!cpuAsset->empty());
+    JULIA_CHECK(cpuAsset->skinningMatrices().size() == cpuAsset->boneCount());
+    julia::animation::Pose cpuPose(cpuAsset->skeleton());
+    julia::animation::setBindPose(cpuAsset->skeleton(), cpuPose.locals);
+    julia::animation::computeGlobalTransforms(cpuAsset->skeleton(), cpuPose.locals, cpuPose.globals);
+    JULIA_CHECK(!cpuPose.globals.empty());
     return JULIA_TEST_RESULT();
 }

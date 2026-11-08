@@ -2,9 +2,7 @@ find_package(OpenGL REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(glad CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
-find_package(assimp CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
-find_package(Stb REQUIRED)
 
 add_library(julia_render_opengl STATIC)
 
@@ -14,19 +12,14 @@ target_sources(julia_render_opengl
         src/AvatarSurface.cpp
         src/GLShader.cpp
         src/GLMesh.cpp
-        src/OutlineNormals.cpp
         src/GLModel.cpp
         src/GLTexture.cpp
         src/GLModelLoader.cpp
-        src/Animation.cpp
-        src/EyePoseLayer.cpp
 )
 
 target_include_directories(julia_render_opengl
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
-    PRIVATE
-        ${Stb_INCLUDE_DIR}
 )
 
 target_compile_features(julia_render_opengl
@@ -42,11 +35,13 @@ target_compile_definitions(julia_render_opengl
 target_link_libraries(julia_render_opengl
     PUBLIC
         julia_render
+        julia_animation
+        julia_model_import
+        julia_embodiment
         OpenGL::GL
         glfw
         glad::glad
         glm::glm
-        assimp::assimp
         spdlog::spdlog
     PRIVATE
         julia::warnings

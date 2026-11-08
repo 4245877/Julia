@@ -16,6 +16,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
 option(JULIA_BUILD_TESTS "Build Julia unit tests" ON)
+option(JULIA_BUILD_DESKTOP "Build the OpenGL plugin, desktop application and GPU tests" ON)
 
 add_subdirectory(libs/core)
 add_subdirectory(libs/diagnostics)
@@ -23,10 +24,16 @@ add_subdirectory(libs/events)
 add_subdirectory(libs/runtime)
 
 add_subdirectory(libs/render)
-add_subdirectory(plugins/render_opengl)
+add_subdirectory(libs/animation)
+add_subdirectory(libs/model)
+add_subdirectory(libs/model_import)
+add_subdirectory(libs/embodiment)
 
-add_subdirectory(apps)
-add_subdirectory(tools)
+if(JULIA_BUILD_DESKTOP)
+    add_subdirectory(plugins/render_opengl)
+    add_subdirectory(apps)
+    add_subdirectory(tools)
+endif()
 
 if(JULIA_BUILD_TESTS)
     enable_testing()

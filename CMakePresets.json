@@ -32,6 +32,16 @@
       }
     },
     {
+      "name": "cpu-release",
+      "displayName": "CPU core and tests (no OpenGL targets)",
+      "inherits": "vs-release",
+      "cacheVariables": {
+        "JULIA_BUILD_DESKTOP": "OFF",
+        "VCPKG_MANIFEST_INSTALL": "OFF",
+        "VCPKG_INSTALLED_DIR": "${sourceDir}/build/vs-release/vcpkg_installed"
+      }
+    },
+    {
       "name": "vs-debug",
       "displayName": "Visual Studio Debug x64",
       "inherits": "base",
@@ -48,6 +58,10 @@
       "configuration": "Release"
     },
     {
+      "name": "build-cpu-release",
+      "configurePreset": "cpu-release"
+    },
+    {
       "name": "build-debug",
       "configurePreset": "vs-debug",
       "configuration": "Debug"
@@ -58,6 +72,13 @@
       "name": "test-release",
       "configurePreset": "vs-release",
       "configuration": "Release",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "test-cpu-release",
+      "configurePreset": "cpu-release",
       "output": {
         "outputOnFailure": true
       }

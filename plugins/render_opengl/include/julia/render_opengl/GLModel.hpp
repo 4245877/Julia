@@ -16,33 +16,18 @@ namespace julia::render_opengl
 {
     class GLShader;
 
-    inline constexpr std::uint32_t NoModelNode = std::numeric_limits<std::uint32_t>::max();
-
-    // Nodes are stored in parent-before-child order. Transforms include the
-    // imported root transform: vertices and skinning palettes share scene space.
-    struct GLModelNode
-    {
-        std::string name;
-        std::uint32_t parent = NoModelNode;
-        glm::mat4 localTransform{1.0f};
-        glm::mat4 globalBindTransform{1.0f};
-        NodeTRS bindTRS{};
-    };
-
-    struct GLBoneInfo
-    {
-        std::string name;
-
-        // Assimp mesh-local inverse bind, adjusted for the node transform
-        // already baked into vertices. A node can have multiple mesh offsets.
-        glm::mat4 offsetMatrix{1.0f};
-        std::uint32_t nodeIndex = NoModelNode;
-    };
+    inline constexpr std::uint32_t NoModelNode = animation::NoNode;
+    using GLModelNode = animation::SkeletonNode;
+    using GLBoneInfo = animation::SkinBinding;
 
     class GLModel
     {
     public:
-        GLModel() = default;
+        GLModel();
+        explicit GLModel(std::shared_ptr<const model::ModelAsset> asset);
+        const model::ModelAsset& asset() const { return *asset_; }
+        const auto& assetHandle() const { return asset_; }
+        operator const model::ModelAsset&() const { return *asset_; }
         ~GLModel() = default;
 
         GLModel(const GLModel&) = delete;
@@ -51,11 +36,15 @@ namespace julia::render_opengl
         GLModel(GLModel&&) noexcept = default;
         GLModel& operator=(GLModel&&) noexcept = default;
 
+        // Procedural construction only; imported assets are immutable.
+        // Nodes supplied here must include bindTRS for sparse animation.
         void addMesh(GLMesh&& mesh);
         std::uint32_t addNode(GLModelNode node);
         std::uint32_t addBone(GLBoneInfo bone);
         void addAnimation(AnimationClip clip);
-        const std::vector<AnimationClip>& animations() const { return animations_; }
+        const std::vector<AnimationClip>& animations() const { return asset_->animations(); }
+
+        const animation::Skeleton& skeleton() const { return asset_->skeleton(); }
 
         void draw(const GLShader& shader) const;
         void drawOpaque(const GLShader& shader, MeshPass pass = MeshPass::Fill) const;
@@ -85,7 +74,7 @@ namespace julia::render_opengl
 
         std::size_t boneCount() const
         {
-            return bones_.size();
+            return asset_->bones().size();
         }
 
         const Bounds& bounds() const
@@ -100,12 +89,12 @@ namespace julia::render_opengl
 
         const std::vector<GLBoneInfo>& bones() const
         {
-            return bones_;
+            return asset_->bones();
         }
 
         const std::vector<GLModelNode>& nodes() const
         {
-            return nodes_;
+            return asset_->nodes();
         }
 
         // Удобно для первого запуска: модель центрируется и масштабируется.
@@ -113,9 +102,9 @@ namespace julia::render_opengl
 
     private:
         std::vector<GLMesh> meshes_;
-        std::vector<GLModelNode> nodes_;
-        std::vector<GLBoneInfo> bones_;
-        std::vector<AnimationClip> animations_;
+        std::shared_ptr<model::ModelAsset> builder_;
+        std::shared_ptr<const model::ModelAsset> asset_;
+        model::ModelAsset& builder();
         Bounds bounds_{};
     };
 }

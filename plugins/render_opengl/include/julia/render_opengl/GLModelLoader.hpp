@@ -3,30 +3,19 @@
 #include "julia/render_opengl/GLModel.hpp"
 
 #include <filesystem>
+#include "julia/model_import/ModelImporter.hpp"
 
 namespace julia::render_opengl
 {
-    struct GLModelLoadOptions
-    {
-        // Compatibility for legacy assets without texture references. Material
-        // names alone cannot establish which atlas matches the mesh UV layout,
-        // so guessing body_color/hair_color/shield_color is explicitly opt-in.
-        bool useLegacyMaterialTextureFallback = false;
-
-        // Opt-in repair for assets exported with per-face normals. Rebuild at
-        // import time with angle-weighted connected rest-surface fans across UV
-        // and skin-weight splits, retaining creases >= 45 degrees. Vertex copies
-        // keep their own deformation. Authored normals stay untouched by default.
-        bool rebuildSmoothNormals = false;
-    };
+    using GLModelLoadOptions = model_import::ModelImportOptions;
 
     class GLModelLoader
     {
     public:
-        // Requires a current initialized OpenGL context. Geometry is baked to
-        // imported scene space; nodes and adjusted inverse binds are retained
-        // for GLModel::skinningMatrices(). Skeletal clips/keys are deep-copied
-        // before freeing Assimp; sampling/playback belongs to AnimationPlayer.
+        // Creation and destruction of all returned GPU owners require a current
+        // initialized context. upload() performs no file access or Assimp work.
+        static GLModel upload(std::shared_ptr<const model::ModelAsset> asset);
+        // Convenience adapter: CPU import followed by the same upload operation.
         static GLModel loadFromFile(const std::filesystem::path& path,
             GLModelLoadOptions options = {});
     };

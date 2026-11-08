@@ -1,4 +1,5 @@
-#include "julia/render_opengl/GLModel.hpp"
+#include "julia/model/ModelAsset.hpp"
+#include "julia/embodiment/Animation.hpp"
 #include "julia_test.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 #include <cmath>
@@ -23,13 +24,15 @@ namespace
 
 int main()
 {
-    using namespace julia::render_opengl;
-    GLModel model;
+    using namespace julia::embodiment;
+    using namespace julia::model;
+    constexpr auto NoModelNode = julia::animation::NoNode;
+    ModelAsset model;
     const glm::mat4 identity{1};
     const auto rootMatrix = glm::translate(identity, glm::vec3{4,5,6}) * glm::scale(identity, glm::vec3{.01f});
     const auto root = model.addNode({"root", NoModelNode, rootMatrix});
     const auto bindLocal = glm::translate(identity, glm::vec3{0,3,0}) * glm::scale(identity, glm::vec3{2,3,4});
-    const auto helper = model.addNode({"helper", root, bindLocal});
+    const auto helper = model.addNode({"helper", root, bindLocal, identity, {{0,3,0},{1,0,0,0},{2,3,4}}});
     const auto bone = model.addNode({"bone", helper, glm::translate(identity, glm::vec3{0,2,0})});
     model.addBone({"bone", glm::inverse(model.nodes()[bone].globalBindTransform), bone});
     AnimationClip sparse;
@@ -72,7 +75,7 @@ int main()
     bad = sparse; bad.ticksPerSecond = 0;
     JULIA_CHECK(rejects([&] { model.addAnimation(bad); }));
 
-    GLModel translationModel;
+    ModelAsset translationModel;
     translationModel.addNode({"node"});
     AnimationClip translationClip;
     translationClip.durationTicks = 10; translationClip.ticksPerSecond = 10;
@@ -92,7 +95,7 @@ int main()
     JULIA_CHECK(close(translationsPlayer.localTransforms()[0],
         glm::translate(identity, glm::vec3{2,4,6}) * glm::scale(identity, glm::vec3{3})));
 
-    GLModel noClips;
+    ModelAsset noClips;
     AnimationPlayer empty(noClips);
     empty.play(); empty.update(1); empty.pause(); empty.stop();
     JULIA_CHECK(empty.clip() == nullptr && empty.palette().empty());

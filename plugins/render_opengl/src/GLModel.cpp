@@ -10,7 +10,7 @@
 #include <utility>
 
 #include <glm/gtc/matrix_transform.hpp>
-#include <assimp/types.h>
+
 
 namespace julia::render_opengl
 {
@@ -31,79 +31,21 @@ namespace julia::render_opengl
         bounds_.expand(meshes_.back().bounds());
     }
 
-    std::uint32_t GLModel::addNode(GLModelNode node)
+    GLModel::GLModel() : builder_(std::make_shared<model::ModelAsset>()), asset_(builder_) {}
+
+    GLModel::GLModel(std::shared_ptr<const model::ModelAsset> asset) : asset_(std::move(asset))
     {
-        if (nodes_.size() >= NoModelNode)
-            throw std::length_error("Model contains too many nodes");
-        if (node.parent != NoModelNode && node.parent >= nodes_.size())
-            throw std::invalid_argument("Model nodes must precede their children");
-        if (!finite(node.localTransform))
-            throw std::invalid_argument("Model node transform is not finite");
-        aiMatrix4x4 rest;
-        for (int row = 0; row < 4; ++row)
-            for (int column = 0; column < 4; ++column)
-                rest[row][column] = node.localTransform[column][row];
-        aiVector3D scale, translation;
-        aiQuaternion rotation;
-        rest.Decompose(scale, rotation, translation);
-        node.bindTRS = {{translation.x, translation.y, translation.z},
-            {rotation.w, rotation.x, rotation.y, rotation.z}, {scale.x, scale.y, scale.z}};
-        node.globalBindTransform = node.parent == NoModelNode
-            ? node.localTransform
-            : nodes_[node.parent].globalBindTransform * node.localTransform;
-        if (!finite(node.globalBindTransform))
-            throw std::invalid_argument("Model global node transform is not finite");
-        nodes_.push_back(std::move(node));
-        return static_cast<std::uint32_t>(nodes_.size() - 1);
+        if (!asset_) throw std::invalid_argument("GPU model requires a CPU asset");
     }
 
-    std::uint32_t GLModel::addBone(GLBoneInfo bone)
+    model::ModelAsset& GLModel::builder()
     {
-        if (bones_.size() >= static_cast<std::size_t>(std::numeric_limits<int>::max()))
-            throw std::length_error("Model contains too many bone indices");
-        if (!finite(bone.offsetMatrix))
-            throw std::invalid_argument("Bone offset matrix is not finite");
-        bones_.push_back(std::move(bone));
-        return static_cast<std::uint32_t>(bones_.size() - 1);
+        if (!builder_) throw std::logic_error("Imported GPU model asset is immutable");
+        return *builder_;
     }
-
-    void GLModel::addAnimation(AnimationClip clip)
-    {
-        if (!std::isfinite(clip.durationTicks) || clip.durationTicks < 0.0 ||
-            !std::isfinite(clip.ticksPerSecond) || clip.ticksPerSecond <= 0.0 ||
-            !std::isfinite(clip.durationSeconds()))
-            throw std::invalid_argument("Invalid animation duration/tick rate: " + clip.name);
-        std::vector<bool> mapped(nodes_.size(), false);
-        for (auto& channel : clip.channels)
-        {
-            if (channel.nodeIndex >= nodes_.size() || mapped[channel.nodeIndex])
-                throw std::invalid_argument("Invalid/duplicate animation node: " + clip.name);
-            mapped[channel.nodeIndex] = true;
-            const auto validateKeys = [&](const auto& keys) {
-                double previous = -std::numeric_limits<double>::infinity();
-                for (const auto& key : keys)
-                {
-                    if (!std::isfinite(key.ticks) || key.ticks < previous)
-                        throw std::invalid_argument("Invalid animation key time: " + clip.name);
-                    previous = key.ticks;
-                    for (glm::length_t i = 0; i < key.value.length(); ++i)
-                        if (!std::isfinite(key.value[i]))
-                            throw std::invalid_argument("Non-finite animation key: " + clip.name);
-                }
-            };
-            validateKeys(channel.translations);
-            validateKeys(channel.rotations);
-            validateKeys(channel.scales);
-            for (auto& key : channel.rotations)
-            {
-                const float magnitude = glm::length(key.value);
-                if (!std::isfinite(magnitude) || magnitude < 1e-12f)
-                    throw std::invalid_argument("Invalid animation quaternion: " + clip.name);
-                key.value = glm::normalize(key.value);
-            }
-        }
-        animations_.push_back(std::move(clip));
-    }
+    std::uint32_t GLModel::addNode(GLModelNode node) { return builder().addNode(std::move(node)); }
+    std::uint32_t GLModel::addBone(GLBoneInfo bone) { return builder().addBone(std::move(bone)); }
+    void GLModel::addAnimation(AnimationClip clip) { builder().addAnimation(std::move(clip)); }
 
     void GLModel::draw(const GLShader& shader) const
     {
@@ -144,7 +86,7 @@ namespace julia::render_opengl
     std::vector<glm::mat4> GLModel::skinningMatrices(
         std::span<const glm::mat4> localNodeTransforms) const
     {
-        std::vector<glm::mat4> globals(nodes_.size()), palette(bones_.size());
+        std::vector<glm::mat4> globals(nodes().size()), palette(bones().size());
         skinningMatrices(localNodeTransforms, globals, palette);
         return palette;
     }
@@ -152,34 +94,8 @@ namespace julia::render_opengl
     void GLModel::skinningMatrices(std::span<const glm::mat4> localNodeTransforms,
         std::span<glm::mat4> globalTransforms, std::span<glm::mat4> palette) const
     {
-        if (!localNodeTransforms.empty() && localNodeTransforms.size() != nodes_.size())
-            throw std::invalid_argument("Pose must provide one local transform per model node");
-        if (globalTransforms.size() != nodes_.size() || palette.size() != bones_.size())
-            throw std::invalid_argument("Incorrect skeleton scratch/palette size");
-
-        for (std::size_t i = 0; i < nodes_.size(); ++i)
-        {
-            const auto& local = localNodeTransforms.empty()
-                ? nodes_[i].localTransform : localNodeTransforms[i];
-            if (!finite(local))
-                throw std::invalid_argument("Pose contains a non-finite transform");
-            const auto global = nodes_[i].parent == NoModelNode
-                ? local : globalTransforms[nodes_[i].parent] * local;
-            if (!finite(global))
-                throw std::invalid_argument("Pose global transform is not finite");
-            globalTransforms[i] = global;
-        }
-
-        for (std::size_t i = 0; i < bones_.size(); ++i)
-        {
-            const auto& bone = bones_[i];
-            if (bone.nodeIndex >= globalTransforms.size())
-                throw std::logic_error("Bone is not linked to a model node: " + bone.name);
-            const auto matrix = globalTransforms[bone.nodeIndex] * bone.offsetMatrix;
-            if (!finite(matrix))
-                throw std::invalid_argument("Skinning matrix is not finite: " + bone.name);
-            palette[i] = matrix;
-        }
+        animation::computeGlobalTransforms(skeleton(), localNodeTransforms, globalTransforms);
+        animation::buildSkinningPalette(skeleton(), globalTransforms, palette);
     }
 
     glm::mat4 GLModel::fitToHeightTransform(float targetHeight) const

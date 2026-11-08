@@ -1,0 +1,5 @@
+find_package(assimp CONFIG REQUIRED)
+add_library(julia_model_import STATIC src/ModelImporter.cpp)
+target_include_directories(julia_model_import PUBLIC include)
+target_link_libraries(julia_model_import PUBLIC julia_model PRIVATE assimp::assimp julia::warnings)
+target_compile_features(julia_model_import PUBLIC cxx_std_20)
