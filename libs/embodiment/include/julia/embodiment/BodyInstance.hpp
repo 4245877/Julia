@@ -1,6 +1,7 @@
 #pragma once
 #include "julia/embodiment/Animation.hpp"
 #include "julia/embodiment/BodyProfile.hpp"
+#include "julia/embodiment/ArmReach.hpp"
 #include "julia/embodiment/EyePoseLayer.hpp"
 #include "julia/runtime/FixedStepScheduler.hpp"
 #include <memory>
@@ -24,7 +25,7 @@ namespace julia::embodiment
     // Gaze in degrees; Target in resource coordinates; manual blink in x/y [0,1].
     struct EyeCommand { EyeOperation operation; glm::vec3 value{0}; };
     using BodyOperation = std::variant<SetCoordinate, ResetCoordinates, SetDirectMode, ResetBody,
-        SetRoot, ClipCommand, EyeCommand>;
+        SetRoot, ClipCommand, EyeCommand, StartReach, RetargetReach, CancelReach>;
     struct BodyCommand
     {
         std::uint64_t id, target, tick, epoch;
@@ -48,6 +49,7 @@ namespace julia::embodiment
         RootPose root;
         std::vector<glm::vec3> coordinates; // Diagnostic q, never inferred from arbitrary clips.
         render::EyeBehaviorOutput eyes;
+        std::array<ReachObservation,2> reaches;
         // Base clip components only; exact matrices for all nonanimated nodes.
         std::vector<NodeTRS> components;
         std::vector<bool> animated;
@@ -82,7 +84,9 @@ namespace julia::embodiment
         const BodySnapshot& snapshot() const { return current_; }
         const BodySnapshot& previousSnapshot() const { return previous_; }
         const auto& results() const { return results_; }
+        const std::vector<ReachObservation>& reachEvents() const;
         std::size_t pendingCommands() const { return commands_.size(); }
+        std::size_t commandHistorySize() const { return seen_.size(); } // Grows until ResetBody.
         BodyId id() const { return id_; }
         const model::ModelAsset& asset() const { return *asset_; }
         const AnimationPlayer& player() const { return player_; }
@@ -94,6 +98,7 @@ namespace julia::embodiment
         std::shared_ptr<const model::ModelAsset> asset_;
         std::unique_ptr<BodyRigBinding> binding_;
         std::unique_ptr<DirectBodyControl> control_;
+        std::unique_ptr<ArmReach> reach_;
         EyePoseLayer eyes_;
         AnimationPlayer player_;
         RootPose root_;
@@ -104,6 +109,6 @@ namespace julia::embodiment
         std::vector<BodyCommandResult> results_;
         BodySnapshot previous_, current_;
         void capture();
-        BodyCommandStatus apply(const BodyOperation& operation);
+        BodyCommandStatus apply(const BodyOperation& operation, std::uint64_t commandId);
     };
 }

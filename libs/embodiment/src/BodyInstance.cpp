@@ -27,6 +27,7 @@ namespace julia::embodiment
         {
             binding_ = std::make_unique<BodyRigBinding>(*profile, *asset_);
             control_ = std::make_unique<DirectBodyControl>(*binding_);
+            reach_ = std::make_unique<ArmReach>(*control_);
             player_.setBodyControl(control_.get());
         }
         eyes_.setEnabled(eyesEnabled);
@@ -54,7 +55,9 @@ namespace julia::embodiment
             throw std::overflow_error("Local command IDs exhausted");
         return submit({nextId_++, id_, tick_ + 1, epoch_, std::move(operation)});
     }
-    BodyCommandStatus BodyInstance::apply(const BodyOperation& operation)
+    const std::vector<ReachObservation>& BodyInstance::reachEvents() const
+    { static const std::vector<ReachObservation> empty; return reach_ ? reach_->events() : empty; }
+    BodyCommandStatus BodyInstance::apply(const BodyOperation& operation, std::uint64_t commandId)
     {
         using S = BodyCommandStatus;
         return std::visit([&](const auto& value) -> S {
@@ -62,6 +65,7 @@ namespace julia::embodiment
             if constexpr (std::is_same_v<T, SetCoordinate>)
             {
                 if (!control_) throw std::invalid_argument("No calibrated body control");
+                if (reach_->owns(value.joint)) throw std::invalid_argument("Coordinate owned by active reach; cancel and wait for stop");
                 const float requested = value.radians + (value.relative ? control_->coordinate(value.joint,value.coordinate) : 0);
                 const auto result = control_->setCoordinate(value.joint,value.coordinate,requested,value.policy);
                 return result.status == CommandStatus::Applied ? S::Applied :
@@ -70,11 +74,13 @@ namespace julia::embodiment
             else if constexpr (std::is_same_v<T, ResetCoordinates>)
             {
                 if (!control_) throw std::invalid_argument("No calibrated body control");
+                reach_->interrupt(ReachReason::CoordinatesReset);
                 control_->reset(); discontinuity_ = true;
             }
             else if constexpr (std::is_same_v<T, SetDirectMode>)
             {
                 if (!control_) throw std::invalid_argument("No calibrated body control");
+                if (control_->enabled()!=value.enabled) reach_->interrupt(ReachReason::ModeChanged);
                 control_->setEnabled(value.enabled); discontinuity_ = true;
             }
             else if constexpr (std::is_same_v<T, SetRoot>)
@@ -83,18 +89,31 @@ namespace julia::embodiment
                 if (!finite(value.pose.position) || !std::isfinite(q.x) || !std::isfinite(q.y) ||
                     !std::isfinite(q.z) || !std::isfinite(q.w) || !std::isfinite(glm::length(q)) || glm::length(q) < 1e-8f)
                     throw std::invalid_argument("Invalid root pose");
+                if (reach_) reach_->interrupt(ReachReason::RootChanged);
                 root_ = {value.pose.position, glm::normalize(q)};
                 discontinuity_ = true; // SetRoot is a teleport, never a velocity-limited move.
             }
             else if constexpr (std::is_same_v<T, ResetBody>)
             {
                 root_ = {};
+                if (reach_) reach_->reset();
                 if (control_) { control_->reset(); control_->setEnabled(false); }
                 eyes_.reset(); eyes_.setEnabled(initialEyes_);
                 if (!asset_->animations().empty()) player_.selectClip(0);
                 player_.setLooping(true); player_.stop();
                 ++epoch_; seen_.clear(); nextId_ = 1;
                 discontinuity_ = true;
+            }
+            else if constexpr (std::is_same_v<T, StartReach> || std::is_same_v<T, RetargetReach>)
+            {
+                if (!reach_) throw std::invalid_argument("No calibrated body control");
+                if constexpr (std::is_same_v<T, StartReach>) reach_->start(commandId,epoch_,value.target,matrix(root_));
+                else reach_->start(value.action,epoch_,value.target,matrix(root_),true);
+            }
+            else if constexpr (std::is_same_v<T, CancelReach>)
+            {
+                if (!reach_) throw std::invalid_argument("No calibrated body control");
+                reach_->cancel(value.arm,value.action);
             }
             else if constexpr (std::is_same_v<T, ClipCommand>)
             {
@@ -166,6 +185,7 @@ namespace julia::embodiment
     {
         if (tick_ == std::numeric_limits<std::uint64_t>::max()) throw std::overflow_error("Body tick exhausted");
         previous_ = current_; ++tick_; results_.clear(); discontinuity_ = false;
+        if (reach_) reach_->clearEvents();
         std::sort(commands_.begin(),commands_.end(),[](const auto& a,const auto& b) {
             return a.tick != b.tick ? a.tick < b.tick : a.id < b.id; });
         std::vector<BodyCommand> due;
@@ -176,7 +196,7 @@ namespace julia::embodiment
             const auto& command = due[i];
             try
             {
-                const auto status = apply(command.operation);
+                const auto status = apply(command.operation,command.id);
                 results_.push_back({command.id,tick_,status,status == BodyCommandStatus::Rejected ? "joint limit" : "",command.epoch});
             }
             catch (const std::exception& error)
@@ -191,7 +211,9 @@ namespace julia::embodiment
         }
         // Commands take effect at the beginning of the interval ending at tick_.
         const auto clipTimeBefore = player_.timeSeconds();
+        if (reach_) reach_->advance();
         player_.update(runtime::BodyStepSeconds);
+        if (reach_) reach_->measure(player_.globalTransforms(),matrix(root_));
         if ((!control_ || !control_->enabled()) && player_.timeSeconds() < clipTimeBefore)
             discontinuity_ = true; // Loop seam: no blending across the end/start cut.
         capture();
@@ -204,6 +226,7 @@ namespace julia::embodiment
         current_.root = root_; current_.clipTime = player_.timeSeconds(); current_.clipIndex = player_.clipIndex();
         current_.playback = player_.state(); current_.direct = control_ && control_->enabled();
         current_.eyesEnabled = eyes_.enabled(); current_.eyes = eyes_.behavior().output();
+        if (reach_) current_.reaches = reach_->observations();
         if (control_) current_.coordinates.assign(control_->coordinates().begin(),control_->coordinates().end());
         std::fill(current_.animated.begin(),current_.animated.end(),false);
         if (!current_.direct && player_.state() != PlaybackState::Stopped && player_.clip())

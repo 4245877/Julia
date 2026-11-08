@@ -789,7 +789,8 @@ namespace
 
 int main(int argc, char** argv)
 {
-    const bool bodyVerification = argc > 1 && std::string_view{argv[1]} == "--verify-body";
+    const bool reachVerification = argc > 1 && std::string_view{argv[1]} == "--verify-ik";
+    const bool bodyVerification = reachVerification || (argc > 1 && std::string_view{argv[1]} == "--verify-body");
     if (bodyVerification && argc != 3) { std::cerr << "Usage: julia_desktop --verify-body output_directory\n"; return 2; }
     const bool verification = argc > 1 && std::string_view{argv[1]} == "--verify";
     const bool animationVerification = argc > 1 &&
@@ -1095,10 +1096,12 @@ int main(int argc, char** argv)
         std::cout << "Eyes: G natural/resume, H auto blink, J auto gaze, K blink, U/I wink,\n"
             << "numpad 1..9 gaze, Home forward, T hold camera point, [/] blink interval, F8 fixed seed.\n";
         std::cout << "Body: F2 direct mode, Shift+F3/F3 previous/next joint, F4 coordinate, +/- 5 deg, Backspace zero, F5 axes. Pause full simulation, F6 full reset.\n";
+        std::cout << "IK (direct mode): F7 reach/retarget wrist, Shift+F7 arm, Z/C X-/+, V/N Y-/+, O/P Z-/+ (25 mm, Shift 5 mm), Delete finish segment and hold.\n";
         keyCallback(window, GLFW_KEY_F1, 0, GLFW_PRESS, 0);
         if (bodyVerification)
         {
-            julia::desktop::verifyDesktopBody(window,renderer,model,body,*bodyDiagnostics,fitModel,
+            const auto verify=reachVerification ? julia::desktop::verifyDesktopReach:julia::desktop::verifyDesktopBody;
+            verify(window,renderer,model,body,*bodyDiagnostics,fitModel,
                 std::filesystem::path{argv[2]},keyCallback);
             glfwSetWindowShouldClose(window,GLFW_TRUE);
         }
@@ -1242,7 +1245,9 @@ int main(int argc, char** argv)
             {
                 constexpr const char* states[]{"stopped/bind", "playing", "paused", "finished"};
                 std::ostringstream title;
-                title << "JULIA | " << (player.clip() ? player.clip()->name : "no clips")
+                title << "JULIA | ";
+                if (bodyDiagnostics && bodyControl && bodyControl->enabled()) title << bodyDiagnostics->title() << " | ";
+                title << (player.clip() ? player.clip()->name : "no clips")
                     << " | " << states[static_cast<int>(player.state())] << ' '
                     << std::fixed << std::setprecision(2) << player.timeSeconds() << '/'
                     << (player.clip() ? player.clip()->durationSeconds() : 0.0) << " s | loop "
@@ -1252,7 +1257,6 @@ int main(int argc, char** argv)
                     << " | tick " << body.snapshot().tick << " dropped " << scheduler.diagnostics().discardedSeconds
                     << " s overload " << scheduler.diagnostics().overloadFrames << (scheduler.paused() ? " SIM PAUSED":"")
                     << " | RMB orbit MMB pan Wheel zoom F face B reset | PgUp/Dn Space X";
-                if (bodyControl && bodyControl->enabled()) title << " | " << bodyDiagnostics->title();
                 glfwSetWindowTitle(window, title.str().c_str());
                 titleFrames = 0;
                 titleTime = now;

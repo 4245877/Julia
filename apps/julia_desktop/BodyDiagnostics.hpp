@@ -19,14 +19,21 @@ namespace julia::desktop
         void draw(render_opengl::OpenGLRenderer& renderer,const glm::mat4& viewerFromResource,
             const embodiment::BodyDisplay& display) const;
         bool overlay = true;
+        void setReachPosition(glm::vec3 position) { reachPosition_=position; }
     private:
         const embodiment::DirectBodyControl& control_;
         embodiment::BodyInstance& body_;
         std::optional<std::pair<std::uint64_t,bool>> pendingMode_;
         std::size_t joint_=0,coordinate_=0;
         std::string result_="ready";
+        embodiment::ArmSide reachArm_=embodiment::ArmSide::Left;
+        glm::vec3 reachPosition_{.22f,1.10f,.32f};
     };
     void verifyDesktopBody(GLFWwindow* window,render_opengl::OpenGLRenderer& renderer,
+        const render_opengl::GLModel& model,embodiment::BodyInstance& body,
+        BodyDiagnostics& diagnostics,const glm::mat4& fit,
+        const std::filesystem::path& output,void (*input)(GLFWwindow*,int,int,int,int));
+    void verifyDesktopReach(GLFWwindow* window,render_opengl::OpenGLRenderer& renderer,
         const render_opengl::GLModel& model,embodiment::BodyInstance& body,
         BodyDiagnostics& diagnostics,const glm::mat4& fit,
         const std::filesystem::path& output,void (*input)(GLFWwindow*,int,int,int,int));
