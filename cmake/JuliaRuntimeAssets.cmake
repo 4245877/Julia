@@ -6,6 +6,7 @@ if(NOT IS_DIRECTORY "${JULIA_ASSET_SOURCE}" OR NOT JULIA_ASSET_DESTINATION)
 endif()
 file(COPY "${JULIA_ASSET_SOURCE}/"
     DESTINATION "${JULIA_ASSET_DESTINATION}"
+    REGEX "/metadata(/|$)" EXCLUDE
     REGEX "/models/backups(/|$)" EXCLUDE
     REGEX "\\.blend[0-9]*$" EXCLUDE
 )

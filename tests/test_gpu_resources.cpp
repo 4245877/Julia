@@ -379,7 +379,8 @@ int main(int argc, char** argv)
     }
     try
     {
-        testTextures(argc > 1 ? std::filesystem::path(argv[1]) : "verification");
+        testTextures(argc > 1 ? std::filesystem::path{argv[1]} :
+            std::filesystem::temp_directory_path() / "Julia/verification/gpu_resources");
         testMeshes();
         testMaterialSamplers();
         testToonInputs();

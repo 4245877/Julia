@@ -494,7 +494,8 @@ int main(int argc, char** argv)
     glfwMakeContextCurrent(window);
     if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)))
     { glfwDestroyWindow(window); glfwTerminate(); return 1; }
-    try { runTests(argc > 1 ? std::filesystem::path{argv[1]} : std::filesystem::path{"model-import-fixtures"}); }
+    try { runTests(argc > 1 ? std::filesystem::path{argv[1]} :
+        std::filesystem::temp_directory_path() / "Julia/verification/model_import"); }
     catch (const std::exception& error) { std::cerr << error.what() << '\n'; JULIA_CHECK(false); }
     glfwDestroyWindow(window);
     glfwTerminate();

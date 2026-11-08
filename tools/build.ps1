@@ -1,5 +1,6 @@
 ﻿[CmdletBinding()]
 param([switch]$SkipTests, [switch]$UseInstalledDependencies,
+    [switch]$Clean, [switch]$KeepDiagnostics,
     [ValidateSet('Release', 'Debug')][string]$Configuration = 'Release')
 
 $ErrorActionPreference = 'Stop'
@@ -21,13 +22,23 @@ try {
     $ErrorActionPreference = 'Continue'
     $installManifest = if ($UseInstalledDependencies) { 'OFF' } else { 'ON' }
     $configurationName = $Configuration.ToLowerInvariant()
-    & cmake --preset "vs-$configurationName" "-DVCPKG_MANIFEST_INSTALL=$installManifest"
+    $configureOptions = @()
+    $buildOptions = @()
+    if ($Clean) {
+        $configureOptions += '--fresh'
+        $buildOptions += '--clean-first'
+    }
+    & cmake --preset "vs-$configurationName" "-DVCPKG_MANIFEST_INSTALL=$installManifest" @configureOptions
     if ($LASTEXITCODE -ne 0) { throw 'CMake configuration failed.' }
-    & cmake --build --preset "build-$configurationName" --parallel 4
+    & cmake --build --preset "build-$configurationName" --parallel 4 @buildOptions
     if ($LASTEXITCODE -ne 0) { throw 'JULIA build failed.' }
     if (-not $SkipTests) {
+        & (Join-Path $PSScriptRoot 'clean.ps1') -Configuration $Configuration -VerificationOnly
         & ctest --preset "test-$configurationName"
         if ($LASTEXITCODE -ne 0) { throw 'JULIA verification failed.' }
+        if (-not $KeepDiagnostics) {
+            & (Join-Path $PSScriptRoot 'clean.ps1') -Configuration $Configuration -VerificationOnly
+        }
     }
     Write-Host 'Ready: julia_desktop\julia_desktop.exe'
 }

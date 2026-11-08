@@ -1,10 +1,9 @@
 # Anime shader visual audit
 
-Build the `julia_shader_visual_audit` CMake target (available when
-`JULIA_BUILD_TESTS=ON`), then run from the repository root:
+Build the optional `julia_shader_visual_audit` CMake target, then run from the repository root:
 
 ```powershell
-build/vs-release/tests/julia_shader_visual_audit.exe --shader-assets assets --model-assets assets --output-dir build/anime-audit/after
+build/vs-release/tools/julia_shader_visual_audit.exe --shader-assets assets --model-assets assets --output-dir build/diagnostics/shader/after
 ```
 
 `--shader-assets` is the resource root containing `shaders/model.vert` and
@@ -14,7 +13,7 @@ rebuilding and save its executable and required DLLs separately. Save baseline
 `shaders/` too: an old executable still reads shader files from disk.
 `--model-assets` contains `models/`.
 All paths default to the repository assets except the output directory, which
-defaults to `build/anime-audit/current`.
+defaults to `build/diagnostics/shader/current`.
 `--no-shadows` disables self-shadowing for diagnosis, separating surface-normal
 artifacts from shadow-map artifacts. It does not change the desktop defaults.
 

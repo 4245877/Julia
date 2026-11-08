@@ -40,3 +40,9 @@ vcpkg_installed/
 # Audit captures and generated reports belong in build/, not source assets.
 /anime-audit/
 /verification/
+
+# Raw GPU captures and crash dumps are generated, never source assets.
+*.pam
+*.ppm
+*.dmp
+/deliverables/

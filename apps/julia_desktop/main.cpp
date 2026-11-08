@@ -425,7 +425,8 @@ namespace
             static_cast<float>(deltaSeconds));
     }
 
-    void verifyDisplayModes(GLFWwindow* window, julia::render_opengl::AvatarSurface& surface)
+    void verifyDisplayModes(GLFWwindow* window, julia::render_opengl::AvatarSurface& surface,
+        const std::filesystem::path& output)
     {
         auto& state = *getWindowState(window);
         auto& display = *state.display;
@@ -436,7 +437,6 @@ namespace
         state.inputContext = {};
         state.syncInputContext();
         auto cameraBefore = state.orbitCamera->position();
-        const std::filesystem::path output{"verification/desktop_display"};
         std::filesystem::create_directories(output);
         std::ofstream metrics(output / "coverage.csv");
         metrics << "frame,width,height,window_bottom,work_bottom,bottom_empty_rows,top_empty_rows,ortho_height\n";
@@ -606,7 +606,7 @@ namespace
             "alpha, MSAA, premultiplied sRGB, size, F9/F10, six live switches, shared scene\n";
     }
 
-    void verifyCameraCallbacks(GLFWwindow* window)
+    void verifyCameraCallbacks(GLFWwindow* window, const std::filesystem::path& output)
     {
         auto& state = *getWindowState(window);
         auto& camera = *state.orbitCamera;
@@ -623,7 +623,6 @@ namespace
         const auto capture = [&](const char* name) {
             int width = 0, height = 0;
             glfwGetFramebufferSize(window, &width, &height);
-            const std::filesystem::path output{"verification/desktop_camera"};
             std::filesystem::create_directories(output);
             state.applyCamera();
             state.renderer->beginFrame();
@@ -996,10 +995,12 @@ int main(int argc, char** argv)
         std::cout << "Eyes: G natural/resume, H auto blink, J auto gaze, K blink, U/I wink,\n"
             << "numpad 1..9 gaze, Home forward, T hold camera point, [/] blink interval, F8 fixed seed.\n";
         keyCallback(window, GLFW_KEY_F1, 0, GLFW_PRESS, 0);
-        if (verification) verifyCameraCallbacks(window);
+        if (verification) verifyCameraCallbacks(window, argc > 2 ? std::filesystem::path{argv[2]} :
+            std::filesystem::temp_directory_path() / "Julia/verification/desktop_camera");
         if (displayVerification)
         {
-            verifyDisplayModes(window, avatarSurface);
+            verifyDisplayModes(window, avatarSurface, argc > 2 ? std::filesystem::path{argv[2]} :
+                std::filesystem::temp_directory_path() / "Julia/verification/desktop_display");
             glfwSetWindowShouldClose(window, GLFW_TRUE);
         }
         if (animationVerification)

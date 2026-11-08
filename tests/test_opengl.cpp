@@ -95,7 +95,8 @@ int main(int argc, char** argv)
             return readFrame();
         };
         Pixels previous;
-        const std::filesystem::path output = argc > 1 ? argv[1] : ".";
+        const std::filesystem::path output = argc > 1 ? std::filesystem::path{argv[1]} :
+            std::filesystem::temp_directory_path() / "Julia/verification/opengl";
         std::filesystem::create_directories(output);
         for (int stage = 0; stage < 4; ++stage)
         {

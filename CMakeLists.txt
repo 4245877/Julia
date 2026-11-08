@@ -26,6 +26,7 @@ add_subdirectory(libs/render)
 add_subdirectory(plugins/render_opengl)
 
 add_subdirectory(apps)
+add_subdirectory(tools)
 
 if(JULIA_BUILD_TESTS)
     enable_testing()

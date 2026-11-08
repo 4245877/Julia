@@ -33,7 +33,7 @@ namespace
     {
         std::filesystem::path shaderAssets = JULIA_AUDIT_ASSET_DIR;
         std::filesystem::path modelAssets = JULIA_AUDIT_ASSET_DIR;
-        std::filesystem::path output = "build/anime-audit/current";
+        std::filesystem::path output = "build/diagnostics/shader/current";
         int warmup = 30;
         int frames = 90;
         int motionFrames = 48;

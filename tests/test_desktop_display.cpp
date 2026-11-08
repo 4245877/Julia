@@ -267,7 +267,8 @@ int main(int argc, char** argv)
 {
     try
     {
-        const auto output = std::filesystem::path{argc > 1 ? argv[1] : "verification"} / "display_unit";
+        const auto output = (argc > 1 ? std::filesystem::path{argv[1]} :
+            std::filesystem::temp_directory_path() / "Julia/verification") / "display_unit";
         std::filesystem::create_directories(output);
         layoutAndSettings(output);
         layoutMatrix();

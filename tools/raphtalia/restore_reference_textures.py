@@ -12,8 +12,9 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[2]
 MODEL = '4b283bf024c3405ea6b8a9c68d0e1c5b'
 OUT = ROOT / 'assets/textures/raphtalia'
-DOC = ROOT / 'docs/raphtalia/texturing'
-RAW = ROOT / 'build/raphtalia_tools/texturing/raw'
+METADATA = ROOT / 'assets/metadata/raphtalia/texturing'
+DOC = ROOT / 'build/diagnostics/texturing'
+RAW = DOC / 'raw'
 
 
 def viewer_pixels(image, key):
@@ -91,7 +92,7 @@ def main():
     OUT.mkdir(parents=True, exist_ok=True)
     DOC.mkdir(parents=True, exist_ok=True)
     RAW.mkdir(parents=True, exist_ok=True)
-    metadata = json.loads((DOC / 'reference_texture_manifest.json').read_text())
+    metadata = json.loads((METADATA / 'reference_texture_manifest.json').read_text(encoding='utf-8-sig'))
     with ThreadPoolExecutor(max_workers=6) as pool:
         maps = list(pool.map(restore, metadata['results']))
     report = {'reference': 'https://skfb.ly/ouUGR',

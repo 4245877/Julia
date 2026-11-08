@@ -1,9 +1,0 @@
-{
-  "archive": "deliverables/raphtalia/Raphtalia_textured_4K.zip",
-  "bytes": 60740169,
-  "sha256": "2ced90ba283778b08545d82726f69a0423ee4f0f3e1a57df4e9eef951898f554",
-  "payload_files": 28,
-  "crc_check": "PASS",
-  "payload_hashes": "PASS",
-  "all_fbx_texture_paths_resolve_inside_archive": true
-}

@@ -24,7 +24,8 @@ target_compile_definitions(julia_test_opengl PRIVATE
 target_link_libraries(julia_test_opengl PRIVATE julia_render_opengl julia::warnings)
 add_test(NAME opengl COMMAND julia_test_opengl "${CMAKE_BINARY_DIR}/verification")
 set_tests_properties(opengl PROPERTIES TIMEOUT 60)
-add_test(NAME desktop_launch COMMAND $<TARGET_FILE:julia_desktop> --verify)
+add_test(NAME desktop_launch COMMAND $<TARGET_FILE:julia_desktop>
+    --verify "${CMAKE_BINARY_DIR}/verification/desktop_camera")
 set_tests_properties(desktop_launch PROPERTIES
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}" TIMEOUT 60)
 
@@ -37,7 +38,8 @@ endif()
 add_test(NAME desktop_display_math_alpha_input COMMAND julia_test_desktop_display "${CMAKE_BINARY_DIR}/verification")
 set_tests_properties(desktop_display_math_alpha_input PROPERTIES TIMEOUT 60 RUN_SERIAL TRUE)
 if(WIN32)
-    add_test(NAME desktop_display_modes COMMAND $<TARGET_FILE:julia_desktop> --verify-display)
+    add_test(NAME desktop_display_modes COMMAND $<TARGET_FILE:julia_desktop>
+        --verify-display "${CMAKE_BINARY_DIR}/verification/desktop_display")
     set_tests_properties(desktop_display_modes PROPERTIES WORKING_DIRECTORY "${CMAKE_BINARY_DIR}" TIMEOUT 60 RUN_SERIAL TRUE)
 endif()
 
@@ -80,9 +82,3 @@ target_include_directories(julia_test_toon_render PRIVATE ${CMAKE_CURRENT_SOURCE
 target_link_libraries(julia_test_toon_render PRIVATE julia_render_opengl julia::warnings)
 add_test(NAME toon_render COMMAND julia_test_toon_render)
 set_tests_properties(toon_render PROPERTIES TIMEOUT 60)
-
-# Developer audit tool: explicit invocation, since images/timings require review.
-add_executable(julia_shader_visual_audit ../tools/shader_visual_audit.cpp)
-target_compile_definitions(julia_shader_visual_audit PRIVATE
-    JULIA_AUDIT_ASSET_DIR="${CMAKE_SOURCE_DIR}/assets")
-target_link_libraries(julia_shader_visual_audit PRIVATE julia_render_opengl julia::warnings)
