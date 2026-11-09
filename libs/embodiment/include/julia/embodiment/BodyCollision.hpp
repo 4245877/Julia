@@ -28,6 +28,7 @@ namespace julia::embodiment
     {
         std::uint64_t epoch=0, scene=0, supportSurface=0, supportVersion=0;
         std::uint64_t frozenGeometry=0, calibration=0;
+        std::uint64_t handShapeVersion=1, contactPolicyVersion=1, interactionRevision=0;
         bool fixedStance=false;
         bool operator==(const GeometryDependencies&) const = default;
     };

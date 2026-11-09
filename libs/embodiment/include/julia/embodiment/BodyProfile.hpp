@@ -80,6 +80,10 @@ namespace julia::embodiment
         glm::mat4 effectorFrame(EffectorId id, std::span<const glm::mat4> globals) const;
         // worldFromBody is a proper rigid pose in metres, unrelated to viewer fitting.
         glm::mat4 worldFromResource(const glm::mat4& worldFromBody) const;
+        // Stateless visualization of measured coordinates. Checks sizes/finiteness,
+        // never clamps to profile limits: physical soft-limit violation stays visible.
+        void applyMeasuredCoordinates(std::span<glm::mat4> locals,
+            std::span<const glm::vec3> coordinates) const;
     private:
         friend class DirectBodyControl;
         struct Adapter { std::uint32_t node; glm::mat4 parentToFrame, frameToNode; };

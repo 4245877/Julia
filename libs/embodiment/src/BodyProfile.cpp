@@ -201,23 +201,30 @@ namespace julia::embodiment
     }
     void DirectBodyControl::applyCoordinates(std::span<glm::mat4> locals, std::span<const glm::vec3> coordinates) const
     {
-        if (locals.size()!=binding_.asset().nodes().size() || coordinates.size()!=coordinates_.size())
+        binding_.applyMeasuredCoordinates(locals,coordinates);
+    }
+    void BodyRigBinding::applyMeasuredCoordinates(std::span<glm::mat4> locals, std::span<const glm::vec3> coordinates) const
+    {
+        if (locals.size()!=asset().nodes().size() || coordinates.size()!=profile_.joints.size())
             throw std::invalid_argument("Invalid body display pose size");
-        animation::setBindPose(binding_.asset().skeleton(),locals);
+        for (const auto& q:coordinates)
+            if (!std::isfinite(q.x) || !std::isfinite(q.y) || !std::isfinite(q.z))
+                throw std::invalid_argument("Non-finite measured coordinates");
+        animation::setBindPose(asset().skeleton(),locals);
         for (std::size_t i=0;i<coordinates.size();++i)
         {
             if (coordinates[i]==glm::vec3{0}) continue; // Exact imported bind, including shear/reflection.
-            const auto& a=binding_.joints_[i];
-            locals[a.node]=a.parentToFrame*rotation(binding_.profile_.joints[i],coordinates[i])*a.frameToNode;
+            const auto& a=joints_[i];
+            locals[a.node]=a.parentToFrame*rotation(profile_.joints[i],coordinates[i])*a.frameToNode;
         }
-        for (std::size_t i=0;i<binding_.followers_.size();++i)
+        for (std::size_t i=0;i<followers_.size();++i)
         {
-            const auto& f=binding_.profile_.followers[i];
-            const auto j=binding_.jointIndex(f.joint);
+            const auto& f=profile_.followers[i];
+            const auto j=jointIndex(f.joint);
             if (coordinates[j]==glm::vec3{0} || f.fraction==glm::vec3{1}) continue;
-            const auto& a=binding_.followers_[i];
-            locals[a.node]=a.parentToFrame*glm::inverse(rotation(binding_.profile_.joints[j],coordinates[j]))*
-                rotation(binding_.profile_.joints[j],coordinates[j]*f.fraction)*a.frameToNode;
+            const auto& a=followers_[i];
+            locals[a.node]=a.parentToFrame*glm::inverse(rotation(profile_.joints[j],coordinates[j]))*
+                rotation(profile_.joints[j],coordinates[j]*f.fraction)*a.frameToNode;
         }
     }
 }

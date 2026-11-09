@@ -31,7 +31,7 @@ namespace julia::embodiment
     struct EyeCommand { EyeOperation operation; glm::vec3 value{0}; };
     using BodyOperation = std::variant<SetCoordinate, ResetCoordinates, SetDirectMode, ResetBody,
         SetRoot, ClipCommand, EyeCommand, StartReach, RetargetReach, CancelReach, SetCollisionScene,
-        CreateInteractionSphere,DeleteInteractionObject,GraspObject,MoveHeldObject,ReleaseObject,CancelInteraction,SetHandClosure,
+        CreateInteractionSphere,DeleteInteractionObject,GraspObject,PrepareGrasp,FinishGraspPreparation,MoveHeldObject,ReleaseObject,CancelInteraction,SetHandClosure,
         SetSupportSurface,EnableSupport,AlignSupport,MoveSupportRoot,CancelSupportMotion,DisableSupport>;
     struct BodyCommand
     {
@@ -53,6 +53,7 @@ namespace julia::embodiment
         std::size_t contextBytes=0;
         double preparationMicroseconds=0;
     };
+    enum class ArmOwner { None, Reach, HandInteraction, GraspPreparation };
     struct BodySnapshot
     {
         std::uint64_t tick = 0, epoch = 0;
@@ -65,6 +66,9 @@ namespace julia::embodiment
         render::EyeBehaviorOutput eyes;
         std::array<ReachObservation,2> reaches;
         std::array<ReachGeometryObservation,2> reachGeometry;
+        std::array<ArmOwner,2> armOwners{};
+        ReachObservation preparationReach; // Internal Reach; source remains in reaches[].
+        ReachGeometryObservation preparationGeometry;
         std::array<HandState,2> hands{};
         std::optional<InteractiveObject> object;
         InteractionObservation interaction;
@@ -87,6 +91,9 @@ namespace julia::embodiment
         bool direct = false;
         std::array<ReachObservation,2> reaches; // Metadata captured with the same snapshot pair as geometry.
         std::array<ReachGeometryObservation,2> reachGeometry;
+        std::array<ArmOwner,2> armOwners{};
+        ReachObservation preparationReach;
+        ReachGeometryObservation preparationGeometry;
         std::vector<glm::vec3> coordinates;
         std::array<HandState,2> hands{};
         std::optional<InteractiveObject> object;
@@ -160,8 +167,18 @@ namespace julia::embodiment
         };
         std::array<std::shared_ptr<const ReachValidationContext>,2> reachContexts_;
         std::array<GeometryDependencies,2> certificates_;
-        GeometryDependencies geometryDependencies(std::size_t side) const;
+        struct PreparationSource { ReachObservation reach; ReachGeometryObservation geometry; };
+        std::optional<PreparationSource> preparationSource_;
+        std::shared_ptr<const ReachValidationContext> preparationBase_;
+        std::shared_ptr<const world::CollisionScene> preparationEnvironment_;
+        std::optional<InteractiveObject> preparationObject_;
+        std::array<std::pair<std::uint64_t,std::uint64_t>,2> consumedReach_{};
+        GeometryDependencies geometryDependencies(std::size_t side,const CollisionContext* prospective=nullptr) const;
         std::shared_ptr<const ReachValidationContext> validationContext(std::size_t side) const;
+        std::shared_ptr<const ReachValidationContext> makeValidationContext(std::size_t side,CollisionContext collision) const;
+        PathCheck interactionRest(ArmSide side,CollisionContext collision) const;
+        bool preparationValid() const;
+        bool frozenMatches(const ReachValidationContext& context,std::size_t side) const;
         bool supportReady() const;
         bool contextMatches(std::size_t side) const;
         void capture();

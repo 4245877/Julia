@@ -17,15 +17,30 @@ OpenGL toon-рендерер и два режима одного окна:
 Из PowerShell в корне проекта:
 
 ```powershell
+.\tools\setup-physics.ps1 # Закреплённый MuJoCo 3.3.7, SHA-256 проверяется
 .\tools\build.ps1
 # Уже установленные зависимости, чистая Release-сборка и CTest:
 .\tools\build.ps1 -UseInstalledDependencies -Clean
 ```
 
-Сценарий находит MSVC, обновляет папку запуска и выполняет 19 наборов CTest.
+Сценарий находит MSVC, обновляет папку запуска и выполняет CTest.
 `-Configuration Debug` выбирает Debug; обе конфигурации обновляют один EXE.
 После Debug верните Release перед распространением приложения.
 `-SkipTests` пропускает проверки, `-KeepDiagnostics` сохраняет их кадры.
+
+Физический стенд руки запускается отдельно:
+
+```powershell
+.\build\vs-release\apps\julia_arm_physics\julia_arm_physics.exe --case contact --ticks 720 --output build/diagnostics/stage7a/run
+.\build\vs-release\apps\julia_arm_physics\julia_physics_desktop.exe --case hold
+```
+
+В окне: 1–7 — нагрузочные случаи, R — reset, Space — пауза, стрелки — цель,
+D — выключить приводы, I — толчок, Esc — выход. Основание руки фиксировано;
+физическая устойчивость персонажа не моделируется. Параметры, все команды и
+результаты — в [отчёте 7А](docs/body_core_stage7a.md).
+Для прежней сборки без SDK: `cmake --preset cpu-release -DJULIA_BUILD_PHYSICS=OFF`;
+для возвращения стенда задайте `-DJULIA_BUILD_PHYSICS=ON`.
 
 ## Разработка
 
@@ -36,6 +51,7 @@ OpenGL toon-рендерер и два режима одного окна:
 | `libs/animation/` | CPU-скелет, клипы, поза, семплирование, иерархия и палитра; только GLM |
 | `libs/model/`, `libs/model_import/` | Самостоятельный CPU-ресурс модели, изображения и Assimp-импорт без GL |
 | `libs/embodiment/` | CPU-проигрыватель и адаптер глаз Raphtalia |
+| `libs/physics/`, `apps/julia_arm_physics/` | MuJoCo backend, фиксированная динамическая рука, headless/desktop диагностика |
 | `plugins/render_opengl/` | GPU-загрузка готового CPU-ресурса и рендерер |
 | `assets/` | Оригиналы, рабочие ресурсы, BLEND, backups и метаданные происхождения |
 | `tests/` | Постоянные регрессионные проверки |

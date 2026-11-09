@@ -55,17 +55,12 @@ namespace julia::embodiment
                 support_=std::make_unique<LegSupport>(*control_);
                 interaction_=std::make_unique<HandInteraction>(id_,*control_,*reach_);
                 interaction_->geometryChanged=[this] { rebuildCollision(); };
-                interaction_->validateRest=[this](CollisionContext context) {
-                    const auto arm=interaction_->observation().arm;
-                    const auto ids=arm==ArmSide::Left ? std::array{JointId::LeftShoulder,JointId::LeftElbow,JointId::LeftWrist}:
-                        std::array{JointId::RightShoulder,JointId::RightElbow,JointId::RightWrist};
-                    ArmCoordinates q{};
-                    for (std::size_t k=0;k<6;++k) q[k]=control_->coordinate(ids[k<3 ? 0:k==3 ? 1:2],k<3 ? k:k==3 ? 0:k-4);
-                    // The prospective carried copy replaces the free collider in this local check.
-                    std::vector<world::SceneObject> objects;
-                    for (const auto& o:collisionScene_->objects()) if (!context.carried || o.id!=context.carried->object) objects.push_back(o);
-                    const world::CollisionScene scene(sceneVersion_,std::move(objects));
-                    return checkArmPath(*control_,arm==ArmSide::Left ? 0:1,std::span{&q,1},matrix(root_),scene,collisionSettings_,context);
+                interaction_->validateRest=[this](ArmSide arm,CollisionContext context) { return interactionRest(arm,std::move(context)); };
+                interaction_->preparationValid=[this] { return preparationValid(); };
+                interaction_->freezeReach=[this](ArmSide arm) {
+                    if (!preparationValid()) throw std::invalid_argument("Preparation conditions changed");
+                    const auto s=arm==ArmSide::Left ? 0u:1u;
+                    reachContexts_[s].reset(); reachContexts_[s]=validationContext(s);
                 };
                 player_.setHandLayer(&interaction_->hand);
             }
@@ -113,7 +108,7 @@ namespace julia::embodiment
             a.minGap < -SupportSurfaceTolerance || a.maxGap>SupportSurfaceTolerance) return false;
         return true;
     }
-    GeometryDependencies BodyInstance::geometryDependencies(std::size_t side) const
+    GeometryDependencies BodyInstance::geometryDependencies(std::size_t side,const CollisionContext* prospective) const
     {
         GeometryDependencies d; d.epoch=epoch_; d.scene=collisionScene_ ? collisionScene_->version():0;
         d.calibration=BodyColliderCalibrationVersion;
@@ -131,7 +126,12 @@ namespace julia::embodiment
             for (std::size_t j=0;j<joints.size();++j) if (joints[j].id!=shoulder && joints[j].id!=elbow && joints[j].id!=wrist)
                 for (int k=0;k<3;++k) scalar(control_->coordinates()[j][k]);
         }
-        if (interaction_) for (const auto& hand:interaction_->hand.states()) add(hand.enabled);
+        if (interaction_) {
+            const auto collision=prospective ? *prospective:interaction_->collisionContext();
+            for (const auto envelope:collision.handEnvelopes) add(envelope);
+            add(collision.contactHand); add(collision.contactObject);
+            d.interactionRevision=interaction_->geometryRevision();
+        }
         if (support_ && support_->enabled()) {
             const auto& o=support_->observation(); d.fixedStance=true; d.supportSurface=o.surface.id; d.supportVersion=o.surface.version;
             scalar(o.surface.height); add(o.surface.available); add(static_cast<unsigned>(o.kind));
@@ -150,16 +150,23 @@ namespace julia::embodiment
         if (!c) return !(support_ && support_->enabled()); // Standalone interaction keeps its existing phase contract.
         if (c->scene!=collisionScene_ || c->root!=matrix(root_) || c->control.enabled()!=control_->enabled() ||
             c->collision.dependencies!=geometryDependencies(side)) return false;
+        return frozenMatches(*c,side);
+    }
+    bool BodyInstance::frozenMatches(const ReachValidationContext& c,std::size_t side) const
+    {
+        if (c.root!=matrix(root_) || c.control.enabled()!=control_->enabled()) return false;
         const auto shoulder=side==0 ? JointId::LeftShoulder:JointId::RightShoulder;
         const auto elbow=side==0 ? JointId::LeftElbow:JointId::RightElbow;
         const auto wrist=side==0 ? JointId::LeftWrist:JointId::RightWrist;
         const auto& joints=binding_->profile().joints;
         for (std::size_t j=0;j<joints.size();++j) if (joints[j].id!=shoulder && joints[j].id!=elbow && joints[j].id!=wrist &&
-            c->control.coordinates()[j]!=control_->coordinates()[j]) return false;
-        if (c->collision.dependencies.fixedStance) {
+            c.control.coordinates()[j]!=control_->coordinates()[j]) return false;
+        if (c.collision.dependencies.fixedStance) {
             if (!supportReady()) return false;
+            const auto& surface=support_->observation().surface;
+            if (surface.id!=c.collision.dependencies.supportSurface || surface.version!=c.collision.dependencies.supportVersion) return false;
             for (std::size_t k=0;k<2;++k) {
-                const auto& a=support_->observation().anchors[k]; const auto& saved=c->anchors[k];
+                const auto& a=support_->observation().anchors[k]; const auto& saved=c.anchors[k];
                 if (a.surface!=saved.surface || a.version!=saved.version || a.bound!=saved.bound ||
                     a.desiredWorld!=saved.desiredWorld || a.surfaceFromSole!=saved.surfaceFromSole) return false;
             }
@@ -169,11 +176,15 @@ namespace julia::embodiment
     std::shared_ptr<const BodyInstance::ReachValidationContext> BodyInstance::validationContext(std::size_t side) const
     {
         if (reachContexts_[side]) return reachContexts_[side];
+        return makeValidationContext(side,interaction_ ? interaction_->collisionContext():CollisionContext{});
+    }
+    std::shared_ptr<const BodyInstance::ReachValidationContext> BodyInstance::makeValidationContext(std::size_t side,CollisionContext collision) const
+    {
         const auto start=std::chrono::steady_clock::now();
         auto c=std::make_shared<ReachValidationContext>(*control_);
         c->root=matrix(root_); c->scene=collisionScene_; c->settings=collisionSettings_;
-        c->collision=interaction_ ? interaction_->collisionContext():CollisionContext{};
-        c->collision.dependencies=geometryDependencies(side);
+        c->collision=std::move(collision);
+        c->collision.dependencies=geometryDependencies(side,&c->collision);
         if (c->collision.dependencies.fixedStance) {
             if (!supportReady()) throw std::invalid_argument("Reach requires aligned, stationary two-support Holding");
             animation::Pose p(asset_->skeleton()); c->control.apply(p.locals);
@@ -185,10 +196,42 @@ namespace julia::embodiment
         c->preparationMicroseconds=std::chrono::duration<double,std::micro>(std::chrono::steady_clock::now()-start).count();
         return c;
     }
+    bool BodyInstance::preparationValid() const
+    {
+        if (!preparationBase_ || !preparationSource_ || !preparationObject_ || !interaction_->object()) return false;
+        const auto s=preparationSource_->reach.target.arm==ArmSide::Left ? 0u:1u;
+        const auto& o=*interaction_->object(); const auto& saved=*preparationObject_;
+        return epoch_==preparationBase_->collision.dependencies.epoch && environmentScene_==preparationEnvironment_ &&
+            frozenMatches(*preparationBase_,s) && o.handle==saved.handle && o.state==ObjectState::Free && o.owner==0 &&
+            o.worldPose.position==saved.worldPose.position && o.worldPose.rotation==saved.worldPose.rotation &&
+            o.localGrip.position==saved.localGrip.position && o.localGrip.rotation==saved.localGrip.rotation && o.radius==saved.radius;
+    }
+    PathCheck BodyInstance::interactionRest(ArmSide arm,CollisionContext collision) const
+    {
+        const auto side=arm==ArmSide::Left ? 0u:1u;
+        const auto spent=interaction_->observation().phaseCheckQueries;
+        if (spent>=2048) {
+            PathCheck check; check.status=PathStatus::Incomplete; check.sceneVersion=sceneVersion_;
+            check.dependencies=geometryDependencies(side,&collision); check.detail="phase query budget exhausted"; return check;
+        }
+        const auto c=makeValidationContext(side,std::move(collision));
+        const auto ids=arm==ArmSide::Left ? std::array{JointId::LeftShoulder,JointId::LeftElbow,JointId::LeftWrist}:
+            std::array{JointId::RightShoulder,JointId::RightElbow,JointId::RightWrist};
+        ArmCoordinates q{};
+        for (std::size_t k=0;k<6;++k) q[k]=control_->coordinate(ids[k<3 ? 0:k==3 ? 1:2],k<3 ? k:k==3 ? 0:k-4);
+        // Prospective payload replaces only its free collider. Floor/lower forms survive.
+        std::vector<world::SceneObject> objects;
+        if (c->scene) for (const auto& o:c->scene->objects()) if (!c->collision.carried || o.id!=c->collision.carried->object) objects.push_back(o);
+        const world::CollisionScene scene(sceneVersion_,std::move(objects));
+        auto settings=c->settings;
+        settings.maxQueries=std::min(settings.maxQueries,2048-spent);
+        return checkArmPath(c->control,side,std::span{&q,1},c->root,scene,settings,c->collision);
+    }
     void BodyInstance::rebuildCollision()
     {
         // A phase boundary is legal only after the previous certified segment stopped.
         if (reach_ && reach_->anyActive()) throw std::logic_error("Geometry mutation during active certified reach");
+        reachContexts_={}; // New phase owns a new immutable scene/shape/contact context.
         const bool floor=support_ && support_->enabled();
         auto objects=environmentObjects(environmentScene_,floor,support_ ? support_->observation().surface:SupportSurface{},
             interaction_ ? interaction_->freeCollider():std::nullopt);
@@ -221,6 +264,13 @@ namespace julia::embodiment
             const auto e=o.arm==ArmSide::Left ? EffectorId::LeftGrip:EffectorId::RightGrip;
             display.object->worldPose=rigidPose(matrix(display.root)*binding_->effectorFrame(e,display.pose.globals)*o.effectorFromObject);
         }
+        if (display.object && display.interaction.action) {
+            const auto e=display.interaction.arm==ArmSide::Left ? EffectorId::LeftGrip:EffectorId::RightGrip;
+            const auto f=matrix(display.root)*binding_->effectorFrame(e,display.pose.globals);
+            const auto goal=rigidMatrix(display.object->worldPose)*rigidMatrix(display.object->localGrip);
+            display.interaction.frameError=glm::length(glm::vec3{goal[3]-f[3]});
+            display.interaction.angularError=static_cast<float>(glm::length(orientationResidual(rigidPose(goal).rotation,rigidPose(f).rotation)));
+        }
     }
     void BodyInstance::fillDisplayColliders(BodyDisplay& d) const
     {
@@ -231,7 +281,7 @@ namespace julia::embodiment
             const auto lower=lowerBodyColliders(*binding_,d.pose.globals,world,support_->contacts());
             d.colliders.insert(d.colliders.end(),lower.begin(),lower.end());
         }
-        for (std::size_t s=0;s<2;++s) if (d.hands[s].enabled) {
+        for (std::size_t s=0;s<2;++s) if (d.hands[s].enabled || d.armOwners[s]==ArmOwner::GraspPreparation) {
             const auto f=world*binding_->jointFrame(s==0 ? JointId::LeftWrist:JointId::RightWrist,d.pose.globals);
             d.colliders[s*3+2].capsule={glm::dvec3{f*glm::vec4{0,.025f,0,1}},glm::dvec3{f*glm::vec4{0,.160f,0,1}},.045};
         }
@@ -249,10 +299,14 @@ namespace julia::embodiment
                 std::is_same_v<T,SetDirectMode> || std::is_same_v<T,SetRoot> || std::is_same_v<T,ResetBody> ||
                 std::is_same_v<T,StartReach> || std::is_same_v<T,RetargetReach> || std::is_same_v<T,CancelReach> ||
                 std::is_same_v<T,SetCollisionScene> || std::is_same_v<T,SetHandClosure>)
-                if (interaction_ && interaction_->locked()) throw std::invalid_argument("Interaction owns geometry; finish/cancel or release first");
+                if (interaction_ && interaction_->locked() && !(std::is_same_v<T,ResetBody> && interaction_->observation().preparation))
+                    throw std::invalid_argument("Interaction owns geometry; finish/cancel or release first");
             if constexpr (std::is_same_v<T,EnableSupport> || std::is_same_v<T,AlignSupport> || std::is_same_v<T,MoveSupportRoot>)
                 if ((reach_ && reach_->anyActive()) || (interaction_ && interaction_->locked()))
                     throw std::invalid_argument("Support conflicts with active Reach/HandInteraction/Attached object");
+            if constexpr (std::is_same_v<T,SetSupportSurface> || std::is_same_v<T,DisableSupport> || std::is_same_v<T,CancelSupportMotion> ||
+                std::is_same_v<T,CreateInteractionSphere> || std::is_same_v<T,DeleteInteractionObject>)
+                if (interaction_ && interaction_->locked()) throw std::invalid_argument("Interaction owns support/scene/object");
             if constexpr (std::is_same_v<T,SetSupportSurface> || std::is_same_v<T,DisableSupport> || std::is_same_v<T,CancelSupportMotion> ||
                 std::is_same_v<T,CreateInteractionSphere> || std::is_same_v<T,DeleteInteractionObject>)
                 if (support_ && support_->enabled() && reach_ && reach_->anyActive())
@@ -331,7 +385,9 @@ namespace julia::embodiment
                 if (support_) support_->interrupt("ResetBody: explicit discontinuity / epoch change");
                 root_ = {};
                 if (reach_) reach_->reset();
+                if (interaction_ && interaction_->locked() && interaction_->observation().preparation) interaction_->abandonPreparation();
                 reachContexts_={}; certificates_={};
+                preparationSource_.reset(); preparationBase_.reset(); preparationObject_.reset(); consumedReach_={};
                 if (interaction_) interaction_->resetFree(epoch_+1);
                 if (supportFloorEnabled_) rebuildCollision();
                 invalidatePath("body reset; scene retained");
@@ -366,6 +422,7 @@ namespace julia::embodiment
                     checkingCommand_=0; throw;
                 }
                 if (reach_->observations()[side].collisionChecked) certificates_[side]=reachContexts_[side] ? reachContexts_[side]->collision.dependencies:geometryDependencies(side);
+                preparationSource_.reset(); preparationBase_.reset(); preparationObject_.reset();
                 checkingCommand_=0;
             }
             else if constexpr (std::is_same_v<T, SetCollisionScene>)
@@ -393,9 +450,40 @@ namespace julia::embodiment
                 rebuildCollision();
                 discontinuity_=true;
             }
+            else if constexpr (std::is_same_v<T,PrepareGrasp>)
+            {
+                if (!interaction_ || !supportReady() || !control_->enabled() || interaction_->locked() || reach_->anyActive())
+                    throw std::invalid_argument("PrepareGrasp requires settled Reach and stationary two-support stance");
+                if (value.arm!=ArmSide::Left && value.arm!=ArmSide::Right) throw std::invalid_argument("Invalid preparation arm");
+                const auto side=value.arm==ArmSide::Left ? 0u:1u;
+                const auto& r=reach_->observations()[side];
+                if (!value.reach || value.reachEpoch!=epoch_ || r.action!=value.reach || r.epoch!=epoch_ ||
+                    r.target.arm!=value.arm || r.state!=ReachState::Succeeded || r.cancellationPending ||
+                    !r.collisionChecked || certificates_[side]!=geometryDependencies(side) ||
+                    r.error>r.target.tolerance || (r.target.task==ReachTask::PositionAndOrientation && r.angularError>r.target.angularTolerance) ||
+                    consumedReach_[side]==std::pair{value.reach,value.reachEpoch})
+                    throw std::invalid_argument("Stale, consumed, unsettled or unchecked source Reach");
+                if (!interaction_->object() || interaction_->object()->handle!=value.object ||
+                    interaction_->object()->state!=ObjectState::Free || interaction_->object()->owner ||
+                    !interaction_->hand.ready(ArmSide::Left) || !interaction_->hand.ready(ArmSide::Right))
+                    throw std::invalid_argument("Preparation requires current Free object and idle hands");
+                auto prospective=interaction_->collisionContext(); prospective.handEnvelopes[side]=true;
+                prospective.contactHand=0; prospective.contactObject=0;
+                auto check=interactionRest(value.arm,prospective);
+                if (check.status!=PathStatus::Clear) {
+                    pathCheck_=check; pathCheck_.command=commandId;
+                    pathCheck_.detail="Prospective preparation envelope: "+pathCheck_.detail;
+                    throw std::invalid_argument("Preparation opening envelope rejected: "+std::string(pathStatusName(check.status)));
+                }
+                auto base=makeValidationContext(side,prospective);
+                preparationSource_=PreparationSource{r,current_.reachGeometry[side]}; preparationBase_=std::move(base);
+                preparationEnvironment_=environmentScene_; preparationObject_=interaction_->object();
+                interaction_->prepare(commandId,epoch_,value,std::move(check));
+                consumedReach_[side]={value.reach,value.reachEpoch};
+            }
             else if constexpr (std::is_same_v<T,CreateInteractionSphere> || std::is_same_v<T,DeleteInteractionObject> ||
                 std::is_same_v<T,GraspObject> || std::is_same_v<T,MoveHeldObject> || std::is_same_v<T,ReleaseObject> ||
-                std::is_same_v<T,CancelInteraction> || std::is_same_v<T,SetHandClosure>)
+                std::is_same_v<T,CancelInteraction> || std::is_same_v<T,SetHandClosure> || std::is_same_v<T,FinishGraspPreparation>)
             {
                 if (!interaction_) throw std::invalid_argument("Hand profile unavailable for this rig");
                 if constexpr (std::is_same_v<T,CreateInteractionSphere>) {
@@ -411,10 +499,14 @@ namespace julia::embodiment
                     interaction_->create(value);
                 }
                 else if constexpr (std::is_same_v<T,DeleteInteractionObject>) interaction_->erase(value.object);
-                else if constexpr (std::is_same_v<T,GraspObject>) interaction_->grasp(commandId,epoch_,value,matrix(root_));
+                else if constexpr (std::is_same_v<T,GraspObject>) {
+                    interaction_->grasp(commandId,epoch_,value,matrix(root_));
+                    preparationSource_.reset(); preparationBase_.reset(); preparationObject_.reset();
+                }
                 else if constexpr (std::is_same_v<T,MoveHeldObject>) interaction_->move(commandId,epoch_,value,matrix(root_));
                 else if constexpr (std::is_same_v<T,ReleaseObject>) interaction_->release(commandId,epoch_,value.object);
                 else if constexpr (std::is_same_v<T,CancelInteraction>) interaction_->cancel(value.action);
+                else if constexpr (std::is_same_v<T,FinishGraspPreparation>) interaction_->finishPreparation(value.action);
                 else {
                     if (!control_->enabled() || reach_->anyActive()) throw std::invalid_argument("Hand diagnostics require idle direct mode");
                     interaction_->hand.set(value.arm,value.closure,value.enabled);
@@ -564,7 +656,25 @@ namespace julia::embodiment
             g.preparationMicroseconds=reachContexts_[s] ? reachContexts_[s]->preparationMicroseconds:0;
         }
         if (support_) current_.support=support_->observation();
-        if (interaction_) { current_.hands=interaction_->hand.states(); current_.object=interaction_->object(); current_.interaction=interaction_->observation(); }
+        if (interaction_) {
+            current_.hands=interaction_->hand.states(); current_.object=interaction_->object(); current_.interaction=interaction_->observation();
+            const auto collision=interaction_->collisionContext(); current_.interaction.contactHand=collision.contactHand; current_.interaction.contactObject=collision.contactObject;
+        }
+        current_.armOwners={}; current_.preparationReach={}; current_.preparationGeometry={};
+        if (reach_) for (std::size_t s=0;s<2;++s) {
+            const auto state=reach_->observations()[s].state;
+            if (state==ReachState::Planning || state==ReachState::Moving || state==ReachState::Settling) current_.armOwners[s]=ArmOwner::Reach;
+        }
+        if (interaction_ && interaction_->locked()) current_.armOwners[interaction_->observation().arm==ArmSide::Left ? 0:1]=
+            interaction_->observation().preparation ? ArmOwner::GraspPreparation:ArmOwner::HandInteraction;
+        if (preparationSource_) {
+            const auto s=preparationSource_->reach.target.arm==ArmSide::Left ? 0u:1u;
+            current_.preparationReach=current_.reaches[s]; current_.preparationGeometry=current_.reachGeometry[s];
+            current_.reaches[s]=preparationSource_->reach; current_.reachGeometry[s]=preparationSource_->geometry;
+            auto& g=current_.reachGeometry[s]; g.current=geometryDependencies(s); g.dependenciesMatch=g.certificate==g.current; g.executable=false;
+            current_.interaction.geometryCurrent=preparationValid() && current_.interaction.geometryCheck.status==PathStatus::Clear &&
+                current_.interaction.geometryCheck.dependencies==geometryDependencies(s);
+        }
         if (control_) current_.coordinates.assign(control_->coordinates().begin(),control_->coordinates().end());
         std::fill(current_.animated.begin(),current_.animated.end(),false);
         if (!current_.direct && player_.state() != PlaybackState::Stopped && player_.clip())
@@ -589,6 +699,7 @@ namespace julia::embodiment
         BodyDisplay result(asset_->skeleton());
         result.reaches=current_.reaches; result.support=current_.support;
         result.reachGeometry=current_.reachGeometry;
+        result.armOwners=current_.armOwners; result.preparationReach=current_.preparationReach; result.preparationGeometry=current_.preparationGeometry;
         result.hands=current_.hands; result.interaction=current_.interaction;
         result.collisionScene=current_.collisionScene; result.pathCheck=current_.pathCheck;
         result.fromTick = previous_.tick; result.toTick = current_.tick;
@@ -606,6 +717,7 @@ namespace julia::embodiment
             result.pose = selected.pose; result.root = selected.root; result.coordinates = selected.coordinates;
             result.support=selected.support;
             result.reachGeometry=selected.reachGeometry;
+            result.armOwners=selected.armOwners; result.preparationReach=selected.preparationReach; result.preparationGeometry=selected.preparationGeometry;
             result.hands=selected.hands; result.interaction=selected.interaction; result.reaches=selected.reaches;
             result.collisionScene=selected.collisionScene; result.pathCheck=selected.pathCheck; displayObject(result,selected);
             fillDisplayColliders(result);

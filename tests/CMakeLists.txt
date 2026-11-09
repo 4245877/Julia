@@ -148,8 +148,35 @@ endif()
 add_test(NAME stance_reach COMMAND julia_test_stance_reach "${CMAKE_SOURCE_DIR}/build/diagnostics/stage6h/cpu")
 set_tests_properties(stance_reach PROPERTIES TIMEOUT 240)
 
+add_executable(julia_test_stance_preparation test_stance_preparation.cpp)
+target_compile_definitions(julia_test_stance_preparation PRIVATE JULIA_TEST_ASSET_DIR="${CMAKE_SOURCE_DIR}/assets")
+target_link_libraries(julia_test_stance_preparation PRIVATE julia_model_import julia_embodiment julia::warnings)
+if(WIN32)
+    target_link_libraries(julia_test_stance_preparation PRIVATE psapi)
+endif()
+add_test(NAME stance_preparation COMMAND julia_test_stance_preparation "${CMAKE_SOURCE_DIR}/build/diagnostics/stage6i/cpu")
+set_tests_properties(stance_preparation PROPERTIES TIMEOUT 240)
+
+if(JULIA_BUILD_PHYSICS)
+    add_executable(julia_test_arm_physics test_arm_physics.cpp)
+    target_compile_definitions(julia_test_arm_physics PRIVATE JULIA_TEST_ASSET_DIR="${CMAKE_SOURCE_DIR}/assets")
+    target_link_libraries(julia_test_arm_physics PRIVATE julia_physics_rig julia_model_import julia::warnings)
+    if(WIN32)
+        target_link_libraries(julia_test_arm_physics PRIVATE psapi)
+    endif()
+    julia_copy_mujoco(julia_test_arm_physics)
+    add_test(NAME arm_physics COMMAND julia_test_arm_physics "${CMAKE_SOURCE_DIR}/build/diagnostics/stage7a/cpu")
+    set_tests_properties(arm_physics PROPERTIES TIMEOUT 120 RUN_SERIAL TRUE)
+endif()
+
 if(NOT JULIA_BUILD_DESKTOP)
     return()
+endif()
+
+if(JULIA_BUILD_PHYSICS)
+    add_test(NAME desktop_physics COMMAND $<TARGET_FILE:julia_physics_desktop>
+        --case impulse --verify "${CMAKE_SOURCE_DIR}/build/diagnostics/stage7a/gpu/impulse")
+    set_tests_properties(desktop_physics PROPERTIES TIMEOUT 120 RUN_SERIAL TRUE WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
 endif()
 
 # A real hidden OpenGL window verifies shaders, FBX loading and rendered pixels.
@@ -246,3 +273,6 @@ set_tests_properties(desktop_support PROPERTIES WORKING_DIRECTORY "${CMAKE_BINAR
 add_test(NAME desktop_stance_reach COMMAND $<TARGET_FILE:julia_desktop>
     --verify-stance-reach "${CMAKE_SOURCE_DIR}/build/diagnostics/stage6h/gpu")
 set_tests_properties(desktop_stance_reach PROPERTIES WORKING_DIRECTORY "${CMAKE_BINARY_DIR}" TIMEOUT 180 RUN_SERIAL TRUE)
+add_test(NAME desktop_stance_preparation COMMAND $<TARGET_FILE:julia_desktop>
+    --verify-stance-preparation "${CMAKE_SOURCE_DIR}/build/diagnostics/stage6i/gpu")
+set_tests_properties(desktop_stance_preparation PROPERTIES WORKING_DIRECTORY "${CMAKE_BINARY_DIR}" TIMEOUT 180 RUN_SERIAL TRUE)

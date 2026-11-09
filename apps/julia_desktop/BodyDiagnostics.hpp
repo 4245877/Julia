@@ -8,6 +8,7 @@
 #include "../common/InteractionDemo.hpp"
 #include "../common/SupportDemo.hpp"
 #include "../common/StanceReachDemo.hpp"
+#include "../common/StancePreparationDemo.hpp"
 
 struct GLFWwindow;
 namespace julia::desktop
@@ -21,13 +22,14 @@ namespace julia::desktop
         void select(embodiment::JointId id,std::size_t coordinate=0);
         void draw(render_opengl::OpenGLRenderer& renderer,const glm::mat4& viewerFromResource,
             const embodiment::BodyDisplay& display) const;
-        void updateInteractionDemo() { if (demo_.stage) demo_.drive(body_); if (supportDemo_.stage) supportDemo_.drive(body_); if (stanceDemo_.stage) stanceDemo_.drive(body_); }
+        void updateInteractionDemo() { if (demo_.stage) demo_.drive(body_); if (supportDemo_.stage) supportDemo_.drive(body_); if (stanceDemo_.stage) stanceDemo_.drive(body_); if (preparationDemo_.stage) preparationDemo_.drive(body_); }
         bool overlay = true;
         void setReachPosition(glm::vec3 position) { reachPosition_=position; }
     private:
         app::InteractionDemo demo_;
         app::SupportDemo supportDemo_;
         app::StanceReachDemo stanceDemo_;
+        app::StancePreparationDemo preparationDemo_;
         std::array<embodiment::SoleContact,2> soleContacts_;
         const embodiment::DirectBodyControl& control_;
         embodiment::BodyInstance& body_;
@@ -74,6 +76,10 @@ namespace julia::desktop
         BodyDiagnostics& diagnostics,const glm::mat4& fit,
         const std::filesystem::path& output,void (*input)(GLFWwindow*,int,int,int,int));
     void verifyDesktopStanceReach(GLFWwindow* window,render_opengl::OpenGLRenderer& renderer,
+        const render_opengl::GLModel& model,embodiment::BodyInstance& body,
+        BodyDiagnostics& diagnostics,const glm::mat4& fit,
+        const std::filesystem::path& output,void (*input)(GLFWwindow*,int,int,int,int));
+    void verifyDesktopStancePreparation(GLFWwindow* window,render_opengl::OpenGLRenderer& renderer,
         const render_opengl::GLModel& model,embodiment::BodyInstance& body,
         BodyDiagnostics& diagnostics,const glm::mat4& fit,
         const std::filesystem::path& output,void (*input)(GLFWwindow*,int,int,int,int));

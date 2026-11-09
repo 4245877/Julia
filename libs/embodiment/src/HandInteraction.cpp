@@ -39,6 +39,8 @@ namespace julia::embodiment
         case InteractionPhase::Retreat:return "Retreat"; case InteractionPhase::Cancelling:return "Cancelling";
         case InteractionPhase::Succeeded:return "Succeeded"; case InteractionPhase::Failed:return "Failed";
         case InteractionPhase::Cancelled:return "Cancelled"; case InteractionPhase::ReleaseBlocked:return "ReleaseBlocked";
+        case InteractionPhase::Handoff:return "Handoff"; case InteractionPhase::ReadyToGrasp:return "ReadyToGrasp";
+        case InteractionPhase::PreparationBlocked:return "PreparationBlocked";
         } return "Invalid";
     }
     HandLayer::HandLayer(const BodyRigBinding& binding)
@@ -131,6 +133,7 @@ namespace julia::embodiment
         if (object_ && object_->state==ObjectState::Attached) return true;
         const auto p=observation_.phase;
         return p==InteractionPhase::Opening || p==InteractionPhase::Approach || p==InteractionPhase::Align ||
+            p==InteractionPhase::Handoff || p==InteractionPhase::ReadyToGrasp || p==InteractionPhase::PreparationBlocked ||
             p==InteractionPhase::Closing || p==InteractionPhase::ReleaseOpening || p==InteractionPhase::Retreat || p==InteractionPhase::Cancelling;
     }
     void HandInteraction::requireObject(ObjectHandle h) const
@@ -140,7 +143,8 @@ namespace julia::embodiment
         observation_.phase=p;
         if (geometry) {
             contactAllowed_=p==InteractionPhase::Align || p==InteractionPhase::Closing || p==InteractionPhase::Holding ||
-                p==InteractionPhase::Transport || p==InteractionPhase::ReleaseOpening || p==InteractionPhase::Retreat;
+                p==InteractionPhase::Transport || p==InteractionPhase::ReleaseOpening || p==InteractionPhase::Retreat || p==InteractionPhase::ReadyToGrasp;
+            ++geometryRevision_;
             if (geometryChanged) geometryChanged();
         }
     }
@@ -174,7 +178,36 @@ namespace julia::embodiment
         t.task=ReachTask::PositionAndOrientation; t.position=goal.position; t.orientation=goal.rotation;
         t.strategy=MovementStrategy::AllowDetour; t.detour.maxConfigurations=1;
         reachAction_=observation_.action;
+        if (observation_.preparation && freezeReach) freezeReach(observation_.arm);
         reach_.start(reachAction_,observation_.epoch,t,root,false,reachAction_);
+    }
+    void HandInteraction::prepare(std::uint64_t action,std::uint64_t epoch,const PrepareGrasp& c,PathCheck check)
+    {
+        // BodyInstance has transactionally checked source, ownership and prospective envelope.
+        requireObject(c.object); (void)index(c.arm);
+        observation_={}; observation_.action=action; observation_.epoch=epoch; observation_.object=c.object; observation_.arm=c.arm;
+        observation_.preparation=true; observation_.sourceReach=c.reach; observation_.sourceEpoch=c.reachEpoch;
+        observation_.geometryCheck=std::move(check);
+        observation_.phaseCheckPoses=observation_.geometryCheck.poses; observation_.phaseCheckQueries=observation_.geometryCheck.queries;
+        observation_.phaseCheckMicroseconds=observation_.geometryCheck.microseconds;
+        observation_.phaseCheckScratchBytes=observation_.geometryCheck.scratchBytes;
+        grip_=rigidPose(rigidMatrix(object_->worldPose)*rigidMatrix(object_->localGrip));
+        pregrip_=rigidPose(rigidMatrix(grip_)*glm::translate(glm::mat4{1},glm::vec3{0,0,-.075f}));
+        cancelBeforeAttachment_=true; finishingPreparation_=false; handoffWait_=true;
+        phase(InteractionPhase::Handoff,true);
+    }
+    void HandInteraction::finishPreparation(std::uint64_t action)
+    {
+        if (!observation_.preparation || observation_.phase!=InteractionPhase::ReadyToGrasp)
+            throw std::invalid_argument("Finish requires ReadyToGrasp");
+        cancel(action); finishingPreparation_=true;
+    }
+    void HandInteraction::abandonPreparation()
+    {
+        if (!observation_.preparation || !object_ || object_->state!=ObjectState::Free)
+            throw std::invalid_argument("Only Free preparation may be reset");
+        observation_.cancellationPending=false; observation_.result="Reset";
+        phase(InteractionPhase::Cancelled,true);
     }
     void HandInteraction::grasp(std::uint64_t action,std::uint64_t epoch,const GraspObject& c,const glm::mat4& root)
     {
@@ -215,6 +248,7 @@ namespace julia::embodiment
         if (observation_.phase==InteractionPhase::ReleaseOpening || observation_.phase==InteractionPhase::Retreat)
             throw std::invalid_argument("Release is atomic through retreat; cancellation unsupported");
         observation_.cancellationPending=true;
+        finishingPreparation_=false;
         cancelBeforeAttachment_=object_->state==ObjectState::Free;
         const auto& r=reach_.observations()[index(observation_.arm)];
         if (active(r.state)) reach_.cancel(observation_.arm,reachAction_);
@@ -223,15 +257,17 @@ namespace julia::embodiment
     void HandInteraction::fail(const std::string& why)
     {
         observation_.result="Failed"; observation_.reason=why;
-        phase(InteractionPhase::Failed,true);
+        observation_.cancellationPending=false;
+        phase(observation_.preparation ? InteractionPhase::PreparationBlocked:InteractionPhase::Failed,true);
     }
     bool HandInteraction::restClear(CollisionContext context)
     {
         if (!validateRest) return false;
-        const auto check=validateRest(std::move(context));
+        const auto check=validateRest(observation_.arm,std::move(context));
         observation_.phaseCheckPoses+=check.poses; observation_.phaseCheckQueries+=check.queries;
         observation_.phaseCheckMicroseconds+=check.microseconds;
         observation_.phaseCheckScratchBytes=check.scratchBytes;
+        observation_.geometryCheck=check;
         return check.status==PathStatus::Clear;
     }
     CollisionContext HandInteraction::collisionContext() const
@@ -266,7 +302,16 @@ namespace julia::embodiment
         const auto p=observation_.phase;
         try
         {
-            if (p==InteractionPhase::Opening && hand.ready(observation_.arm)) {
+            if (observation_.preparation && locked() && preparationValid && !preparationValid()) {
+                if (active(r.state)) return; // ArmReach's context gate stops invalid execution first.
+                if (p!=InteractionPhase::PreparationBlocked) fail("Preparation support/object/frozen geometry changed");
+                return;
+            }
+            if (p==InteractionPhase::Handoff) {
+                if (handoffWait_) { handoffWait_=false; return; }
+                if (!restClear(collisionContext())) { fail("Opening envelope no longer clear"); return; }
+                phase(InteractionPhase::Opening); hand.set(observation_.arm,0);
+            } else if (p==InteractionPhase::Opening && hand.ready(observation_.arm)) {
                 phase(InteractionPhase::Approach); startReach(pregrip_,root);
             } else if (p==InteractionPhase::Approach || p==InteractionPhase::Align || p==InteractionPhase::Transport) {
                 if (active(r.state)) return;
@@ -274,7 +319,14 @@ namespace julia::embodiment
                 if (p==InteractionPhase::Approach) {
                     phase(InteractionPhase::Align,true); startReach(grip_,root);
                 } else if (p==InteractionPhase::Align) {
-                    hand.set(observation_.arm,1); phase(InteractionPhase::Closing);
+                    if (observation_.preparation) {
+                        if (!hand.ready(observation_.arm) || !hand.states()[s].enabled || hand.states()[s].closure!=0 ||
+                            hand.states()[s].blend!=1 || observation_.frameError>.002f || observation_.angularError>glm::radians(1.f) ||
+                            !r.collisionChecked || object_->state!=ObjectState::Free || !restClear(collisionContext()))
+                        { fail("ReadyToGrasp conditions not reached"); return; }
+                        // Same geometry/contact policy as Align; no hidden context mutation.
+                        observation_.result="ReadyToGrasp"; phase(InteractionPhase::ReadyToGrasp);
+                    } else { hand.set(observation_.arm,1); phase(InteractionPhase::Closing); }
                 } else {
                     observation_.result="Moved"; phase(InteractionPhase::Holding);
                 }
@@ -302,10 +354,11 @@ namespace julia::embodiment
             } else if (p==InteractionPhase::Retreat && !active(r.state)) {
                 auto context=collisionContext(); context.contactHand=0; context.contactObject=0;
                 const bool separated=r.state==ReachState::Succeeded && restClear(context);
-                observation_.result=separated ? (cancelBeforeAttachment_ ? "Cancelled":"Released"):"ReleaseBlocked";
+                observation_.result=separated ? (finishingPreparation_ ? "Prepared":cancelBeforeAttachment_ ? "Cancelled":"Released"):"ReleaseBlocked";
                 observation_.reason=separated ? "":(r.state==ReachState::Succeeded ? "Contact remains after retreat":reachReasonName(r.reason));
                 observation_.cancellationPending=false;
-                phase(separated ? (cancelBeforeAttachment_ ? InteractionPhase::Cancelled:InteractionPhase::Succeeded):InteractionPhase::ReleaseBlocked,true);
+                phase(separated ? (finishingPreparation_ ? InteractionPhase::Succeeded:cancelBeforeAttachment_ ? InteractionPhase::Cancelled:InteractionPhase::Succeeded):
+                    observation_.preparation ? InteractionPhase::PreparationBlocked:InteractionPhase::ReleaseBlocked,true);
             } else if (p==InteractionPhase::Cancelling && !active(r.state) && hand.ready(observation_.arm)) {
                 if (!cancelBeforeAttachment_) {
                     observation_.result="CancelledHolding"; observation_.cancellationPending=false; phase(InteractionPhase::Holding);
@@ -313,8 +366,8 @@ namespace julia::embodiment
                     if (hand.states()[s].closure>0) { hand.set(observation_.arm,0); return; }
                     auto context=collisionContext(); context.contactHand=0; context.contactObject=0;
                     if (restClear(context)) {
-                        observation_.result="Cancelled"; observation_.cancellationPending=false;
-                        phase(InteractionPhase::Cancelled,true); return;
+                        observation_.result=finishingPreparation_ ? "Prepared":"Cancelled"; observation_.cancellationPending=false;
+                        phase(finishingPreparation_ ? InteractionPhase::Succeeded:InteractionPhase::Cancelled,true); return;
                     }
                     phase(InteractionPhase::Retreat,true); startReach(pregrip_,root);
                 }
@@ -322,7 +375,8 @@ namespace julia::embodiment
         }
         catch (const std::exception& e) {
             if (p==InteractionPhase::ReleaseOpening || p==InteractionPhase::Retreat) {
-                observation_.result="ReleaseBlocked"; observation_.reason=e.what(); phase(InteractionPhase::ReleaseBlocked,true);
+                observation_.result="ReleaseBlocked"; observation_.reason=e.what(); observation_.cancellationPending=false;
+                phase(observation_.preparation ? InteractionPhase::PreparationBlocked:InteractionPhase::ReleaseBlocked,true);
             } else fail(e.what());
         }
     }

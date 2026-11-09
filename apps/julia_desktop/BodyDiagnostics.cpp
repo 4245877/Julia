@@ -42,6 +42,10 @@ namespace julia::desktop
         if (body_.snapshot().object) s << "OBJECT " << body_.snapshot().object->handle.id << ' '
             << interactionPhaseName(interaction.phase) << " closure=" << body_.snapshot().hands[interaction.arm==ArmSide::Left ? 0:1].closure
             << (interaction.hold==HoldType::AssistedAttachment ? " AssistedAttachment":" Free") << " " << interaction.result << " " << interaction.reason << " | ";
+        if (interaction.preparation) s << "PREP owner=" << static_cast<int>(body_.snapshot().armOwners[interaction.arm==ArmSide::Left ? 0:1])
+            << " source=#" << interaction.sourceReach << " handle=" << interaction.object.id << ':' << interaction.object.generation
+            << " err=" << interaction.frameError*1000 << "mm/" << glm::degrees(interaction.angularError)
+            << "deg geometry=" << interaction.geometryCurrent << " | ";
         const auto& check=body_.snapshot().pathCheck;
         if (body_.snapshot().collisionScene) s << "COLLISION v" << body_.snapshot().collisionScene->version() << ' ' << pathStatusName(check.status)
             << " [" << check.bodyForm << '/' << check.otherBodyForm << " obj=" << check.object << "] | ";
@@ -81,7 +85,12 @@ namespace julia::desktop
         const auto& joints=control_.binding().profile().joints;
         if (pendingMode_ && body_.snapshot().tick>=pendingMode_->first) pendingMode_.reset();
         const bool enabled=pendingMode_ ? pendingMode_->second:control_.enabled();
-        if (key==GLFW_KEY_J && (mods&GLFW_MOD_CONTROL)) {
+        if (key==GLFW_KEY_K && (mods&GLFW_MOD_CONTROL)) {
+            if (mods&GLFW_MOD_SHIFT) { preparationDemo_.stage=0; body_.enqueue(FinishGraspPreparation{body_.snapshot().interaction.action}); }
+            else { preparationDemo_.arm=reachArm_; preparationDemo_.start(body_); }
+            result_="fixed stance preparation queued";
+        }
+        else if (key==GLFW_KEY_J && (mods&GLFW_MOD_CONTROL)) {
             if (!body_.snapshot().direct) { result_="F2: select controlled pose before support demo"; return true; }
             if (mods&GLFW_MOD_SHIFT) { stanceDemo_.arm=reachArm_; stanceDemo_.start(body_); result_="fixed stance Reach demo queued"; }
             else { supportDemo_.start(body_); result_="support demo queued: explicit alignment then root motion"; }
@@ -197,7 +206,7 @@ namespace julia::desktop
         else if (key==GLFW_KEY_DELETE)
         {
             if (body_.snapshot().object && (mods&GLFW_MOD_CONTROL)) {
-                body_.enqueue(CancelInteraction{body_.snapshot().interaction.action}); demo_.stage=0;
+                body_.enqueue(CancelInteraction{body_.snapshot().interaction.action}); demo_.stage=0; preparationDemo_.stage=0;
             } else {
                 const auto& current=body_.snapshot().reaches[reachArm_==ArmSide::Left ? 0:1];
                 body_.enqueue(CancelReach{reachArm_,current.action});
@@ -237,6 +246,11 @@ namespace julia::desktop
     {
         if (!display.direct && !display.object) return;
         const auto& globals=display.pose.globals;
+        const auto shownReach=[&](std::size_t side) -> const ReachObservation& {
+            if (display.interaction.preparation && display.preparationReach.action==display.interaction.action &&
+                side==(display.interaction.arm==ArmSide::Left ? 0u:1u)) return display.preparationReach;
+            return display.reaches[side];
+        };
         const auto& b=control_.binding(); const auto& p=b.profile();
         const auto coordinate=[&](JointId id,std::size_t k) { return display.coordinates[b.jointIndex(id)][static_cast<int>(k)]; };
         const auto displayFromBody=viewerFromResource*glm::inverse(p.bodyFromResource);
@@ -251,6 +265,7 @@ namespace julia::desktop
         if (display.object) {
             const auto worldToBody=glm::inverse(rigidMatrix({display.root.position,display.root.rotation}));
             const auto& o=*display.object;
+            if (display.interaction.preparation) axes(worldToBody*rigidMatrix(o.worldPose)*rigidMatrix(o.localGrip),.075f);
             for (int axis=0;axis<3;++axis) for (int k=0;k<48;++k) {
                 glm::vec3 a{0},end{0}; const float t=k*6.28318530718f/48,u=(k+1)*6.28318530718f/48;
                 a[(axis+1)%3]=std::cos(t)*o.radius; a[(axis+2)%3]=std::sin(t)*o.radius;
@@ -341,7 +356,7 @@ namespace julia::desktop
                 cross(point,{1,.05f,.05f},.03f); worldLine(check.contact.otherPoint,check.contact.bodyPoint,{1,0,0});
             }
             // Both previews use the validator's bounded traces. They never authorize motion.
-            for (const auto& reach:display.reaches) if (reach.action && (reach.target.strategy==MovementStrategy::AllowDetour || reach.route.segmentCount)) {
+            for (const auto* entry:std::array{&shownReach(0),&shownReach(1)}) if (const auto& reach=*entry; reach.action && (reach.target.strategy==MovementStrategy::AllowDetour || reach.route.segmentCount)) {
                 const auto& route=reach.route.segmentCount ? reach.route:reach.planning;
                 const auto drawTrace=[&](const PathCheck& path,glm::vec3 color) {
                     for (std::size_t t=1;t<path.trace.size();++t) for (std::size_t k=0;k<3;++k)
@@ -379,7 +394,7 @@ namespace julia::desktop
         }
         for (std::size_t side=0;side<2;++side)
         {
-            const auto& r=display.reaches[side]; if (!r.action) continue;
+            const auto& r=shownReach(side); if (!r.action) continue;
             if (r.elbowDirectionBody) line(r.shoulderBody,r.shoulderBody+*r.elbowDirectionBody*.18f,{1,.6f,.05f});
             const auto shoulder=side==0 ? JointId::LeftShoulder:JointId::RightShoulder,
                 elbow=side==0 ? JointId::LeftElbow:JointId::RightElbow;
@@ -844,6 +859,64 @@ namespace julia::desktop
             << "render=interpolated_read_only\nGL_errors=0\nresult=PASS\n";
     }
 
+    void verifyDesktopStancePreparation(GLFWwindow* window,render_opengl::OpenGLRenderer& renderer,
+        const render_opengl::GLModel& model,BodyInstance& body,BodyDiagnostics& diagnostics,const glm::mat4& fit,
+        const std::filesystem::path& output,void (*input)(GLFWwindow*,int,int,int,int))
+    {
+        std::filesystem::create_directories(output); std::ofstream report(output/"desktop_stance_preparation.txt"),trace(output/"stance-preparation.csv");
+        report << "process=julia_desktop\nGL_RENDERER=" << glGetString(GL_RENDERER) << '\n';
+        const auto require=[](bool ok,const std::string& why) { if (!ok) throw std::runtime_error(why); };
+        body.enqueue(EyeCommand{EyeOperation::Enable,{0,0,0}}); input(window,GLFW_KEY_F2,0,GLFW_PRESS,0); body.step();
+        input(window,GLFW_KEY_K,0,GLFW_PRESS,GLFW_MOD_CONTROL);
+        bool ready=false; unsigned captures=0; int previous=-1; float maxP=0,maxA=0,maxGap=0;
+        for (unsigned t=0;t<8000;++t) {
+            diagnostics.updateInteractionDemo(); body.step(); app::stancePreparationTrace(trace,body.snapshot());
+            const auto& s=body.snapshot();
+            for (const auto& r:body.results()) require(r.status!=BodyCommandStatus::Rejected,r.reason);
+            require(s.support.result!="PlanRejected",s.support.reason);
+            const int state=static_cast<int>(s.support.phase)*100+static_cast<int>(s.interaction.phase);
+            if (s.interaction.phase==InteractionPhase::ReadyToGrasp) {
+                ready=true; require(s.interaction.geometryCurrent && s.armOwners[0]==ArmOwner::GraspPreparation,"Ready lacks current certificate/owner");
+                require(s.object && s.object->state==ObjectState::Free && s.object->owner==0,"Ready attached object");
+            }
+            require(s.interaction.phase!=InteractionPhase::Closing && s.interaction.hold==HoldType::None,"Preparation closed/attached");
+            if (s.interaction.preparation) require(s.root.position==glm::vec3{0},"Preparation moved root");
+            for (double alpha:{0.,.23,.5,.77,1.}) {
+                const auto d=body.display(alpha);
+                if (d.support.kind==SupportKind::KinematicSupport) for (const auto& a:d.support.anchors) {
+                    maxP=std::max(maxP,a.positionError); maxA=std::max(maxA,a.angularError); maxGap=std::max({maxGap,std::abs(a.minGap),std::abs(a.maxGap)});
+                    require(a.bound && a.positionError<=SupportPositionTolerance && a.angularError<=SupportAngularTolerance &&
+                        a.minGap>=-SupportSurfaceTolerance && a.maxGap<=SupportSurfaceTolerance,"Desktop soles outside tolerances");
+                }
+            }
+            if ((state!=previous || (s.interaction.preparation && t%120==0) || t==7999) && captures<96) {
+                report << "tick=" << s.tick << " support=" << supportPhaseName(s.support.phase) << " reach=" << reachStateName(s.reaches[0].state)
+                    << " preparation=" << interactionPhaseName(s.interaction.phase) << " scope=preparation_vs_fixed_stance\n";
+                for (unsigned view=0;view<3;++view) {
+                    const auto d=body.display(.37); const auto again=body.display(.37);
+                    require(d.pose.palette==again.pose.palette && s.tick==body.snapshot().tick,"Display mutated simulation");
+                    const auto transform=fit*body.resourceRoot(d.root);
+                    const auto viewerFromWorld=fit*glm::inverse(body.control()->binding().profile().bodyFromResource);
+                    const auto target=glm::vec3{viewerFromWorld*glm::vec4{d.root.position+glm::vec3{0,.78f,0},1}};
+                    render_opengl::CameraConfig camera; camera.target=target;
+                    camera.position=target+(view==0 ? glm::vec3{0,.2f,2.5f}:view==1 ? glm::vec3{2.5f,.2f,0}:glm::vec3{-1.7f,.25f,-2.f});
+                    camera.nearPlane=.005f; renderer.setCamera(camera);
+                    int width=0,height=0; glfwGetFramebufferSize(window,&width,&height); renderer.resize(width,height);
+                    diagnostics.overlay=view!=0; renderer.beginFrame(); renderer.renderModel(model,transform,d.pose.palette); diagnostics.draw(renderer,transform,d);
+                    std::vector<unsigned char> pixels(static_cast<std::size_t>(width)*height*3);
+                    glPixelStorei(GL_PACK_ALIGNMENT,1); glReadPixels(0,0,width,height,GL_RGB,GL_UNSIGNED_BYTE,pixels.data());
+                    std::ofstream image(output/(std::to_string(s.tick)+"_"+std::to_string(view)+".ppm"),std::ios::binary);
+                    image << "P6\n" << width << ' ' << height << "\n255\n";
+                    for (int y=height-1;y>=0;--y) image.write(reinterpret_cast<const char*>(pixels.data()+static_cast<std::size_t>(y)*width*3),width*3);
+                    require(static_cast<bool>(image) && glGetError()==GL_NO_ERROR,"Preparation GPU capture failed"); glfwSwapBuffers(window); glfwPollEvents(); ++captures;
+                }
+            }
+            previous=state;
+        }
+        const auto& s=body.snapshot(); require(ready && s.reaches[0].state==ReachState::Succeeded && !s.support.enabled && !s.object,"Desktop preparation/independent Reach demo incomplete");
+        report << "captures=" << captures << "\nmax_display_p_angle_gap=" << maxP << ',' << maxA << ',' << maxGap
+            << "\ncallbacks=F2,CtrlK\nrender=one_read_only_BodyDisplay\nGL_errors=0\nresult=PASS\n";
+    }
     void verifyDesktopStanceReach(GLFWwindow* window,render_opengl::OpenGLRenderer& renderer,
         const render_opengl::GLModel& model,BodyInstance& body,BodyDiagnostics& diagnostics,const glm::mat4& fit,
         const std::filesystem::path& output,void (*input)(GLFWwindow*,int,int,int,int))
