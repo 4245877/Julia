@@ -27,13 +27,23 @@ namespace julia::desktop
         std::size_t joint_=0,coordinate_=0;
         std::string result_="ready";
         embodiment::ArmSide reachArm_=embodiment::ArmSide::Left;
+        embodiment::MovementStrategy reachStrategy_=embodiment::MovementStrategy::DirectOnly;
         glm::vec3 reachPosition_{.22f,1.10f,.32f};
+        std::uint64_t sceneRevision_=0;
     };
     void verifyDesktopBody(GLFWwindow* window,render_opengl::OpenGLRenderer& renderer,
         const render_opengl::GLModel& model,embodiment::BodyInstance& body,
         BodyDiagnostics& diagnostics,const glm::mat4& fit,
         const std::filesystem::path& output,void (*input)(GLFWwindow*,int,int,int,int));
     void verifyDesktopReach(GLFWwindow* window,render_opengl::OpenGLRenderer& renderer,
+        const render_opengl::GLModel& model,embodiment::BodyInstance& body,
+        BodyDiagnostics& diagnostics,const glm::mat4& fit,
+        const std::filesystem::path& output,void (*input)(GLFWwindow*,int,int,int,int));
+    void verifyDesktopCollision(GLFWwindow* window,render_opengl::OpenGLRenderer& renderer,
+        const render_opengl::GLModel& model,embodiment::BodyInstance& body,
+        BodyDiagnostics& diagnostics,const glm::mat4& fit,
+        const std::filesystem::path& output,void (*input)(GLFWwindow*,int,int,int,int));
+    void verifyDesktopDetour(GLFWwindow* window,render_opengl::OpenGLRenderer& renderer,
         const render_opengl::GLModel& model,embodiment::BodyInstance& body,
         BodyDiagnostics& diagnostics,const glm::mat4& fit,
         const std::filesystem::path& output,void (*input)(GLFWwindow*,int,int,int,int));

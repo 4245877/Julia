@@ -1,8 +1,10 @@
 #include "BodyDiagnostics.hpp"
+#include "../common/CollisionDemo.hpp"
 #include <GLFW/glfw3.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <cmath>
 #include <array>
+#include <algorithm>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -28,10 +30,20 @@ namespace julia::desktop
     {
         const auto& j=control_.binding().profile().joints[joint_]; const auto& c=j.coordinates[coordinate_];
         std::ostringstream s;
+        const auto& check=body_.snapshot().pathCheck;
+        if (body_.snapshot().collisionScene) s << "COLLISION v" << body_.snapshot().collisionScene->version() << ' ' << pathStatusName(check.status)
+            << " [" << check.bodyForm << '/' << check.otherBodyForm << " obj=" << check.object << "] | ";
         const auto& reach=body_.snapshot().reaches[reachArm_==ArmSide::Left ? 0:1];
         s << "IK " << (reachArm_==ArmSide::Left ? "L":"R");
+        s << (reachStrategy_==MovementStrategy::AllowDetour ? " detour":" direct");
         if (reach.action) s << " #" << reach.action << ' ' << (reach.cancellationPending && (reach.state==ReachState::Moving || reach.state==ReachState::Settling) ? "stopping":reachStateName(reach.state))
             << " err=" << std::fixed << std::setprecision(1) << reach.error*1000 << "mm " << reachReasonName(reach.reason);
+        if (reach.action && (reach.target.strategy==MovementStrategy::AllowDetour || reach.planning.state!=PlanningState::Idle || reach.route.segmentCount)) {
+            const auto& p=reach.planning;
+            s << " plan=" << planningStateName(p.state) << " direct=" << pathStatusName(p.directCheck.status)
+                << " cand=" << p.candidates << " q=" << p.queries;
+            if (reach.route.segmentCount) s << " seg=" << reach.route.currentSegment+1 << '/' << reach.route.segmentCount;
+        }
         s << " target " << std::fixed << std::setprecision(2) << reachPosition_.x << ',' << reachPosition_.y << ',' << reachPosition_.z;
         s << " | BODY " << (control_.enabled() ? "ON ":"OFF ") << j.name << '/' << c.name
             << ' ' << std::setprecision(0) << glm::degrees(control_.coordinate(j.id,coordinate_))
@@ -48,6 +60,25 @@ namespace julia::desktop
             body_.enqueue(SetDirectMode{!enabled}); pendingMode_=std::pair{body_.snapshot().tick+1,!enabled};
             result_="queued";
         }
+        else if (key==GLFW_KEY_F11)
+        {
+            const auto& scene=body_.snapshot().collisionScene;
+            const bool blocked=scene && std::any_of(scene->objects().begin(),scene->objects().end(),[](const auto& o) { return o.id==101; });
+            if (blocked) body_.enqueue(SetCollisionScene{nullptr,{}});
+            else {
+                if (scene) sceneRevision_=std::max(sceneRevision_,scene->version());
+                const auto root=body_.snapshot().root;
+                const auto demo=app::collisionDemo(control_.binding(),scene!=nullptr,++sceneRevision_,
+                    glm::translate(glm::mat4{1},root.position)*glm::mat4_cast(root.rotation));
+                body_.enqueue(SetCollisionScene{demo.scene,{}}); reachPosition_=demo.target.position;
+            }
+            result_="scene change queued (idle only)";
+        }
+        else if (key==GLFW_KEY_F12)
+        {
+            reachStrategy_=reachStrategy_==MovementStrategy::DirectOnly ? MovementStrategy::AllowDetour:MovementStrategy::DirectOnly;
+            result_="strategy selected; F7 to commit";
+        }
         else if (!enabled) return false;
         else if (key==GLFW_KEY_F7)
         {
@@ -59,10 +90,10 @@ namespace julia::desktop
             }
             else
             {
-                ReachTarget target; target.arm=reachArm_; target.position=reachPosition_;
+                ReachTarget target; target.arm=reachArm_; target.position=reachPosition_; target.strategy=reachStrategy_;
                 target.effector=reachArm_==ArmSide::Left ? EffectorId::LeftWrist:EffectorId::RightWrist;
                 const auto& current=body_.snapshot().reaches[reachArm_==ArmSide::Left ? 0:1];
-                if (current.state==ReachState::Moving || current.state==ReachState::Settling)
+                if (current.state==ReachState::Moving || current.state==ReachState::Settling || current.state==ReachState::Planning)
                     body_.enqueue(RetargetReach{current.action,target});
                 else body_.enqueue(StartReach{target});
                 result_="reach queued";
@@ -122,10 +153,82 @@ namespace julia::desktop
         for (const auto& e:p.effectors) axes(b.effectorFrame(e.id,globals),.035f);
         const auto cross=[&](glm::vec3 point,glm::vec3 color,float radius)
         { for (int k=0;k<3;++k) { glm::vec3 d{0}; d[k]=radius; line(point-d,point+d,color); } };
+        if (display.collisionScene)
+        {
+            const auto worldFromBody=glm::translate(glm::mat4{1},display.root.position)*glm::mat4_cast(display.root.rotation);
+            const auto worldToBody=glm::inverse(worldFromBody);
+            const auto worldLine=[&](glm::dvec3 a,glm::dvec3 b,glm::vec3 color) {
+                line(glm::vec3{worldToBody*glm::vec4{glm::vec3{a},1}},glm::vec3{worldToBody*glm::vec4{glm::vec3{b},1}},color);
+            };
+            const auto sphere=[&](glm::dvec3 center,double radius,glm::vec3 color) {
+                for (int axis=0;axis<3;++axis) for (int k=0;k<24;++k) {
+                    glm::dvec3 a{0},b{0}; const double x=k*6.283185307179586/24,y=(k+1)*6.283185307179586/24;
+                    a[(axis+1)%3]=std::cos(x)*radius; a[(axis+2)%3]=std::sin(x)*radius;
+                    b[(axis+1)%3]=std::cos(y)*radius; b[(axis+2)%3]=std::sin(y)*radius;
+                    worldLine(center+a,center+b,color);
+                }
+            };
+            for (const auto& f:display.colliders) {
+                const auto& c=f.capsule; const glm::vec3 color{.2f,.9f,.8f}; sphere(c.a,c.radius,color); sphere(c.b,c.radius,color);
+                const auto d=glm::normalize(c.b-c.a); auto u=glm::cross(d,glm::dvec3{1,0,0});
+                if (glm::length(u)<.01) u=glm::cross(d,glm::dvec3{0,1,0});
+                u=glm::normalize(u); const auto v=glm::cross(d,u);
+                for (const auto& offset:std::array{u*c.radius,-u*c.radius,v*c.radius,-v*c.radius}) worldLine(c.a+offset,c.b+offset,color);
+            }
+            for (const auto& o:display.collisionScene->objects()) {
+                const glm::vec3 color{1,.55f,.1f};
+                if (const auto* s=std::get_if<world::Sphere>(&o.shape)) sphere(o.position,s->radius,color);
+                else if (const auto* box=std::get_if<world::Box>(&o.shape)) {
+                    for (int corner=0;corner<8;++corner) for (int axis=0;axis<3;++axis) if (!(corner&(1<<axis))) {
+                        glm::dvec3 cornerA,cornerB;
+                        for (int k=0;k<3;++k) { cornerA[k]=(corner&(1<<k) ? 1:-1)*box->halfExtent[k]; cornerB[k]=cornerA[k]; }
+                        cornerB[axis]=-cornerB[axis]; worldLine(o.position+o.rotation*cornerA,o.position+o.rotation*cornerB,color);
+                    }
+                } else for (int k=-4;k<=4;++k) {
+                    const double t=k*.2;
+                    worldLine(o.position+o.rotation*glm::dvec3{t,0,-.8},o.position+o.rotation*glm::dvec3{t,0,.8},color);
+                    worldLine(o.position+o.rotation*glm::dvec3{-.8,0,t},o.position+o.rotation*glm::dvec3{.8,0,t},color);
+                }
+            }
+            const auto& check=display.pathCheck;
+            for (std::size_t t=1;t<check.trace.size();++t) for (std::size_t k=0;k<3;++k)
+                worldLine(check.trace[t-1][k],check.trace[t][k],k==0 ? glm::vec3{.4f,.5f,1}:k==1 ? glm::vec3{1,1,.1f}:glm::vec3{.7f,.3f,1});
+            if (check.status==PathStatus::Blocked || check.status==PathStatus::InitialIntersection) {
+                const auto point=glm::vec3{worldToBody*glm::vec4{glm::vec3{check.contact.otherPoint},1}};
+                cross(point,{1,.05f,.05f},.03f); worldLine(check.contact.otherPoint,check.contact.bodyPoint,{1,0,0});
+            }
+            // Both previews use the validator's bounded traces. They never authorize motion.
+            for (const auto& reach:display.reaches) if (reach.action && (reach.target.strategy==MovementStrategy::AllowDetour || reach.route.segmentCount)) {
+                const auto& route=reach.route.segmentCount ? reach.route:reach.planning;
+                const auto drawTrace=[&](const PathCheck& path,glm::vec3 color) {
+                    for (std::size_t t=1;t<path.trace.size();++t) for (std::size_t k=0;k<3;++k)
+                        worldLine(path.trace[t-1][k],path.trace[t][k],color);
+                };
+                drawTrace(route.directCheck,{1,.15f,.1f});
+                for (unsigned segment=0;segment<route.segmentCount;++segment)
+                    drawTrace(route.segmentChecks[segment],segment==0 ? glm::vec3{.2f,1,.25f}:glm::vec3{.15f,.7f,1});
+                if (route.segmentCount==2) {
+                    auto coordinates=display.coordinates;
+                    const auto ids=reach.target.arm==ArmSide::Left ?
+                        std::array{JointId::LeftShoulder,JointId::LeftElbow,JointId::LeftWrist}:
+                        std::array{JointId::RightShoulder,JointId::RightElbow,JointId::RightWrist};
+                    for (std::size_t k=0;k<6;++k)
+                        coordinates[b.jointIndex(ids[k<3 ? 0:k==3 ? 1:2])][static_cast<int>(k<3 ? k:k==3 ? 0:k-4)]=route.waypoint[k];
+                    animation::Pose waypoint(b.asset().skeleton());
+                    DirectBodyControl preview(control_);
+                    for (std::size_t j=0;j<p.joints.size();++j)
+                        for (std::size_t k=0;k<p.joints[j].coordinates.size();++k)
+                            preview.setCoordinate(p.joints[j].id,k,coordinates[j][static_cast<int>(k)]);
+                    preview.apply(waypoint.locals);
+                    animation::computeGlobalTransforms(b.asset().skeleton(),waypoint.locals,waypoint.globals);
+                    cross(glm::vec3{b.effectorFrame(reach.target.effector,waypoint.globals)[3]},{1,1,.1f},.025f);
+                }
+            }
+        }
         cross(reachPosition_,{1,.2f,1},.018f);
         for (std::size_t side=0;side<2;++side)
         {
-            const auto& r=body_.snapshot().reaches[side]; if (!r.action) continue;
+            const auto& r=display.reaches[side]; if (!r.action) continue;
             const auto shoulder=side==0 ? JointId::LeftShoulder:JointId::RightShoulder,
                 elbow=side==0 ? JointId::LeftElbow:JointId::RightElbow;
             const auto hand=glm::vec3{b.effectorFrame(r.target.effector,globals)[3]}, e=glm::vec3{b.jointFrame(elbow,globals)[3]},
@@ -155,6 +258,136 @@ namespace julia::desktop
         line(origin,arc(c.lower),{1,.1f,.1f}); line(origin,arc(c.upper),{.1f,1,.1f});
         line(origin,arc(coordinate(j.id,coordinate_)),{1,1,0});
         renderer.renderDebugLines(lines);
+    }
+
+    void verifyDesktopCollision(GLFWwindow* window,render_opengl::OpenGLRenderer& renderer,
+        const render_opengl::GLModel& model,BodyInstance& body,BodyDiagnostics& diagnostics,
+        const glm::mat4& fit,const std::filesystem::path& output,void (*input)(GLFWwindow*,int,int,int,int))
+    {
+        std::filesystem::create_directories(output); std::ofstream report(output/"desktop_collision.txt");
+        report << "process=julia_desktop\nGL_RENDERER=" << glGetString(GL_RENDERER) << '\n';
+        const auto require=[](bool ok,const char* message) { if (!ok) throw std::runtime_error(message); };
+        unsigned captures=0;
+        const auto capture=[&](const std::string& name) {
+            render_opengl::CameraConfig camera;
+            const auto& b=body.control()->binding();
+            camera.target=glm::vec3{fit*glm::inverse(b.profile().bodyFromResource)*glm::vec4{.13f,1.10f,.18f,1}};
+            camera.position=camera.target+glm::vec3{1,.25f,2.1f}; renderer.setCamera(camera);
+            int width=0,height=0; glfwGetFramebufferSize(window,&width,&height); renderer.resize(width,height);
+            const auto tick=body.snapshot().tick; const auto display=body.display(.5);
+            renderer.beginFrame(); renderer.renderModel(model,fit*body.resourceRoot(display.root),display.pose.palette); diagnostics.draw(renderer,fit*body.resourceRoot(display.root),display);
+            const auto again=body.display(.5);
+            require(again.pose.palette==display.pose.palette && tick==body.snapshot().tick,"Collision rendering mutated body");
+            std::vector<unsigned char> pixels(static_cast<std::size_t>(width)*height*3); glPixelStorei(GL_PACK_ALIGNMENT,1);
+            glReadPixels(0,0,width,height,GL_RGB,GL_UNSIGNED_BYTE,pixels.data());
+            std::ofstream image(output/(name+".ppm"),std::ios::binary); image << "P6\n" << width << ' ' << height << "\n255\n";
+            for (int y=height-1;y>=0;--y) image.write(reinterpret_cast<const char*>(pixels.data()+static_cast<std::size_t>(y)*width*3),width*3);
+            require(static_cast<bool>(image),"Cannot save collision frame"); require(glGetError()==GL_NO_ERROR,"Collision GL error");
+            glfwSetWindowTitle(window,diagnostics.title().c_str()); glfwSwapBuffers(window); glfwPollEvents(); ++captures;
+        };
+        input(window,GLFW_KEY_F2,0,GLFW_PRESS,0);
+        input(window,GLFW_KEY_F11,0,GLFW_PRESS,0); body.step(); // Off -> free.
+        require(body.snapshot().collisionScene!=nullptr,"F11 free scene failed");
+        input(window,GLFW_KEY_F11,0,GLFW_PRESS,0); body.step(); // Free -> blocked.
+        const auto before=body.snapshot().coordinates;
+        input(window,GLFW_KEY_F7,0,GLFW_PRESS,0); body.step();
+        require(body.results().back().status==BodyCommandStatus::Rejected && before==body.snapshot().coordinates,"Blocked desktop path moved");
+        const auto hit=body.snapshot().pathCheck;
+        require(hit.status==PathStatus::Blocked && hit.object==101 && hit.bodyForm==2,"Desktop collision diagnosis failed");
+        capture("blocked_forearm");
+        report << "blocked_form=" << hit.bodyForm << "\nobject=" << hit.object << "\ninterval=" << hit.fromTick << ',' << hit.toTick << "\ngap_m=" << hit.contact.gap << '\n';
+        input(window,GLFW_KEY_F11,0,GLFW_PRESS,0); body.step(); // Blocked -> off.
+        input(window,GLFW_KEY_F11,0,GLFW_PRESS,0); body.step(); // Off -> free, higher revision.
+        input(window,GLFW_KEY_F7,0,GLFW_PRESS,0); body.step();
+        require(body.snapshot().pathCheck.status==PathStatus::Clear,"Desktop free path rejected"); capture("free_start");
+        input(window,GLFW_KEY_F11,0,GLFW_PRESS,0); body.step();
+        require(body.results().back().status==BodyCommandStatus::Rejected,"Scene modified during active certified segment");
+        for (int t=0;t<1200;++t) {
+            body.step(); const auto& r=body.snapshot().reaches[0];
+            if (t==45 || t==90) capture("free_"+std::to_string(t));
+            if (r.state==ReachState::Succeeded) break;
+            require(t<1199,"Desktop collision-free reach did not complete");
+        }
+        require(body.snapshot().reaches[0].error<=.002f,"Collision mode changed IK accuracy"); capture("free_complete");
+        report << "error_m=" << body.snapshot().reaches[0].error << "\ncaptures=" << captures << "\ncallbacks=F2,F11,F7\nrender=single_display_read_only\nGL_errors=0\nresult=PASS\n";
+    }
+
+    void verifyDesktopDetour(GLFWwindow* window,render_opengl::OpenGLRenderer& renderer,
+        const render_opengl::GLModel& model,BodyInstance& body,BodyDiagnostics& diagnostics,
+        const glm::mat4& fit,const std::filesystem::path& output,void (*input)(GLFWwindow*,int,int,int,int))
+    {
+        std::filesystem::create_directories(output);
+        std::ofstream report(output/"desktop_detour.txt"),csv(output/"ticks.csv");
+        if (!report || !csv) throw std::runtime_error("Cannot write detour evidence");
+        report << std::setprecision(12) << "process=julia_desktop\nGL_RENDERER=" << glGetString(GL_RENDERER) << '\n';
+        csv << "tick,state,planning_state,candidates,queries,poses,planning_ticks,segments,current_segment,error_m\n";
+        const auto require=[](bool ok,const char* message) { if (!ok) throw std::runtime_error(message); };
+        unsigned captures=0;
+        const auto capture=[&](const std::string& name) {
+            render_opengl::CameraConfig camera;
+            const auto& b=body.control()->binding();
+            camera.target=glm::vec3{fit*glm::inverse(b.profile().bodyFromResource)*glm::vec4{.13f,1.10f,.18f,1}};
+            camera.position=camera.target+glm::vec3{1,.25f,2.1f}; renderer.setCamera(camera);
+            int width=0,height=0; glfwGetFramebufferSize(window,&width,&height); renderer.resize(width,height);
+            const auto tick=body.snapshot().tick; const auto display=body.display(.5);
+            renderer.beginFrame(); renderer.renderModel(model,fit*body.resourceRoot(display.root),display.pose.palette);
+            diagnostics.draw(renderer,fit*body.resourceRoot(display.root),display);
+            const auto again=body.display(.5);
+            require(again.pose.palette==display.pose.palette && tick==body.snapshot().tick,"Detour rendering mutated body");
+            std::vector<unsigned char> pixels(static_cast<std::size_t>(width)*height*3); glPixelStorei(GL_PACK_ALIGNMENT,1);
+            glReadPixels(0,0,width,height,GL_RGB,GL_UNSIGNED_BYTE,pixels.data());
+            std::ofstream image(output/(name+".ppm"),std::ios::binary); image << "P6\n" << width << ' ' << height << "\n255\n";
+            for (int y=height-1;y>=0;--y) image.write(reinterpret_cast<const char*>(pixels.data()+static_cast<std::size_t>(y)*width*3),width*3);
+            require(static_cast<bool>(image),"Cannot save detour frame"); require(glGetError()==GL_NO_ERROR,"Detour GL error");
+            glfwSetWindowTitle(window,diagnostics.title().c_str()); glfwSwapBuffers(window); glfwPollEvents(); ++captures;
+        };
+        input(window,GLFW_KEY_F2,0,GLFW_PRESS,0);
+        input(window,GLFW_KEY_F11,0,GLFW_PRESS,0); body.step();
+        input(window,GLFW_KEY_F11,0,GLFW_PRESS,0); body.step();
+        const auto initial=body.snapshot().coordinates;
+        const auto originalScene=body.snapshot().collisionScene;
+        input(window,GLFW_KEY_F7,0,GLFW_PRESS,0); body.step();
+        require(body.results().back().status==BodyCommandStatus::Rejected && body.snapshot().pathCheck.status==PathStatus::Blocked,
+            "DirectOnly demo must remain blocked");
+        require(initial==body.snapshot().coordinates,"Rejected direct route changed start");
+        const auto direct=body.snapshot().pathCheck; capture("01_direct_blocked");
+        input(window,GLFW_KEY_F12,0,GLFW_PRESS,0);
+        input(window,GLFW_KEY_F7,0,GLFW_PRESS,0); body.step();
+        require(body.results().back().status==BodyCommandStatus::Applied,"AllowDetour callback rejected");
+        require(body.snapshot().reaches[0].state==ReachState::Planning,"AllowDetour did not enter planning");
+        capture("02_planning");
+        bool sawRoute=false,sawSecond=false;
+        for (unsigned t=0;t<12000;++t) {
+            body.step(); const auto& r=body.snapshot().reaches[0]; const auto& p=r.planning;
+            csv << body.snapshot().tick << ',' << static_cast<int>(r.state) << ',' << static_cast<int>(p.state) << ','
+                << p.candidates << ',' << p.queries << ',' << p.poses << ',' << p.ticks << ',' << r.route.segmentCount << ',' << r.route.currentSegment << ',' << r.error << '\n';
+            require(body.snapshot().collisionScene==originalScene,"Detour changed collision scene");
+            if (r.state==ReachState::Planning) require(body.snapshot().coordinates==initial,"Planning moved body");
+            if (!sawRoute && r.route.segmentCount==2 && r.state==ReachState::Moving) {
+                require(r.route.directCheck.status==PathStatus::Blocked,"Detour lost direct refusal reason");
+                require(r.route.segmentChecks[0].status==PathStatus::Clear && r.route.segmentChecks[1].status==PathStatus::Clear,"Unverified route accepted");
+                capture("03_route_selected"); sawRoute=true;
+            }
+            if (!sawSecond && r.route.segmentCount==2 && r.route.currentSegment==1) { capture("04_second_segment"); sawSecond=true; }
+            if (r.state==ReachState::Succeeded) break;
+            require(r.state!=ReachState::Failed && r.state!=ReachState::Cancelled,"Desktop detour failed");
+            require(t<11999,"Desktop detour did not finish");
+        }
+        const auto& r=body.snapshot().reaches[0]; const auto& p=r.planning;
+        require(sawRoute && sawSecond && r.state==ReachState::Succeeded && r.error<=r.target.tolerance,"Desktop did not execute real waypoint detour");
+        capture("05_complete");
+        report << "direct=" << pathStatusName(direct.status) << "\ndirect_object=" << direct.object << "\ndirect_scene=" << direct.sceneVersion
+            << "\nroute_scene=" << r.collisionSceneVersion << "\nplanning_ticks=" << p.ticks << "\ncandidates=" << p.candidates
+            << "\nqueries=" << p.queries << "\nposes=" << p.poses << "\nselected_candidate=" << p.selectedCandidate
+            << "\nsegments=" << r.route.segmentCount << "\nsegment0=" << pathStatusName(r.route.segmentChecks[0].status)
+            << "\nsegment1=" << pathStatusName(r.route.segmentChecks[1].status)
+            << "\nsegment0_scene=" << r.route.segmentChecks[0].sceneVersion << "\nsegment1_scene=" << r.route.segmentChecks[1].sceneVersion
+            << "\nsegment0_start_tick=" << r.route.segmentChecks[0].segmentStartTick
+            << "\nsegment1_start_tick=" << r.route.segmentChecks[1].segmentStartTick << "\nwaypoint=";
+        for (const auto q:r.route.waypoint) report << q << ',';
+        report << "\nerror_m=" << r.error << "\ncaptures=" << captures
+            << "\ncallbacks=F2,F11,F7,F12\npreview=red_blocked_direct,green_first,blue_second,yellow_waypoint\n"
+            << "render=single_display_read_only\nGL_errors=0\nresult=PASS\n";
     }
 
     void verifyDesktopReach(GLFWwindow* window,render_opengl::OpenGLRenderer& renderer,

@@ -57,6 +57,11 @@ namespace julia::embodiment
     }
     const std::vector<ReachObservation>& BodyInstance::reachEvents() const
     { static const std::vector<ReachObservation> empty; return reach_ ? reach_->events() : empty; }
+    void BodyInstance::invalidatePath(const char* reason)
+    {
+        pathCheck_={}; pathCheck_.status=collisionScene_ ? PathStatus::Invalidated:PathStatus::Disabled;
+        pathCheck_.sceneVersion=collisionScene_ ? sceneVersion_:0; pathCheck_.detail=reason;
+    }
     BodyCommandStatus BodyInstance::apply(const BodyOperation& operation, std::uint64_t commandId)
     {
         using S = BodyCommandStatus;
@@ -68,6 +73,7 @@ namespace julia::embodiment
                 if (reach_->owns(value.joint)) throw std::invalid_argument("Coordinate owned by active reach; cancel and wait for stop");
                 const float requested = value.radians + (value.relative ? control_->coordinate(value.joint,value.coordinate) : 0);
                 const auto result = control_->setCoordinate(value.joint,value.coordinate,requested,value.policy);
+                if (collisionScene_ && result.status!=CommandStatus::Rejected) { discontinuity_=true; invalidatePath("coordinate diagnostic teleport"); }
                 return result.status == CommandStatus::Applied ? S::Applied :
                     result.status == CommandStatus::Clamped ? S::Clamped : S::Rejected;
             }
@@ -75,12 +81,13 @@ namespace julia::embodiment
             {
                 if (!control_) throw std::invalid_argument("No calibrated body control");
                 reach_->interrupt(ReachReason::CoordinatesReset);
+                invalidatePath("coordinates reset");
                 control_->reset(); discontinuity_ = true;
             }
             else if constexpr (std::is_same_v<T, SetDirectMode>)
             {
                 if (!control_) throw std::invalid_argument("No calibrated body control");
-                if (control_->enabled()!=value.enabled) reach_->interrupt(ReachReason::ModeChanged);
+                if (control_->enabled()!=value.enabled) { reach_->interrupt(ReachReason::ModeChanged); invalidatePath("mode changed"); }
                 control_->setEnabled(value.enabled); discontinuity_ = true;
             }
             else if constexpr (std::is_same_v<T, SetRoot>)
@@ -89,7 +96,9 @@ namespace julia::embodiment
                 if (!finite(value.pose.position) || !std::isfinite(q.x) || !std::isfinite(q.y) ||
                     !std::isfinite(q.z) || !std::isfinite(q.w) || !std::isfinite(glm::length(q)) || glm::length(q) < 1e-8f)
                     throw std::invalid_argument("Invalid root pose");
+                if (collisionScene_ && glm::length(value.pose.position)>100) throw std::invalid_argument("Collision mode supports root within 100 world metres");
                 if (reach_) reach_->interrupt(ReachReason::RootChanged);
+                invalidatePath("root teleported");
                 root_ = {value.pose.position, glm::normalize(q)};
                 discontinuity_ = true; // SetRoot is a teleport, never a velocity-limited move.
             }
@@ -97,6 +106,7 @@ namespace julia::embodiment
             {
                 root_ = {};
                 if (reach_) reach_->reset();
+                invalidatePath("body reset; scene retained");
                 if (control_) { control_->reset(); control_->setEnabled(false); }
                 eyes_.reset(); eyes_.setEnabled(initialEyes_);
                 if (!asset_->animations().empty()) player_.selectClip(0);
@@ -107,8 +117,42 @@ namespace julia::embodiment
             else if constexpr (std::is_same_v<T, StartReach> || std::is_same_v<T, RetargetReach>)
             {
                 if (!reach_) throw std::invalid_argument("No calibrated body control");
-                if constexpr (std::is_same_v<T, StartReach>) reach_->start(commandId,epoch_,value.target,matrix(root_));
-                else reach_->start(value.action,epoch_,value.target,matrix(root_),true);
+                checkingCommand_=commandId;
+                const auto previousCheckCommand=pathCheck_.command;
+                try {
+                if constexpr (std::is_same_v<T, StartReach>) reach_->start(commandId,epoch_,value.target,matrix(root_),false,commandId);
+                else reach_->start(value.action,epoch_,value.target,matrix(root_),true,commandId);
+                } catch (const std::exception& error) {
+                    if (collisionScene_ && pathCheck_.command==previousCheckCommand) {
+                        pathCheck_={}; pathCheck_.command=commandId; pathCheck_.sceneVersion=sceneVersion_;
+                        // Command/IK failures are separate from geometric validation.
+                        pathCheck_.status=dynamic_cast<const ReachTargetUnreachable*>(&error) ? PathStatus::Unreachable:PathStatus::Rejected;
+                    }
+                    pathCheck_.detail=error.what();
+                    checkingCommand_=0; throw;
+                }
+                checkingCommand_=0;
+            }
+            else if constexpr (std::is_same_v<T, SetCollisionScene>)
+            {
+                if (!reach_) throw std::invalid_argument("No calibrated body control");
+                if (reach_->anyActive()) throw std::invalid_argument("Scene/settings change conflicts with certified active reach; wait for completion");
+                validateCollisionSettings(value.settings);
+                if (value.scene && (value.scene->version()<=sceneVersion_ || glm::length(root_.position)>100))
+                    throw std::invalid_argument("Scene version must increase; root must be within 100 metres");
+                collisionScene_=value.scene; collisionSettings_=value.settings; pathCheck_={};
+                if (collisionScene_) {
+                    sceneVersion_=collisionScene_->version();
+                    pathCheck_.status=PathStatus::NotChecked; pathCheck_.sceneVersion=sceneVersion_;
+                    reach_->setPathValidator([this](std::size_t side,std::span<const ArmCoordinates> path,unsigned delayTicks) {
+                        pathCheck_=checkArmPath(*control_,side,path,matrix(root_),*collisionScene_,collisionSettings_);
+                        pathCheck_.command=checkingCommand_; pathCheck_.segmentStartTick=tick_-1+delayTicks; return pathCheck_.status;
+                    },sceneVersion_);
+                    reach_->setPlanningValidator([this](std::size_t side,std::span<const ArmCoordinates> path) {
+                        return std::make_unique<ArmPathCheckJob>(*control_,side,path,matrix(root_),*collisionScene_,collisionSettings_);
+                    },[this](PathCheck check) { pathCheck_=std::move(check); });
+                } else { reach_->setPathValidator({}); reach_->setPlanningValidator({},{}); }
+                discontinuity_=true;
             }
             else if constexpr (std::is_same_v<T, CancelReach>)
             {
@@ -211,7 +255,7 @@ namespace julia::embodiment
         }
         // Commands take effect at the beginning of the interval ending at tick_.
         const auto clipTimeBefore = player_.timeSeconds();
-        if (reach_) reach_->advance();
+        if (reach_) reach_->advance(tick_);
         player_.update(runtime::BodyStepSeconds);
         if (reach_) reach_->measure(player_.globalTransforms(),matrix(root_));
         if ((!control_ || !control_->enabled()) && player_.timeSeconds() < clipTimeBefore)
@@ -226,6 +270,7 @@ namespace julia::embodiment
         current_.root = root_; current_.clipTime = player_.timeSeconds(); current_.clipIndex = player_.clipIndex();
         current_.playback = player_.state(); current_.direct = control_ && control_->enabled();
         current_.eyesEnabled = eyes_.enabled(); current_.eyes = eyes_.behavior().output();
+        current_.collisionScene=collisionScene_; current_.collisionSettings=collisionSettings_; current_.pathCheck=pathCheck_;
         if (reach_) current_.reaches = reach_->observations();
         if (control_) current_.coordinates.assign(control_->coordinates().begin(),control_->coordinates().end());
         std::fill(current_.animated.begin(),current_.animated.end(),false);
@@ -249,6 +294,8 @@ namespace julia::embodiment
     {
         if (!std::isfinite(alpha) || alpha < 0 || alpha > 1) throw std::invalid_argument("Invalid display fraction");
         BodyDisplay result(asset_->skeleton());
+        result.reaches=current_.reaches;
+        result.collisionScene=current_.collisionScene; result.pathCheck=current_.pathCheck;
         result.fromTick = previous_.tick; result.toTick = current_.tick;
         result.direct = current_.direct;
         result.coordinates = current_.coordinates;
@@ -262,6 +309,7 @@ namespace julia::embodiment
         {
             const auto& selected = alpha == 0 ? previous_ : current_;
             result.pose = selected.pose; result.root = selected.root; result.coordinates = selected.coordinates;
+            if (binding_ && result.direct && result.collisionScene) result.colliders=bodyColliders(*binding_,result.pose.globals,matrix(result.root));
             return result;
         }
         animation::setBindPose(asset_->skeleton(),result.pose.locals);
@@ -285,6 +333,7 @@ namespace julia::embodiment
         eyes_.applyOutput(result.pose.locals,base,output);
         animation::computeGlobalTransforms(asset_->skeleton(),result.pose.locals,result.pose.globals);
         animation::buildSkinningPalette(asset_->skeleton(),result.pose.globals,result.pose.palette);
+        if (binding_ && result.direct && result.collisionScene) result.colliders=bodyColliders(*binding_,result.pose.globals,matrix(result.root));
         return result;
     }
 }

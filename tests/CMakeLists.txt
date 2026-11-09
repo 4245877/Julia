@@ -76,6 +76,24 @@ endif()
 add_test(NAME arm_reach COMMAND julia_test_arm_reach "${CMAKE_SOURCE_DIR}/build/diagnostics/stage5/cpu")
 set_tests_properties(arm_reach PROPERTIES TIMEOUT 180)
 
+add_executable(julia_test_body_collision test_body_collision.cpp)
+target_compile_definitions(julia_test_body_collision PRIVATE JULIA_TEST_ASSET_DIR="${CMAKE_SOURCE_DIR}/assets")
+target_link_libraries(julia_test_body_collision PRIVATE julia_model_import julia_embodiment julia::warnings)
+if(WIN32)
+    target_link_libraries(julia_test_body_collision PRIVATE psapi)
+endif()
+add_test(NAME body_collision COMMAND julia_test_body_collision "${CMAKE_SOURCE_DIR}/build/diagnostics/stage6a/cpu")
+set_tests_properties(body_collision PROPERTIES TIMEOUT 180)
+
+add_executable(julia_test_body_detour test_body_detour.cpp)
+target_compile_definitions(julia_test_body_detour PRIVATE JULIA_TEST_ASSET_DIR="${CMAKE_SOURCE_DIR}/assets")
+target_link_libraries(julia_test_body_detour PRIVATE julia_model_import julia_embodiment julia::warnings)
+if(WIN32)
+    target_link_libraries(julia_test_body_detour PRIVATE psapi)
+endif()
+add_test(NAME body_detour COMMAND julia_test_body_detour "${CMAKE_SOURCE_DIR}/build/diagnostics/stage6b/cpu")
+set_tests_properties(body_detour PROPERTIES TIMEOUT 240)
+
 if(NOT JULIA_BUILD_DESKTOP)
     return()
 endif()
@@ -148,3 +166,9 @@ set_tests_properties(desktop_body PROPERTIES WORKING_DIRECTORY "${CMAKE_BINARY_D
 add_test(NAME desktop_ik COMMAND $<TARGET_FILE:julia_desktop>
     --verify-ik "${CMAKE_SOURCE_DIR}/build/diagnostics/stage5/gpu")
 set_tests_properties(desktop_ik PROPERTIES WORKING_DIRECTORY "${CMAKE_BINARY_DIR}" TIMEOUT 180 RUN_SERIAL TRUE)
+add_test(NAME desktop_collision COMMAND $<TARGET_FILE:julia_desktop>
+    --verify-collision "${CMAKE_SOURCE_DIR}/build/diagnostics/stage6a/gpu")
+set_tests_properties(desktop_collision PROPERTIES WORKING_DIRECTORY "${CMAKE_BINARY_DIR}" TIMEOUT 180 RUN_SERIAL TRUE)
+add_test(NAME desktop_detour COMMAND $<TARGET_FILE:julia_desktop>
+    --verify-detour "${CMAKE_SOURCE_DIR}/build/diagnostics/stage6b/gpu")
+set_tests_properties(desktop_detour PROPERTIES WORKING_DIRECTORY "${CMAKE_BINARY_DIR}" TIMEOUT 180 RUN_SERIAL TRUE)

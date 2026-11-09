@@ -1,10 +1,5 @@
-﻿add_library(julia_world INTERFACE)
-
-target_include_directories(julia_world INTERFACE
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
-
-target_link_libraries(julia_world INTERFACE
-    julia_core
-    julia_events
-)
+﻿find_package(glm CONFIG REQUIRED)
+add_library(julia_world STATIC src/CollisionScene.cpp)
+target_include_directories(julia_world PUBLIC include)
+target_link_libraries(julia_world PUBLIC glm::glm PRIVATE julia::warnings)
+target_compile_features(julia_world PUBLIC cxx_std_20)

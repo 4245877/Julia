@@ -18,6 +18,8 @@ namespace julia::embodiment
     struct SetDirectMode { bool enabled; };
     struct ResetBody {};
     struct SetRoot { RootPose pose; };
+    // Changes are rejected while a reach is active. nullptr explicitly disables checks.
+    struct SetCollisionScene { std::shared_ptr<const world::CollisionScene> scene; CollisionSettings settings; };
     enum class ClipOperation { Select, Play, Pause, Stop, Seek, Loop, TogglePlay, ToggleLoop, Step, Next };
     struct ClipCommand { ClipOperation operation; double value = 0; };
     enum class EyeOperation { Enable, Natural, AutoBlink, AutoGaze, Blink, Gaze, Neutral,
@@ -25,7 +27,7 @@ namespace julia::embodiment
     // Gaze in degrees; Target in resource coordinates; manual blink in x/y [0,1].
     struct EyeCommand { EyeOperation operation; glm::vec3 value{0}; };
     using BodyOperation = std::variant<SetCoordinate, ResetCoordinates, SetDirectMode, ResetBody,
-        SetRoot, ClipCommand, EyeCommand, StartReach, RetargetReach, CancelReach>;
+        SetRoot, ClipCommand, EyeCommand, StartReach, RetargetReach, CancelReach, SetCollisionScene>;
     struct BodyCommand
     {
         std::uint64_t id, target, tick, epoch;
@@ -50,6 +52,9 @@ namespace julia::embodiment
         std::vector<glm::vec3> coordinates; // Diagnostic q, never inferred from arbitrary clips.
         render::EyeBehaviorOutput eyes;
         std::array<ReachObservation,2> reaches;
+        std::shared_ptr<const world::CollisionScene> collisionScene;
+        CollisionSettings collisionSettings;
+        PathCheck pathCheck; // Most recent proposed path, including rejected replacements.
         // Base clip components only; exact matrices for all nonanimated nodes.
         std::vector<NodeTRS> components;
         std::vector<bool> animated;
@@ -63,9 +68,13 @@ namespace julia::embodiment
         double time = 0;
         RootPose root;
         bool direct = false;
+        std::array<ReachObservation,2> reaches; // Metadata captured with the same snapshot pair as geometry.
         std::vector<glm::vec3> coordinates;
         animation::Pose pose;
         explicit BodyDisplay(const animation::Skeleton& skeleton) : pose(skeleton) {}
+        std::vector<BodyCollider> colliders;
+        std::shared_ptr<const world::CollisionScene> collisionScene;
+        PathCheck pathCheck;
     };
     // Single writer; all exposed state is const. Asset is held alive, binding is owned.
     // Noncopyable: internal component references/pointers always address this instance.
@@ -108,7 +117,12 @@ namespace julia::embodiment
         std::unordered_set<std::uint64_t> seen_;
         std::vector<BodyCommandResult> results_;
         BodySnapshot previous_, current_;
+        std::shared_ptr<const world::CollisionScene> collisionScene_;
+        CollisionSettings collisionSettings_;
+        PathCheck pathCheck_;
+        std::uint64_t sceneVersion_ = 0, checkingCommand_ = 0;
         void capture();
+        void invalidatePath(const char* reason);
         BodyCommandStatus apply(const BodyOperation& operation, std::uint64_t commandId);
     };
 }
