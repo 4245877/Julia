@@ -13,13 +13,74 @@ namespace julia::embodiment
     enum class TargetSpace { Body, World };
     enum class ReachState { Idle, Moving, Settling, Succeeded, Failed, Cancelled, Planning };
     enum class MovementStrategy { DirectOnly, AllowDetour };
+    enum class RouteSelection { FirstValid, Ranked };
+    enum class SelectionCompletion { Running, FirstValid, FiniteSet, RankingLimit, BudgetExhausted,
+        CheckIncomplete, InvalidInitial, IkFailed, Cancelled, MotionUnavailable };
+    const char* selectionCompletionName(SelectionCompletion completion);
+    // A dimensionless direction, NOT a point. Normalized and frozen in Body at
+    // command application; World uses inverse root rotation (no translation).
+    struct ElbowPreference
+    {
+        glm::vec3 direction{0,0,1};
+        TargetSpace space = TargetSpace::Body;
+    };
+    struct RankingSettings
+    {
+        double elbowWeight = 1, travelWeight = .05, durationWeight = .02;
+        unsigned additionalTicks = 128; // Work ticks after the first fully Clear route.
+        unsigned maxEvaluations = 36; // Shared attempt budget: 4 directs + 32 waypoints.
+    };
+    enum class ElbowPreferenceStatus { Absent, Defined, StraightArm, ParallelDirection, CollapsedAxis };
+    const char* elbowPreferenceStatusName(ElbowPreferenceStatus status);
+    struct ElbowEvaluation
+    {
+        ElbowPreferenceStatus status = ElbowPreferenceStatus::Absent;
+        double penalty = 0; // [0,1], lower is better; degenerate geometry costs 1.
+        glm::vec3 shoulder{0}, elbow{0}, wrist{0}; // Actual FK in Body metres.
+    };
+    ElbowEvaluation evaluateElbowPreference(glm::vec3 shoulder,glm::vec3 elbow,glm::vec3 wrist,
+        const std::optional<glm::vec3>& directionBody);
+    struct RouteScore
+    {
+        ElbowEvaluation elbow;
+        double travel = 0; // Sum over segments of mean |dq| / coordinate range.
+        double duration = 0; // Checked motion seconds / 1 second, including waypoint hold.
+        double total = 0;
+        std::int64_t key = 0; // round(total * 1e9); ties retain earlier Clear route.
+    };
+    struct RouteEvaluation
+    {
+        unsigned configuration = 0, candidate = 0, segments = 0;
+        RouteScore score;
+    };
     enum class PlanningState { Idle, WaitingForStop, CheckingDirect, CheckingFirst, CheckingSecond,
-        Paused, RouteReady, Exhausted, BudgetExhausted, CheckIncomplete, InvalidInitial, IkFailed, Cancelled, MotionUnavailable };
+        Paused, RouteReady, Exhausted, BudgetExhausted, CheckIncomplete, InvalidInitial, IkFailed, Cancelled, MotionUnavailable,
+        GeneratingIK };
     const char* planningStateName(PlanningState state);
     struct DetourSettings
     {
         unsigned maxCandidates = 32, posesPerTick = 24, queriesPerTick = 2048, maxTotalQueries = 1000000;
+        unsigned maxConfigurations = 1; // Explicit 6B compatibility; opt in to 2..4.
+        unsigned iterationsPerTick = 16, seedsPerTick = 1;
+        unsigned maxIkIterations = 8192, maxSeedAttempts = 30, maxTotalPoses = 32768;
     };
+    enum class ConfigurationOutcome { Pending, Blocked, QuotaExhausted, CheckIncomplete, MotionUnavailable, CandidatesExhausted, Accepted, Verified };
+    const char* configurationOutcomeName(ConfigurationOutcome outcome);
+    struct ConfigurationObservation
+    {
+        ArmCoordinates coordinates{};
+        float error = 0;
+        PathStatus directStatus = PathStatus::NotChecked, lastStatus = PathStatus::NotChecked;
+        ConfigurationOutcome outcome = ConfigurationOutcome::Pending;
+        unsigned queries = 0, poses = 0, candidates = 0;
+        std::uint64_t object = 0;
+        std::uint32_t bodyForm = 0, otherBodyForm = 0;
+        double gap = 0;
+        std::string detail;
+    };
+    enum class IkSeedOutcome { None, Accepted, Duplicate, LocalFailure, FkRejected };
+    const char* ikSeedOutcomeName(IkSeedOutcome outcome);
+    enum class IkSearchCompletion { Running, ConfigurationLimit, SeedSetExhausted, BudgetExhausted };
     struct PlanningObservation
     {
         PlanningState state = PlanningState::Idle;
@@ -31,6 +92,26 @@ namespace julia::embodiment
         std::array<unsigned,2> segmentDurations{};
         std::uint64_t command = 0;
         std::size_t scratchBytes = 0;
+        PlanningState stage = PlanningState::Idle; // Remains meaningful while Paused.
+        PlanningState budgetStage = PlanningState::Idle;
+        unsigned seedAttempts = 0, seedsProcessed = 0, ikIterations = 0, duplicates = 0, failedSeeds = 0, fkChecks = 0;
+        unsigned configurations = 0, currentConfiguration = 0, selectedConfiguration = 0;
+        unsigned tickIterations = 0, tickSeeds = 0, tickQueries = 0, tickPoses = 0, tickCandidates = 0;
+        unsigned budgetConfigurations = 0, budgetCandidates = 0;
+        ArmCoordinates finalCoordinates{};
+        std::array<ConfigurationObservation,4> solutions{};
+        std::string budgetReason;
+        IkSeedOutcome lastSeedOutcome = IkSeedOutcome::None;
+        IkSearchCompletion ikCompletion = IkSearchCompletion::Running;
+        double ikMicroseconds = 0, pathMicroseconds = 0, segmentMicroseconds = 0;
+        RouteSelection selection = RouteSelection::FirstValid;
+        SelectionCompletion completion = SelectionCompletion::Running;
+        RankingSettings ranking;
+        std::optional<glm::vec3> elbowDirectionBody;
+        RouteScore score; // Best fully checked route, never an unverified endpoint.
+        unsigned scoreEvaluations = 0, tickScoreEvaluations = 0, firstClearTick = 0;
+        std::vector<RouteEvaluation> evaluations; // Value-owned, bounded by maxEvaluations <= 36.
+        double scoreMicroseconds = 0;
     };
     // JointLimited is a constrained LOCAL result, never a global infeasibility proof.
     enum class ReachReason { None, Reached, GeometricRange, JointLimited, LocalNoConvergence,
@@ -50,6 +131,9 @@ namespace julia::embodiment
         float settleSeconds = .1f;
         MovementStrategy strategy = MovementStrategy::DirectOnly;
         DetourSettings detour;
+        RouteSelection selection = RouteSelection::FirstValid;
+        std::optional<ElbowPreference> elbowPreference;
+        RankingSettings ranking;
     };
     struct StartReach { ReachTarget target; }; // Action ID = this command's ID + epoch.
     struct RetargetReach { std::uint64_t action; ReachTarget target; };
@@ -66,6 +150,8 @@ namespace julia::embodiment
         glm::vec3 goalBody{0}, referenceBody{0}, actualBody{0}, actualWorld{0};
         glm::vec3 shoulderBody{0}, elbowBody{0}, bendNormalBody{0,0,1};
         float error = 0;
+        std::optional<glm::vec3> elbowDirectionBody;
+        ElbowEvaluation actualElbow; // Separate from original effector success.
         float maxMeasuredSpeed = 0, maxMeasuredAcceleration = 0;
         unsigned iterations = 0;
         double solveMicroseconds = 0; // Telemetry only; never affects simulation.
@@ -81,6 +167,24 @@ namespace julia::embodiment
     };
     ArmSolution solveArmPosition(const DirectBodyControl& control, const ReachTarget& target,
         glm::vec3 goalBody);
+
+    // Bounded, resumable production multi-start IK. Owns frozen control coordinates;
+    // binding/asset must outlive it. A call never exceeds its iteration/start limits.
+    class ArmPositionSearchJob
+    {
+    public:
+        ArmPositionSearchJob(const DirectBodyControl& control, const ReachTarget& target, glm::vec3 goalBody);
+        ~ArmPositionSearchJob();
+        bool advance(unsigned iterations, unsigned seeds);
+        bool done() const;
+        bool budgetExhausted() const;
+        const PlanningObservation& observation() const;
+        const std::vector<ArmSolution>& solutions() const;
+        std::size_t scratchBytes() const;
+    private:
+        struct Impl;
+        std::unique_ptr<Impl> impl_;
+    };
 
     // Two per-instance motion slots; event storage is proportional to commands in one tick.
     class ArmReach
@@ -129,9 +233,10 @@ namespace julia::embodiment
         std::array<std::optional<Motion>,2> nextSegments_;
         PlanningValidator planningValidator_;
         PathReporter pathReporter_;
-        void requestDetour(std::size_t side, ReachObservation proposal, const ArmSolution& solution, bool retarget);
+        void requestDetour(std::size_t side, ReachObservation proposal, bool retarget);
         void advancePlanning(std::size_t side);
         void endPlanning(std::size_t side, PlanningState state, ReachReason reason);
+        void admitBest(std::size_t side, SelectionCompletion completion);
         Motion restSegment(std::size_t side, const std::array<double,6>& from,
             const std::array<double,6>& to, const ReachObservation& proposal) const;
         static std::vector<ArmCoordinates> samples(const Motion& motion);

@@ -36,7 +36,7 @@ int main(int argc,char** argv)
         ReachTarget reachTarget;
         int effectorOffset=0;
         RootPose root;
-        bool eyes=true;
+        bool eyes=true, multiDemo=false;
         std::optional<bool> collisionDemo;
         std::filesystem::path source=std::filesystem::path{JULIA_ASSET_DIR}/"models/Raphtalia_prepared.fbx", output;
         for (int i=1;i<argc;++i)
@@ -47,15 +47,24 @@ int main(int argc,char** argv)
                 std::cout << "julia_body_sim [--ticks N] [--clip INDEX] [--elbow RADIANS] [--no-eyes] [--model PATH] [--output CSV]\n"
                     << "  --reach X Y Z [--right] [--effector wrist|palm|grip] [--world] [--root X Y Z YAW_RADIANS]\n"
                     << "  [--retarget X Y Z --retarget-tick N] [--cancel-tick N] [--speed RAD_S] [--acceleration RAD_S2]\n"
-                    << "  --collision-demo free|blocked (static CPU scene; default demo target)\n"
-                    << "  --allow-detour [--detour-candidates N] [--planning-queries-per-tick N] [--planning-query-budget N]\n";
+                    << "  --collision-demo free|blocked|multik (static CPU scene; default demo target)\n"
+                    << "  --allow-detour [--ik-configurations 1..4] [--detour-candidates N]\n"
+                    << "  --ranked --elbow-direction X Y Z [--elbow-world] --ranking-extra-ticks N --ranking-evaluations N\n"
+                    << "  --elbow-weight W --travel-weight W --duration-weight W (finite nonnegative weights)\n"
+                    << "  --ik-iterations-per-tick N --ik-iteration-budget N --ik-seed-budget N\n"
+                    << "  --planning-poses-per-tick N --planning-pose-budget N --planning-queries-per-tick N --planning-query-budget N\n";
                 return 0;
             }
             if (argument=="--allow-detour") { reachTarget.strategy=MovementStrategy::AllowDetour; continue; }
+            if (argument=="--ranked") { reachTarget.selection=RouteSelection::Ranked; continue; }
+            if (argument=="--elbow-world") {
+                if (!reachTarget.elbowPreference) reachTarget.elbowPreference=ElbowPreference{};
+                reachTarget.elbowPreference->space=TargetSpace::World; continue;
+            }
             if (argument=="--no-eyes") { eyes=false; continue; }
             if (argument=="--right") { reachTarget.arm=ArmSide::Right; continue; }
             if (argument=="--world") { reachTarget.space=TargetSpace::World; continue; }
-            if (argument=="--reach" || argument=="--retarget" || argument=="--root")
+            if (argument=="--reach" || argument=="--retarget" || argument=="--root" || argument=="--elbow-direction")
             {
                 const int count=argument=="--root" ? 4:3;
                 if (i+count>=argc) throw std::invalid_argument("Position requires X Y Z; root also requires yaw radians");
@@ -63,6 +72,10 @@ int main(int argc,char** argv)
                 for (int k=0;k<3;++k) position[k]=number<float>(argv[++i]);
                 if (argument=="--reach") reachPosition=position;
                 else if (argument=="--retarget") retargetPosition=position;
+                else if (argument=="--elbow-direction") {
+                    if (!reachTarget.elbowPreference) reachTarget.elbowPreference=ElbowPreference{};
+                    reachTarget.elbowPreference->direction=position;
+                }
                 else { root.position=position; root.rotation=glm::angleAxis(number<float>(argv[++i]),glm::vec3{0,1,0}); }
                 continue;
             }
@@ -76,9 +89,20 @@ int main(int argc,char** argv)
             else if (argument=="--retarget-tick") retargetTick=number<std::uint64_t>(value);
             else if (argument=="--cancel-tick") cancelTick=number<std::uint64_t>(value);
             else if (argument=="--collision-demo") {
-                if (value!="free" && value!="blocked") throw std::invalid_argument("collision-demo requires free|blocked");
-                collisionDemo=value=="blocked";
+                if (value!="free" && value!="blocked" && value!="multik") throw std::invalid_argument("collision-demo requires free|blocked|multik");
+                collisionDemo=value=="blocked"; multiDemo=value=="multik";
             }
+            else if (argument=="--ik-configurations") reachTarget.detour.maxConfigurations=number<unsigned>(value);
+            else if (argument=="--ranking-extra-ticks") reachTarget.ranking.additionalTicks=number<unsigned>(value);
+            else if (argument=="--ranking-evaluations") reachTarget.ranking.maxEvaluations=number<unsigned>(value);
+            else if (argument=="--elbow-weight") reachTarget.ranking.elbowWeight=number<double>(value);
+            else if (argument=="--travel-weight") reachTarget.ranking.travelWeight=number<double>(value);
+            else if (argument=="--duration-weight") reachTarget.ranking.durationWeight=number<double>(value);
+            else if (argument=="--ik-iterations-per-tick") reachTarget.detour.iterationsPerTick=number<unsigned>(value);
+            else if (argument=="--ik-iteration-budget") reachTarget.detour.maxIkIterations=number<unsigned>(value);
+            else if (argument=="--ik-seed-budget") reachTarget.detour.maxSeedAttempts=number<unsigned>(value);
+            else if (argument=="--planning-pose-budget") reachTarget.detour.maxTotalPoses=number<unsigned>(value);
+            else if (argument=="--planning-poses-per-tick") reachTarget.detour.posesPerTick=number<unsigned>(value);
             else if (argument=="--detour-candidates") reachTarget.detour.maxCandidates=number<unsigned>(value);
             else if (argument=="--planning-queries-per-tick") reachTarget.detour.queriesPerTick=number<unsigned>(value);
             else if (argument=="--planning-query-budget") reachTarget.detour.maxTotalQueries=number<unsigned>(value);
@@ -98,7 +122,8 @@ int main(int argc,char** argv)
         if (collisionDemo) {
             if (!body.control()) throw std::invalid_argument("Collision demo requires Raphtalia calibration");
             const auto worldFromBody=glm::translate(glm::mat4{1},root.position)*glm::mat4_cast(root.rotation);
-            const auto demo=app::collisionDemo(body.control()->binding(),*collisionDemo,1,worldFromBody,reachTarget.arm,static_cast<unsigned>(effectorOffset));
+            const auto demo=multiDemo ? app::multiConfigurationDemo(body.control()->binding(),1,worldFromBody,reachTarget.arm,static_cast<unsigned>(effectorOffset)):
+                app::collisionDemo(body.control()->binding(),*collisionDemo,1,worldFromBody,reachTarget.arm,static_cast<unsigned>(effectorOffset));
             body.enqueue(SetCollisionScene{demo.scene,{}});
             if (!reachPosition) reachPosition=reachTarget.space==TargetSpace::World ? glm::vec3{worldFromBody*glm::vec4{demo.target.position,1}}:demo.target.position;
         }
@@ -119,7 +144,7 @@ int main(int argc,char** argv)
         {
             if (!output.parent_path().empty()) std::filesystem::create_directories(output.parent_path());
             csv.open(output); if (!csv) throw std::runtime_error("Cannot open output CSV");
-            csv << "tick,simulation_seconds,clip_seconds,left_elbow_radians,gaze_yaw_degrees,gaze_pitch_degrees,blink_left,blink_right,action,state,error_m,goal_x,goal_y,goal_z,reference_x,reference_y,reference_z,actual_x,actual_y,actual_z,reason,path_status,scene_version,body_form,other_body_form,object,from_tick,to_tick,gap_m,queries,check_us,strategy,planning_state,direct_status,candidates,total_queries,total_poses,planning_ticks,selected_candidate,route_segments,current_segment,segment0_status,segment1_status,segment0_ticks,segment1_ticks,waypoint0,waypoint1,waypoint2,waypoint3,waypoint4,waypoint5,planning_scratch_bytes,accepted_route_segments,accepted_current_segment,accepted_selected_candidate,route_segment0_status,route_segment1_status,route_segment0_scene_version,route_segment1_scene_version,route_segment0_start_tick,route_segment1_start_tick\n" << std::setprecision(17);
+            csv << "tick,simulation_seconds,clip_seconds,left_elbow_radians,gaze_yaw_degrees,gaze_pitch_degrees,blink_left,blink_right,action,state,error_m,goal_x,goal_y,goal_z,reference_x,reference_y,reference_z,actual_x,actual_y,actual_z,reason,path_status,scene_version,body_form,other_body_form,object,from_tick,to_tick,gap_m,queries,check_us,strategy,planning_state,direct_status,candidates,total_queries,total_poses,planning_ticks,selected_candidate,route_segments,current_segment,segment0_status,segment1_status,segment0_ticks,segment1_ticks,waypoint0,waypoint1,waypoint2,waypoint3,waypoint4,waypoint5,planning_scratch_bytes,accepted_route_segments,accepted_current_segment,accepted_selected_candidate,route_segment0_status,route_segment1_status,route_segment0_scene_version,route_segment1_scene_version,route_segment0_start_tick,route_segment1_start_tick,planning_stage,ik_seeds,ik_processed,ik_unique,ik_duplicates,ik_failed,ik_iterations,ik_fk_checks,current_configuration,selected_configuration,tick_iterations,tick_seeds,tick_poses,tick_queries,tick_candidates,budget_reason,final0,final1,final2,final3,final4,final5,selection,selection_completion,score_evaluations,tick_score_evaluations,first_clear_tick,elbow_penalty,joint_travel,duration_s,score,score_key,elbow_status,elbow_x,elbow_y,elbow_z,score_us,elbow_direction_x,elbow_direction_y,elbow_direction_z,actual_elbow_penalty,actual_elbow_status\n" << std::setprecision(17);
         }
         runtime::FixedStepScheduler scheduler;
         scheduler.runTicks(ticks,[&] {
@@ -148,7 +173,19 @@ int main(int argc,char** argv)
                 csv << ',' << r.planning.scratchBytes << ',' << r.route.segmentCount << ',' << r.route.currentSegment << ',' << r.route.selectedCandidate << ','
                     << pathStatusName(r.route.segmentChecks[0].status) << ',' << pathStatusName(r.route.segmentChecks[1].status) << ','
                     << r.route.segmentChecks[0].sceneVersion << ',' << r.route.segmentChecks[1].sceneVersion << ','
-                    << r.route.segmentChecks[0].segmentStartTick << ',' << r.route.segmentChecks[1].segmentStartTick << '\n';
+                    << r.route.segmentChecks[0].segmentStartTick << ',' << r.route.segmentChecks[1].segmentStartTick << ','
+                    << planningStateName(r.planning.stage) << ',' << r.planning.seedAttempts << ',' << r.planning.seedsProcessed << ','
+                    << r.planning.configurations << ',' << r.planning.duplicates << ',' << r.planning.failedSeeds << ',' << r.planning.ikIterations << ',' << r.planning.fkChecks << ','
+                    << r.planning.currentConfiguration << ',' << r.route.selectedConfiguration << ',' << r.planning.tickIterations << ',' << r.planning.tickSeeds << ','
+                    << r.planning.tickPoses << ',' << r.planning.tickQueries << ',' << r.planning.tickCandidates << ',' << r.planning.budgetReason;
+                for (const auto q:r.route.finalCoordinates) csv << ',' << q;
+                csv << ',' << static_cast<int>(r.target.selection) << ',' << selectionCompletionName(r.planning.completion)
+                    << ',' << r.planning.scoreEvaluations << ',' << r.planning.tickScoreEvaluations << ',' << r.planning.firstClearTick
+                    << ',' << r.planning.score.elbow.penalty << ',' << r.planning.score.travel << ',' << r.planning.score.duration << ',' << r.planning.score.total << ',' << r.planning.score.key
+                    << ',' << elbowPreferenceStatusName(r.planning.score.elbow.status) << ',' << r.elbowBody.x << ',' << r.elbowBody.y << ',' << r.elbowBody.z
+                    << ',' << r.planning.scoreMicroseconds << ',' << (r.elbowDirectionBody ? r.elbowDirectionBody->x:0)
+                    << ',' << (r.elbowDirectionBody ? r.elbowDirectionBody->y:0) << ',' << (r.elbowDirectionBody ? r.elbowDirectionBody->z:0)
+                    << ',' << r.actualElbow.penalty << ',' << elbowPreferenceStatusName(r.actualElbow.status) << '\n';
             }
         });
         if (csv.is_open()) { csv.flush(); if (!csv) throw std::runtime_error("Cannot write output CSV"); }
@@ -161,7 +198,27 @@ int main(int argc,char** argv)
             std::cout << "planning=" << planningStateName(r.planning.state) << " direct=" << pathStatusName(r.planning.directCheck.status)
                 << " candidates=" << r.planning.candidates << " queries=" << r.planning.queries << " planning_ticks=" << r.planning.ticks
                 << " segments=" << r.route.segmentCount << " current_segment=" << r.route.currentSegment
-                << " selected=" << r.route.selectedCandidate << " scratch_bytes=" << r.planning.scratchBytes << '\n';
+                << " configuration=" << r.route.selectedConfiguration << " unique=" << r.planning.configurations << " seeds=" << r.planning.seedAttempts << " duplicates=" << r.planning.duplicates << " iterations=" << r.planning.ikIterations
+                << " selected=" << r.route.selectedCandidate << " scratch_bytes=" << r.planning.scratchBytes
+                << " last_seed=" << ikSeedOutcomeName(r.planning.lastSeedOutcome) << " budget_reason=" << r.planning.budgetReason << '\n';
+            std::cout << "selection=" << (r.target.selection==RouteSelection::Ranked ? "Ranked":"FirstValid")
+                << " completion=" << selectionCompletionName(r.planning.completion) << " evaluations=" << r.planning.scoreEvaluations
+                << " elbow=" << r.planning.score.elbow.penalty << " travel=" << r.planning.score.travel << " duration=" << r.planning.score.duration
+                << " score=" << r.planning.score.total << " key=" << r.planning.score.key << " score_us=" << r.planning.scoreMicroseconds
+                << " actual_elbow=" << r.elbowBody.x << ',' << r.elbowBody.y << ',' << r.elbowBody.z
+                << " preference_status=" << elbowPreferenceStatusName(r.actualElbow.status) << '\n';
+            for (unsigned i=0;i<r.planning.scoreEvaluations;++i) {
+                const auto& e=r.planning.evaluations[i];
+                std::cout << "verified_route=" << i+1 << " configuration=" << e.configuration << " candidate=" << e.candidate << " segments=" << e.segments
+                    << " elbow=" << e.score.elbow.penalty << " travel=" << e.score.travel << " duration=" << e.score.duration << " score=" << e.score.total << '\n';
+            }
+        }
+        if (reachPosition) for (unsigned i=0;i<body.snapshot().reaches[reachTarget.arm==ArmSide::Left ? 0:1].planning.configurations;++i) {
+            const auto& c=body.snapshot().reaches[reachTarget.arm==ArmSide::Left ? 0:1].planning.solutions[i];
+            std::cout << "configuration=" << i+1 << " error=" << c.error << " direct=" << pathStatusName(c.directStatus) << " outcome=" << configurationOutcomeName(c.outcome)
+                << " forms=" << c.bodyForm << ',' << c.otherBodyForm << " object=" << c.object << " gap=" << c.gap << " detail=" << c.detail << " q=";
+            for (float q:c.coordinates) std::cout << q << ',';
+            std::cout << '\n';
         }
         if (collisionDemo) { const auto& p=body.snapshot().pathCheck;
             std::cout << "path=" << pathStatusName(p.status) << " scene=" << p.sceneVersion << " forms=" << p.bodyForm << ',' << p.otherBodyForm << " object=" << p.object

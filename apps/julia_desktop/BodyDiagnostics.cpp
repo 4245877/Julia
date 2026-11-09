@@ -36,13 +36,20 @@ namespace julia::desktop
         const auto& reach=body_.snapshot().reaches[reachArm_==ArmSide::Left ? 0:1];
         s << "IK " << (reachArm_==ArmSide::Left ? "L":"R");
         s << (reachStrategy_==MovementStrategy::AllowDetour ? " detour":" direct");
+        s << (reachSelection_==RouteSelection::Ranked ? " Ranked":" FirstValid");
+        if (reachSelection_==RouteSelection::Ranked) s << (elbowPositive_ ? " elbow +X":" elbow -X");
         if (reach.action) s << " #" << reach.action << ' ' << (reach.cancellationPending && (reach.state==ReachState::Moving || reach.state==ReachState::Settling) ? "stopping":reachStateName(reach.state))
             << " err=" << std::fixed << std::setprecision(1) << reach.error*1000 << "mm " << reachReasonName(reach.reason);
         if (reach.action && (reach.target.strategy==MovementStrategy::AllowDetour || reach.planning.state!=PlanningState::Idle || reach.route.segmentCount)) {
             const auto& p=reach.planning;
             s << " plan=" << planningStateName(p.state) << " direct=" << pathStatusName(p.directCheck.status)
-                << " cand=" << p.candidates << " q=" << p.queries;
+                << " stage=" << planningStateName(p.stage) << " seeds=" << p.seedsProcessed << '/' << p.seedAttempts
+                << " IK=" << p.ikIterations << " unique=" << p.configurations << " selected=" << reach.route.selectedConfiguration
+                << " cand=" << p.candidates << " q=" << p.queries << " tick=" << p.tickIterations << '/' << p.tickPoses << '/' << p.tickQueries;
             if (reach.route.segmentCount) s << " seg=" << reach.route.currentSegment+1 << '/' << reach.route.segmentCount;
+            if (p.selection==RouteSelection::Ranked) s << " Clear=" << p.scoreEvaluations << " E/J/T=" << std::setprecision(4)
+                << p.score.elbow.penalty << '/' << p.score.travel << '/' << p.score.duration << " score=" << p.score.total
+                << " end=" << selectionCompletionName(p.completion);
         }
         s << " target " << std::fixed << std::setprecision(2) << reachPosition_.x << ',' << reachPosition_.y << ',' << reachPosition_.z;
         s << " | BODY " << (control_.enabled() ? "ON ":"OFF ") << j.name << '/' << c.name
@@ -60,6 +67,16 @@ namespace julia::desktop
             body_.enqueue(SetDirectMode{!enabled}); pendingMode_=std::pair{body_.snapshot().tick+1,!enabled};
             result_="queued";
         }
+        else if (key==GLFW_KEY_F11 && (mods&GLFW_MOD_SHIFT))
+        {
+            const auto& scene=body_.snapshot().collisionScene;
+            if (scene) sceneRevision_=std::max(sceneRevision_,scene->version());
+            const auto root=body_.snapshot().root;
+            const auto demo=app::multiConfigurationDemo(control_.binding(),++sceneRevision_,
+                glm::translate(glm::mat4{1},root.position)*glm::mat4_cast(root.rotation));
+            body_.enqueue(SetCollisionScene{demo.scene,{}}); reachPosition_=demo.target.position;
+            result_="multi-IK demo scene queued";
+        }
         else if (key==GLFW_KEY_F11)
         {
             const auto& scene=body_.snapshot().collisionScene;
@@ -73,6 +90,20 @@ namespace julia::desktop
                 body_.enqueue(SetCollisionScene{demo.scene,{}}); reachPosition_=demo.target.position;
             }
             result_="scene change queued (idle only)";
+        }
+        else if (key==GLFW_KEY_F12 && (mods&GLFW_MOD_CONTROL))
+        {
+            reachSelection_=reachSelection_==RouteSelection::FirstValid ? RouteSelection::Ranked:RouteSelection::FirstValid;
+            result_="selection edited; F7 to commit";
+        }
+        else if (key==GLFW_KEY_F12 && (mods&GLFW_MOD_ALT))
+        {
+            elbowPositive_=!elbowPositive_; result_="elbow direction edited; F7 to commit";
+        }
+        else if (key==GLFW_KEY_F12 && (mods&GLFW_MOD_SHIFT))
+        {
+            reachConfigurations_=reachConfigurations_==1 ? 4:1;
+            result_="IK configuration limit="+std::to_string(reachConfigurations_);
         }
         else if (key==GLFW_KEY_F12)
         {
@@ -90,7 +121,9 @@ namespace julia::desktop
             }
             else
             {
-                ReachTarget target; target.arm=reachArm_; target.position=reachPosition_; target.strategy=reachStrategy_;
+                ReachTarget target; target.arm=reachArm_; target.position=reachPosition_; target.strategy=reachStrategy_; target.detour.maxConfigurations=reachConfigurations_;
+                target.selection=reachSelection_;
+                if (target.selection==RouteSelection::Ranked) target.elbowPreference=ElbowPreference{{elbowPositive_ ? 1.0f:-1.0f,0,0},TargetSpace::Body};
                 target.effector=reachArm_==ArmSide::Left ? EffectorId::LeftWrist:EffectorId::RightWrist;
                 const auto& current=body_.snapshot().reaches[reachArm_==ArmSide::Left ? 0:1];
                 if (current.state==ReachState::Moving || current.state==ReachState::Settling || current.state==ReachState::Planning)
@@ -207,13 +240,13 @@ namespace julia::desktop
                 drawTrace(route.directCheck,{1,.15f,.1f});
                 for (unsigned segment=0;segment<route.segmentCount;++segment)
                     drawTrace(route.segmentChecks[segment],segment==0 ? glm::vec3{.2f,1,.25f}:glm::vec3{.15f,.7f,1});
-                if (route.segmentCount==2) {
+                const auto drawPose=[&](const ArmCoordinates& q,glm::vec3 color) {
                     auto coordinates=display.coordinates;
                     const auto ids=reach.target.arm==ArmSide::Left ?
                         std::array{JointId::LeftShoulder,JointId::LeftElbow,JointId::LeftWrist}:
                         std::array{JointId::RightShoulder,JointId::RightElbow,JointId::RightWrist};
                     for (std::size_t k=0;k<6;++k)
-                        coordinates[b.jointIndex(ids[k<3 ? 0:k==3 ? 1:2])][static_cast<int>(k<3 ? k:k==3 ? 0:k-4)]=route.waypoint[k];
+                        coordinates[b.jointIndex(ids[k<3 ? 0:k==3 ? 1:2])][static_cast<int>(k<3 ? k:k==3 ? 0:k-4)]=q[k];
                     animation::Pose waypoint(b.asset().skeleton());
                     DirectBodyControl preview(control_);
                     for (std::size_t j=0;j<p.joints.size();++j)
@@ -221,14 +254,20 @@ namespace julia::desktop
                             preview.setCoordinate(p.joints[j].id,k,coordinates[j][static_cast<int>(k)]);
                     preview.apply(waypoint.locals);
                     animation::computeGlobalTransforms(b.asset().skeleton(),waypoint.locals,waypoint.globals);
-                    cross(glm::vec3{b.effectorFrame(reach.target.effector,waypoint.globals)[3]},{1,1,.1f},.025f);
-                }
+                    const auto a=glm::vec3{b.jointFrame(ids[0],waypoint.globals)[3]},
+                        e=glm::vec3{b.jointFrame(ids[1],waypoint.globals)[3]}, w=glm::vec3{b.jointFrame(ids[2],waypoint.globals)[3]};
+                    line(a,e,color); line(e,w,color); axes(b.effectorFrame(reach.target.effector,waypoint.globals),.045f);
+                    cross(glm::vec3{b.effectorFrame(reach.target.effector,waypoint.globals)[3]},color,.025f);
+                };
+                if (route.segmentCount==2) drawPose(route.waypoint,{1,1,.1f});
+                if (route.selectedConfiguration) drawPose(route.finalCoordinates,{1,.4f,1});
             }
         }
         cross(reachPosition_,{1,.2f,1},.018f);
         for (std::size_t side=0;side<2;++side)
         {
             const auto& r=display.reaches[side]; if (!r.action) continue;
+            if (r.elbowDirectionBody) line(r.shoulderBody,r.shoulderBody+*r.elbowDirectionBody*.18f,{1,.6f,.05f});
             const auto shoulder=side==0 ? JointId::LeftShoulder:JointId::RightShoulder,
                 elbow=side==0 ? JointId::LeftElbow:JointId::RightElbow;
             const auto hand=glm::vec3{b.effectorFrame(r.target.effector,globals)[3]}, e=glm::vec3{b.jointFrame(elbow,globals)[3]},
@@ -388,6 +427,165 @@ namespace julia::desktop
         report << "\nerror_m=" << r.error << "\ncaptures=" << captures
             << "\ncallbacks=F2,F11,F7,F12\npreview=red_blocked_direct,green_first,blue_second,yellow_waypoint\n"
             << "render=single_display_read_only\nGL_errors=0\nresult=PASS\n";
+    }
+
+    void verifyDesktopMultiIK(GLFWwindow* window,render_opengl::OpenGLRenderer& renderer,
+        const render_opengl::GLModel& model,BodyInstance& body,BodyDiagnostics& diagnostics,
+        const glm::mat4& fit,const std::filesystem::path& output,void (*input)(GLFWwindow*,int,int,int,int))
+    {
+        std::filesystem::create_directories(output);
+        std::ofstream report(output/"desktop_multik.txt"),csv(output/"ticks.csv");
+        if (!report || !csv) throw std::runtime_error("Cannot write detour evidence");
+        report << std::setprecision(12) << "process=julia_desktop\nGL_RENDERER=" << glGetString(GL_RENDERER) << '\n';
+        csv << "tick,state,planning_state,candidates,queries,poses,planning_ticks,segments,current_segment,error_m,stage,seeds,iterations,unique,selected_configuration,tick_iterations,tick_poses,tick_queries\n";
+        const auto require=[](bool ok,const char* message) { if (!ok) throw std::runtime_error(message); };
+        unsigned captures=0;
+        const auto capture=[&](const std::string& name) {
+            render_opengl::CameraConfig camera;
+            const auto& b=body.control()->binding();
+            camera.target=glm::vec3{fit*glm::inverse(b.profile().bodyFromResource)*glm::vec4{.13f,1.10f,.18f,1}};
+            camera.position=camera.target+glm::vec3{1,.25f,2.1f}; renderer.setCamera(camera);
+            int width=0,height=0; glfwGetFramebufferSize(window,&width,&height); renderer.resize(width,height);
+            const auto tick=body.snapshot().tick; const auto display=body.display(.5);
+            renderer.beginFrame(); renderer.renderModel(model,fit*body.resourceRoot(display.root),display.pose.palette);
+            diagnostics.draw(renderer,fit*body.resourceRoot(display.root),display);
+            const auto again=body.display(.5);
+            require(again.pose.palette==display.pose.palette && tick==body.snapshot().tick,"Detour rendering mutated body");
+            std::vector<unsigned char> pixels(static_cast<std::size_t>(width)*height*3); glPixelStorei(GL_PACK_ALIGNMENT,1);
+            glReadPixels(0,0,width,height,GL_RGB,GL_UNSIGNED_BYTE,pixels.data());
+            std::ofstream image(output/(name+".ppm"),std::ios::binary); image << "P6\n" << width << ' ' << height << "\n255\n";
+            for (int y=height-1;y>=0;--y) image.write(reinterpret_cast<const char*>(pixels.data()+static_cast<std::size_t>(y)*width*3),width*3);
+            require(static_cast<bool>(image),"Cannot save detour frame"); require(glGetError()==GL_NO_ERROR,"Detour GL error");
+            glfwSetWindowTitle(window,diagnostics.title().c_str()); glfwSwapBuffers(window); glfwPollEvents(); ++captures;
+        };
+        input(window,GLFW_KEY_F2,0,GLFW_PRESS,0);
+        input(window,GLFW_KEY_F11,0,GLFW_PRESS,GLFW_MOD_SHIFT); body.step();
+        const auto initial=body.snapshot().coordinates;
+        const auto originalScene=body.snapshot().collisionScene;
+        input(window,GLFW_KEY_F7,0,GLFW_PRESS,0); body.step();
+        require(body.results().back().status==BodyCommandStatus::Rejected && body.snapshot().pathCheck.status==PathStatus::Blocked,
+            "DirectOnly demo must remain blocked");
+        require(initial==body.snapshot().coordinates,"Rejected direct route changed start");
+        const auto direct=body.snapshot().pathCheck; capture("01_direct_blocked");
+        // First exercise the complete 6B candidate search on this identical scene.
+        input(window,GLFW_KEY_F12,0,GLFW_PRESS,0);
+        input(window,GLFW_KEY_F7,0,GLFW_PRESS,0); body.step();
+        for (unsigned t=0;t<12000 && body.snapshot().reaches[0].state==ReachState::Planning;++t) body.step();
+        require(body.snapshot().reaches[0].state==ReachState::Failed && body.snapshot().reaches[0].planning.candidates==32,"One-configuration witness must exhaust 6B");
+        require(body.snapshot().coordinates==initial,"Failed 6B witness moved body");
+        report << "single_configuration=Exhausted_32_candidates\n";
+        input(window,GLFW_KEY_F12,0,GLFW_PRESS,GLFW_MOD_SHIFT);
+        input(window,GLFW_KEY_F7,0,GLFW_PRESS,0); body.step();
+        require(body.results().back().status==BodyCommandStatus::Applied,"AllowDetour callback rejected");
+        require(body.snapshot().reaches[0].state==ReachState::Planning,"AllowDetour did not enter planning");
+        capture("02_planning");
+        bool sawRoute=false;
+        for (unsigned t=0;t<12000;++t) {
+            body.step(); const auto& r=body.snapshot().reaches[0]; const auto& p=r.planning;
+            csv << body.snapshot().tick << ',' << static_cast<int>(r.state) << ',' << static_cast<int>(p.state) << ','
+                << p.candidates << ',' << p.queries << ',' << p.poses << ',' << p.ticks << ',' << r.route.segmentCount << ',' << r.route.currentSegment << ',' << r.error << ',' << planningStateName(p.stage) << ',' << p.seedAttempts << ',' << p.ikIterations << ',' << p.configurations << ',' << r.route.selectedConfiguration << ',' << p.tickIterations << ',' << p.tickPoses << ',' << p.tickQueries << '\n';
+            require(body.snapshot().collisionScene==originalScene,"Detour changed collision scene");
+            if (r.state==ReachState::Planning) require(body.snapshot().coordinates==initial,"Planning moved body");
+            if (!sawRoute && r.route.segmentCount==1 && r.state==ReachState::Moving) {
+                require(r.route.directCheck.status==PathStatus::Blocked,"Detour lost direct refusal reason");
+                require(r.route.segmentChecks[0].status==PathStatus::Clear && r.route.selectedConfiguration>1,"Unverified alternative route accepted");
+                capture("03_route_selected"); sawRoute=true;
+            }
+
+            if (r.state==ReachState::Succeeded) break;
+            require(r.state!=ReachState::Failed && r.state!=ReachState::Cancelled,"Desktop detour failed");
+            require(t<11999,"Desktop detour did not finish");
+        }
+        const auto& r=body.snapshot().reaches[0]; const auto& p=r.planning;
+        require(sawRoute && r.route.selectedConfiguration>1 && r.state==ReachState::Succeeded && r.error<=r.target.tolerance,"Desktop did not execute alternative configuration route");
+        capture("05_complete");
+        report << "direct=" << pathStatusName(direct.status) << "\ndirect_object=" << direct.object << "\ndirect_scene=" << direct.sceneVersion
+            << "\nroute_scene=" << r.collisionSceneVersion << "\nplanning_ticks=" << p.ticks << "\ncandidates=" << p.candidates
+            << "\nqueries=" << p.queries << "\nposes=" << p.poses << "\nselected_candidate=" << p.selectedCandidate
+            << "\nselected_configuration=" << r.route.selectedConfiguration << "\nseeds=" << p.seedAttempts << "\niterations=" << p.ikIterations << "\nduplicates=" << p.duplicates
+            << "\nsegments=" << r.route.segmentCount << "\nsegment0=" << pathStatusName(r.route.segmentChecks[0].status)
+            << "\nsegment1=" << pathStatusName(r.route.segmentChecks[1].status)
+            << "\nsegment0_scene=" << r.route.segmentChecks[0].sceneVersion << "\nsegment1_scene=" << r.route.segmentChecks[1].sceneVersion
+            << "\nsegment0_start_tick=" << r.route.segmentChecks[0].segmentStartTick
+            << "\nsegment1_start_tick=" << r.route.segmentChecks[1].segmentStartTick << "\nwaypoint=";
+        for (const auto q:r.route.waypoint) report << q << ',';
+        report << "\nerror_m=" << r.error << "\ncaptures=" << captures
+            << "\ncallbacks=F2,Shift+F11,F7,F12,Shift+F12\npreview=red_first_blocked_direct,green_certified_route,magenta_selected_final_pose\n"
+            << "render=single_display_read_only\nGL_errors=0\nresult=PASS\n";
+    }
+
+    void verifyDesktopRanked(GLFWwindow* window,render_opengl::OpenGLRenderer& renderer,
+        const render_opengl::GLModel& model,BodyInstance& body,BodyDiagnostics& diagnostics,
+        const glm::mat4& fit,const std::filesystem::path& output,void (*input)(GLFWwindow*,int,int,int,int))
+    {
+        std::filesystem::create_directories(output);
+        std::ofstream report(output/"desktop_ranked.txt"),csv(output/"ticks.csv");
+        if (!report || !csv) throw std::runtime_error("Cannot write ranked evidence");
+        report << std::setprecision(12) << "process=julia_desktop\nGL_RENDERER=" << glGetString(GL_RENDERER) << '\n';
+        csv << "case,tick,state,planning_ticks,scores,configuration,candidate,elbow,travel,duration,total,completion,error_m\n";
+        const auto require=[](bool ok,const char* message) { if (!ok) throw std::runtime_error(message); };
+        unsigned captures=0;
+        const auto capture=[&](const std::string& name) {
+            render_opengl::CameraConfig camera; const auto& b=body.control()->binding();
+            camera.target=glm::vec3{fit*glm::inverse(b.profile().bodyFromResource)*glm::vec4{.2f,1.14f,.18f,1}};
+            camera.position=camera.target+glm::vec3{.7f,.2f,1.8f}; renderer.setCamera(camera);
+            int width=0,height=0; glfwGetFramebufferSize(window,&width,&height); renderer.resize(width,height);
+            const auto tick=body.snapshot().tick; const auto display=body.display(1);
+            renderer.beginFrame(); renderer.renderModel(model,fit*body.resourceRoot(display.root),display.pose.palette);
+            diagnostics.draw(renderer,fit*body.resourceRoot(display.root),display);
+            require(body.display(1).pose.palette==display.pose.palette && body.snapshot().tick==tick,"Ranked draw mutated body");
+            std::vector<unsigned char> pixels(static_cast<std::size_t>(width)*height*3); glPixelStorei(GL_PACK_ALIGNMENT,1);
+            glReadPixels(0,0,width,height,GL_RGB,GL_UNSIGNED_BYTE,pixels.data());
+            std::ofstream image(output/(name+".ppm"),std::ios::binary); image << "P6\n" << width << ' ' << height << "\n255\n";
+            for (int y=height-1;y>=0;--y) image.write(reinterpret_cast<const char*>(pixels.data()+static_cast<std::size_t>(y)*width*3),width*3);
+            require(static_cast<bool>(image) && glGetError()==GL_NO_ERROR,"Ranked GPU capture failed");
+            glfwSetWindowTitle(window,diagnostics.title().c_str()); glfwSwapBuffers(window); glfwPollEvents(); ++captures;
+        };
+        input(window,GLFW_KEY_F2,0,GLFW_PRESS,0);
+        input(window,GLFW_KEY_F11,0,GLFW_PRESS,0); body.step(); // Unchanged free demo scene and goal.
+        input(window,GLFW_KEY_F12,0,GLFW_PRESS,0);
+        input(window,GLFW_KEY_F12,0,GLFW_PRESS,GLFW_MOD_SHIFT);
+        input(window,GLFW_KEY_F12,0,GLFW_PRESS,GLFW_MOD_CONTROL);
+        std::array<glm::vec3,2> elbows{}; std::array<unsigned,2> configurations{};
+        for (unsigned sign=0;sign<2;++sign) {
+            if (sign) {
+                input(window,GLFW_KEY_BACKSPACE,0,GLFW_PRESS,0); body.step();
+                input(window,GLFW_KEY_F12,0,GLFW_PRESS,GLFW_MOD_ALT);
+            }
+            const auto held=body.snapshot().coordinates;
+            input(window,GLFW_KEY_F7,0,GLFW_PRESS,0); body.step();
+            require(body.results().back().status==BodyCommandStatus::Applied,"Ranked F7 rejected");
+            capture(std::to_string(sign)+"_planning");
+            bool savedBest=false,admitted=false;
+            for (unsigned t=0;t<16000;++t) {
+                const auto& r=body.snapshot().reaches[0]; const auto& p=r.planning;
+                csv << sign << ',' << body.snapshot().tick << ',' << reachStateName(r.state) << ',' << p.ticks << ',' << p.scoreEvaluations
+                    << ',' << r.route.selectedConfiguration << ',' << r.route.selectedCandidate << ',' << p.score.elbow.penalty << ',' << p.score.travel
+                    << ',' << p.score.duration << ',' << p.score.total << ',' << selectionCompletionName(p.completion) << ',' << r.error << '\n';
+                if (r.state==ReachState::Planning) {
+                    require(body.snapshot().coordinates==held && r.route.segmentCount==0,"Ranked moved before selection ended");
+                    if (!savedBest && p.scoreEvaluations) { capture(std::to_string(sign)+"_best_pending"); savedBest=true; }
+                }
+                if (!admitted && r.state==ReachState::Moving) {
+                    require(r.route.scoreEvaluations>=2 && r.route.segmentChecks[0].status==PathStatus::Clear,"Ranked did not compare verified routes");
+                    capture(std::to_string(sign)+"_selected"); admitted=true;
+                }
+                if (r.state==ReachState::Succeeded) break;
+                require(r.state!=ReachState::Failed && r.state!=ReachState::Cancelled && t<15999,"Ranked desktop action failed");
+                body.step();
+            }
+            const auto& r=body.snapshot().reaches[0];
+            require(savedBest && admitted && r.state==ReachState::Succeeded && r.error<=r.target.tolerance,"Ranked goal not reached");
+            elbows[sign]=r.elbowBody; configurations[sign]=r.route.selectedConfiguration; capture(std::to_string(sign)+"_complete");
+            report << "case=" << sign << " configuration=" << configurations[sign] << " scores=" << r.route.scoreEvaluations << " ticks=" << r.route.ticks
+                << " queries=" << r.route.queries << " poses=" << r.route.poses << " seeds=" << r.route.seedAttempts << " iterations=" << r.route.ikIterations
+                << " completion=" << selectionCompletionName(r.route.completion) << " E=" << r.route.score.elbow.penalty << " J=" << r.route.score.travel
+                << " T=" << r.route.score.duration << " total=" << r.route.score.total << " error_m=" << r.error
+                << " elbow=" << r.elbowBody.x << ',' << r.elbowBody.y << ',' << r.elbowBody.z << '\n';
+        }
+        require(configurations[0]!=configurations[1] && glm::length(elbows[0]-elbows[1])>.02f,"Elbow direction did not change selected pose");
+        report << "callbacks=F2,F11,F12,Shift+F12,Ctrl+F12,Alt+F12,F7,Backspace\ncaptures=" << captures
+            << "\nrender=single_display_read_only\nGL_errors=0\nresult=PASS\n";
     }
 
     void verifyDesktopReach(GLFWwindow* window,render_opengl::OpenGLRenderer& renderer,

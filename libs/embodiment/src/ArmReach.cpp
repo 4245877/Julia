@@ -27,6 +27,19 @@ namespace julia::embodiment
             const auto s = index(t.arm);
             const bool effector = s == 0 ? t.effector == EffectorId::LeftWrist || t.effector == EffectorId::LeftPalm || t.effector == EffectorId::LeftGrip :
                 t.effector == EffectorId::RightWrist || t.effector == EffectorId::RightPalm || t.effector == EffectorId::RightGrip;
+            const auto weight=[](double v) { return std::isfinite(v) && v>=0 && v<=1000; };
+            if ((t.selection!=RouteSelection::FirstValid && t.selection!=RouteSelection::Ranked) ||
+                (t.selection==RouteSelection::Ranked && t.strategy!=MovementStrategy::AllowDetour) ||
+                !weight(t.ranking.elbowWeight) || !weight(t.ranking.travelWeight) || !weight(t.ranking.durationWeight) ||
+                t.ranking.additionalTicks>4096 || !t.ranking.maxEvaluations || t.ranking.maxEvaluations>36)
+                throw std::invalid_argument("Invalid route selection/finite ranking parameters; Ranked requires AllowDetour");
+            if (t.elbowPreference) {
+                const auto& p=*t.elbowPreference;
+                const double length=glm::length(glm::dvec3{p.direction});
+                if (!finite(p.direction) || length<1e-6 || length>1e6 ||
+                    (p.space!=TargetSpace::Body && p.space!=TargetSpace::World))
+                    throw std::invalid_argument("Invalid elbow direction/space (dimensionless nonzero direction required)");
+            }
             if (!effector || !finite(t.position) || glm::length(t.position)>10000 || (t.space != TargetSpace::Body && t.space != TargetSpace::World) ||
                 !std::isfinite(t.tolerance) || t.tolerance < .0005f || t.tolerance > .02f ||
                 !std::isfinite(t.maxSpeed) || t.maxSpeed < .1f || t.maxSpeed > 4 ||
@@ -34,6 +47,12 @@ namespace julia::embodiment
                 !std::isfinite(t.settleSeconds) || t.settleSeconds < .05f || t.settleSeconds > 2 ||
                 (t.strategy!=MovementStrategy::DirectOnly && t.strategy!=MovementStrategy::AllowDetour) ||
                 t.detour.maxCandidates>32 || !t.detour.posesPerTick || t.detour.posesPerTick>256 ||
+                !t.detour.maxConfigurations || t.detour.maxConfigurations>4 ||
+                !t.detour.iterationsPerTick || t.detour.iterationsPerTick>128 ||
+                !t.detour.seedsPerTick || t.detour.seedsPerTick>4 ||
+                !t.detour.maxIkIterations || t.detour.maxIkIterations>16384 ||
+                !t.detour.maxSeedAttempts || t.detour.maxSeedAttempts>30 ||
+                !t.detour.maxTotalPoses || t.detour.maxTotalPoses>131072 ||
                 !t.detour.queriesPerTick || t.detour.queriesPerTick>16384 || !t.detour.maxTotalQueries || t.detour.maxTotalQueries>4000000)
                 throw std::invalid_argument("Invalid position reach target/limits (orientation is unsupported)");
         }
@@ -78,8 +97,91 @@ namespace julia::embodiment
             glm::vec3 position(const std::array<double,6>& q) const
             { return glm::vec3{(base*rotation(0,q)*upperToElbow*rotation(1,q)*elbowToWrist*rotation(2,q)*wristToEffector)[3]}; }
         };
+        // One bounded DLS iteration; shared by legacy and resumable solvers.
+        bool iterate(const Chain& chain, glm::vec3 goal, std::size_t dimensions,
+            std::array<double,6>& q, float& error)
+        {
+                const auto p = chain.position(q), residual = goal-p;
+                std::array<glm::vec3,6> jacobian{};
+                glm::mat3 normal{0};
+                constexpr double h = .001;
+                for (std::size_t k=0;k<dimensions;++k)
+                {
+                    auto a=q,b=q; a[k]=std::max(q[k]-h,chain.lower[k]); b[k]=std::min(q[k]+h,chain.upper[k]);
+                    if (b[k]==a[k]) continue; // A locked coordinate contributes no Jacobian column.
+                    jacobian[k]=(chain.position(b)-chain.position(a))/static_cast<float>(b[k]-a[k]);
+                    // Active-set projection: do not let an outward-bound column consume the step.
+                    const float gradient=glm::dot(jacobian[k],residual);
+                    if ((q[k]<=chain.lower[k]+1e-7 && gradient<0) || (q[k]>=chain.upper[k]-1e-7 && gradient>0)) jacobian[k]={0,0,0};
+                    normal += glm::outerProduct(jacobian[k],jacobian[k]);
+                }
+                normal += glm::mat3{.000025f}; // 5 mm/rad damping: finite at extension/degenerate directions.
+                const auto dual=glm::inverse(normal)*residual;
+                std::array<double,6> delta{};
+                double largest=.15;
+                for (std::size_t k=0;k<dimensions;++k) { delta[k]=glm::dot(jacobian[k],dual); largest=std::max(largest,std::abs(delta[k])); }
+                bool improved=false;
+                for (double step= .15/largest;step>=.0001;step*=.5)
+                {
+                    auto candidate=q;
+                    for (std::size_t k=0;k<dimensions;++k) candidate[k]=std::clamp(q[k]+step*delta[k],chain.lower[k],chain.upper[k]);
+                    const float e=glm::length(chain.position(candidate)-goal);
+                    if (e < error-1e-8f) { q=candidate; error=e; improved=true; break; }
+                }
+                return improved;
+        }
         double polynomial(const std::array<double,6>& c, double u)
         { return ((((c[5]*u+c[4])*u+c[3])*u+c[2])*u+c[1])*u+c[0]; }
+    }
+    const char* selectionCompletionName(SelectionCompletion c)
+    {
+        switch (c) {
+        case SelectionCompletion::Running: return "running";
+        case SelectionCompletion::FirstValid: return "first valid";
+        case SelectionCompletion::FiniteSet: return "finite route set exhausted";
+        case SelectionCompletion::RankingLimit: return "additional ranking tick limit";
+        case SelectionCompletion::BudgetExhausted: return "shared operation budget exhausted";
+        case SelectionCompletion::CheckIncomplete: return "segment verification incomplete";
+        case SelectionCompletion::InvalidInitial: return "invalid initial pose";
+        case SelectionCompletion::IkFailed: return "no generated IK solution";
+        case SelectionCompletion::Cancelled: return "cancelled";
+        case SelectionCompletion::MotionUnavailable: return "motion unavailable";
+        }
+        return "unknown";
+    }
+    const char* elbowPreferenceStatusName(ElbowPreferenceStatus s)
+    {
+        switch (s) {
+        case ElbowPreferenceStatus::Absent: return "absent";
+        case ElbowPreferenceStatus::Defined: return "defined";
+        case ElbowPreferenceStatus::StraightArm: return "straight arm";
+        case ElbowPreferenceStatus::ParallelDirection: return "parallel direction";
+        case ElbowPreferenceStatus::CollapsedAxis: return "collapsed shoulder-wrist axis";
+        }
+        return "unknown";
+    }
+    ElbowEvaluation evaluateElbowPreference(glm::vec3 shoulder,glm::vec3 elbow,glm::vec3 wrist,
+        const std::optional<glm::vec3>& direction)
+    {
+        ElbowEvaluation result; result.shoulder=shoulder; result.elbow=elbow; result.wrist=wrist;
+        if (!direction) return result;
+        result.penalty=1; // Undefined geometry never receives a free good score.
+        const auto axis=glm::dvec3{wrist}-glm::dvec3{shoulder};
+        const double length=glm::length(axis);
+        if (!finite(shoulder) || !finite(elbow) || !finite(wrist) || !std::isfinite(length) || length<1e-6) {
+            result.status=ElbowPreferenceStatus::CollapsedAxis; return result;
+        }
+        const auto unit=axis/length, arm=glm::dvec3{elbow}-glm::dvec3{shoulder};
+        const auto bend=arm-unit*glm::dot(arm,unit);
+        if (glm::length(bend)<.001) { result.status=ElbowPreferenceStatus::StraightArm; return result; }
+        const double directionLength=glm::length(glm::dvec3{*direction});
+        if (!finite(*direction) || directionLength<1e-6) { result.status=ElbowPreferenceStatus::ParallelDirection; return result; }
+        const auto desired=glm::dvec3{*direction}/directionLength;
+        const auto projected=desired-unit*glm::dot(desired,unit);
+        if (glm::length(projected)<.001) { result.status=ElbowPreferenceStatus::ParallelDirection; return result; }
+        result.status=ElbowPreferenceStatus::Defined;
+        result.penalty=(1-std::clamp(glm::dot(glm::normalize(bend),glm::normalize(projected)),-1.0,1.0))*.5;
+        return result;
     }
     const char* reachStateName(ReachState s)
     {
@@ -92,6 +194,31 @@ namespace julia::embodiment
         case ReachState::Failed: return "failed";
         case ReachState::Cancelled: return "cancelled";
         case ReachState::Planning: return "planning";
+        }
+        return "unknown";
+    }
+    const char* configurationOutcomeName(ConfigurationOutcome outcome)
+    {
+        switch (outcome) {
+        case ConfigurationOutcome::Pending: return "pending";
+        case ConfigurationOutcome::Blocked: return "path blocked";
+        case ConfigurationOutcome::QuotaExhausted: return "configuration budget share exhausted";
+        case ConfigurationOutcome::CheckIncomplete: return "path check incomplete";
+        case ConfigurationOutcome::MotionUnavailable: return "bounded segment unavailable";
+        case ConfigurationOutcome::CandidatesExhausted: return "finite waypoint candidates exhausted";
+        case ConfigurationOutcome::Accepted: return "accepted";
+        case ConfigurationOutcome::Verified: return "fully verified route found";
+        }
+        return "unknown";
+    }
+    const char* ikSeedOutcomeName(IkSeedOutcome outcome)
+    {
+        switch (outcome) {
+        case IkSeedOutcome::None: return "none";
+        case IkSeedOutcome::Accepted: return "unique FK-verified solution";
+        case IkSeedOutcome::Duplicate: return "duplicate solution";
+        case IkSeedOutcome::LocalFailure: return "local IK did not converge";
+        case IkSeedOutcome::FkRejected: return "actual FK/limits rejected solution";
         }
         return "unknown";
     }
@@ -115,7 +242,7 @@ namespace julia::embodiment
         case ReachReason::InitialIntersection: return "initial intersection";
         case ReachReason::CheckIncomplete: return "collision verification incomplete";
         case ReachReason::DetourExhausted: return "finite waypoint set exhausted (not a no-path proof)";
-        case ReachReason::PlanningBudgetExhausted: return "total planning query budget exhausted";
+        case ReachReason::PlanningBudgetExhausted: return "total planning operation budget exhausted";
         }
         return "unknown";
     }
@@ -147,34 +274,7 @@ namespace julia::embodiment
                 ++best.iterations;
                 if (error < best.error) { best.error = error; best.coordinates = q; }
                 if (error <= target.tolerance*.2f) break;
-                const auto p = chain.position(q), residual = goal-p;
-                std::array<glm::vec3,6> jacobian{};
-                glm::mat3 normal{0};
-                constexpr double h = .001;
-                for (std::size_t k=0;k<dimensions;++k)
-                {
-                    auto a=q,b=q; a[k]=std::max(q[k]-h,chain.lower[k]); b[k]=std::min(q[k]+h,chain.upper[k]);
-                    if (b[k]==a[k]) continue; // A locked coordinate contributes no Jacobian column.
-                    jacobian[k]=(chain.position(b)-chain.position(a))/static_cast<float>(b[k]-a[k]);
-                    // Active-set projection: do not let an outward-bound column consume the step.
-                    const float gradient=glm::dot(jacobian[k],residual);
-                    if ((q[k]<=chain.lower[k]+1e-7 && gradient<0) || (q[k]>=chain.upper[k]-1e-7 && gradient>0)) jacobian[k]={0,0,0};
-                    normal += glm::outerProduct(jacobian[k],jacobian[k]);
-                }
-                normal += glm::mat3{.000025f}; // 5 mm/rad damping: finite at extension/degenerate directions.
-                const auto dual=glm::inverse(normal)*residual;
-                std::array<double,6> delta{};
-                double largest=.15;
-                for (std::size_t k=0;k<dimensions;++k) { delta[k]=glm::dot(jacobian[k],dual); largest=std::max(largest,std::abs(delta[k])); }
-                bool improved=false;
-                for (double step= .15/largest;step>=.0001;step*=.5)
-                {
-                    auto candidate=q;
-                    for (std::size_t k=0;k<dimensions;++k) candidate[k]=std::clamp(q[k]+step*delta[k],chain.lower[k],chain.upper[k]);
-                    const float e=glm::length(chain.position(candidate)-goal);
-                    if (e < error-1e-8f) { q=candidate; error=e; improved=true; break; }
-                }
-                if (!improved) break;
+                if (!iterate(chain,goal,dimensions,q,error)) break;
             }
             if (error < best.error) { best.error=error; best.coordinates=q; }
         }
@@ -185,16 +285,148 @@ namespace julia::embodiment
             atLimit ? ReachReason::JointLimited : ReachReason::LocalNoConvergence;
         return best;
     }
+    struct ArmPositionSearchJob::Impl
+    {
+        DirectBodyControl frozen;
+        ReachTarget target;
+        glm::vec3 goal;
+        Chain chain;
+        PlanningObservation diagnostic;
+        std::vector<ArmSolution> accepted;
+        ArmSolution best;
+        std::array<double,6> q{};
+        float error=0;
+        unsigned legacySeed=0, extraSeed=0, seedIterations=0;
+        bool first=true, running=false, complete=false, exhausted=false;
+        std::size_t dimensions;
+        Impl(const DirectBodyControl& c,const ReachTarget& t,glm::vec3 g)
+            : frozen(c),target(t),goal(g),chain(frozen,t),dimensions(t.effector==EffectorId::LeftWrist || t.effector==EffectorId::RightWrist ? 4:6)
+        {
+            validate(t);
+            if (!c.enabled() || !finite(g)) throw std::invalid_argument("IK search requires direct mode and finite goal");
+            accepted.reserve(4); best.coordinates=chain.initial;
+            best.error=glm::length(chain.position(best.coordinates)-goal);
+            diagnostic.state=diagnostic.stage=PlanningState::GeneratingIK;
+        }
+        bool admit(ArmSolution solution)
+        {
+            // Quantize before FK: these are the actual saved/executed endpoint q.
+            const auto ids=joints(index(target.arm));
+            for (std::size_t k=0;k<6;++k) {
+                solution.coordinates[k]=static_cast<float>(solution.coordinates[k]);
+                if (!std::isfinite(solution.coordinates[k]) || solution.coordinates[k]<chain.lower[k] || solution.coordinates[k]>chain.upper[k]) return false;
+                frozen.setCoordinate(ids[static_cast<std::size_t>(jointSlot[k])],static_cast<std::size_t>(coordinateSlot[k]),static_cast<float>(solution.coordinates[k]));
+            }
+            animation::Pose actual(frozen.binding().asset().skeleton()); frozen.apply(actual.locals);
+            animation::computeGlobalTransforms(frozen.binding().asset().skeleton(),actual.locals,actual.globals);
+            ++diagnostic.fkChecks;
+            solution.error=glm::length(glm::vec3{frozen.binding().effectorFrame(target.effector,actual.globals)[3]}-goal);
+            if (!std::isfinite(solution.error) || solution.error>target.tolerance) return false;
+            // Distinct if at least one ACTIVE coordinate differs by >= 0.08 rad.
+            // Inactive wrist coordinates never create a spurious wrist solution.
+            for (const auto& previous:accepted) {
+                double distance=0;
+                for (std::size_t k=0;k<dimensions;++k) distance=std::max(distance,std::abs(previous.coordinates[k]-solution.coordinates[k]));
+                if (distance<.08) { ++diagnostic.duplicates; diagnostic.lastSeedOutcome=IkSeedOutcome::Duplicate; return true; }
+            }
+            diagnostic.lastSeedOutcome=IkSeedOutcome::Accepted;
+            solution.reason=ReachReason::Reached; accepted.push_back(solution);
+            diagnostic.configurations=static_cast<unsigned>(accepted.size());
+            diagnostic.budgetConfigurations=diagnostic.configurations;
+            auto& entry=diagnostic.solutions[accepted.size()-1]; entry.error=solution.error;
+            for (std::size_t k=0;k<6;++k) entry.coordinates[k]=static_cast<float>(solution.coordinates[k]);
+            return true;
+        }
+        void finishSeed()
+        {
+            running=false; ++diagnostic.seedsProcessed; diagnostic.lastSeedOutcome=IkSeedOutcome::LocalFailure;
+            if (error<best.error) { best.error=error; best.coordinates=q; }
+            if (first) {
+                ++legacySeed;
+                if (best.error<=target.tolerance*.2f || legacySeed==9) {
+                    first=false;
+                    best.iterations=diagnostic.ikIterations;
+                    if (best.error<=target.tolerance*.5f) { if (!admit(best)) { ++diagnostic.failedSeeds; diagnostic.lastSeedOutcome=IkSeedOutcome::FkRejected; } }
+                    else ++diagnostic.failedSeeds;
+                } else ++diagnostic.failedSeeds;
+            } else {
+                ArmSolution solution; solution.coordinates=q; solution.error=error; solution.iterations=seedIterations;
+                if (error>target.tolerance*.5f) ++diagnostic.failedSeeds;
+                else if (!admit(solution)) { ++diagnostic.failedSeeds; diagnostic.lastSeedOutcome=IkSeedOutcome::FkRejected; }
+                ++extraSeed;
+            }
+            if (accepted.size()>=target.detour.maxConfigurations || (!first && (target.detour.maxConfigurations==1 || extraSeed==21))) complete=true;
+        }
+        bool advance(unsigned iterations,unsigned seeds)
+        {
+            diagnostic.tickIterations=diagnostic.tickSeeds=0;
+            while (!complete) {
+                if (!running) {
+                    if (diagnostic.seedAttempts>=target.detour.maxSeedAttempts) { complete=exhausted=true; break; }
+                    if (!seeds || !iterations) break;
+                    --seeds; ++diagnostic.tickSeeds; ++diagnostic.seedAttempts;
+                    q=chain.initial;
+                    const unsigned seed=first ? legacySeed:extraSeed;
+                    if (seed && seed<9) for (std::size_t k=0;k<dimensions;++k) {
+                        const double fraction=seed==1 ? .5:((seed*(k*2+3))%11+1)/12.0;
+                        q[k]=chain.lower[k]+fraction*(chain.upper[k]-chain.lower[k]);
+                    }
+                    else if (seed>=9) {
+                        const std::size_t k=((seed-9)/2)%dimensions;
+                        q[k]=std::clamp(q[k]+(seed%2 ? .3:-.3)*(chain.upper[k]-chain.lower[k]),chain.lower[k],chain.upper[k]);
+                    }
+                    error=glm::length(chain.position(q)-goal); seedIterations=0; running=true;
+                }
+                if (diagnostic.ikIterations>=target.detour.maxIkIterations) { complete=exhausted=true; break; }
+                if (!iterations) break;
+                --iterations; ++diagnostic.ikIterations; ++diagnostic.tickIterations; ++seedIterations;
+                if (first && error<best.error) { best.error=error; best.coordinates=q; }
+                if (error<=target.tolerance*.2f || !iterate(chain,goal,dimensions,q,error) || seedIterations==160) { finishSeed(); break; }
+            }
+            if (complete) diagnostic.ikCompletion=exhausted ? IkSearchCompletion::BudgetExhausted:
+                accepted.size()>=target.detour.maxConfigurations ? IkSearchCompletion::ConfigurationLimit:IkSearchCompletion::SeedSetExhausted;
+            return complete;
+        }
+    };
+    ArmPositionSearchJob::ArmPositionSearchJob(const DirectBodyControl& c,const ReachTarget& t,glm::vec3 g)
+        : impl_(std::make_unique<Impl>(c,t,g)) {}
+    ArmPositionSearchJob::~ArmPositionSearchJob()=default;
+    bool ArmPositionSearchJob::advance(unsigned iterations,unsigned seeds) { return impl_->advance(iterations,seeds); }
+    bool ArmPositionSearchJob::done() const { return impl_->complete; }
+    bool ArmPositionSearchJob::budgetExhausted() const { return impl_->exhausted; }
+    const PlanningObservation& ArmPositionSearchJob::observation() const { return impl_->diagnostic; }
+    const std::vector<ArmSolution>& ArmPositionSearchJob::solutions() const { return impl_->accepted; }
+    std::size_t ArmPositionSearchJob::scratchBytes() const { return sizeof(Impl)+impl_->accepted.capacity()*sizeof(ArmSolution)+impl_->frozen.binding().profile().joints.size()*sizeof(glm::vec3); }
     struct ArmReach::Planner
     {
         ReachObservation proposal, fallback;
         Motion fallbackMotion, first, second;
         std::optional<Motion> fallbackNext;
+        struct Best { Motion first; std::optional<Motion> second; PlanningObservation route; };
+        std::optional<Best> best;
         ArmSolution final;
+        std::unique_ptr<ArmPositionSearchJob> ik;
+        std::vector<ArmSolution> solutions;
+        std::array<unsigned,4> candidates{};
+        std::array<bool,4> retired{};
+        unsigned configuration=0, direct=0, next=0;
+        bool generated=false, quotaHit=false, incomplete=false;
         std::array<double,6> initial{};
         std::unique_ptr<ArmPathCheckJob> job;
         unsigned phase=0;
         bool hasFallback=false, waiting=false, retarget=false;
+        static std::size_t buffers(const PlanningObservation& observation)
+        {
+            std::size_t bytes=observation.evaluations.capacity()*sizeof(RouteEvaluation);
+            for (const auto* check:{&observation.directCheck,&observation.segmentChecks[0],&observation.segmentChecks[1]})
+                bytes+=check->trace.capacity()*sizeof(std::array<glm::vec3,3>);
+            return bytes;
+        }
+        std::size_t ownedBytes() const
+        {
+            return sizeof(Planner)+solutions.capacity()*sizeof(ArmSolution)+buffers(proposal.planning)+buffers(proposal.route)+
+                buffers(fallback.planning)+buffers(fallback.route)+(best ? buffers(best->route):0);
+        }
     };
     ArmReach::ArmReach(DirectBodyControl& c) : control_(c) { events_.reserve(8); }
     ArmReach::~ArmReach() = default;
@@ -220,6 +452,7 @@ namespace julia::embodiment
     { for (std::size_t s=0;s<2;++s) if (active(observations_[s].state)) {
         observations_[s].collisionChecked=false; observations_[s].collisionSceneVersion=0;
         observations_[s].planning.state=PlanningState::Cancelled;
+        observations_[s].planning.completion=SelectionCompletion::Cancelled;
         observations_[s].route={};
         finish(s,ReachState::Cancelled,reason); motion_[s]={}; planners_[s].reset(); nextSegments_[s].reset(); } }
     void ArmReach::reset() { interrupt(ReachReason::BodyReset); observations_={}; motion_={}; }
@@ -237,28 +470,38 @@ namespace julia::embodiment
             throw std::invalid_argument("Retarget/replacement must preserve active motion limits");
         const auto goal=target.space==TargetSpace::World ? glm::vec3{glm::inverse(world)*glm::vec4{target.position,1}} : target.position;
         if (!finite(goal) || glm::length(goal)>10000) throw std::invalid_argument("Invalid transformed body target");
-        const auto begin=std::chrono::steady_clock::now();
-        const auto solution=solveArmPosition(control_,target,goal);
-        const auto microseconds=std::chrono::duration<double,std::micro>(std::chrono::steady_clock::now()-begin).count();
-        if (validator_ && solution.reason!=ReachReason::Reached) {
-            if (target.strategy==MovementStrategy::AllowDetour && !active(o.state)) {
-                o.planning={}; o.planning.state=PlanningState::IkFailed; o.planning.command=command ? command:action;
-                o.planning.directCheck.status=PathStatus::Unreachable;
-                o.planning.directCheck.sceneVersion=validationSceneVersion_;
-            }
-            throw ReachTargetUnreachable(reachReasonName(solution.reason));
-        }
         if (target.strategy==MovementStrategy::AllowDetour)
         {
             if (!validator_ || !planningValidator_) throw std::invalid_argument("AllowDetour requires an explicit static collision scene");
+            // Necessary geometric shell test is independent of the arm endpoint at
+            // the pending segment boundary; it does not run a multi-start solver.
+            const Chain shell(control_,target);
+            const float distance=glm::length(goal-glm::vec3{shell.base[3]});
+            if (distance>shell.length1+shell.length2+shell.offset+target.tolerance ||
+                distance<std::max(0.0f,std::abs(shell.length1-shell.length2)-shell.offset)-target.tolerance)
+                throw ReachTargetUnreachable(reachReasonName(ReachReason::GeometricRange));
             auto proposal=o; proposal.action=action; proposal.epoch=epoch; proposal.target=target; proposal.goalBody=goal;
+            proposal.elbowDirectionBody.reset();
+            if (target.elbowPreference) {
+                const auto& preference=*target.elbowPreference;
+                const auto direction=preference.space==TargetSpace::World ?
+                    glm::vec3{glm::inverse(world)*glm::vec4{preference.direction,0}}:preference.direction;
+                if (!finite(direction) || glm::length(direction)<1e-6f) throw std::invalid_argument("Invalid transformed elbow direction");
+                proposal.elbowDirectionBody=glm::normalize(direction);
+            }
             proposal.reason=ReachReason::None; proposal.cancellationPending=false; proposal.replanningDeferred=false;
-            proposal.iterations=solution.iterations; proposal.solveMicroseconds=microseconds;
+            proposal.iterations=0; proposal.solveMicroseconds=0;
             proposal.collisionChecked=false; proposal.collisionSceneVersion=0; proposal.planning={};
             proposal.planning.command=command ? command:action;
+            proposal.planning.selection=target.selection; proposal.planning.ranking=target.ranking;
+            proposal.planning.elbowDirectionBody=proposal.elbowDirectionBody;
             if (!retarget) { proposal.maxMeasuredSpeed=0; proposal.maxMeasuredAcceleration=0; }
-            requestDetour(s,std::move(proposal),solution,retarget); return;
+            requestDetour(s,std::move(proposal),retarget); return;
         }
+        const auto begin=std::chrono::steady_clock::now();
+        const auto solution=solveArmPosition(control_,target,goal);
+        const auto microseconds=std::chrono::duration<double,std::micro>(std::chrono::steady_clock::now()-begin).count();
+        if (validator_ && solution.reason!=ReachReason::Reached) throw ReachTargetUnreachable(reachReasonName(solution.reason));
         if (planners_[s]) throw std::invalid_argument("DirectOnly replacement conflicts with pending planning; use AllowDetour or Cancel");
         // Transactional replacement. Failed validation restores the running action and pending target.
         const auto savedObservation=o; const auto savedMotion=m; const auto savedEvents=events_.size();
@@ -275,6 +518,7 @@ namespace julia::embodiment
         m.frames={reference.base,reference.upperToElbow,reference.elbowToWrist,reference.wristToEffector};
         for (std::size_t k=0;k<6;++k) m.q[k]=control_.coordinate(ids[static_cast<std::size_t>(jointSlot[k])],static_cast<std::size_t>(coordinateSlot[k]));
         o.action=action; o.epoch=epoch; o.target=target; o.goalBody=goal; o.state=ReachState::Moving; o.reason=ReachReason::None;
+        o.elbowDirectionBody.reset(); // DirectOnly has no selection stage.
         o.cancellationPending=false;
         o.referenceBody=reference.position(m.q);
         o.iterations=solution.iterations; o.solveMicroseconds=microseconds;
@@ -309,6 +553,7 @@ namespace julia::embodiment
     {
         switch (state) {
         case PlanningState::Idle: return "idle";
+        case PlanningState::GeneratingIK: return "generating IK configurations";
         case PlanningState::WaitingForStop: return "waiting for segment stop";
         case PlanningState::CheckingDirect: return "checking direct";
         case PlanningState::CheckingFirst: return "checking first segment";
@@ -366,9 +611,9 @@ namespace julia::embodiment
         }
         throw std::invalid_argument("No bounded rest-to-rest segment within 50 seconds");
     }
-    void ArmReach::requestDetour(std::size_t s,ReachObservation proposal,const ArmSolution& solution,bool retarget)
+    void ArmReach::requestDetour(std::size_t s,ReachObservation proposal,bool retarget)
     {
-        auto p=std::make_unique<Planner>(); p->proposal=std::move(proposal); p->final=solution; p->retarget=retarget;
+        auto p=std::make_unique<Planner>(); p->proposal=std::move(proposal); p->retarget=retarget;
         if (planners_[s]) {
             p->fallback=planners_[s]->fallback; p->fallbackMotion=planners_[s]->fallbackMotion;
             p->fallbackNext=planners_[s]->fallbackNext; p->hasFallback=planners_[s]->hasFallback;
@@ -380,15 +625,25 @@ namespace julia::embodiment
         }
         p->proposal.state=p->waiting ? ReachState::Moving:ReachState::Planning;
         if (!p->hasFallback) p->proposal.route={};
-        p->proposal.planning.state=p->waiting ? PlanningState::WaitingForStop:PlanningState::CheckingDirect;
+        p->proposal.planning.state=p->waiting ? PlanningState::WaitingForStop:PlanningState::GeneratingIK;
         p->proposal.replanningDeferred=p->waiting;
         observations_[s]=p->proposal;
         planners_[s]=std::move(p);
     }
     void ArmReach::endPlanning(std::size_t s,PlanningState state,ReachReason reason)
     {
+        const auto completion=state==PlanningState::BudgetExhausted ? SelectionCompletion::BudgetExhausted:
+            state==PlanningState::Exhausted ? SelectionCompletion::FiniteSet:
+            state==PlanningState::CheckIncomplete ? SelectionCompletion::CheckIncomplete:
+            state==PlanningState::InvalidInitial ? SelectionCompletion::InvalidInitial:
+            state==PlanningState::IkFailed ? SelectionCompletion::IkFailed:SelectionCompletion::MotionUnavailable;
+        if (planners_[s]->best && (state==PlanningState::BudgetExhausted || state==PlanningState::Exhausted || state==PlanningState::CheckIncomplete)) {
+            admitBest(s,completion); return;
+        }
         auto p=std::move(planners_[s]);
         auto diagnostic=observations_[s].planning; diagnostic.state=state;
+        diagnostic.completion=completion;
+        if (state==PlanningState::BudgetExhausted && diagnostic.budgetStage!=PlanningState::Idle) diagnostic.stage=diagnostic.budgetStage;
         // A refused Retarget is an attempt outcome, not a terminal event for the
         // still-authorized action with the same ID. New failed actions may terminate.
         if (!p->hasFallback || !p->retarget) {
@@ -400,27 +655,118 @@ namespace julia::embodiment
             motion_[s]=p->fallbackMotion; nextSegments_[s]=p->fallbackNext;
         } else { motion_[s]={}; nextSegments_[s].reset(); }
     }
+    void ArmReach::admitBest(std::size_t s,SelectionCompletion completion)
+    {
+        auto& p=*planners_[s]; auto& o=observations_[s]; auto& diagnostic=o.planning;
+        const auto& chosen=p.best->route;
+        diagnostic.state=diagnostic.stage=PlanningState::RouteReady; diagnostic.completion=completion;
+        diagnostic.segmentCount=chosen.segmentCount; diagnostic.currentSegment=0;
+        diagnostic.segmentDurations=chosen.segmentDurations; diagnostic.segmentChecks=chosen.segmentChecks;
+        diagnostic.selectedCandidate=chosen.selectedCandidate; diagnostic.selectedConfiguration=chosen.selectedConfiguration;
+        diagnostic.finalCoordinates=chosen.finalCoordinates; diagnostic.waypoint=chosen.waypoint; diagnostic.score=chosen.score;
+        diagnostic.solutions[chosen.selectedConfiguration-1].outcome=ConfigurationOutcome::Accepted;
+        diagnostic.segmentChecks[0].segmentStartTick=advancingTick_;
+        if (p.best->second) diagnostic.segmentChecks[1].segmentStartTick=advancingTick_+p.best->first.duration+1;
+        if (pathReporter_) pathReporter_(diagnostic.segmentChecks[p.best->second ? 1:0]);
+        if (p.hasFallback && !p.retarget) {
+            auto previous=p.fallback; previous.state=ReachState::Cancelled; previous.reason=ReachReason::Superseded; events_.push_back(std::move(previous));
+        }
+        o.state=ReachState::Moving; o.reason=ReachReason::None; o.collisionChecked=true;
+        o.collisionSceneVersion=validationSceneVersion_; o.route=diagnostic; motion_[s]=p.best->first;
+        nextSegments_[s]=p.best->second;
+        planners_[s].reset();
+    }
     void ArmReach::advancePlanning(std::size_t s)
     {
         auto& p=*planners_[s]; auto& o=observations_[s]; auto& diagnostic=o.planning;
         ++diagnostic.ticks;
+        diagnostic.tickIterations=diagnostic.tickSeeds=diagnostic.tickQueries=diagnostic.tickPoses=diagnostic.tickCandidates=diagnostic.tickScoreEvaluations=0;
         const auto& limits=p.proposal.target.detour;
+        if (p.best && p.proposal.target.selection==RouteSelection::Ranked &&
+            diagnostic.ticks-diagnostic.firstClearTick>p.proposal.target.ranking.additionalTicks) {
+            admitBest(s,SelectionCompletion::RankingLimit); return;
+        }
         if (p.waiting) {
-            // Current certified segment has reached its exact float endpoint. The old
-            // remaining route is retained transactionally and can resume after failure.
             p.waiting=false; p.fallbackMotion=motion_[s];
             p.fallbackMotion.lastStepVelocity={}; p.fallbackMotion.velocity={}; p.fallbackMotion.acceleration={};
             o.state=ReachState::Planning; o.replanningDeferred=false;
         }
-        if (!p.job) {
-            if (p.phase==0) {
+        if (!p.generated) {
+            diagnostic.stage=PlanningState::GeneratingIK;
+            const auto begin=std::chrono::steady_clock::now();
+            if (!p.ik) {
                 const auto ids=joints(s);
                 for (std::size_t k=0;k<6;++k) p.initial[k]=control_.coordinate(ids[static_cast<std::size_t>(jointSlot[k])],static_cast<std::size_t>(coordinateSlot[k]));
+                p.ik=std::make_unique<ArmPositionSearchJob>(control_,p.proposal.target,p.proposal.goalBody);
+            }
+            const bool done=p.ik->advance(limits.iterationsPerTick,limits.seedsPerTick);
+            const auto& ik=p.ik->observation();
+            diagnostic.seedAttempts=ik.seedAttempts; diagnostic.seedsProcessed=ik.seedsProcessed;
+            diagnostic.ikIterations=ik.ikIterations; diagnostic.duplicates=ik.duplicates;
+            diagnostic.failedSeeds=ik.failedSeeds; diagnostic.fkChecks=ik.fkChecks; diagnostic.lastSeedOutcome=ik.lastSeedOutcome;
+            diagnostic.ikCompletion=ik.ikCompletion;
+            diagnostic.configurations=ik.configurations; diagnostic.budgetConfigurations=ik.budgetConfigurations;
+            diagnostic.solutions=ik.solutions;
+            diagnostic.tickIterations=ik.tickIterations; diagnostic.tickSeeds=ik.tickSeeds;
+            diagnostic.ikMicroseconds+=std::chrono::duration<double,std::micro>(std::chrono::steady_clock::now()-begin).count();
+            diagnostic.scratchBytes=std::max(diagnostic.scratchBytes,p.ownedBytes()+p.ik->scratchBytes());
+            o.iterations=diagnostic.ikIterations; o.solveMicroseconds=diagnostic.ikMicroseconds;
+            if (!done) { diagnostic.state=PlanningState::Paused; return; }
+            if (p.ik->budgetExhausted()) {
+                diagnostic.budgetReason=ik.ikIterations>=limits.maxIkIterations ? "IK iterations":"IK seed attempts";
+                diagnostic.budgetStage=PlanningState::GeneratingIK;
+                endPlanning(s,PlanningState::BudgetExhausted,ReachReason::PlanningBudgetExhausted); return;
+            }
+            p.solutions=p.ik->solutions(); p.ik.reset(); p.generated=true;
+            if (p.solutions.empty()) {
+                diagnostic.directCheck.status=PathStatus::Unreachable;
+                endPlanning(s,PlanningState::IkFailed,ReachReason::LocalNoConvergence); return;
+            }
+            diagnostic.state=diagnostic.stage=PlanningState::CheckingDirect;
+            return; // IK and path construction never share an unbounded command tick.
+        }
+        const auto count=static_cast<unsigned>(p.solutions.size());
+        const auto quota=[&](unsigned total) { return total/count+(p.configuration<total%count ? 1u:0u); };
+        const auto selectNext=[&]() {
+            p.job.reset();
+            if (p.direct<count) { ++p.direct; p.phase=0; }
+            else p.phase=1;
+            diagnostic.state=diagnostic.stage=p.direct<count ? PlanningState::CheckingDirect:PlanningState::CheckingFirst;
+        };
+        if (!p.job) {
+            if (p.direct<count) { p.configuration=p.direct; p.phase=0; }
+            else {
+                if (diagnostic.candidates>=limits.maxCandidates) {
+                    for (unsigned i=0;i<count;++i) if (!p.retired[i]) diagnostic.solutions[i].outcome=ConfigurationOutcome::CandidatesExhausted;
+                    endPlanning(s,p.quotaHit ? PlanningState::BudgetExhausted:p.incomplete ? PlanningState::CheckIncomplete:PlanningState::Exhausted,
+                        p.quotaHit ? ReachReason::PlanningBudgetExhausted:p.incomplete ? ReachReason::CheckIncomplete:ReachReason::DetourExhausted); return;
+                }
+                unsigned scanned=0;
+                while (scanned<count && p.retired[p.next]) { p.next=(p.next+1)%count; ++scanned; }
+                if (scanned==count) {
+                    endPlanning(s,p.quotaHit ? PlanningState::BudgetExhausted:p.incomplete ? PlanningState::CheckIncomplete:PlanningState::Exhausted,
+                        p.quotaHit ? ReachReason::PlanningBudgetExhausted:p.incomplete ? ReachReason::CheckIncomplete:ReachReason::DetourExhausted); return;
+                }
+                p.configuration=p.next; p.next=(p.next+1)%count; p.phase=1;
+            }
+            diagnostic.currentConfiguration=p.configuration+1;
+            p.final=p.solutions[p.configuration];
+            auto& entry=diagnostic.solutions[p.configuration];
+            if (entry.queries>=quota(limits.maxTotalQueries) || entry.poses>=quota(limits.maxTotalPoses)) {
+                p.quotaHit=true; p.retired[p.configuration]=true; entry.outcome=ConfigurationOutcome::QuotaExhausted;
+                diagnostic.budgetReason=entry.queries>=quota(limits.maxTotalQueries) ? "configuration query share":"configuration pose share";
+                diagnostic.budgetStage=diagnostic.stage;
+                selectNext(); return;
+            }
+            const auto begin=std::chrono::steady_clock::now();
+            try {
+            if (p.phase==0) {
                 p.first=restSegment(s,p.initial,p.final.coordinates,p.proposal);
-                diagnostic.state=PlanningState::CheckingDirect;
+                diagnostic.state=diagnostic.stage=PlanningState::CheckingDirect;
             } else {
-                if (diagnostic.candidates>=limits.maxCandidates) { endPlanning(s,PlanningState::Exhausted,ReachReason::DetourExhausted); return; }
-                const auto candidate=diagnostic.candidates++;
+                const auto candidate=p.candidates[p.configuration]++;
+                ++diagnostic.candidates; ++diagnostic.tickCandidates; ++entry.candidates;
+                diagnostic.budgetCandidates=diagnostic.candidates;
                 auto waypoint=p.initial;
                 for (std::size_t k=0;k<6;++k) waypoint[k]=static_cast<float>((p.initial[k]+p.final.coordinates[k])*.5);
                 const auto ids=joints(s);
@@ -442,51 +788,111 @@ namespace julia::embodiment
                 p.first=restSegment(s,p.initial,waypoint,p.proposal);
                 p.second=restSegment(s,waypoint,p.final.coordinates,p.proposal);
                 diagnostic.segmentChecks={}; diagnostic.state=PlanningState::CheckingFirst;
-                p.phase=1;
+
+                diagnostic.stage=PlanningState::CheckingFirst;
             }
+            } catch (const std::invalid_argument& error) {
+                entry.outcome=ConfigurationOutcome::MotionUnavailable; entry.detail=error.what(); p.retired[p.configuration]=true; selectNext(); return;
+            }
+            diagnostic.segmentMicroseconds+=std::chrono::duration<double,std::micro>(std::chrono::steady_clock::now()-begin).count();
             const auto path=samples(p.first); p.job=planningValidator_(s,path);
         }
-        if (diagnostic.queries>=limits.maxTotalQueries) { endPlanning(s,PlanningState::BudgetExhausted,ReachReason::PlanningBudgetExhausted); return; }
+        auto& entry=diagnostic.solutions[p.configuration];
+        const auto remainingQueries=std::min(limits.maxTotalQueries-diagnostic.queries,quota(limits.maxTotalQueries)-entry.queries);
+        const auto remainingPoses=std::min(limits.maxTotalPoses-diagnostic.poses,quota(limits.maxTotalPoses)-entry.poses);
         const auto beforeQueries=p.job->result().queries, beforePoses=p.job->result().poses;
-        const bool done=p.job->advance(limits.posesPerTick,std::min(limits.queriesPerTick,limits.maxTotalQueries-diagnostic.queries));
+        const auto beforeMicroseconds=p.job->result().microseconds;
+        const bool done=p.job->advance(std::min(limits.posesPerTick,remainingPoses),std::min(limits.queriesPerTick,remainingQueries));
         auto result=p.job->result(); result.command=diagnostic.command;
-        diagnostic.queries+=result.queries-beforeQueries; diagnostic.poses+=result.poses-beforePoses;
-        diagnostic.scratchBytes=std::max(diagnostic.scratchBytes,result.scratchBytes+sizeof(Planner));
-        if (p.phase==0) diagnostic.directCheck=result;
-        else diagnostic.segmentChecks[p.phase-1]=result;
+        diagnostic.tickQueries=result.queries-beforeQueries; diagnostic.tickPoses=result.poses-beforePoses;
+        diagnostic.queries+=diagnostic.tickQueries; diagnostic.poses+=diagnostic.tickPoses;
+        entry.queries+=diagnostic.tickQueries; entry.poses+=diagnostic.tickPoses; entry.lastStatus=result.status;
+        entry.object=result.object; entry.bodyForm=result.bodyForm; entry.otherBodyForm=result.otherBodyForm;
+        entry.gap=result.contact.gap; entry.detail=result.detail.empty() ? pathStatusName(result.status):result.detail;
+        diagnostic.pathMicroseconds+=result.microseconds-beforeMicroseconds;
+        diagnostic.scratchBytes=std::max(diagnostic.scratchBytes,result.scratchBytes+p.ownedBytes());
+        if (p.phase==0) {
+            entry.directStatus=result.status;
+            if (p.configuration==0) diagnostic.directCheck=result;
+        } else diagnostic.segmentChecks[p.phase-1]=result;
         if (pathReporter_) pathReporter_(result);
         if (!done) {
             diagnostic.state=PlanningState::Paused;
-            if (diagnostic.queries>=limits.maxTotalQueries) endPlanning(s,PlanningState::BudgetExhausted,ReachReason::PlanningBudgetExhausted);
+            if (entry.queries>=quota(limits.maxTotalQueries) || entry.poses>=quota(limits.maxTotalPoses)) {
+                entry.outcome=ConfigurationOutcome::QuotaExhausted; p.retired[p.configuration]=true; p.quotaHit=true;
+                diagnostic.budgetReason=entry.queries>=quota(limits.maxTotalQueries) ? "configuration query share":"configuration pose share";
+                diagnostic.budgetStage=diagnostic.stage;
+                selectNext();
+            }
             return;
         }
         p.job.reset();
-        if (result.status==PathStatus::Incomplete) { endPlanning(s,PlanningState::CheckIncomplete,ReachReason::CheckIncomplete); return; }
         if (p.phase==0 && result.status==PathStatus::InitialIntersection) { endPlanning(s,PlanningState::InvalidInitial,ReachReason::InitialIntersection); return; }
+        if (result.status==PathStatus::Incomplete) {
+            p.incomplete=true; p.retired[p.configuration]=true; entry.outcome=ConfigurationOutcome::CheckIncomplete;
+            if (count==1) { endPlanning(s,PlanningState::CheckIncomplete,ReachReason::CheckIncomplete); return; }
+            selectNext(); return;
+        }
         if (result.status==PathStatus::Clear) {
             if (p.phase==1) {
-                p.phase=2; diagnostic.state=PlanningState::CheckingSecond;
+                p.phase=2; diagnostic.state=diagnostic.stage=PlanningState::CheckingSecond;
                 const auto path=samples(p.second); p.job=planningValidator_(s,path); return;
             }
-            diagnostic.state=PlanningState::RouteReady;
-            diagnostic.segmentCount=p.phase==0 ? 1u:2u; diagnostic.currentSegment=0;
-            diagnostic.segmentDurations={p.first.duration,p.phase==0 ? 0u:p.second.duration};
-            diagnostic.selectedCandidate=p.phase==0 ? 0:diagnostic.candidates;
-            if (p.phase==0) diagnostic.segmentChecks[0]=result;
-            diagnostic.segmentChecks[0].segmentStartTick=advancingTick_;
-            if (p.phase==2) diagnostic.segmentChecks[1].segmentStartTick=advancingTick_+p.first.duration+1;
-            if (pathReporter_) pathReporter_(diagnostic.segmentChecks[p.phase==0 ? 0:1]);
-            if (p.hasFallback && !p.retarget) {
-                auto previous=p.fallback; previous.state=ReachState::Cancelled; previous.reason=ReachReason::Superseded; events_.push_back(std::move(previous));
+            // Copy the concrete Clear motions and certificates before advancing
+            // any search cursor. Scratch motions can now be overwritten safely.
+            auto route=diagnostic;
+            route.segmentCount=p.phase==0 ? 1u:2u; route.currentSegment=0;
+            route.segmentDurations={p.first.duration,p.phase==0 ? 0u:p.second.duration};
+            route.selectedCandidate=p.phase==0 ? 0:p.candidates[p.configuration];
+            route.selectedConfiguration=p.configuration+1; route.finalCoordinates=entry.coordinates;
+            if (p.phase==0) { route.segmentChecks={result,PathCheck{}}; route.waypoint={}; }
+            if (p.proposal.target.selection==RouteSelection::Ranked) {
+                const auto begin=std::chrono::steady_clock::now();
+                route.score={};
+                DirectBodyControl trial(control_); const auto ids=joints(s);
+                for (std::size_t k=0;k<6;++k)
+                    trial.setCoordinate(ids[static_cast<std::size_t>(jointSlot[k])],static_cast<std::size_t>(coordinateSlot[k]),entry.coordinates[k]);
+                const auto& binding=control_.binding(); animation::Pose actual(binding.asset().skeleton());
+                trial.apply(actual.locals); animation::computeGlobalTransforms(binding.asset().skeleton(),actual.locals,actual.globals);
+                auto& score=route.score;
+                score.elbow=evaluateElbowPreference(glm::vec3{binding.jointFrame(ids[0],actual.globals)[3]},
+                    glm::vec3{binding.jointFrame(ids[1],actual.globals)[3]},glm::vec3{binding.jointFrame(ids[2],actual.globals)[3]},diagnostic.elbowDirectionBody);
+                for (std::size_t k=0;k<6;++k) {
+                    const auto& coordinate=binding.profile().joints[binding.jointIndex(ids[static_cast<std::size_t>(jointSlot[k])])].coordinates[static_cast<std::size_t>(coordinateSlot[k])];
+                    const double range=static_cast<double>(coordinate.upper)-coordinate.lower;
+                    const double travel=p.phase==0 ? std::abs(p.final.coordinates[k]-p.initial[k]):
+                        std::abs(p.first.certifiedEndpoint[k]-p.initial[k])+std::abs(p.final.coordinates[k]-p.first.certifiedEndpoint[k]);
+                    if (range>0) score.travel+=travel/range/6;
+                }
+                score.duration=(p.first.duration+(p.phase==0 ? 0:p.second.duration+1))*dt;
+                const auto& weights=p.proposal.target.ranking;
+                score.total=weights.elbowWeight*score.elbow.penalty+weights.travelWeight*score.travel+weights.durationWeight*score.duration;
+                score.key=static_cast<std::int64_t>(std::llround(score.total*1e9));
+                diagnostic.evaluations.push_back({route.selectedConfiguration,route.selectedCandidate,route.segmentCount,score});
+                ++diagnostic.scoreEvaluations; ++diagnostic.tickScoreEvaluations;
+                diagnostic.scoreMicroseconds+=std::chrono::duration<double,std::micro>(std::chrono::steady_clock::now()-begin).count();
+                diagnostic.scratchBytes=std::max(diagnostic.scratchBytes,p.ownedBytes()+sizeof(actual)+sizeof(trial)+sizeof(route)+
+                    (actual.locals.capacity()+actual.globals.capacity()+actual.palette.capacity())*sizeof(glm::mat4)+
+                    trial.coordinates().size()*sizeof(glm::vec3)+Planner::buffers(route)+Planner::buffers(diagnostic));
             }
-            o.state=ReachState::Moving; o.reason=ReachReason::None; o.collisionChecked=true;
-            o.collisionSceneVersion=validationSceneVersion_; o.route=diagnostic; motion_[s]=p.first;
-            if (p.phase==2) nextSegments_[s]=p.second; else nextSegments_[s].reset();
-            planners_[s].reset(); return;
+            entry.outcome=ConfigurationOutcome::Verified;
+            if (!p.best) diagnostic.firstClearTick=diagnostic.ticks;
+            if (!p.best || route.score.key<p.best->route.score.key) {
+                p.best=Planner::Best{p.first,p.phase==0 ? std::nullopt:std::optional<Motion>{p.second},std::move(route)};
+                diagnostic.score=p.best->route.score;
+                diagnostic.selectedConfiguration=p.best->route.selectedConfiguration;
+                diagnostic.selectedCandidate=p.best->route.selectedCandidate;
+                diagnostic.finalCoordinates=p.best->route.finalCoordinates;
+            }
+            if (p.proposal.target.selection==RouteSelection::FirstValid) { admitBest(s,SelectionCompletion::FirstValid); return; }
+            if (diagnostic.scoreEvaluations>=p.proposal.target.ranking.maxEvaluations) {
+                diagnostic.budgetReason="route score evaluations"; diagnostic.budgetStage=diagnostic.stage;
+                endPlanning(s,PlanningState::BudgetExhausted,ReachReason::PlanningBudgetExhausted); return;
+            }
+            selectNext(); return;
         }
-        // A free waypoint alone never accepts the route; a blocked connector simply
-        // advances to the next candidate on a later tick.
-        p.phase=1; diagnostic.state=PlanningState::CheckingFirst;
+        entry.outcome=ConfigurationOutcome::Blocked;
+        selectNext();
     }
     PathStatus ArmReach::verify(std::size_t s,unsigned delayTicks)
     {
@@ -535,6 +941,7 @@ namespace julia::embodiment
             auto p=std::move(planners_[s]);
             if (!p->waiting) { motion_[s].duration=motion_[s].tick=0; }
             observations_[s].planning=diagnostic; observations_[s].planning.state=PlanningState::Cancelled;
+            observations_[s].planning.completion=SelectionCompletion::Cancelled;
         }
         nextSegments_[s].reset();
         if (observations_[s].route.segmentCount) observations_[s].route.segmentCount=observations_[s].route.currentSegment+1;
@@ -547,6 +954,10 @@ namespace julia::embodiment
         for (std::size_t s=0;s<2;++s)
         {
             auto& m=motion_[s]; auto& o=observations_[s];
+            // Per-tick work belongs to this completed simulation tick. Keep the
+            // admitted route's historical certificate/accounting copy immutable.
+            auto& work=o.planning;
+            work.tickIterations=work.tickSeeds=work.tickQueries=work.tickPoses=work.tickCandidates=work.tickScoreEvaluations=0;
             if (!active(o.state)) continue;
             if (planners_[s] && (!planners_[s]->waiting || m.tick>=m.duration)) {
                 try { advancePlanning(s); }
@@ -621,6 +1032,7 @@ namespace julia::embodiment
             o.actualWorld=glm::vec3{world*glm::vec4{o.actualBody,1}};
             o.shoulderBody=glm::vec3{b.jointFrame(ids[0],globals)[3]}; o.elbowBody=glm::vec3{b.jointFrame(ids[1],globals)[3]};
             const auto wrist=glm::vec3{b.jointFrame(ids[2],globals)[3]};
+            o.actualElbow=evaluateElbowPreference(o.shoulderBody,o.elbowBody,wrist,o.elbowDirectionBody);
             const auto normal=glm::cross(o.elbowBody-o.shoulderBody,wrist-o.elbowBody);
             // At extension the last valid plane is retained; no normalization of a zero vector.
             if (glm::length(normal)>1e-5f)

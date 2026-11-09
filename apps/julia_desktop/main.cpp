@@ -789,10 +789,12 @@ namespace
 
 int main(int argc, char** argv)
 {
+    const bool rankedVerification = argc > 1 && std::string_view{argv[1]} == "--verify-ranked";
+    const bool multiIKVerification = argc > 1 && std::string_view{argv[1]} == "--verify-multik";
     const bool detourVerification = argc > 1 && std::string_view{argv[1]} == "--verify-detour";
     const bool collisionVerification = argc > 1 && std::string_view{argv[1]} == "--verify-collision";
     const bool reachVerification = argc > 1 && std::string_view{argv[1]} == "--verify-ik";
-    const bool bodyVerification = detourVerification || collisionVerification || reachVerification || (argc > 1 && std::string_view{argv[1]} == "--verify-body");
+    const bool bodyVerification = rankedVerification || multiIKVerification || detourVerification || collisionVerification || reachVerification || (argc > 1 && std::string_view{argv[1]} == "--verify-body");
     if (bodyVerification && argc != 3) { std::cerr << "Usage: julia_desktop --verify-body output_directory\n"; return 2; }
     const bool verification = argc > 1 && std::string_view{argv[1]} == "--verify";
     const bool animationVerification = argc > 1 &&
@@ -1099,11 +1101,12 @@ int main(int argc, char** argv)
             << "numpad 1..9 gaze, Home forward, T hold camera point, [/] blink interval, F8 fixed seed.\n";
         std::cout << "Body: F2 direct mode, Shift+F3/F3 previous/next joint, F4 coordinate, +/- 5 deg, Backspace zero, F5 axes. Pause full simulation, F6 full reset.\n";
         std::cout << "IK (direct mode): F7 reach/retarget wrist, Shift+F7 arm, Z/C X-/+, V/N Y-/+, O/P Z-/+ (25 mm, Shift 5 mm), Delete finish segment and hold.\n";
-        std::cout << "Collision: F11 cycles off/free/blocked demo scene while idle; F12 selects DirectOnly/AllowDetour for the next F7 command.\n";
+        std::cout << "Collision: F11 cycles off/free/blocked demo scene while idle; F12 selects DirectOnly/AllowDetour; Shift+F12 selects 1/4 IK configurations; Shift+F11 loads the multi-IK witness.\n";
+        std::cout << "Ranking: Ctrl+F12 selects FirstValid/Ranked; Alt+F12 selects elbow +X/-X in Body; F7 commits via Start/Retarget. Ranked requires AllowDetour.\n";
         keyCallback(window, GLFW_KEY_F1, 0, GLFW_PRESS, 0);
         if (bodyVerification)
         {
-            const auto verify=detourVerification ? julia::desktop::verifyDesktopDetour:collisionVerification ? julia::desktop::verifyDesktopCollision:
+            const auto verify=rankedVerification ? julia::desktop::verifyDesktopRanked:multiIKVerification ? julia::desktop::verifyDesktopMultiIK:detourVerification ? julia::desktop::verifyDesktopDetour:collisionVerification ? julia::desktop::verifyDesktopCollision:
                 reachVerification ? julia::desktop::verifyDesktopReach:julia::desktop::verifyDesktopBody;
             verify(window,renderer,model,body,*bodyDiagnostics,fitModel,
                 std::filesystem::path{argv[2]},keyCallback);

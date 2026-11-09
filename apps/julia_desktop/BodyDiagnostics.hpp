@@ -30,6 +30,9 @@ namespace julia::desktop
         embodiment::MovementStrategy reachStrategy_=embodiment::MovementStrategy::DirectOnly;
         glm::vec3 reachPosition_{.22f,1.10f,.32f};
         std::uint64_t sceneRevision_=0;
+        unsigned reachConfigurations_=1;
+        embodiment::RouteSelection reachSelection_=embodiment::RouteSelection::FirstValid;
+        bool elbowPositive_=true;
     };
     void verifyDesktopBody(GLFWwindow* window,render_opengl::OpenGLRenderer& renderer,
         const render_opengl::GLModel& model,embodiment::BodyInstance& body,
@@ -44,6 +47,14 @@ namespace julia::desktop
         BodyDiagnostics& diagnostics,const glm::mat4& fit,
         const std::filesystem::path& output,void (*input)(GLFWwindow*,int,int,int,int));
     void verifyDesktopDetour(GLFWwindow* window,render_opengl::OpenGLRenderer& renderer,
+        const render_opengl::GLModel& model,embodiment::BodyInstance& body,
+        BodyDiagnostics& diagnostics,const glm::mat4& fit,
+        const std::filesystem::path& output,void (*input)(GLFWwindow*,int,int,int,int));
+    void verifyDesktopMultiIK(GLFWwindow* window,render_opengl::OpenGLRenderer& renderer,
+        const render_opengl::GLModel& model,embodiment::BodyInstance& body,
+        BodyDiagnostics& diagnostics,const glm::mat4& fit,
+        const std::filesystem::path& output,void (*input)(GLFWwindow*,int,int,int,int));
+    void verifyDesktopRanked(GLFWwindow* window,render_opengl::OpenGLRenderer& renderer,
         const render_opengl::GLModel& model,embodiment::BodyInstance& body,
         BodyDiagnostics& diagnostics,const glm::mat4& fit,
         const std::filesystem::path& output,void (*input)(GLFWwindow*,int,int,int,int));

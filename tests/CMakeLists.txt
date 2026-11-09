@@ -85,6 +85,15 @@ endif()
 add_test(NAME body_collision COMMAND julia_test_body_collision "${CMAKE_SOURCE_DIR}/build/diagnostics/stage6a/cpu")
 set_tests_properties(body_collision PROPERTIES TIMEOUT 180)
 
+add_executable(julia_test_body_multik test_body_multik.cpp)
+target_compile_definitions(julia_test_body_multik PRIVATE JULIA_TEST_ASSET_DIR="${CMAKE_SOURCE_DIR}/assets")
+target_link_libraries(julia_test_body_multik PRIVATE julia_model_import julia_embodiment julia::warnings)
+if(WIN32)
+    target_link_libraries(julia_test_body_multik PRIVATE psapi)
+endif()
+add_test(NAME body_multik COMMAND julia_test_body_multik "${CMAKE_SOURCE_DIR}/build/diagnostics/stage6c/cpu")
+set_tests_properties(body_multik PROPERTIES TIMEOUT 240)
+
 add_executable(julia_test_body_detour test_body_detour.cpp)
 target_compile_definitions(julia_test_body_detour PRIVATE JULIA_TEST_ASSET_DIR="${CMAKE_SOURCE_DIR}/assets")
 target_link_libraries(julia_test_body_detour PRIVATE julia_model_import julia_embodiment julia::warnings)
@@ -93,6 +102,15 @@ if(WIN32)
 endif()
 add_test(NAME body_detour COMMAND julia_test_body_detour "${CMAKE_SOURCE_DIR}/build/diagnostics/stage6b/cpu")
 set_tests_properties(body_detour PROPERTIES TIMEOUT 240)
+
+add_executable(julia_test_body_ranked test_body_ranked.cpp)
+target_compile_definitions(julia_test_body_ranked PRIVATE JULIA_TEST_ASSET_DIR="${CMAKE_SOURCE_DIR}/assets")
+target_link_libraries(julia_test_body_ranked PRIVATE julia_model_import julia_embodiment julia::warnings)
+if(WIN32)
+    target_link_libraries(julia_test_body_ranked PRIVATE psapi)
+endif()
+add_test(NAME body_ranked COMMAND julia_test_body_ranked "${CMAKE_SOURCE_DIR}/build/diagnostics/stage6d/cpu")
+set_tests_properties(body_ranked PROPERTIES TIMEOUT 240)
 
 if(NOT JULIA_BUILD_DESKTOP)
     return()
@@ -169,6 +187,12 @@ set_tests_properties(desktop_ik PROPERTIES WORKING_DIRECTORY "${CMAKE_BINARY_DIR
 add_test(NAME desktop_collision COMMAND $<TARGET_FILE:julia_desktop>
     --verify-collision "${CMAKE_SOURCE_DIR}/build/diagnostics/stage6a/gpu")
 set_tests_properties(desktop_collision PROPERTIES WORKING_DIRECTORY "${CMAKE_BINARY_DIR}" TIMEOUT 180 RUN_SERIAL TRUE)
+add_test(NAME desktop_multik COMMAND $<TARGET_FILE:julia_desktop>
+    --verify-multik "${CMAKE_SOURCE_DIR}/build/diagnostics/stage6c/gpu")
+set_tests_properties(desktop_multik PROPERTIES WORKING_DIRECTORY "${CMAKE_BINARY_DIR}" TIMEOUT 180 RUN_SERIAL TRUE)
+add_test(NAME desktop_ranked COMMAND $<TARGET_FILE:julia_desktop>
+    --verify-ranked "${CMAKE_SOURCE_DIR}/build/diagnostics/stage6d/gpu")
+set_tests_properties(desktop_ranked PROPERTIES WORKING_DIRECTORY "${CMAKE_BINARY_DIR}" TIMEOUT 180 RUN_SERIAL TRUE)
 add_test(NAME desktop_detour COMMAND $<TARGET_FILE:julia_desktop>
     --verify-detour "${CMAKE_SOURCE_DIR}/build/diagnostics/stage6b/gpu")
 set_tests_properties(desktop_detour PROPERTIES WORKING_DIRECTORY "${CMAKE_BINARY_DIR}" TIMEOUT 180 RUN_SERIAL TRUE)

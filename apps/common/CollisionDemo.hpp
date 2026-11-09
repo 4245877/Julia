@@ -34,4 +34,16 @@ namespace julia::app
         floor.rotation=glm::normalize(glm::dquat{glm::quat_cast(worldFromBody)}); floor.shape=world::Plane{}; objects.push_back(floor);
         demo.scene=std::make_shared<const world::CollisionScene>(version,std::move(objects)); return demo;
     }
+    // Fixed stage-6C witness. Same target, forms, filters and tolerances in
+    // one-configuration and multi-configuration runs. No solver output injection.
+    inline CollisionDemo multiConfigurationDemo(const embodiment::BodyRigBinding& binding,std::uint64_t version,
+        const glm::mat4& worldFromBody=glm::mat4{1},embodiment::ArmSide arm=embodiment::ArmSide::Left,unsigned effectorOffset=0)
+    {
+        auto demo=collisionDemo(binding,false,version,worldFromBody,arm,effectorOffset);
+        std::vector<world::SceneObject> objects=demo.scene->objects();
+        world::SceneObject obstacle; obstacle.id=401; obstacle.shape=world::Sphere{.008};
+        obstacle.position=glm::dvec3{worldFromBody*glm::vec4{.160712523355f,1.25821212551f,.110817807864f,1}};
+        objects.push_back(obstacle);
+        demo.scene=std::make_shared<const world::CollisionScene>(version,std::move(objects)); return demo;
+    }
 }
