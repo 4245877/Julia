@@ -4,6 +4,7 @@
 #include "../common/SpatialDemo.hpp"
 #include "../common/InteractionDemo.hpp"
 #include "../common/SupportDemo.hpp"
+#include "../common/StanceReachDemo.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 #include <charconv>
 #include <filesystem>
@@ -41,7 +42,7 @@ int main(int argc,char** argv)
         ReachTarget reachTarget;
         int effectorOffset=0;
         RootPose root;
-        bool eyes=true, multiDemo=false, interactionDemo=false, supportDemo=false, explicitTicks=false;
+        bool eyes=true, multiDemo=false, interactionDemo=false, supportDemo=false, stanceDemo=false, explicitTicks=false;
         std::optional<bool> collisionDemo;
         std::filesystem::path source=std::filesystem::path{JULIA_ASSET_DIR}/"models/Raphtalia_prepared.fbx", output;
         for (int i=1;i<argc;++i)
@@ -51,6 +52,7 @@ int main(int argc,char** argv)
             {
                 std::cout << "julia_body_sim [--ticks N] [--clip INDEX] [--elbow RADIANS] [--no-eyes] [--model PATH] [--output CSV]\n"
                     << "  --support-demo (explicit alignment, four small root moves; default 12000 ticks)\n"
+                    << "  --stance-reach-demo (align, Reach, Retarget/Cancel, root move, new Reach; 12000 ticks)\n"
                     << "  --interaction-demo (one sphere; grasp, move, release; --right optional)\n  --reach X Y Z [--right] [--effector wrist|palm|grip] [--world] [--root X Y Z YAW_RADIANS]\n"
                     << "  --orientation W X Y Z (PositionAndOrientation); --position-only; --spatial-demo 0|1|2\n"
                     << "  --tolerance METRES --angular-tolerance RADIANS; --retarget-orientation W X Y Z\n"
@@ -64,6 +66,7 @@ int main(int argc,char** argv)
                 return 0;
             }
             if (argument=="--support-demo") { supportDemo=true; continue; }
+            if (argument=="--stance-reach-demo") { stanceDemo=true; continue; }
             if (argument=="--interaction-demo") { interactionDemo=true; continue; }
             if (argument=="--allow-detour") { reachTarget.strategy=MovementStrategy::AllowDetour; continue; }
             if (argument=="--position-only") { reachTarget.task=ReachTask::PositionOnly; continue; }
@@ -140,6 +143,20 @@ int main(int argc,char** argv)
         const auto profile=raphtaliaBodyProfile();
         const bool calibrated=validateBodyProfile(profile,*asset).empty();
         BodyInstance body(1,asset,calibrated ? &profile:nullptr,eyes);
+        if (stanceDemo) {
+            if (!calibrated) throw std::invalid_argument("Stance Reach demo requires Raphtalia");
+            if (!explicitTicks) ticks=12000;
+            body.enqueue(SetRoot{root}); body.enqueue(SetDirectMode{true}); body.step();
+            app::StanceReachDemo demo; demo.arm=reachTarget.arm; demo.start(body);
+            std::ofstream trace;
+            if (!output.empty()) { if (!output.parent_path().empty()) std::filesystem::create_directories(output.parent_path()); trace.open(output); }
+            for (std::uint64_t t=0;t<ticks;++t) {
+                demo.drive(body); body.step(); if (trace) app::stanceReachTrace(trace,body.snapshot());
+                for (const auto& r:body.results()) if (r.status==BodyCommandStatus::Rejected) throw std::runtime_error(r.reason);
+            }
+            std::cout << "stance_reach_stage=" << demo.stage << " support=" << supportPhaseName(body.snapshot().support.phase) << '\n';
+            return demo.done() ? 0:1;
+        }
         if (supportDemo) {
             if (!calibrated) throw std::invalid_argument("Support demo requires Raphtalia");
             if (!explicitTicks) ticks=12000;

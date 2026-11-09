@@ -22,6 +22,15 @@ namespace julia::embodiment
         SegmentId segment;
         world::Capsule capsule; // World metres, generated from actual calibrated FK.
     };
+    inline constexpr std::uint64_t BodyColliderCalibrationVersion=2;
+    inline constexpr std::uint64_t SupportFloorObject=1ull<<62;
+    struct GeometryDependencies
+    {
+        std::uint64_t epoch=0, scene=0, supportSurface=0, supportVersion=0;
+        std::uint64_t frozenGeometry=0, calibration=0;
+        bool fixedStance=false;
+        bool operator==(const GeometryDependencies&) const = default;
+    };
     // Engineering calibration, independently inspectable from bind/import calibration.
     struct ColliderCalibration
     {
@@ -37,6 +46,7 @@ namespace julia::embodiment
     bool checksSelfPair(std::uint32_t a, std::uint32_t b);
     struct PathCheck
     {
+        GeometryDependencies dependencies;
         PathStatus status = PathStatus::Disabled;
         std::uint64_t sceneVersion = 0, command = 0, segmentStartTick = 0;
         std::uint32_t bodyForm = 0, otherBodyForm = 0;
@@ -59,6 +69,9 @@ namespace julia::embodiment
     // Frozen with each job/certificate. Only the named hand/object pair is exempt.
     struct CollisionContext
     {
+        GeometryDependencies dependencies;
+        std::vector<BodyCollider> fixedLowerForms; // FK of the admitted, immutable stance; IDs 11..17.
+        std::array<std::pair<std::uint32_t,std::uint64_t>,2> soleContacts{};
         std::uint32_t contactHand=0;
         std::uint64_t contactObject=0;
         std::optional<CarriedSphere> carried;

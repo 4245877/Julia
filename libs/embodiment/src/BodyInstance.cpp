@@ -5,6 +5,8 @@
 #include <limits>
 #include <stdexcept>
 #include <type_traits>
+#include <bit>
+#include <chrono>
 
 namespace julia::embodiment
 {
@@ -16,6 +18,25 @@ namespace julia::embodiment
         { return std::isfinite(value.x) && std::isfinite(value.y) && std::isfinite(value.z); }
         glm::mat4 matrix(const RootPose& pose)
         { return glm::translate(glm::mat4{1}, pose.position) * glm::mat4_cast(pose.rotation); }
+        std::vector<world::SceneObject> environmentObjects(const std::shared_ptr<const world::CollisionScene>& scene,
+            bool floor,SupportSurface surface,std::optional<world::SceneObject> interactive={})
+        {
+            std::vector<world::SceneObject> result;
+            if (scene) for (const auto& o:scene->objects()) {
+                if (o.id==SupportFloorObject) throw std::invalid_argument("Reserved support floor object ID");
+                if (floor && std::holds_alternative<world::Plane>(o.shape) &&
+                    glm::length(o.rotation*glm::dvec3{0,1,0}-glm::dvec3{0,1,0})<1e-8) {
+                    if (std::abs(o.position.y-surface.height)>1e-6)
+                        throw std::invalid_argument("Horizontal collision floor disagrees with SupportSurface height");
+                    continue; // Canonical SupportSurface plane replaces equivalent aliases, including filters.
+                }
+                result.push_back(o);
+            }
+            if (floor && surface.available) result.push_back({SupportFloorObject,{0,surface.height,0},{1,0,0,0},{},world::Plane{}});
+            if (interactive) result.push_back(*interactive);
+            if (result.size()>64) throw std::invalid_argument("No scene slot for canonical support floor");
+            return result;
+        }
     }
     BodyInstance::BodyInstance(BodyId id, std::shared_ptr<const model::ModelAsset> asset,
         const BodyProfile* profile, bool eyesEnabled) : id_(id), asset_(std::move(asset)),
@@ -28,6 +49,7 @@ namespace julia::embodiment
             binding_ = std::make_unique<BodyRigBinding>(*profile, *asset_);
             control_ = std::make_unique<DirectBodyControl>(*binding_);
             reach_ = std::make_unique<ArmReach>(*control_);
+            reach_->contextValid=[this](std::size_t side) { return contextMatches(side); };
             player_.setBodyControl(control_.get());
             if (profile->name.starts_with("Raphtalia_prepared/")) {
                 support_=std::make_unique<LegSupport>(*control_);
@@ -80,29 +102,115 @@ namespace julia::embodiment
         pathCheck_={}; pathCheck_.status=collisionScene_ ? PathStatus::Invalidated:PathStatus::Disabled;
         pathCheck_.sceneVersion=collisionScene_ ? sceneVersion_:0; pathCheck_.detail=reason;
     }
+    bool BodyInstance::supportReady() const
+    {
+        if (!support_) return false;
+        const auto& o=support_->observation();
+        if (!o.enabled || o.phase!=SupportPhase::Holding || o.kind!=SupportKind::KinematicSupport ||
+            o.cancellationPending || o.disablePending || !o.surface.available) return false;
+        for (const auto& a:o.anchors) if (!a.bound || a.surface!=o.surface.id || a.version!=o.surface.version ||
+            a.positionError>SupportPositionTolerance || a.angularError>SupportAngularTolerance ||
+            a.minGap < -SupportSurfaceTolerance || a.maxGap>SupportSurfaceTolerance) return false;
+        return true;
+    }
+    GeometryDependencies BodyInstance::geometryDependencies(std::size_t side) const
+    {
+        GeometryDependencies d; d.epoch=epoch_; d.scene=collisionScene_ ? collisionScene_->version():0;
+        d.calibration=BodyColliderCalibrationVersion;
+        std::uint64_t hash=14695981039346656037ull;
+        const auto add=[&](std::uint64_t bits) { for (unsigned k=0;k<8;++k) { hash^=(bits>>(k*8))&255; hash*=1099511628211ull; } };
+        const auto scalar=[&](float v) { add(std::bit_cast<std::uint32_t>(v)); };
+        const auto frame=[&](const glm::mat4& m) { for (int c=0;c<4;++c) for (int r=0;r<4;++r) scalar(m[c][r]); };
+        frame(matrix(root_));
+        if (control_) {
+            add(binding_->profile().rigFingerprint); add(control_->enabled());
+            const auto& joints=binding_->profile().joints;
+            const auto shoulder=side==0 ? JointId::LeftShoulder:JointId::RightShoulder;
+            const auto elbow=side==0 ? JointId::LeftElbow:JointId::RightElbow;
+            const auto wrist=side==0 ? JointId::LeftWrist:JointId::RightWrist;
+            for (std::size_t j=0;j<joints.size();++j) if (joints[j].id!=shoulder && joints[j].id!=elbow && joints[j].id!=wrist)
+                for (int k=0;k<3;++k) scalar(control_->coordinates()[j][k]);
+        }
+        if (interaction_) for (const auto& hand:interaction_->hand.states()) add(hand.enabled);
+        if (support_ && support_->enabled()) {
+            const auto& o=support_->observation(); d.fixedStance=true; d.supportSurface=o.surface.id; d.supportVersion=o.surface.version;
+            scalar(o.surface.height); add(o.surface.available); add(static_cast<unsigned>(o.kind));
+            for (const auto& a:o.anchors) { add(a.bound); add(a.surface); add(a.version); frame(a.desiredWorld); frame(a.surfaceFromSole); }
+            // Asset-derived contact dimensions also determine shoe proxy radii.
+            for (const auto& contact:support_->contacts()) {
+                frame(contact.soleFromContact);
+                for (const auto point:contact.points) for (int k=0;k<3;++k) scalar(point[k]);
+            }
+        }
+        d.frozenGeometry=hash; return d;
+    }
+    bool BodyInstance::contextMatches(std::size_t side) const
+    {
+        const auto& c=reachContexts_[side];
+        if (!c) return !(support_ && support_->enabled()); // Standalone interaction keeps its existing phase contract.
+        if (c->scene!=collisionScene_ || c->root!=matrix(root_) || c->control.enabled()!=control_->enabled() ||
+            c->collision.dependencies!=geometryDependencies(side)) return false;
+        const auto shoulder=side==0 ? JointId::LeftShoulder:JointId::RightShoulder;
+        const auto elbow=side==0 ? JointId::LeftElbow:JointId::RightElbow;
+        const auto wrist=side==0 ? JointId::LeftWrist:JointId::RightWrist;
+        const auto& joints=binding_->profile().joints;
+        for (std::size_t j=0;j<joints.size();++j) if (joints[j].id!=shoulder && joints[j].id!=elbow && joints[j].id!=wrist &&
+            c->control.coordinates()[j]!=control_->coordinates()[j]) return false;
+        if (c->collision.dependencies.fixedStance) {
+            if (!supportReady()) return false;
+            for (std::size_t k=0;k<2;++k) {
+                const auto& a=support_->observation().anchors[k]; const auto& saved=c->anchors[k];
+                if (a.surface!=saved.surface || a.version!=saved.version || a.bound!=saved.bound ||
+                    a.desiredWorld!=saved.desiredWorld || a.surfaceFromSole!=saved.surfaceFromSole) return false;
+            }
+        }
+        return true;
+    }
+    std::shared_ptr<const BodyInstance::ReachValidationContext> BodyInstance::validationContext(std::size_t side) const
+    {
+        if (reachContexts_[side]) return reachContexts_[side];
+        const auto start=std::chrono::steady_clock::now();
+        auto c=std::make_shared<ReachValidationContext>(*control_);
+        c->root=matrix(root_); c->scene=collisionScene_; c->settings=collisionSettings_;
+        c->collision=interaction_ ? interaction_->collisionContext():CollisionContext{};
+        c->collision.dependencies=geometryDependencies(side);
+        if (c->collision.dependencies.fixedStance) {
+            if (!supportReady()) throw std::invalid_argument("Reach requires aligned, stationary two-support Holding");
+            animation::Pose p(asset_->skeleton()); c->control.apply(p.locals);
+            animation::computeGlobalTransforms(asset_->skeleton(),p.locals,p.globals);
+            c->collision.fixedLowerForms=lowerBodyColliders(*binding_,p.globals,c->root,support_->contacts());
+            c->collision.soleContacts={std::pair{14u,SupportFloorObject},std::pair{17u,SupportFloorObject}};
+            c->anchors=support_->observation().anchors;
+        }
+        c->preparationMicroseconds=std::chrono::duration<double,std::micro>(std::chrono::steady_clock::now()-start).count();
+        return c;
+    }
     void BodyInstance::rebuildCollision()
     {
         // A phase boundary is legal only after the previous certified segment stopped.
         if (reach_ && reach_->anyActive()) throw std::logic_error("Geometry mutation during active certified reach");
-        std::vector<world::SceneObject> objects;
-        if (environmentScene_) objects.assign(environmentScene_->objects().begin(),environmentScene_->objects().end());
-        if (interaction_) if (const auto c=interaction_->freeCollider()) objects.push_back(*c);
-        const bool enabled=environmentScene_ || (interaction_ && interaction_->object());
+        const bool floor=support_ && support_->enabled();
+        auto objects=environmentObjects(environmentScene_,floor,support_ ? support_->observation().surface:SupportSurface{},
+            interaction_ ? interaction_->freeCollider():std::nullopt);
+        const bool enabled=floor || environmentScene_ || (interaction_ && interaction_->object());
+        supportFloorEnabled_=floor;
         if (!enabled) collisionScene_.reset();
-        else if (environmentScene_ && (!interaction_ || !interaction_->object()) && environmentScene_->version()>sceneVersion_) {
+        else if (!floor && environmentScene_ && (!interaction_ || !interaction_->object()) && environmentScene_->version()>sceneVersion_) {
             sceneVersion_=environmentScene_->version(); collisionScene_=environmentScene_;
         } else collisionScene_=std::make_shared<const world::CollisionScene>(++sceneVersion_,std::move(objects));
         pathCheck_={};
         if (!enabled) { reach_->setPathValidator({}); reach_->setPlanningValidator({},{}); return; }
         pathCheck_.status=PathStatus::NotChecked; pathCheck_.sceneVersion=sceneVersion_;
         reach_->setPathValidator([this](std::size_t side,std::span<const ArmCoordinates> path,unsigned delayTicks) {
-            const auto context=interaction_ ? interaction_->collisionContext():CollisionContext{};
-            pathCheck_=checkArmPath(*control_,side,path,matrix(root_),*collisionScene_,collisionSettings_,context);
+            if (!contextMatches(side)) return PathStatus::Invalidated;
+            const auto c=validationContext(side);
+            pathCheck_=checkArmPath(c->control,side,path,c->root,*c->scene,c->settings,c->collision);
             pathCheck_.command=checkingCommand_; pathCheck_.segmentStartTick=tick_-1+delayTicks; return pathCheck_.status;
         },sceneVersion_);
         reach_->setPlanningValidator([this](std::size_t side,std::span<const ArmCoordinates> path) {
-            return std::make_unique<ArmPathCheckJob>(*control_,side,path,matrix(root_),*collisionScene_,collisionSettings_,
-                interaction_ ? interaction_->collisionContext():CollisionContext{});
+            if (!contextMatches(side)) throw std::invalid_argument("Stale Reach geometry context");
+            const auto c=validationContext(side);
+            return std::make_unique<ArmPathCheckJob>(c->control,side,path,c->root,*c->scene,c->settings,c->collision);
         },[this](PathCheck check) { pathCheck_=std::move(check); });
     }
     void BodyInstance::displayObject(BodyDisplay& display,const BodySnapshot& selected) const
@@ -119,6 +227,10 @@ namespace julia::embodiment
         if (!binding_ || !d.direct || !d.collisionScene) return;
         const auto world=matrix(d.root);
         d.colliders=bodyColliders(*binding_,d.pose.globals,world);
+        if (d.support.enabled) {
+            const auto lower=lowerBodyColliders(*binding_,d.pose.globals,world,support_->contacts());
+            d.colliders.insert(d.colliders.end(),lower.begin(),lower.end());
+        }
         for (std::size_t s=0;s<2;++s) if (d.hands[s].enabled) {
             const auto f=world*binding_->jointFrame(s==0 ? JointId::LeftWrist:JointId::RightWrist,d.pose.globals);
             d.colliders[s*3+2].capsule={glm::dvec3{f*glm::vec4{0,.025f,0,1}},glm::dvec3{f*glm::vec4{0,.160f,0,1}},.045};
@@ -141,20 +253,34 @@ namespace julia::embodiment
             if constexpr (std::is_same_v<T,EnableSupport> || std::is_same_v<T,AlignSupport> || std::is_same_v<T,MoveSupportRoot>)
                 if ((reach_ && reach_->anyActive()) || (interaction_ && interaction_->locked()))
                     throw std::invalid_argument("Support conflicts with active Reach/HandInteraction/Attached object");
-            if constexpr (std::is_same_v<T,SetCoordinate> || std::is_same_v<T,StartReach> || std::is_same_v<T,RetargetReach> ||
-                std::is_same_v<T,CancelReach> || std::is_same_v<T,GraspObject> || std::is_same_v<T,MoveHeldObject> ||
+            if constexpr (std::is_same_v<T,SetSupportSurface> || std::is_same_v<T,DisableSupport> || std::is_same_v<T,CancelSupportMotion> ||
+                std::is_same_v<T,CreateInteractionSphere> || std::is_same_v<T,DeleteInteractionObject>)
+                if (support_ && support_->enabled() && reach_ && reach_->anyActive())
+                    throw std::invalid_argument("Fixed-stance Reach owns frozen support/scene; wait for arm segment completion");
+            if constexpr (std::is_same_v<T,SetCoordinate> || std::is_same_v<T,GraspObject> || std::is_same_v<T,MoveHeldObject> ||
                 std::is_same_v<T,ReleaseObject> || std::is_same_v<T,SetHandClosure> || std::is_same_v<T,SetCollisionScene>)
                 if (support_ && support_->enabled()) throw std::invalid_argument("KinematicSupport owns geometry; disable support and wait for rest");
+            if constexpr (std::is_same_v<T,StartReach> || std::is_same_v<T,RetargetReach>)
+                if (support_ && support_->enabled() && !supportReady())
+                    throw std::invalid_argument("Reach requires completed alignment and stationary, valid two-support Holding");
             if constexpr (std::is_same_v<T,SetSupportSurface> || std::is_same_v<T,EnableSupport> || std::is_same_v<T,AlignSupport> ||
                 std::is_same_v<T,MoveSupportRoot> || std::is_same_v<T,CancelSupportMotion> || std::is_same_v<T,DisableSupport>)
             {
                 if (!support_) throw std::invalid_argument("Calibrated leg support unavailable");
-                if constexpr (std::is_same_v<T,SetSupportSurface>) support_->setSurface(value.surface);
-                else if constexpr (std::is_same_v<T,EnableSupport>) { support_->enable(matrix(root_)); invalidatePath("KinematicSupport owns geometry; arm certificates invalidated"); }
+                if constexpr (std::is_same_v<T,SetSupportSurface>) {
+                    (void)environmentObjects(environmentScene_,support_->enabled(),value.surface,interaction_ ? interaction_->freeCollider():std::nullopt);
+                    support_->setSurface(value.surface);
+                    if (support_->enabled()) rebuildCollision();
+                }
+                else if constexpr (std::is_same_v<T,EnableSupport>) {
+                    (void)environmentObjects(environmentScene_,true,support_->observation().surface,interaction_ ? interaction_->freeCollider():std::nullopt);
+                    support_->enable(matrix(root_)); rebuildCollision(); invalidatePath("Support enabled; previous arm certificates historical");
+                }
                 else if constexpr (std::is_same_v<T,AlignSupport>) support_->plan(commandId,epoch_,matrix(root_),std::nullopt);
                 else if constexpr (std::is_same_v<T,MoveSupportRoot>) support_->plan(commandId,epoch_,matrix(root_),value.worldPosition);
                 else if constexpr (std::is_same_v<T,CancelSupportMotion>) support_->cancel();
                 else support_->cancel(true);
+                if (supportFloorEnabled_!=support_->enabled()) rebuildCollision();
             }
             else if constexpr (std::is_same_v<T, SetCoordinate>)
             {
@@ -171,14 +297,18 @@ namespace julia::embodiment
                 if (!control_) throw std::invalid_argument("No calibrated body control");
                 if (support_) support_->interrupt("Coordinates reset: explicit discontinuity");
                 reach_->interrupt(ReachReason::CoordinatesReset);
+                reachContexts_={};
+                if (supportFloorEnabled_) rebuildCollision();
                 invalidatePath("coordinates reset");
                 control_->reset(); discontinuity_ = true;
             }
             else if constexpr (std::is_same_v<T, SetDirectMode>)
             {
                 if (!control_) throw std::invalid_argument("No calibrated body control");
-                if (control_->enabled()!=value.enabled) { reach_->interrupt(ReachReason::ModeChanged); invalidatePath("mode changed"); }
+                if (control_->enabled()!=value.enabled || (support_ && support_->enabled())) { reach_->interrupt(ReachReason::ModeChanged); invalidatePath("mode changed"); }
                 if (support_) support_->interrupt("Direct mode command: explicit discontinuity");
+                reachContexts_={};
+                if (supportFloorEnabled_) rebuildCollision();
                 control_->setEnabled(value.enabled); discontinuity_ = true;
             }
             else if constexpr (std::is_same_v<T, SetRoot>)
@@ -190,6 +320,8 @@ namespace julia::embodiment
                 if (collisionScene_ && glm::length(value.pose.position)>100) throw std::invalid_argument("Collision mode supports root within 100 world metres");
                 if (support_) support_->interrupt("Root teleport: explicit discontinuity");
                 if (reach_) reach_->interrupt(ReachReason::RootChanged);
+                reachContexts_={};
+                if (supportFloorEnabled_) rebuildCollision();
                 invalidatePath("root teleported");
                 root_ = {value.pose.position, glm::normalize(q)};
                 discontinuity_ = true; // SetRoot is a teleport, never a velocity-limited move.
@@ -199,7 +331,9 @@ namespace julia::embodiment
                 if (support_) support_->interrupt("ResetBody: explicit discontinuity / epoch change");
                 root_ = {};
                 if (reach_) reach_->reset();
+                reachContexts_={}; certificates_={};
                 if (interaction_) interaction_->resetFree(epoch_+1);
+                if (supportFloorEnabled_) rebuildCollision();
                 invalidatePath("body reset; scene retained");
                 if (control_) { control_->reset(); control_->setEnabled(false); }
                 eyes_.reset(); eyes_.setEnabled(initialEyes_);
@@ -211,12 +345,18 @@ namespace julia::embodiment
             else if constexpr (std::is_same_v<T, StartReach> || std::is_same_v<T, RetargetReach>)
             {
                 if (!reach_) throw std::invalid_argument("No calibrated body control");
+                const auto side=value.target.arm==ArmSide::Left ? 0u:1u;
+                const auto savedContext=reachContexts_[side];
+                if (support_ && support_->enabled() && !reach_->anyActive()) {
+                    reachContexts_[side].reset(); reachContexts_[side]=validationContext(side);
+                }
                 checkingCommand_=commandId;
                 const auto previousCheckCommand=pathCheck_.command;
                 try {
                 if constexpr (std::is_same_v<T, StartReach>) reach_->start(commandId,epoch_,value.target,matrix(root_),false,commandId);
                 else reach_->start(value.action,epoch_,value.target,matrix(root_),true,commandId);
                 } catch (const std::exception& error) {
+                    reachContexts_[side]=savedContext;
                     if (collisionScene_ && pathCheck_.command==previousCheckCommand) {
                         pathCheck_={}; pathCheck_.command=commandId; pathCheck_.sceneVersion=sceneVersion_;
                         // Command/IK failures are separate from geometric validation.
@@ -225,6 +365,7 @@ namespace julia::embodiment
                     pathCheck_.detail=error.what();
                     checkingCommand_=0; throw;
                 }
+                if (reach_->observations()[side].collisionChecked) certificates_[side]=reachContexts_[side] ? reachContexts_[side]->collision.dependencies:geometryDependencies(side);
                 checkingCommand_=0;
             }
             else if constexpr (std::is_same_v<T, SetCollisionScene>)
@@ -258,6 +399,8 @@ namespace julia::embodiment
             {
                 if (!interaction_) throw std::invalid_argument("Hand profile unavailable for this rig");
                 if constexpr (std::is_same_v<T,CreateInteractionSphere>) {
+                    if (support_ && support_->enabled() && environmentObjects(environmentScene_,true,support_->observation().surface).size()>=64)
+                        throw std::invalid_argument("No scene slot for interactive object beside support floor");
                     if (environmentScene_) {
                         if (environmentScene_->objects().size()>=64) throw std::invalid_argument("No scene slot for interactive object");
                         const world::Capsule sphere{value.pose.position,value.pose.position,value.radius};
@@ -355,6 +498,10 @@ namespace julia::embodiment
         if (reach_) reach_->clearEvents();
         if (interaction_) interaction_->beginTick();
         if (support_) support_->beginTick();
+        if (reach_) for (std::size_t s=0;s<2;++s) {
+            const auto state=reach_->observations()[s].state;
+            if (state!=ReachState::Planning && state!=ReachState::Moving && state!=ReachState::Settling) reachContexts_[s].reset();
+        }
         std::sort(commands_.begin(),commands_.end(),[](const auto& a,const auto& b) {
             return a.tick != b.tick ? a.tick < b.tick : a.id < b.id; });
         std::vector<BodyCommand> due;
@@ -383,6 +530,7 @@ namespace julia::embodiment
         if (interaction_) interaction_->hand.advance();
         if (reach_) reach_->advance(tick_);
         if (support_) support_->advance(root_.position);
+        if (support_ && supportFloorEnabled_!=support_->enabled()) rebuildCollision();
         player_.update(runtime::BodyStepSeconds);
         if (support_) support_->measure(player_.globalTransforms(),matrix(root_));
         if (reach_) reach_->measure(player_.globalTransforms(),matrix(root_));
@@ -401,6 +549,20 @@ namespace julia::embodiment
         current_.eyesEnabled = eyes_.enabled(); current_.eyes = eyes_.behavior().output();
         current_.collisionScene=collisionScene_; current_.collisionSettings=collisionSettings_; current_.pathCheck=pathCheck_;
         if (reach_) current_.reaches = reach_->observations();
+        if (reach_) for (std::size_t s=0;s<2;++s) {
+            const auto& o=current_.reaches[s];
+            const bool active=o.state==ReachState::Planning || o.state==ReachState::Moving || o.state==ReachState::Settling;
+            if (active && o.collisionChecked && reachContexts_[s]) certificates_[s]=reachContexts_[s]->collision.dependencies;
+            else if (active && o.collisionChecked && o.route.segmentCount) certificates_[s]=o.route.segmentChecks[0].dependencies;
+            auto& g=current_.reachGeometry[s]; g.certificate=certificates_[s]; g.current=geometryDependencies(s);
+            g.dependenciesMatch=g.certificate.calibration!=0 && g.certificate==g.current;
+            // A replacement proposal clears collisionChecked while the admitted
+            // old segment still executes. Its separate certificate stays current.
+            g.executable=active && g.dependenciesMatch && (o.collisionChecked || o.state==ReachState::Moving || o.state==ReachState::Settling);
+            g.contextBytes=reachContexts_[s] ? sizeof(ReachValidationContext)+reachContexts_[s]->control.coordinates().size()*sizeof(glm::vec3)+
+                reachContexts_[s]->collision.fixedLowerForms.capacity()*sizeof(BodyCollider):0;
+            g.preparationMicroseconds=reachContexts_[s] ? reachContexts_[s]->preparationMicroseconds:0;
+        }
         if (support_) current_.support=support_->observation();
         if (interaction_) { current_.hands=interaction_->hand.states(); current_.object=interaction_->object(); current_.interaction=interaction_->observation(); }
         if (control_) current_.coordinates.assign(control_->coordinates().begin(),control_->coordinates().end());
@@ -426,6 +588,7 @@ namespace julia::embodiment
         if (!std::isfinite(alpha) || alpha < 0 || alpha > 1) throw std::invalid_argument("Invalid display fraction");
         BodyDisplay result(asset_->skeleton());
         result.reaches=current_.reaches; result.support=current_.support;
+        result.reachGeometry=current_.reachGeometry;
         result.hands=current_.hands; result.interaction=current_.interaction;
         result.collisionScene=current_.collisionScene; result.pathCheck=current_.pathCheck;
         result.fromTick = previous_.tick; result.toTick = current_.tick;
@@ -442,6 +605,7 @@ namespace julia::embodiment
             const auto& selected = alpha == 0 ? previous_ : current_;
             result.pose = selected.pose; result.root = selected.root; result.coordinates = selected.coordinates;
             result.support=selected.support;
+            result.reachGeometry=selected.reachGeometry;
             result.hands=selected.hands; result.interaction=selected.interaction; result.reaches=selected.reaches;
             result.collisionScene=selected.collisionScene; result.pathCheck=selected.pathCheck; displayObject(result,selected);
             fillDisplayColliders(result);

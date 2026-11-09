@@ -280,6 +280,7 @@ namespace julia::embodiment
         case ReachReason::DetourExhausted: return "finite waypoint set exhausted (not a no-path proof)";
         case ReachReason::PlanningBudgetExhausted: return "total planning operation budget exhausted";
         case ReachReason::OrientationNotReached: return "final orientation outside angular tolerance";
+        case ReachReason::GeometryContextChanged: return "frozen geometry/support dependencies changed";
         }
         return "unknown";
     }
@@ -540,6 +541,7 @@ namespace julia::embodiment
         target.orientation=normalizedReachOrientation(target.orientation);
         if (!control_.enabled()) throw std::invalid_argument("IK requires explicit calibrated direct mode; clip pose cannot be inferred");
         const auto s=index(target.arm);
+        if (contextValid && !contextValid(s)) throw std::invalid_argument("Stale frozen Reach geometry/support context");
         auto& o=observations_[s]; auto& m=motion_[s];
         if (validator_ && active(observations_[1-s].state)) throw std::invalid_argument("Collision mode permits only one active arm");
         if (retarget && (o.action!=action || o.epoch!=epoch || !active(o.state) || m.cancelling))
@@ -739,6 +741,7 @@ namespace julia::embodiment
     }
     void ArmReach::admitBest(std::size_t s,SelectionCompletion completion)
     {
+        if (contextValid && !contextValid(s)) { interrupt(ReachReason::GeometryContextChanged); return; }
         auto& p=*planners_[s]; auto& o=observations_[s]; auto& diagnostic=o.planning;
         const auto& chosen=p.best->route;
         diagnostic.state=diagnostic.stage=PlanningState::RouteReady; diagnostic.completion=completion;
@@ -1034,6 +1037,9 @@ namespace julia::embodiment
     void ArmReach::advance(std::uint64_t tick)
     {
         advancingTick_=tick;
+        for (std::size_t s=0;s<2;++s) if (active(observations_[s].state) && contextValid && !contextValid(s)) {
+            interrupt(ReachReason::GeometryContextChanged); return;
+        }
         for (std::size_t s=0;s<2;++s)
         {
             auto& m=motion_[s]; auto& o=observations_[s];

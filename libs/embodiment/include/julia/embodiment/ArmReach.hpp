@@ -125,7 +125,7 @@ namespace julia::embodiment
     // JointLimited is a constrained LOCAL result, never a global infeasibility proof.
     enum class ReachReason { None, Reached, GeometricRange, JointLimited, LocalNoConvergence,
         MotionPlanUnavailable, UserCancelled, Superseded, ModeChanged, CoordinatesReset, BodyReset, RootChanged,
-        PathBlocked, InitialIntersection, CheckIncomplete, DetourExhausted, PlanningBudgetExhausted, OrientationNotReached };
+        PathBlocked, InitialIntersection, CheckIncomplete, DetourExhausted, PlanningBudgetExhausted, OrientationNotReached, GeometryContextChanged };
     const char* reachReasonName(ReachReason reason);
     const char* reachStateName(ReachState state);
     struct ReachTarget
@@ -229,6 +229,8 @@ namespace julia::embodiment
         void setPlanningValidator(PlanningValidator factory, PathReporter reporter)
         { planningValidator_=std::move(factory); pathReporter_=std::move(reporter); }
         bool anyActive() const;
+        // Single-writer dependency gate, run before admission and segment execution.
+        std::function<bool(std::size_t)> contextValid;
     private:
         struct Motion
         {

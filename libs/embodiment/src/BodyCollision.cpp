@@ -123,6 +123,17 @@ namespace julia::embodiment
             if (context.contactHand && context.contactHand!=side*3+3)
                 throw std::invalid_argument("Contact permission belongs to a different hand");
             if (context.contactObject && !context.contactHand) throw std::invalid_argument("Contact object requires named hand");
+            if (context.fixedLowerForms.size()>7 || (!context.fixedLowerForms.empty() && context.carried))
+                throw std::invalid_argument("Fixed stance supports seven lower forms and no carried volume");
+            for (const auto& permission:context.soleContacts) if (permission.first &&
+                ((permission.first!=14 && permission.first!=17) || permission.second!=SupportFloorObject))
+                throw std::invalid_argument("Only a named shoe/canonical support floor pair may be exempt");
+            for (std::size_t k=0;k<context.fixedLowerForms.size();++k) {
+                const auto& form=context.fixedLowerForms[k]; const auto& c=form.capsule;
+                if (!std::isfinite(c.radius) || c.radius<=0 || c.radius>.25 || !std::isfinite(glm::length(c.a)) || !std::isfinite(glm::length(c.b)))
+                    throw std::invalid_argument("Invalid frozen lower-body capsule");
+                for (std::size_t j=0;j<k;++j) if (context.fixedLowerForms[j].id==form.id) throw std::invalid_argument("Duplicate lower-body form ID");
+            }
             if (context.handEnvelopes[side]) radius+=.10; // Bounds the enlarged proxy, not the full skinned mesh.
             if (context.carried)
             {
@@ -152,24 +163,36 @@ namespace julia::embodiment
             for (std::size_t i=0;i<calibration.size();++i)
             {
                 for (std::size_t j=0;j<scene.objects().size();++j)
-                    if ((scene.objects()[j].id & (1ull<<63)) || world::interacts(settings.bodyFilter,scene.objects()[j].filter)) pairs.push_back({i,j,true});
+                    if (scene.objects()[j].id==SupportFloorObject || (scene.objects()[j].id & (1ull<<63)) || world::interacts(settings.bodyFilter,scene.objects()[j].filter)) pairs.push_back({i,j,true});
                 for (std::size_t j=i+1;j<calibration.size();++j)
                     if (checksSelfPair(calibration[i].id,calibration[j].id)) pairs.push_back({i,j,false});
             }
+            for (std::size_t k=0;k<context.fixedLowerForms.size();++k) {
+                const auto lower=calibration.size()+k;
+                const auto id=context.fixedLowerForms[k].id;
+                if (id<11 || id>17) throw std::invalid_argument("Lower body form ID outside reserved 11..17");
+                for (std::size_t j=side*3;j<side*3+3;++j) pairs.push_back({j,lower,false});
+                for (std::size_t j=0;j<scene.objects().size();++j) {
+                    const auto object=scene.objects()[j].id;
+                    const bool contact=std::find(context.soleContacts.begin(),context.soleContacts.end(),std::pair{id,object})!=context.soleContacts.end();
+                    if (!contact && (object==SupportFloorObject || world::interacts(settings.bodyFilter,scene.objects()[j].filter))) pairs.push_back({lower,j,true});
+                }
+            }
             if (context.carried)
             {
-                const auto payload=calibration.size();
+                const auto payload=calibration.size()+context.fixedLowerForms.size();
                 for (std::size_t j=0;j<scene.objects().size();++j)
                     if (world::interacts(settings.bodyFilter,scene.objects()[j].filter)) pairs.push_back({payload,j,true});
                 for (std::size_t j=0;j<calibration.size();++j)
                     if (calibration[j].id!=context.contactHand) pairs.push_back({payload,j,false});
             }
+            out.dependencies=context.dependencies;
             out.status=PathStatus::NotChecked; out.detail="verification paused"; out.sceneVersion=scene.version(); out.trace.reserve(128);
-            forms.reserve(calibration.size()+(context.carried ? 1:0)); stack.reserve(settings.maxDepth+1);
+            forms.reserve(calibration.size()+context.fixedLowerForms.size()+(context.carried ? 1:0)); stack.reserve(settings.maxDepth+1);
             out.scratchBytes=sizeof(Impl)+path.capacity()*sizeof(ArmCoordinates)+pose.locals.capacity()*sizeof(glm::mat4)+
                 pose.globals.capacity()*sizeof(glm::mat4)+pose.palette.capacity()*sizeof(glm::mat4)+out.trace.capacity()*sizeof(std::array<glm::vec3,3>)+
                 forms.capacity()*sizeof(BodyCollider)+pairs.capacity()*sizeof(Pair)+stack.capacity()*sizeof(Interval)+
-                scene.objects().capacity()*sizeof(world::SceneObject)+scratch.coordinates().size()*sizeof(glm::vec3);
+                scene.objects().capacity()*sizeof(world::SceneObject)+scratch.coordinates().size()*sizeof(glm::vec3)+context.fixedLowerForms.capacity()*sizeof(BodyCollider);
         }
         void finish(PathStatus status,const char* detail="")
         {
@@ -186,6 +209,7 @@ namespace julia::embodiment
                     throw std::invalid_argument("Collision path coordinates outside profile limits");
             scratch.apply(pose.locals); animation::computeGlobalTransforms(binding.asset().skeleton(),pose.locals,pose.globals);
             forms=bodyColliders(binding,pose.globals,world);
+            forms.insert(forms.end(),context.fixedLowerForms.begin(),context.fixedLowerForms.end());
             for (std::size_t handSide=0;handSide<2;++handSide) if (context.handEnvelopes[handSide])
             {
                 const auto f=world*binding.jointFrame(handSide==0 ? JointId::LeftWrist:JointId::RightWrist,pose.globals);

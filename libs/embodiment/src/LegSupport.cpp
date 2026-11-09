@@ -198,6 +198,40 @@ namespace julia::embodiment
             chains{LegChain(c,0,contacts[0]),LegChain(c,1,contacts[1])} {}
         float progress() const { const double t=std::min(sample,SupportMotionTicks)/static_cast<double>(SupportMotionTicks); return static_cast<float>(t*t*t*(10+t*(-15+6*t))); }
     };
+    std::span<const ColliderCalibration> lowerBodyColliderCalibration()
+    {
+        // Metres, proper semantic frames. Trimmed bone axes avoid joint bulges;
+        // these small proxies do not enclose the skirt or all skin vertices.
+        static const std::array<ColliderCalibration,5> values{{
+            {11,SegmentId::Pelvis,JointId::Pelvis,JointId::Pelvis,0,0,.060f,{-.040f,-.010f,0},{.040f,-.010f,0}},
+            {12,SegmentId::LeftThigh,JointId::LeftHip,JointId::LeftKnee,.10f,.90f,.045f},
+            {13,SegmentId::LeftShank,JointId::LeftKnee,JointId::LeftAnkle,.10f,.90f,.035f},
+            {15,SegmentId::RightThigh,JointId::RightHip,JointId::RightKnee,.10f,.90f,.045f},
+            {16,SegmentId::RightShank,JointId::RightKnee,JointId::RightAnkle,.10f,.90f,.035f}
+        }};
+        return values;
+    }
+    std::vector<BodyCollider> lowerBodyColliders(const BodyRigBinding& b,std::span<const glm::mat4> globals,
+        const glm::mat4& root,const std::array<SoleContact,2>& contacts)
+    {
+        std::vector<BodyCollider> result; result.reserve(7);
+        for (const auto& c:lowerBodyColliderCalibration()) {
+            const auto f=b.jointFrame(c.first,globals),g=b.jointFrame(c.second,globals);
+            const auto a=c.first==c.second ? glm::vec3{f*glm::vec4{c.localA,1}}:glm::mix(glm::vec3{f[3]},glm::vec3{g[3]},c.from);
+            const auto z=c.first==c.second ? glm::vec3{f*glm::vec4{c.localB,1}}:glm::mix(glm::vec3{f[3]},glm::vec3{g[3]},c.to);
+            result.push_back({c.id,c.segment,{glm::dvec3{root*glm::vec4{a,1}},glm::dvec3{root*glm::vec4{z,1}},c.radius}});
+        }
+        for (unsigned side=0;side<2;++side) {
+            const auto f=root*b.effectorFrame(side==0 ? EffectorId::LeftSole:EffectorId::RightSole,globals)*contacts[side].soleFromContact;
+            double radius=.0;
+            for (const auto point:contacts[side].points) radius=std::max(radius,static_cast<double>(glm::length(point)));
+            radius+=.002; // Measured contact rectangle circumradius + explicit 2 mm envelope.
+            const auto center=glm::dvec3{f*glm::vec4{0,static_cast<float>(radius),0,1}};
+            const auto ankle=glm::dvec3{(root*b.jointFrame(side==0 ? JointId::LeftAnkle:JointId::RightAnkle,globals))[3]};
+            result.push_back({side==0 ? 14u:17u,side==0 ? SegmentId::LeftFoot:SegmentId::RightFoot,{center,ankle,radius}});
+        }
+        return result;
+    }
     LegSupport::LegSupport(DirectBodyControl& c):control_(c),contacts_(calibrateSoleContacts(c.binding())) {}
     LegSupport::~LegSupport()=default;
     void LegSupport::beginTick()

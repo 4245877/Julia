@@ -46,6 +46,13 @@ namespace julia::embodiment
         std::string reason;
         std::uint64_t epoch = 0; // ID namespace, including reset acknowledgement/cancellations.
     };
+    struct ReachGeometryObservation
+    {
+        GeometryDependencies certificate, current;
+        bool dependenciesMatch=false, executable=false;
+        std::size_t contextBytes=0;
+        double preparationMicroseconds=0;
+    };
     struct BodySnapshot
     {
         std::uint64_t tick = 0, epoch = 0;
@@ -57,6 +64,7 @@ namespace julia::embodiment
         std::vector<glm::vec3> coordinates; // Diagnostic q, never inferred from arbitrary clips.
         render::EyeBehaviorOutput eyes;
         std::array<ReachObservation,2> reaches;
+        std::array<ReachGeometryObservation,2> reachGeometry;
         std::array<HandState,2> hands{};
         std::optional<InteractiveObject> object;
         InteractionObservation interaction;
@@ -78,6 +86,7 @@ namespace julia::embodiment
         RootPose root;
         bool direct = false;
         std::array<ReachObservation,2> reaches; // Metadata captured with the same snapshot pair as geometry.
+        std::array<ReachGeometryObservation,2> reachGeometry;
         std::vector<glm::vec3> coordinates;
         std::array<HandState,2> hands{};
         std::optional<InteractiveObject> object;
@@ -136,7 +145,25 @@ namespace julia::embodiment
         std::shared_ptr<const world::CollisionScene> environmentScene_;
         CollisionSettings collisionSettings_;
         PathCheck pathCheck_;
+        bool supportFloorEnabled_=false;
         std::uint64_t sceneVersion_ = 0, checkingCommand_ = 0;
+        struct ReachValidationContext
+        {
+            DirectBodyControl control;
+            glm::mat4 root;
+            std::shared_ptr<const world::CollisionScene> scene;
+            CollisionSettings settings;
+            CollisionContext collision;
+            std::array<SupportAnchor,2> anchors;
+            double preparationMicroseconds=0;
+            explicit ReachValidationContext(const DirectBodyControl& c):control(c),root(1) {}
+        };
+        std::array<std::shared_ptr<const ReachValidationContext>,2> reachContexts_;
+        std::array<GeometryDependencies,2> certificates_;
+        GeometryDependencies geometryDependencies(std::size_t side) const;
+        std::shared_ptr<const ReachValidationContext> validationContext(std::size_t side) const;
+        bool supportReady() const;
+        bool contextMatches(std::size_t side) const;
         void capture();
         void invalidatePath(const char* reason);
         void rebuildCollision();

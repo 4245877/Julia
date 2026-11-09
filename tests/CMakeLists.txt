@@ -139,6 +139,15 @@ endif()
 add_test(NAME leg_support COMMAND julia_test_leg_support "${CMAKE_SOURCE_DIR}/build/diagnostics/stage6g/cpu")
 set_tests_properties(leg_support PROPERTIES TIMEOUT 240)
 
+add_executable(julia_test_stance_reach test_stance_reach.cpp)
+target_compile_definitions(julia_test_stance_reach PRIVATE JULIA_TEST_ASSET_DIR="${CMAKE_SOURCE_DIR}/assets")
+target_link_libraries(julia_test_stance_reach PRIVATE julia_model_import julia_embodiment julia::warnings)
+if(WIN32)
+    target_link_libraries(julia_test_stance_reach PRIVATE psapi)
+endif()
+add_test(NAME stance_reach COMMAND julia_test_stance_reach "${CMAKE_SOURCE_DIR}/build/diagnostics/stage6h/cpu")
+set_tests_properties(stance_reach PROPERTIES TIMEOUT 240)
+
 if(NOT JULIA_BUILD_DESKTOP)
     return()
 endif()
@@ -234,3 +243,6 @@ set_tests_properties(desktop_interaction PROPERTIES WORKING_DIRECTORY "${CMAKE_B
 add_test(NAME desktop_support COMMAND $<TARGET_FILE:julia_desktop>
     --verify-support "${CMAKE_SOURCE_DIR}/build/diagnostics/stage6g/gpu")
 set_tests_properties(desktop_support PROPERTIES WORKING_DIRECTORY "${CMAKE_BINARY_DIR}" TIMEOUT 180 RUN_SERIAL TRUE)
+add_test(NAME desktop_stance_reach COMMAND $<TARGET_FILE:julia_desktop>
+    --verify-stance-reach "${CMAKE_SOURCE_DIR}/build/diagnostics/stage6h/gpu")
+set_tests_properties(desktop_stance_reach PROPERTIES WORKING_DIRECTORY "${CMAKE_BINARY_DIR}" TIMEOUT 180 RUN_SERIAL TRUE)

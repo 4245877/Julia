@@ -1,5 +1,5 @@
 #pragma once
-#include "julia/embodiment/BodyProfile.hpp"
+#include "julia/embodiment/BodyCollision.hpp"
 #include <array>
 #include <memory>
 #include <optional>
@@ -18,6 +18,9 @@ namespace julia::embodiment
         glm::vec3 sampledMin{0}, sampledMax{0}; // In provisional sole frame.
     };
     std::array<SoleContact,2> calibrateSoleContacts(const BodyRigBinding& binding);
+    std::span<const ColliderCalibration> lowerBodyColliderCalibration();
+    std::vector<BodyCollider> lowerBodyColliders(const BodyRigBinding& binding,
+        std::span<const glm::mat4> globals,const glm::mat4& root,const std::array<SoleContact,2>& contacts);
     struct LegSolution
     {
         bool success=false;
