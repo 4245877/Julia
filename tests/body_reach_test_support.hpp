@@ -48,10 +48,12 @@ namespace body_reach_test
         std::vector<std::uint64_t> values{static_cast<unsigned>(p.stage),static_cast<unsigned>(p.budgetStage),p.seedAttempts,p.seedsProcessed,p.ikIterations,p.duplicates,p.failedSeeds,p.fkChecks,
             p.configurations,p.currentConfiguration,p.selectedConfiguration,p.tickIterations,p.tickSeeds,p.tickQueries,p.tickPoses,p.tickCandidates,
             p.budgetConfigurations,p.budgetCandidates,static_cast<unsigned>(p.lastSeedOutcome),static_cast<unsigned>(p.ikCompletion)};
+        values.insert(values.end(),{p.ikEvaluations,p.tickIkEvaluations});
         for (float q:p.finalCoordinates) values.push_back(std::bit_cast<std::uint32_t>(q));
         for (const auto& c:p.solutions) {
             values.insert(values.end(),{static_cast<unsigned>(c.directStatus),static_cast<unsigned>(c.lastStatus),static_cast<unsigned>(c.outcome),c.queries,c.poses,c.candidates,std::bit_cast<std::uint32_t>(c.error)});
             values.insert(values.end(),{c.object,c.bodyForm,c.otherBodyForm,std::bit_cast<std::uint64_t>(c.gap)});
+            values.push_back(std::bit_cast<std::uint32_t>(c.angularError));
             for (char v:c.detail) values.push_back(static_cast<unsigned char>(v));
             for (float q:c.coordinates) values.push_back(std::bit_cast<std::uint32_t>(q));
         }
@@ -177,6 +179,8 @@ namespace body_reach_test
                 JULIA_CHECK(current.poses-previous.poses<=observation.target.detour.posesPerTick);
             }
             JULIA_CHECK(current.tickIterations<=observation.target.detour.iterationsPerTick);
+            if (observation.target.task==ReachTask::PositionAndOrientation)
+                JULIA_CHECK(current.tickIterations<=4 && current.tickIkEvaluations<=128);
             JULIA_CHECK(current.tickSeeds<=observation.target.detour.seedsPerTick);
             JULIA_CHECK(current.tickCandidates<=1);
             JULIA_CHECK(current.tickScoreEvaluations<=1 && current.scoreEvaluations<=observation.target.ranking.maxEvaluations);
@@ -253,6 +257,7 @@ namespace body_reach_test
             unsigned candidates,queries,poses,segment,selected; ArmCoordinates waypoint;
             RouteRecord route; std::vector<std::uint64_t> accounting;
             std::vector<BodyCommandResult> results;
+            ReachTask task; glm::quat goalOrientation,actualOrientation; float positionError,angularError;
         };
         const auto schedule=[&](BodyInstance& body)
         {
@@ -269,7 +274,8 @@ namespace body_reach_test
         {
             exact.step(); const auto& s=exact.snapshot(); const auto& p=s.reaches[0].planning;
             history.push_back({s.coordinates,hash(s),s.reaches[0].state,s.reaches[0].reason,p.state,p.directCheck.status,
-                {p.segmentChecks[0].status,p.segmentChecks[1].status},p.candidates,p.queries,p.poses,p.currentSegment,p.selectedCandidate,p.waypoint,record(s.reaches[0].route),accounting(p),exact.results()});
+                {p.segmentChecks[0].status,p.segmentChecks[1].status},p.candidates,p.queries,p.poses,p.currentSegment,p.selectedCandidate,p.waypoint,record(s.reaches[0].route),accounting(p),exact.results(),
+                s.reaches[0].target.task,s.reaches[0].goalOrientationBody,s.reaches[0].actualOrientationBody,s.reaches[0].error,s.reaches[0].angularError});
         }
         for (int fps:{30,60,144})
         {
@@ -282,6 +288,8 @@ namespace body_reach_test
                     body.step(); const auto& s=body.snapshot(); const auto& p=s.reaches[0].planning;
                     const auto& expected=history[static_cast<std::size_t>(s.tick-1)];
                     JULIA_CHECK(s.coordinates==expected.q && hash(s)==expected.palette && s.reaches[0].state==expected.reach && s.reaches[0].reason==expected.reason);
+                    JULIA_CHECK(s.reaches[0].target.task==expected.task && s.reaches[0].goalOrientationBody==expected.goalOrientation &&
+                        s.reaches[0].actualOrientationBody==expected.actualOrientation && s.reaches[0].error==expected.positionError && s.reaches[0].angularError==expected.angularError);
                     JULIA_CHECK(accounting(p)==expected.accounting);
                     JULIA_CHECK(p.state==expected.planning && p.directCheck.status==expected.direct && p.candidates==expected.candidates && p.queries==expected.queries && p.poses==expected.poses);
                     JULIA_CHECK(p.currentSegment==expected.segment && p.selectedCandidate==expected.selected && p.waypoint==expected.waypoint && body.results().size()==expected.results.size());

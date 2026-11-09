@@ -5,12 +5,19 @@
 #include <functional>
 #include <stdexcept>
 #include <optional>
+#include <glm/gtc/quaternion.hpp>
 
 namespace julia::embodiment
 {
     class ReachTargetUnreachable : public std::invalid_argument { public: using std::invalid_argument::invalid_argument; };
     enum class ArmSide { Left, Right };
     enum class TargetSpace { Body, World };
+    enum class ReachTask { PositionOnly, PositionAndOrientation };
+    const char* reachTaskName(ReachTask task);
+    // Proper frame rotations only. Canonical unit quaternion, rejects nonfinite or
+    // norms outside [1e-6,1e6]. Log(target * inverse(actual)), expressed in Body.
+    glm::quat normalizedReachOrientation(glm::quat rotation);
+    glm::dvec3 orientationResidual(glm::quat target, glm::quat actual);
     enum class ReachState { Idle, Moving, Settling, Succeeded, Failed, Cancelled, Planning };
     enum class MovementStrategy { DirectOnly, AllowDetour };
     enum class RouteSelection { FirstValid, Ranked };
@@ -70,6 +77,7 @@ namespace julia::embodiment
     {
         ArmCoordinates coordinates{};
         float error = 0;
+        float angularError = 0;
         PathStatus directStatus = PathStatus::NotChecked, lastStatus = PathStatus::NotChecked;
         ConfigurationOutcome outcome = ConfigurationOutcome::Pending;
         unsigned queries = 0, poses = 0, candidates = 0;
@@ -95,6 +103,7 @@ namespace julia::embodiment
         PlanningState stage = PlanningState::Idle; // Remains meaningful while Paused.
         PlanningState budgetStage = PlanningState::Idle;
         unsigned seedAttempts = 0, seedsProcessed = 0, ikIterations = 0, duplicates = 0, failedSeeds = 0, fkChecks = 0;
+        unsigned ikEvaluations = 0, tickIkEvaluations = 0; // Rigid chain FK, including Jacobian/line search.
         unsigned configurations = 0, currentConfiguration = 0, selectedConfiguration = 0;
         unsigned tickIterations = 0, tickSeeds = 0, tickQueries = 0, tickPoses = 0, tickCandidates = 0;
         unsigned budgetConfigurations = 0, budgetCandidates = 0;
@@ -116,14 +125,14 @@ namespace julia::embodiment
     // JointLimited is a constrained LOCAL result, never a global infeasibility proof.
     enum class ReachReason { None, Reached, GeometricRange, JointLimited, LocalNoConvergence,
         MotionPlanUnavailable, UserCancelled, Superseded, ModeChanged, CoordinatesReset, BodyReset, RootChanged,
-        PathBlocked, InitialIntersection, CheckIncomplete, DetourExhausted, PlanningBudgetExhausted };
+        PathBlocked, InitialIntersection, CheckIncomplete, DetourExhausted, PlanningBudgetExhausted, OrientationNotReached };
     const char* reachReasonName(ReachReason reason);
     const char* reachStateName(ReachState state);
     struct ReachTarget
     {
         ArmSide arm = ArmSide::Left;
         EffectorId effector = EffectorId::LeftWrist;
-        glm::vec3 position{0}; // Metres. Orientation is deliberately unconstrained.
+        glm::vec3 position{0}; // Metres in space.
         TargetSpace space = TargetSpace::Body;
         float tolerance = .002f; // Measured AFTER FK, not solver prediction.
         float maxSpeed = 1.2f; // Each controlled coordinate, rad/s.
@@ -134,6 +143,9 @@ namespace julia::embodiment
         RouteSelection selection = RouteSelection::FirstValid;
         std::optional<ElbowPreference> elbowPreference;
         RankingSettings ranking;
+        ReachTask task = ReachTask::PositionOnly;
+        glm::quat orientation{1,0,0,0}; // spaceFromCalibratedEffector, column vectors.
+        float angularTolerance = .01745329252f; // 1 degree, radians; final pose only.
     };
     struct StartReach { ReachTarget target; }; // Action ID = this command's ID + epoch.
     struct RetargetReach { std::uint64_t action; ReachTarget target; };
@@ -150,30 +162,37 @@ namespace julia::embodiment
         glm::vec3 goalBody{0}, referenceBody{0}, actualBody{0}, actualWorld{0};
         glm::vec3 shoulderBody{0}, elbowBody{0}, bendNormalBody{0,0,1};
         float error = 0;
+        glm::quat goalOrientationBody{1,0,0,0}, actualOrientationBody{1,0,0,0}, actualOrientationWorld{1,0,0,0};
+        float angularError = 0; // Radians; diagnostic only in PositionOnly.
         std::optional<glm::vec3> elbowDirectionBody;
         ElbowEvaluation actualElbow; // Separate from original effector success.
         float maxMeasuredSpeed = 0, maxMeasuredAcceleration = 0;
         unsigned iterations = 0;
+        unsigned evaluations = 0;
         double solveMicroseconds = 0; // Telemetry only; never affects simulation.
         PlanningObservation planning;
         PlanningObservation route; // Admitted route; independent of the latest replacement attempt.
     };
     struct ArmSolution
     {
-        std::array<double,6> coordinates{}; // Shoulder XYZ, elbow, wrist XY.
+        std::array<double,6> coordinates{}; // Shoulder[0..2], elbow[0], wrist[0..1], profile order.
         float error = 0;
+        float angularError = 0;
         ReachReason reason = ReachReason::LocalNoConvergence;
         unsigned iterations = 0;
+        unsigned evaluations = 0;
     };
+    // Low-level goal is in Body. World full targets require explicit frozen Body rotation.
     ArmSolution solveArmPosition(const DirectBodyControl& control, const ReachTarget& target,
-        glm::vec3 goalBody);
+        glm::vec3 goalBody, std::optional<glm::quat> goalOrientationBody = std::nullopt);
 
     // Bounded, resumable production multi-start IK. Owns frozen control coordinates;
     // binding/asset must outlive it. A call never exceeds its iteration/start limits.
     class ArmPositionSearchJob
     {
     public:
-        ArmPositionSearchJob(const DirectBodyControl& control, const ReachTarget& target, glm::vec3 goalBody);
+        ArmPositionSearchJob(const DirectBodyControl& control, const ReachTarget& target, glm::vec3 goalBody,
+            std::optional<glm::quat> goalOrientationBody = std::nullopt);
         ~ArmPositionSearchJob();
         bool advance(unsigned iterations, unsigned seeds);
         bool done() const;

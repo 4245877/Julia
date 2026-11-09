@@ -1,6 +1,8 @@
 #include "julia/embodiment/BodyInstance.hpp"
 #include "julia/model_import/ModelImporter.hpp"
 #include "../common/CollisionDemo.hpp"
+#include "../common/SpatialDemo.hpp"
+#include "../common/InteractionDemo.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 #include <charconv>
 #include <filesystem>
@@ -32,11 +34,13 @@ int main(int argc,char** argv)
         std::optional<std::size_t> clip;
         std::optional<float> elbow;
         std::optional<glm::vec3> reachPosition,retargetPosition;
+        std::optional<glm::quat> retargetOrientation;
+        std::optional<unsigned> spatialSample;
         std::uint64_t retargetTick=0,cancelTick=0,action=0;
         ReachTarget reachTarget;
         int effectorOffset=0;
         RootPose root;
-        bool eyes=true, multiDemo=false;
+        bool eyes=true, multiDemo=false, interactionDemo=false;
         std::optional<bool> collisionDemo;
         std::filesystem::path source=std::filesystem::path{JULIA_ASSET_DIR}/"models/Raphtalia_prepared.fbx", output;
         for (int i=1;i<argc;++i)
@@ -45,7 +49,9 @@ int main(int argc,char** argv)
             if (argument=="--help")
             {
                 std::cout << "julia_body_sim [--ticks N] [--clip INDEX] [--elbow RADIANS] [--no-eyes] [--model PATH] [--output CSV]\n"
-                    << "  --reach X Y Z [--right] [--effector wrist|palm|grip] [--world] [--root X Y Z YAW_RADIANS]\n"
+                    << "  --interaction-demo (one sphere; grasp, move, release; --right optional)\n  --reach X Y Z [--right] [--effector wrist|palm|grip] [--world] [--root X Y Z YAW_RADIANS]\n"
+                    << "  --orientation W X Y Z (PositionAndOrientation); --position-only; --spatial-demo 0|1|2\n"
+                    << "  --tolerance METRES --angular-tolerance RADIANS; --retarget-orientation W X Y Z\n"
                     << "  [--retarget X Y Z --retarget-tick N] [--cancel-tick N] [--speed RAD_S] [--acceleration RAD_S2]\n"
                     << "  --collision-demo free|blocked|multik (static CPU scene; default demo target)\n"
                     << "  --allow-detour [--ik-configurations 1..4] [--detour-candidates N]\n"
@@ -55,7 +61,16 @@ int main(int argc,char** argv)
                     << "  --planning-poses-per-tick N --planning-pose-budget N --planning-queries-per-tick N --planning-query-budget N\n";
                 return 0;
             }
+            if (argument=="--interaction-demo") { interactionDemo=true; continue; }
             if (argument=="--allow-detour") { reachTarget.strategy=MovementStrategy::AllowDetour; continue; }
+            if (argument=="--position-only") { reachTarget.task=ReachTask::PositionOnly; continue; }
+            if (argument=="--orientation" || argument=="--retarget-orientation") {
+                if (i+4>=argc) throw std::invalid_argument("Orientation requires W X Y Z");
+                const float w=number<float>(argv[++i]),x=number<float>(argv[++i]),y=number<float>(argv[++i]),z=number<float>(argv[++i]);
+                if (argument=="--orientation") { reachTarget.orientation={w,x,y,z}; reachTarget.task=ReachTask::PositionAndOrientation; }
+                else retargetOrientation=glm::quat{w,x,y,z};
+                continue;
+            }
             if (argument=="--ranked") { reachTarget.selection=RouteSelection::Ranked; continue; }
             if (argument=="--elbow-world") {
                 if (!reachTarget.elbowPreference) reachTarget.elbowPreference=ElbowPreference{};
@@ -82,6 +97,9 @@ int main(int argc,char** argv)
             if (i+1>=argc) throw std::invalid_argument("Missing option value");
             const std::string_view value{argv[++i]};
             if (argument=="--ticks") ticks=number<std::uint64_t>(value);
+            else if (argument=="--spatial-demo") spatialSample=number<unsigned>(value);
+            else if (argument=="--tolerance") reachTarget.tolerance=number<float>(value);
+            else if (argument=="--angular-tolerance") reachTarget.angularTolerance=number<float>(value);
             else if (argument=="--clip") clip=number<std::size_t>(value);
             else if (argument=="--elbow") elbow=number<float>(value);
             else if (argument=="--model") source=std::filesystem::path{value};
@@ -119,6 +137,21 @@ int main(int argc,char** argv)
         const auto profile=raphtaliaBodyProfile();
         const bool calibrated=validateBodyProfile(profile,*asset).empty();
         BodyInstance body(1,asset,calibrated ? &profile:nullptr,eyes);
+        if (interactionDemo) {
+            if (!calibrated) throw std::invalid_argument("Interaction demo requires Raphtalia");
+            app::InteractionDemo demo; demo.arm=reachTarget.arm; demo.root=root; demo.start(body);
+            std::ofstream trace;
+            if (!output.empty()) { if (!output.parent_path().empty()) std::filesystem::create_directories(output.parent_path()); trace.open(output); if (!trace) throw std::runtime_error("Cannot open interaction trace"); }
+            for (std::uint64_t t=0;t<ticks;++t) {
+                demo.drive(body); body.step();
+                if (trace) app::interactionTrace(trace,body.snapshot());
+                for (const auto& r:body.results()) if (r.status==BodyCommandStatus::Rejected) throw std::runtime_error(r.reason);
+            }
+            const auto& i=body.snapshot().interaction;
+            std::cout << "interaction=" << interactionPhaseName(i.phase) << " result=" << i.result << " reason=" << i.reason
+                << " hold=" << (i.hold==HoldType::AssistedAttachment ? "AssistedAttachment":"None") << "\n";
+            return i.phase==InteractionPhase::Succeeded ? 0:1;
+        }
         if (collisionDemo) {
             if (!body.control()) throw std::invalid_argument("Collision demo requires Raphtalia calibration");
             const auto worldFromBody=glm::translate(glm::mat4{1},root.position)*glm::mat4_cast(root.rotation);
@@ -127,11 +160,19 @@ int main(int argc,char** argv)
             body.enqueue(SetCollisionScene{demo.scene,{}});
             if (!reachPosition) reachPosition=reachTarget.space==TargetSpace::World ? glm::vec3{worldFromBody*glm::vec4{demo.target.position,1}}:demo.target.position;
         }
+        if (spatialSample) {
+            if (!body.control()) throw std::invalid_argument("Spatial demo requires calibrated body");
+            const auto demo=app::spatialDemo(body.control()->binding(),*spatialSample,reachTarget.arm,static_cast<unsigned>(effectorOffset));
+            const auto world=glm::translate(glm::mat4{1},root.position)*glm::mat4_cast(root.rotation);
+            reachPosition=reachTarget.space==TargetSpace::World ? glm::vec3{world*glm::vec4{demo.position,1}}:demo.position;
+            reachTarget.orientation=reachTarget.space==TargetSpace::World ? root.rotation*demo.orientation:demo.orientation;
+            reachTarget.task=ReachTask::PositionAndOrientation;
+        }
         if (clip)
         { body.enqueue(ClipCommand{ClipOperation::Select,static_cast<double>(*clip)}); body.enqueue(ClipCommand{ClipOperation::Play}); }
         if (elbow)
         { body.enqueue(SetDirectMode{true}); body.enqueue(SetCoordinate{JointId::LeftElbow,0,*elbow}); }
-        if (retargetPosition.has_value()!=(retargetTick!=0) || ((retargetTick || cancelTick) && !reachPosition))
+        if ((retargetPosition.has_value() || retargetOrientation.has_value())!=(retargetTick!=0) || ((retargetTick || cancelTick) && !reachPosition))
             throw std::invalid_argument("Retarget needs a position and tick; reach is required for retarget/cancel");
         if (reachPosition)
         {
@@ -144,11 +185,15 @@ int main(int argc,char** argv)
         {
             if (!output.parent_path().empty()) std::filesystem::create_directories(output.parent_path());
             csv.open(output); if (!csv) throw std::runtime_error("Cannot open output CSV");
-            csv << "tick,simulation_seconds,clip_seconds,left_elbow_radians,gaze_yaw_degrees,gaze_pitch_degrees,blink_left,blink_right,action,state,error_m,goal_x,goal_y,goal_z,reference_x,reference_y,reference_z,actual_x,actual_y,actual_z,reason,path_status,scene_version,body_form,other_body_form,object,from_tick,to_tick,gap_m,queries,check_us,strategy,planning_state,direct_status,candidates,total_queries,total_poses,planning_ticks,selected_candidate,route_segments,current_segment,segment0_status,segment1_status,segment0_ticks,segment1_ticks,waypoint0,waypoint1,waypoint2,waypoint3,waypoint4,waypoint5,planning_scratch_bytes,accepted_route_segments,accepted_current_segment,accepted_selected_candidate,route_segment0_status,route_segment1_status,route_segment0_scene_version,route_segment1_scene_version,route_segment0_start_tick,route_segment1_start_tick,planning_stage,ik_seeds,ik_processed,ik_unique,ik_duplicates,ik_failed,ik_iterations,ik_fk_checks,current_configuration,selected_configuration,tick_iterations,tick_seeds,tick_poses,tick_queries,tick_candidates,budget_reason,final0,final1,final2,final3,final4,final5,selection,selection_completion,score_evaluations,tick_score_evaluations,first_clear_tick,elbow_penalty,joint_travel,duration_s,score,score_key,elbow_status,elbow_x,elbow_y,elbow_z,score_us,elbow_direction_x,elbow_direction_y,elbow_direction_z,actual_elbow_penalty,actual_elbow_status\n" << std::setprecision(17);
+            csv << "tick,simulation_seconds,clip_seconds,left_elbow_radians,gaze_yaw_degrees,gaze_pitch_degrees,blink_left,blink_right,action,state,error_m,goal_x,goal_y,goal_z,reference_x,reference_y,reference_z,actual_x,actual_y,actual_z,reason,path_status,scene_version,body_form,other_body_form,object,from_tick,to_tick,gap_m,queries,check_us,strategy,planning_state,direct_status,candidates,total_queries,total_poses,planning_ticks,selected_candidate,route_segments,current_segment,segment0_status,segment1_status,segment0_ticks,segment1_ticks,waypoint0,waypoint1,waypoint2,waypoint3,waypoint4,waypoint5,planning_scratch_bytes,accepted_route_segments,accepted_current_segment,accepted_selected_candidate,route_segment0_status,route_segment1_status,route_segment0_scene_version,route_segment1_scene_version,route_segment0_start_tick,route_segment1_start_tick,planning_stage,ik_seeds,ik_processed,ik_unique,ik_duplicates,ik_failed,ik_iterations,ik_fk_checks,current_configuration,selected_configuration,tick_iterations,tick_seeds,tick_poses,tick_queries,tick_candidates,budget_reason,final0,final1,final2,final3,final4,final5,selection,selection_completion,score_evaluations,tick_score_evaluations,first_clear_tick,elbow_penalty,joint_travel,duration_s,score,score_key,elbow_status,elbow_x,elbow_y,elbow_z,score_us,elbow_direction_x,elbow_direction_y,elbow_direction_z,actual_elbow_penalty,actual_elbow_status,task,angular_error_rad,angular_tolerance_rad,goal_qw,goal_qx,goal_qy,goal_qz,actual_qw,actual_qx,actual_qy,actual_qz,world_qw,world_qx,world_qy,world_qz,ik_evaluations,tick_ik_evaluations,ik_us,segment_us,path_us,q0,q1,q2,q3,q4,q5\n" << std::setprecision(17);
         }
         runtime::FixedStepScheduler scheduler;
         scheduler.runTicks(ticks,[&] {
-            if (retargetTick==body.snapshot().tick+1) { reachTarget.position=*retargetPosition; body.enqueue(RetargetReach{action,reachTarget}); }
+            if (retargetTick==body.snapshot().tick+1) {
+                if (retargetPosition) reachTarget.position=*retargetPosition;
+                if (retargetOrientation) { reachTarget.orientation=*retargetOrientation; reachTarget.task=ReachTask::PositionAndOrientation; }
+                body.enqueue(RetargetReach{action,reachTarget});
+            }
             if (cancelTick==body.snapshot().tick+1) body.enqueue(CancelReach{reachTarget.arm,action});
             body.step();
             for (const auto& result:body.results())
@@ -185,7 +230,17 @@ int main(int argc,char** argv)
                     << ',' << elbowPreferenceStatusName(r.planning.score.elbow.status) << ',' << r.elbowBody.x << ',' << r.elbowBody.y << ',' << r.elbowBody.z
                     << ',' << r.planning.scoreMicroseconds << ',' << (r.elbowDirectionBody ? r.elbowDirectionBody->x:0)
                     << ',' << (r.elbowDirectionBody ? r.elbowDirectionBody->y:0) << ',' << (r.elbowDirectionBody ? r.elbowDirectionBody->z:0)
-                    << ',' << r.actualElbow.penalty << ',' << elbowPreferenceStatusName(r.actualElbow.status) << '\n';
+                    << ',' << r.actualElbow.penalty << ',' << elbowPreferenceStatusName(r.actualElbow.status)
+                    << ',' << reachTaskName(r.target.task) << ',' << r.angularError << ',' << r.target.angularTolerance
+                    << ',' << r.goalOrientationBody.w << ',' << r.goalOrientationBody.x << ',' << r.goalOrientationBody.y << ',' << r.goalOrientationBody.z
+                    << ',' << r.actualOrientationBody.w << ',' << r.actualOrientationBody.x << ',' << r.actualOrientationBody.y << ',' << r.actualOrientationBody.z
+                    << ',' << r.actualOrientationWorld.w << ',' << r.actualOrientationWorld.x << ',' << r.actualOrientationWorld.y << ',' << r.actualOrientationWorld.z
+                    << ',' << r.evaluations << ',' << r.planning.tickIkEvaluations
+                    << ',' << r.planning.ikMicroseconds << ',' << r.planning.segmentMicroseconds << ',' << r.planning.pathMicroseconds;
+                const auto ids=reachTarget.arm==ArmSide::Left ? std::array{JointId::LeftShoulder,JointId::LeftElbow,JointId::LeftWrist}:
+                    std::array{JointId::RightShoulder,JointId::RightElbow,JointId::RightWrist};
+                for (unsigned k=0;k<6;++k) csv << ',' << (body.control() ? body.control()->coordinate(ids[k<3 ? 0:k==3 ? 1:2],k<3 ? k:k==3 ? 0:k-4):0);
+                csv << '\n';
             }
         });
         if (csv.is_open()) { csv.flush(); if (!csv) throw std::runtime_error("Cannot write output CSV"); }
@@ -195,6 +250,9 @@ int main(int argc,char** argv)
         {
             const auto& r=body.snapshot().reaches[reachTarget.arm==ArmSide::Left ? 0:1];
             std::cout << "action=" << r.action << " state=" << static_cast<int>(r.state) << " error_m=" << r.error << " reason=" << reachReasonName(r.reason) << '\n';
+            std::cout << "task=" << reachTaskName(r.target.task) << " angular_error_rad=" << r.angularError << " angular_tolerance_rad=" << r.target.angularTolerance
+                << " goal_orientation_body=" << r.goalOrientationBody.w << ',' << r.goalOrientationBody.x << ',' << r.goalOrientationBody.y << ',' << r.goalOrientationBody.z
+                << " ik_evaluations=" << r.evaluations << '\n';
             std::cout << "planning=" << planningStateName(r.planning.state) << " direct=" << pathStatusName(r.planning.directCheck.status)
                 << " candidates=" << r.planning.candidates << " queries=" << r.planning.queries << " planning_ticks=" << r.planning.ticks
                 << " segments=" << r.route.segmentCount << " current_segment=" << r.route.currentSegment

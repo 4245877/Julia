@@ -25,6 +25,10 @@ namespace julia::embodiment
         void validate(const ReachTarget& t)
         {
             const auto s = index(t.arm);
+            if ((t.task!=ReachTask::PositionOnly && t.task!=ReachTask::PositionAndOrientation) ||
+                !std::isfinite(t.angularTolerance) || t.angularTolerance<.001745329f || t.angularTolerance>.17453293f)
+                throw std::invalid_argument("Invalid reach task/angular tolerance (0.1 to 10 degrees required)");
+            (void)normalizedReachOrientation(t.orientation);
             const bool effector = s == 0 ? t.effector == EffectorId::LeftWrist || t.effector == EffectorId::LeftPalm || t.effector == EffectorId::LeftGrip :
                 t.effector == EffectorId::RightWrist || t.effector == EffectorId::RightPalm || t.effector == EffectorId::RightGrip;
             const auto weight=[](double v) { return std::isfinite(v) && v>=0 && v<=1000; };
@@ -54,7 +58,7 @@ namespace julia::embodiment
                 !t.detour.maxSeedAttempts || t.detour.maxSeedAttempts>30 ||
                 !t.detour.maxTotalPoses || t.detour.maxTotalPoses>131072 ||
                 !t.detour.queriesPerTick || t.detour.queriesPerTick>16384 || !t.detour.maxTotalQueries || t.detour.maxTotalQueries>4000000)
-                throw std::invalid_argument("Invalid position reach target/limits (orientation is unsupported)");
+                throw std::invalid_argument("Invalid reach target/limits");
         }
         struct Chain
         {
@@ -62,6 +66,7 @@ namespace julia::embodiment
             std::array<double,6> initial{}, lower{}, upper{};
             glm::mat4 base{1}, upperToElbow{1}, elbowToWrist{1}, wristToEffector{1};
             float length1 = 0, length2 = 0, offset = 0;
+            mutable unsigned evaluations = 0;
             explicit Chain(const DirectBodyControl& c, const ReachTarget& t)
             {
                 const auto& b = c.binding();
@@ -95,8 +100,86 @@ namespace julia::embodiment
                 return r;
             }
             glm::vec3 position(const std::array<double,6>& q) const
-            { return glm::vec3{(base*rotation(0,q)*upperToElbow*rotation(1,q)*elbowToWrist*rotation(2,q)*wristToEffector)[3]}; }
+            { return glm::vec3{frame(q)[3]}; }
+            glm::mat4 frame(const std::array<double,6>& q) const
+            { ++evaluations; return base*rotation(0,q)*upperToElbow*rotation(1,q)*elbowToWrist*rotation(2,q)*wristToEffector; }
         };
+        constexpr double angularScale = .15; // metres per radian, not a success threshold.
+        glm::quat bodyOrientation(const ReachTarget& t,const std::optional<glm::quat>& body)
+        {
+            if (t.task==ReachTask::PositionAndOrientation && t.space==TargetSpace::World && !body)
+                throw std::invalid_argument("World IK requires frozen Body orientation");
+            return normalizedReachOrientation(body.value_or(t.orientation));
+        }
+        float poseError(const Chain& chain,const std::array<double,6>& q,glm::vec3 goal,glm::quat orientation)
+        {
+            const auto frame=chain.frame(q);
+            const auto r=orientationResidual(orientation,glm::quat_cast(glm::mat3{frame}));
+            const glm::dvec3 p{goal-glm::vec3{frame[3]}};
+            return static_cast<float>(std::sqrt(glm::dot(p,p)+angularScale*angularScale*glm::dot(r,r)));
+        }
+        bool poseReached(const Chain& chain,const std::array<double,6>& q,glm::vec3 goal,glm::quat orientation,
+            const ReachTarget& target,float fraction)
+        {
+            const auto frame=chain.frame(q);
+            return glm::length(goal-glm::vec3{frame[3]})<=target.tolerance*fraction &&
+                glm::length(orientationResidual(orientation,glm::quat_cast(glm::mat3{frame})))<=target.angularTolerance*fraction;
+        }
+        // Spatial angular Jacobian and log residual are both expressed in Body.
+        // Damped normal equations, projected bounds, <=0.15 rad and bounded backtracking.
+        bool iteratePose(const Chain& chain,glm::vec3 goal,glm::quat orientation,std::array<double,6>& q,float& error)
+        {
+            const auto frame=chain.frame(q);
+            const auto rotation=orientationResidual(orientation,glm::quat_cast(glm::mat3{frame}));
+            const glm::dvec3 position{goal-glm::vec3{frame[3]}};
+            const std::array<double,6> residual{position.x,position.y,position.z,
+                angularScale*rotation.x,angularScale*rotation.y,angularScale*rotation.z};
+            std::array<std::array<double,6>,6> jacobian{};
+            for (std::size_t k=0;k<6;++k) {
+                auto a=q,b=q; a[k]=std::max(q[k]-.001,chain.lower[k]); b[k]=std::min(q[k]+.001,chain.upper[k]);
+                if (a[k]==b[k]) continue;
+                const auto fa=chain.frame(a),fb=chain.frame(b);
+                const double inverse=1/(b[k]-a[k]);
+                const auto p=glm::dvec3{glm::vec3{fb[3]-fa[3]}}*inverse;
+                const auto omega=orientationResidual(glm::quat_cast(glm::mat3{fb}),glm::quat_cast(glm::mat3{fa}))*inverse;
+                // d Log(Rgoal Ractual^-1) = -Jr^-1(error) * omega.
+                // Half-angle formula is finite at pi; series avoids cancellation at zero.
+                const double theta=glm::length(rotation);
+                const double coefficient=theta<1e-4 ? 1.0/12+theta*theta/720:
+                    (1-.5*theta/std::tan(.5*theta))/(theta*theta);
+                const auto w=(omega+.5*glm::cross(rotation,omega)+coefficient*glm::cross(rotation,glm::cross(rotation,omega)))*angularScale;
+                jacobian[k]={p.x,p.y,p.z,w.x,w.y,w.z};
+                double gradient=0; for (std::size_t r=0;r<6;++r) gradient+=jacobian[k][r]*residual[r];
+                if ((q[k]<=chain.lower[k]+1e-7 && gradient<0) || (q[k]>=chain.upper[k]-1e-7 && gradient>0)) jacobian[k]={};
+            }
+            std::array<std::array<double,7>,6> normal{};
+            for (std::size_t i=0;i<6;++i) {
+                for (std::size_t r=0;r<6;++r) normal[i][6]+=jacobian[i][r]*residual[r];
+                for (std::size_t j=0;j<6;++j) for (std::size_t r=0;r<6;++r) normal[i][j]+=jacobian[i][r]*jacobian[j][r];
+                normal[i][i]+=.000025;
+            }
+            for (std::size_t i=0;i<6;++i) {
+                std::size_t pivot=i;
+                for (std::size_t j=i+1;j<6;++j) if (std::abs(normal[j][i])>std::abs(normal[pivot][i])) pivot=j;
+                std::swap(normal[i],normal[pivot]);
+                const double divisor=normal[i][i];
+                if (!std::isfinite(divisor) || std::abs(divisor)<1e-14) return false;
+                for (std::size_t k=i;k<7;++k) normal[i][k]/=divisor;
+                for (std::size_t j=0;j<6;++j) if (j!=i) {
+                    const double factor=normal[j][i];
+                    for (std::size_t k=i;k<7;++k) normal[j][k]-=factor*normal[i][k];
+                }
+            }
+            double largest=.15;
+            for (const auto& row:normal) largest=std::max(largest,std::abs(row[6]));
+            for (double step=.15/largest;step>=.0001;step*=.5) {
+                auto candidate=q;
+                for (std::size_t k=0;k<6;++k) candidate[k]=std::clamp(q[k]+step*normal[k][6],chain.lower[k],chain.upper[k]);
+                const float e=poseError(chain,candidate,goal,orientation);
+                if (e<error-1e-8f) { q=candidate; error=e; return true; }
+            }
+            return false;
+        }
         // One bounded DLS iteration; shared by legacy and resumable solvers.
         bool iterate(const Chain& chain, glm::vec3 goal, std::size_t dimensions,
             std::array<double,6>& q, float& error)
@@ -132,6 +215,25 @@ namespace julia::embodiment
         }
         double polynomial(const std::array<double,6>& c, double u)
         { return ((((c[5]*u+c[4])*u+c[3])*u+c[2])*u+c[1])*u+c[0]; }
+    }
+    const char* reachTaskName(ReachTask task)
+    { return task==ReachTask::PositionOnly ? "PositionOnly":task==ReachTask::PositionAndOrientation ? "PositionAndOrientation":"invalid"; }
+    glm::quat normalizedReachOrientation(glm::quat value)
+    {
+        const glm::dquat q{value}; const double norm=glm::length(q);
+        if (!std::isfinite(norm) || norm<1e-6 || norm>1e6) throw std::invalid_argument("Invalid finite orientation quaternion norm [1e-6,1e6]");
+        auto unit=q/norm;
+        // Lexicographic tie at pi makes antipodal input canonical even when w==0.
+        if (unit.w<0 || (unit.w==0 && (unit.x<0 || (unit.x==0 && (unit.y<0 || (unit.y==0 && unit.z<0)))))) unit=-unit;
+        return glm::quat{unit};
+    }
+    glm::dvec3 orientationResidual(glm::quat target,glm::quat actual)
+    {
+        auto relative=glm::normalize(glm::dquat{normalizedReachOrientation(target)}*glm::conjugate(glm::dquat{normalizedReachOrientation(actual)}));
+        if (relative.w<0 || (relative.w==0 && (relative.x<0 || (relative.x==0 && (relative.y<0 || (relative.y==0 && relative.z<0)))))) relative=-relative;
+        const glm::dvec3 vector{relative.x,relative.y,relative.z}; const double sine=glm::length(vector);
+        if (sine<1e-10) return 2.0*vector;
+        return vector*(2*std::atan2(sine,std::max(0.0,relative.w))/sine);
     }
     const char* selectionCompletionName(SelectionCompletion c)
     {
@@ -243,14 +345,35 @@ namespace julia::embodiment
         case ReachReason::CheckIncomplete: return "collision verification incomplete";
         case ReachReason::DetourExhausted: return "finite waypoint set exhausted (not a no-path proof)";
         case ReachReason::PlanningBudgetExhausted: return "total planning operation budget exhausted";
+        case ReachReason::OrientationNotReached: return "final orientation outside angular tolerance";
         }
         return "unknown";
     }
-    ArmSolution solveArmPosition(const DirectBodyControl& control, const ReachTarget& target, glm::vec3 goal)
+    ArmSolution solveArmPosition(const DirectBodyControl& control, const ReachTarget& target, glm::vec3 goal,
+        std::optional<glm::quat> orientation)
     {
         validate(target);
         if (!control.enabled() || !finite(goal)) throw std::invalid_argument("Reach requires calibrated direct mode and finite body goal");
         Chain chain(control,target);
+        if (target.task==ReachTask::PositionAndOrientation) {
+            auto single=target; single.detour.maxConfigurations=1;
+            ArmPositionSearchJob job(control,single,goal,bodyOrientation(target,orientation));
+            while (!job.advance(128,1)) {}
+            ArmSolution result;
+            if (!job.solutions().empty()) result=job.solutions().front();
+            else {
+                result.coordinates=chain.initial; const auto frame=chain.frame(chain.initial);
+                result.error=glm::length(glm::vec3{frame[3]}-goal);
+                result.angularError=static_cast<float>(glm::length(orientationResidual(bodyOrientation(target,orientation),glm::quat_cast(glm::mat3{frame}))));
+                const auto distance=glm::length(goal-glm::vec3{chain.base[3]});
+                if (distance>chain.length1+chain.length2+chain.offset+target.tolerance ||
+                    distance<std::max(0.0f,std::abs(chain.length1-chain.length2)-chain.offset)-target.tolerance)
+                    result.reason=ReachReason::GeometricRange;
+                else if (job.budgetExhausted()) result.reason=ReachReason::PlanningBudgetExhausted;
+            }
+            result.iterations=job.observation().ikIterations; result.evaluations=job.observation().ikEvaluations;
+            return result;
+        }
         const float distance = glm::length(goal-glm::vec3{chain.base[3]});
         const bool geometric = distance > chain.length1+chain.length2+chain.offset+target.tolerance ||
             distance < std::max(0.0f,std::abs(chain.length1-chain.length2)-chain.offset)-target.tolerance;
@@ -283,6 +406,7 @@ namespace julia::embodiment
             atLimit |= best.coordinates[k]-chain.lower[k]<.002 || chain.upper[k]-best.coordinates[k]<.002;
         best.reason = best.error <= target.tolerance*.5f ? ReachReason::Reached : geometric ? ReachReason::GeometricRange :
             atLimit ? ReachReason::JointLimited : ReachReason::LocalNoConvergence;
+        best.evaluations=chain.evaluations;
         return best;
     }
     struct ArmPositionSearchJob::Impl
@@ -290,6 +414,7 @@ namespace julia::embodiment
         DirectBodyControl frozen;
         ReachTarget target;
         glm::vec3 goal;
+        glm::quat orientation;
         Chain chain;
         PlanningObservation diagnostic;
         std::vector<ArmSolution> accepted;
@@ -299,15 +424,20 @@ namespace julia::embodiment
         unsigned legacySeed=0, extraSeed=0, seedIterations=0;
         bool first=true, running=false, complete=false, exhausted=false;
         std::size_t dimensions;
-        Impl(const DirectBodyControl& c,const ReachTarget& t,glm::vec3 g)
-            : frozen(c),target(t),goal(g),chain(frozen,t),dimensions(t.effector==EffectorId::LeftWrist || t.effector==EffectorId::RightWrist ? 4:6)
+        Impl(const DirectBodyControl& c,const ReachTarget& t,glm::vec3 g,std::optional<glm::quat> o)
+            : frozen(c),target(t),goal(g),orientation(bodyOrientation(t,o)),chain(frozen,t),
+              dimensions(t.task==ReachTask::PositionOnly && (t.effector==EffectorId::LeftWrist || t.effector==EffectorId::RightWrist) ? 4:6)
         {
             validate(t);
             if (!c.enabled() || !finite(g)) throw std::invalid_argument("IK search requires direct mode and finite goal");
             accepted.reserve(4); best.coordinates=chain.initial;
-            best.error=glm::length(chain.position(best.coordinates)-goal);
+            best.error=metric(best.coordinates);
             diagnostic.state=diagnostic.stage=PlanningState::GeneratingIK;
         }
+        float metric(const std::array<double,6>& coordinates) const
+        { return target.task==ReachTask::PositionOnly ? glm::length(chain.position(coordinates)-goal):poseError(chain,coordinates,goal,orientation); }
+        bool reached(const std::array<double,6>& coordinates,float e,float fraction) const
+        { return target.task==ReachTask::PositionOnly ? e<=target.tolerance*fraction:poseReached(chain,coordinates,goal,orientation,target,fraction); }
         bool admit(ArmSolution solution)
         {
             // Quantize before FK: these are the actual saved/executed endpoint q.
@@ -320,8 +450,11 @@ namespace julia::embodiment
             animation::Pose actual(frozen.binding().asset().skeleton()); frozen.apply(actual.locals);
             animation::computeGlobalTransforms(frozen.binding().asset().skeleton(),actual.locals,actual.globals);
             ++diagnostic.fkChecks;
-            solution.error=glm::length(glm::vec3{frozen.binding().effectorFrame(target.effector,actual.globals)[3]}-goal);
+            const auto frame=frozen.binding().effectorFrame(target.effector,actual.globals);
+            solution.error=glm::length(glm::vec3{frame[3]}-goal);
+            solution.angularError=static_cast<float>(glm::length(orientationResidual(orientation,glm::quat_cast(glm::mat3{frame}))));
             if (!std::isfinite(solution.error) || solution.error>target.tolerance) return false;
+            if (target.task==ReachTask::PositionAndOrientation && (!std::isfinite(solution.angularError) || solution.angularError>target.angularTolerance)) return false;
             // Distinct if at least one ACTIVE coordinate differs by >= 0.08 rad.
             // Inactive wrist coordinates never create a spurious wrist solution.
             for (const auto& previous:accepted) {
@@ -333,7 +466,7 @@ namespace julia::embodiment
             solution.reason=ReachReason::Reached; accepted.push_back(solution);
             diagnostic.configurations=static_cast<unsigned>(accepted.size());
             diagnostic.budgetConfigurations=diagnostic.configurations;
-            auto& entry=diagnostic.solutions[accepted.size()-1]; entry.error=solution.error;
+            auto& entry=diagnostic.solutions[accepted.size()-1]; entry.error=solution.error; entry.angularError=solution.angularError;
             for (std::size_t k=0;k<6;++k) entry.coordinates[k]=static_cast<float>(solution.coordinates[k]);
             return true;
         }
@@ -343,15 +476,15 @@ namespace julia::embodiment
             if (error<best.error) { best.error=error; best.coordinates=q; }
             if (first) {
                 ++legacySeed;
-                if (best.error<=target.tolerance*.2f || legacySeed==9) {
+                if (reached(best.coordinates,best.error,.2f) || legacySeed==9) {
                     first=false;
                     best.iterations=diagnostic.ikIterations;
-                    if (best.error<=target.tolerance*.5f) { if (!admit(best)) { ++diagnostic.failedSeeds; diagnostic.lastSeedOutcome=IkSeedOutcome::FkRejected; } }
+                    if (reached(best.coordinates,best.error,.5f)) { if (!admit(best)) { ++diagnostic.failedSeeds; diagnostic.lastSeedOutcome=IkSeedOutcome::FkRejected; } }
                     else ++diagnostic.failedSeeds;
                 } else ++diagnostic.failedSeeds;
             } else {
                 ArmSolution solution; solution.coordinates=q; solution.error=error; solution.iterations=seedIterations;
-                if (error>target.tolerance*.5f) ++diagnostic.failedSeeds;
+                if (!reached(q,error,.5f)) ++diagnostic.failedSeeds;
                 else if (!admit(solution)) { ++diagnostic.failedSeeds; diagnostic.lastSeedOutcome=IkSeedOutcome::FkRejected; }
                 ++extraSeed;
             }
@@ -359,6 +492,10 @@ namespace julia::embodiment
         }
         bool advance(unsigned iterations,unsigned seeds)
         {
+            const auto evaluationBegin=diagnostic.ikEvaluations;
+            // Full 6D iterations evaluate six columns and rotation logs. Keep the
+            // old configured iteration budget as an upper bound, cap work at four/tick.
+            if (target.task==ReachTask::PositionAndOrientation) iterations=std::min(iterations,4u);
             diagnostic.tickIterations=diagnostic.tickSeeds=0;
             while (!complete) {
                 if (!running) {
@@ -375,21 +512,24 @@ namespace julia::embodiment
                         const std::size_t k=((seed-9)/2)%dimensions;
                         q[k]=std::clamp(q[k]+(seed%2 ? .3:-.3)*(chain.upper[k]-chain.lower[k]),chain.lower[k],chain.upper[k]);
                     }
-                    error=glm::length(chain.position(q)-goal); seedIterations=0; running=true;
+                    error=metric(q); seedIterations=0; running=true;
                 }
                 if (diagnostic.ikIterations>=target.detour.maxIkIterations) { complete=exhausted=true; break; }
                 if (!iterations) break;
                 --iterations; ++diagnostic.ikIterations; ++diagnostic.tickIterations; ++seedIterations;
                 if (first && error<best.error) { best.error=error; best.coordinates=q; }
-                if (error<=target.tolerance*.2f || !iterate(chain,goal,dimensions,q,error) || seedIterations==160) { finishSeed(); break; }
+                const bool success=reached(q,error,.2f);
+                if (success && first) { best.error=error; best.coordinates=q; }
+                if (success || !(target.task==ReachTask::PositionOnly ? iterate(chain,goal,dimensions,q,error):iteratePose(chain,goal,orientation,q,error)) || seedIterations==160) { finishSeed(); break; }
             }
             if (complete) diagnostic.ikCompletion=exhausted ? IkSearchCompletion::BudgetExhausted:
                 accepted.size()>=target.detour.maxConfigurations ? IkSearchCompletion::ConfigurationLimit:IkSearchCompletion::SeedSetExhausted;
+            diagnostic.ikEvaluations=chain.evaluations; diagnostic.tickIkEvaluations=chain.evaluations-evaluationBegin;
             return complete;
         }
     };
-    ArmPositionSearchJob::ArmPositionSearchJob(const DirectBodyControl& c,const ReachTarget& t,glm::vec3 g)
-        : impl_(std::make_unique<Impl>(c,t,g)) {}
+    ArmPositionSearchJob::ArmPositionSearchJob(const DirectBodyControl& c,const ReachTarget& t,glm::vec3 g,std::optional<glm::quat> o)
+        : impl_(std::make_unique<Impl>(c,t,g,o)) {}
     ArmPositionSearchJob::~ArmPositionSearchJob()=default;
     bool ArmPositionSearchJob::advance(unsigned iterations,unsigned seeds) { return impl_->advance(iterations,seeds); }
     bool ArmPositionSearchJob::done() const { return impl_->complete; }
@@ -456,10 +596,14 @@ namespace julia::embodiment
         observations_[s].route={};
         finish(s,ReachState::Cancelled,reason); motion_[s]={}; planners_[s].reset(); nextSegments_[s].reset(); } }
     void ArmReach::reset() { interrupt(ReachReason::BodyReset); observations_={}; motion_={}; }
-    void ArmReach::start(std::uint64_t action, std::uint64_t epoch, const ReachTarget& target,
+    void ArmReach::start(std::uint64_t action, std::uint64_t epoch, const ReachTarget& input,
         const glm::mat4& world, bool retarget, std::uint64_t command)
     {
+        auto target=input;
         validate(target);
+        if (target.task==ReachTask::PositionAndOrientation)
+            (void)control_.binding().worldFromResource(world); // Validate proper rigid root before extracting rotation.
+        target.orientation=normalizedReachOrientation(target.orientation);
         if (!control_.enabled()) throw std::invalid_argument("IK requires explicit calibrated direct mode; clip pose cannot be inferred");
         const auto s=index(target.arm);
         auto& o=observations_[s]; auto& m=motion_[s];
@@ -469,6 +613,8 @@ namespace julia::embodiment
         if (active(o.state) && (target.maxSpeed!=o.target.maxSpeed || target.maxAcceleration!=o.target.maxAcceleration))
             throw std::invalid_argument("Retarget/replacement must preserve active motion limits");
         const auto goal=target.space==TargetSpace::World ? glm::vec3{glm::inverse(world)*glm::vec4{target.position,1}} : target.position;
+        const auto orientation=normalizedReachOrientation(target.space==TargetSpace::World ?
+            glm::conjugate(glm::quat_cast(glm::mat3{world}))*target.orientation:target.orientation);
         if (!finite(goal) || glm::length(goal)>10000) throw std::invalid_argument("Invalid transformed body target");
         if (target.strategy==MovementStrategy::AllowDetour)
         {
@@ -481,6 +627,7 @@ namespace julia::embodiment
                 distance<std::max(0.0f,std::abs(shell.length1-shell.length2)-shell.offset)-target.tolerance)
                 throw ReachTargetUnreachable(reachReasonName(ReachReason::GeometricRange));
             auto proposal=o; proposal.action=action; proposal.epoch=epoch; proposal.target=target; proposal.goalBody=goal;
+            proposal.goalOrientationBody=orientation;
             proposal.elbowDirectionBody.reset();
             if (target.elbowPreference) {
                 const auto& preference=*target.elbowPreference;
@@ -490,7 +637,7 @@ namespace julia::embodiment
                 proposal.elbowDirectionBody=glm::normalize(direction);
             }
             proposal.reason=ReachReason::None; proposal.cancellationPending=false; proposal.replanningDeferred=false;
-            proposal.iterations=0; proposal.solveMicroseconds=0;
+            proposal.iterations=0; proposal.evaluations=0; proposal.solveMicroseconds=0;
             proposal.collisionChecked=false; proposal.collisionSceneVersion=0; proposal.planning={};
             proposal.planning.command=command ? command:action;
             proposal.planning.selection=target.selection; proposal.planning.ranking=target.ranking;
@@ -499,7 +646,7 @@ namespace julia::embodiment
             requestDetour(s,std::move(proposal),retarget); return;
         }
         const auto begin=std::chrono::steady_clock::now();
-        const auto solution=solveArmPosition(control_,target,goal);
+        const auto solution=solveArmPosition(control_,target,goal,orientation);
         const auto microseconds=std::chrono::duration<double,std::micro>(std::chrono::steady_clock::now()-begin).count();
         if (validator_ && solution.reason!=ReachReason::Reached) throw ReachTargetUnreachable(reachReasonName(solution.reason));
         if (planners_[s]) throw std::invalid_argument("DirectOnly replacement conflicts with pending planning; use AllowDetour or Cancel");
@@ -518,10 +665,11 @@ namespace julia::embodiment
         m.frames={reference.base,reference.upperToElbow,reference.elbowToWrist,reference.wristToEffector};
         for (std::size_t k=0;k<6;++k) m.q[k]=control_.coordinate(ids[static_cast<std::size_t>(jointSlot[k])],static_cast<std::size_t>(coordinateSlot[k]));
         o.action=action; o.epoch=epoch; o.target=target; o.goalBody=goal; o.state=ReachState::Moving; o.reason=ReachReason::None;
+        o.goalOrientationBody=orientation;
         o.elbowDirectionBody.reset(); // DirectOnly has no selection stage.
         o.cancellationPending=false;
         o.referenceBody=reference.position(m.q);
-        o.iterations=solution.iterations; o.solveMicroseconds=microseconds;
+        o.iterations=solution.iterations; o.evaluations=solution.evaluations; o.solveMicroseconds=microseconds;
         m.solution=solution; m.settled=0; m.pending=true; m.cancelling=false;
         // A rare unsafe reversal near a bound keeps the valid old segment until rest, then replans.
         // Checked replacements deliberately switch at rest. This freezes the
@@ -680,7 +828,7 @@ namespace julia::embodiment
     {
         auto& p=*planners_[s]; auto& o=observations_[s]; auto& diagnostic=o.planning;
         ++diagnostic.ticks;
-        diagnostic.tickIterations=diagnostic.tickSeeds=diagnostic.tickQueries=diagnostic.tickPoses=diagnostic.tickCandidates=diagnostic.tickScoreEvaluations=0;
+        diagnostic.tickIterations=diagnostic.tickSeeds=diagnostic.tickQueries=diagnostic.tickPoses=diagnostic.tickCandidates=diagnostic.tickScoreEvaluations=diagnostic.tickIkEvaluations=0;
         const auto& limits=p.proposal.target.detour;
         if (p.best && p.proposal.target.selection==RouteSelection::Ranked &&
             diagnostic.ticks-diagnostic.firstClearTick>p.proposal.target.ranking.additionalTicks) {
@@ -697,12 +845,13 @@ namespace julia::embodiment
             if (!p.ik) {
                 const auto ids=joints(s);
                 for (std::size_t k=0;k<6;++k) p.initial[k]=control_.coordinate(ids[static_cast<std::size_t>(jointSlot[k])],static_cast<std::size_t>(coordinateSlot[k]));
-                p.ik=std::make_unique<ArmPositionSearchJob>(control_,p.proposal.target,p.proposal.goalBody);
+                p.ik=std::make_unique<ArmPositionSearchJob>(control_,p.proposal.target,p.proposal.goalBody,p.proposal.goalOrientationBody);
             }
             const bool done=p.ik->advance(limits.iterationsPerTick,limits.seedsPerTick);
             const auto& ik=p.ik->observation();
             diagnostic.seedAttempts=ik.seedAttempts; diagnostic.seedsProcessed=ik.seedsProcessed;
             diagnostic.ikIterations=ik.ikIterations; diagnostic.duplicates=ik.duplicates;
+            diagnostic.ikEvaluations=ik.ikEvaluations; diagnostic.tickIkEvaluations=ik.tickIkEvaluations;
             diagnostic.failedSeeds=ik.failedSeeds; diagnostic.fkChecks=ik.fkChecks; diagnostic.lastSeedOutcome=ik.lastSeedOutcome;
             diagnostic.ikCompletion=ik.ikCompletion;
             diagnostic.configurations=ik.configurations; diagnostic.budgetConfigurations=ik.budgetConfigurations;
@@ -710,7 +859,7 @@ namespace julia::embodiment
             diagnostic.tickIterations=ik.tickIterations; diagnostic.tickSeeds=ik.tickSeeds;
             diagnostic.ikMicroseconds+=std::chrono::duration<double,std::micro>(std::chrono::steady_clock::now()-begin).count();
             diagnostic.scratchBytes=std::max(diagnostic.scratchBytes,p.ownedBytes()+p.ik->scratchBytes());
-            o.iterations=diagnostic.ikIterations; o.solveMicroseconds=diagnostic.ikMicroseconds;
+            o.iterations=diagnostic.ikIterations; o.evaluations=diagnostic.ikEvaluations; o.solveMicroseconds=diagnostic.ikMicroseconds;
             if (!done) { diagnostic.state=PlanningState::Paused; return; }
             if (p.ik->budgetExhausted()) {
                 diagnostic.budgetReason=ik.ikIterations>=limits.maxIkIterations ? "IK iterations":"IK seed attempts";
@@ -957,7 +1106,7 @@ namespace julia::embodiment
             // Per-tick work belongs to this completed simulation tick. Keep the
             // admitted route's historical certificate/accounting copy immutable.
             auto& work=o.planning;
-            work.tickIterations=work.tickSeeds=work.tickQueries=work.tickPoses=work.tickCandidates=work.tickScoreEvaluations=0;
+            work.tickIterations=work.tickSeeds=work.tickQueries=work.tickPoses=work.tickCandidates=work.tickScoreEvaluations=work.tickIkEvaluations=0;
             if (!active(o.state)) continue;
             if (planners_[s] && (!planners_[s]->waiting || m.tick>=m.duration)) {
                 try { advancePlanning(s); }
@@ -1025,10 +1174,16 @@ namespace julia::embodiment
         for (std::size_t s=0;s<2;++s)
         {
             auto& o=observations_[s]; auto& m=motion_[s]; if (!o.action) continue;
-            if (o.target.space==TargetSpace::World)
+            if (o.target.space==TargetSpace::World) {
                 o.goalBody=glm::vec3{glm::inverse(world)*glm::vec4{o.target.position,1}};
+                o.goalOrientationBody=normalizedReachOrientation(glm::conjugate(glm::quat_cast(glm::mat3{world}))*o.target.orientation);
+            }
             const auto ids=joints(s);
-            o.actualBody=glm::vec3{b.effectorFrame(o.target.effector,globals)[3]};
+            const auto actualFrame=b.effectorFrame(o.target.effector,globals);
+            o.actualBody=glm::vec3{actualFrame[3]};
+            o.actualOrientationBody=normalizedReachOrientation(glm::quat_cast(glm::mat3{actualFrame}));
+            o.actualOrientationWorld=normalizedReachOrientation(glm::quat_cast(glm::mat3{world})*o.actualOrientationBody);
+            o.angularError=static_cast<float>(glm::length(orientationResidual(o.goalOrientationBody,o.actualOrientationBody)));
             o.actualWorld=glm::vec3{world*glm::vec4{o.actualBody,1}};
             o.shoulderBody=glm::vec3{b.jointFrame(ids[0],globals)[3]}; o.elbowBody=glm::vec3{b.jointFrame(ids[1],globals)[3]};
             const auto wrist=glm::vec3{b.jointFrame(ids[2],globals)[3]};
@@ -1043,10 +1198,13 @@ namespace julia::embodiment
             o.error=glm::length(o.goalBody-o.actualBody);
             if (o.state==ReachState::Settling)
             {
+                const bool reached=o.error<=o.target.tolerance &&
+                    (o.target.task==ReachTask::PositionOnly || o.angularError<=o.target.angularTolerance);
                 ++m.settled;
                 if (m.settled>=static_cast<unsigned>(std::ceil(o.target.settleSeconds/dt)))
-                    finish(s,m.cancelling ? ReachState::Cancelled : o.error<=o.target.tolerance ? ReachState::Succeeded:ReachState::Failed,
-                        m.cancelling ? ReachReason::UserCancelled : o.error<=o.target.tolerance ? ReachReason::Reached :
+                    finish(s,m.cancelling ? ReachState::Cancelled : reached ? ReachState::Succeeded:ReachState::Failed,
+                        m.cancelling ? ReachReason::UserCancelled : reached ? ReachReason::Reached :
+                        o.error<=o.target.tolerance && o.target.task==ReachTask::PositionAndOrientation && o.angularError>o.target.angularTolerance ? ReachReason::OrientationNotReached:
                         m.solution.reason==ReachReason::Reached ? ReachReason::LocalNoConvergence:m.solution.reason);
             }
         }

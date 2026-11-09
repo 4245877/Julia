@@ -18,6 +18,7 @@ namespace julia::embodiment
     
     class EyePoseLayer;
     class DirectBodyControl;
+    class HandLayer;
 
     // Transitional source-compatible names; data is owned by the CPU module.
     using animation::NodeTRS;
@@ -52,6 +53,7 @@ namespace julia::embodiment
         void setEyeLayer(EyePoseLayer* layer);
         // Non-owning diagnostic override: clip/bind -> direct body -> eyes -> FK.
         void setBodyControl(DirectBodyControl* control);
+        void setHandLayer(HandLayer* layer) { handLayer_=layer; evaluate(); }
 
         bool looping() const { return looping_; }
         PlaybackState state() const { return state_; }
@@ -71,6 +73,7 @@ namespace julia::embodiment
         animation::Pose pose_;
         EyePoseLayer* eyeLayer_ = nullptr;
         DirectBodyControl* bodyControl_ = nullptr;
+        HandLayer* handLayer_ = nullptr;
         void evaluate();
     };
 }

@@ -5,6 +5,7 @@
 #include "julia/render_opengl/OpenGLRenderer.hpp"
 #include <filesystem>
 #include <optional>
+#include "../common/InteractionDemo.hpp"
 
 struct GLFWwindow;
 namespace julia::desktop
@@ -18,9 +19,11 @@ namespace julia::desktop
         void select(embodiment::JointId id,std::size_t coordinate=0);
         void draw(render_opengl::OpenGLRenderer& renderer,const glm::mat4& viewerFromResource,
             const embodiment::BodyDisplay& display) const;
+        void updateInteractionDemo() { if (demo_.stage) demo_.drive(body_); }
         bool overlay = true;
         void setReachPosition(glm::vec3 position) { reachPosition_=position; }
     private:
+        app::InteractionDemo demo_;
         const embodiment::DirectBodyControl& control_;
         embodiment::BodyInstance& body_;
         std::optional<std::pair<std::uint64_t,bool>> pendingMode_;
@@ -33,6 +36,9 @@ namespace julia::desktop
         unsigned reachConfigurations_=1;
         embodiment::RouteSelection reachSelection_=embodiment::RouteSelection::FirstValid;
         bool elbowPositive_=true;
+        embodiment::ReachTask reachTask_=embodiment::ReachTask::PositionOnly;
+        glm::quat reachOrientation_{1,0,0,0};
+        unsigned spatialSample_=2, reachEffector_=0;
     };
     void verifyDesktopBody(GLFWwindow* window,render_opengl::OpenGLRenderer& renderer,
         const render_opengl::GLModel& model,embodiment::BodyInstance& body,
@@ -55,6 +61,14 @@ namespace julia::desktop
         BodyDiagnostics& diagnostics,const glm::mat4& fit,
         const std::filesystem::path& output,void (*input)(GLFWwindow*,int,int,int,int));
     void verifyDesktopRanked(GLFWwindow* window,render_opengl::OpenGLRenderer& renderer,
+        const render_opengl::GLModel& model,embodiment::BodyInstance& body,
+        BodyDiagnostics& diagnostics,const glm::mat4& fit,
+        const std::filesystem::path& output,void (*input)(GLFWwindow*,int,int,int,int));
+    void verifyDesktopInteraction(GLFWwindow* window,render_opengl::OpenGLRenderer& renderer,
+        const render_opengl::GLModel& model,embodiment::BodyInstance& body,
+        BodyDiagnostics& diagnostics,const glm::mat4& fit,
+        const std::filesystem::path& output,void (*input)(GLFWwindow*,int,int,int,int));
+    void verifyDesktopSpatial(GLFWwindow* window,render_opengl::OpenGLRenderer& renderer,
         const render_opengl::GLModel& model,embodiment::BodyInstance& body,
         BodyDiagnostics& diagnostics,const glm::mat4& fit,
         const std::filesystem::path& output,void (*input)(GLFWwindow*,int,int,int,int));

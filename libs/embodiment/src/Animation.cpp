@@ -2,6 +2,7 @@
 
 #include "julia/embodiment/EyePoseLayer.hpp"
 #include "julia/embodiment/BodyProfile.hpp"
+#include "julia/embodiment/HandInteraction.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -97,6 +98,7 @@ namespace julia::embodiment
         else
             animation::setBindPose(model_.skeleton(), pose_.locals);
         if (bodyControl_) bodyControl_->apply(pose_.locals);
+        if (handLayer_ && bodyControl_ && bodyControl_->enabled()) handLayer_->apply(pose_.locals);
         if (eyeLayer_)
             eyeLayer_->apply(pose_.locals, state_ == PlaybackState::Stopped ||
                 (bodyControl_ && bodyControl_->enabled()) ? nullptr : clip());

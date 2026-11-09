@@ -3,6 +3,7 @@
 #include "julia/world/CollisionScene.hpp"
 #include <array>
 #include <memory>
+#include <optional>
 
 namespace julia::embodiment
 {
@@ -48,6 +49,21 @@ namespace julia::embodiment
         std::vector<std::array<glm::vec3,3>> trace; // Bounded world-space upper/fore/hand centres.
     };
     void validateCollisionSettings(const CollisionSettings& settings);
+    struct CarriedSphere
+    {
+        std::uint64_t object=0;
+        EffectorId effector=EffectorId::LeftGrip;
+        glm::mat4 effectorFromObject{1};
+        double radius=.022;
+    };
+    // Frozen with each job/certificate. Only the named hand/object pair is exempt.
+    struct CollisionContext
+    {
+        std::uint32_t contactHand=0;
+        std::uint64_t contactObject=0;
+        std::optional<CarriedSphere> carried;
+        std::array<bool,2> handEnvelopes{};
+    };
     // Immutable path/control/scene snapshot, resumable at individual pair queries.
     // The calibration binding and its asset must outlive this job. No body mutation.
     // Paused is NotChecked; only a completed job can return Clear or Incomplete.
@@ -56,7 +72,7 @@ namespace julia::embodiment
     public:
         ArmPathCheckJob(const DirectBodyControl& control, std::size_t side,
             std::span<const ArmCoordinates> tickCoordinates, const glm::mat4& worldFromBody,
-            const world::CollisionScene& scene, const CollisionSettings& settings);
+            const world::CollisionScene& scene, const CollisionSettings& settings, CollisionContext context={});
         ~ArmPathCheckJob();
         ArmPathCheckJob(ArmPathCheckJob&&) noexcept;
         ArmPathCheckJob& operator=(ArmPathCheckJob&&) noexcept;
@@ -73,5 +89,5 @@ namespace julia::embodiment
     };
     PathCheck checkArmPath(const DirectBodyControl& control, std::size_t side,
         std::span<const ArmCoordinates> tickCoordinates, const glm::mat4& worldFromBody,
-        const world::CollisionScene& scene, const CollisionSettings& settings);
+        const world::CollisionScene& scene, const CollisionSettings& settings, CollisionContext context={});
 }

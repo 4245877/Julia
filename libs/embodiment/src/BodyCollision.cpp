@@ -75,6 +75,7 @@ namespace julia::embodiment
         animation::Pose pose;
         world::CollisionScene scene;
         CollisionSettings settings;
+        CollisionContext context;
         glm::mat4 world;
         std::vector<ArmCoordinates> path;
         std::array<JointId,3> ids;
@@ -90,10 +91,10 @@ namespace julia::embodiment
         double radius = 0, gap = 0, displacement = 0, traceLastTick = -1e6;
 
         Impl(const DirectBodyControl& control,std::size_t sideIndex,std::span<const ArmCoordinates> coordinates,
-            const glm::mat4& root,const world::CollisionScene& collisionScene,const CollisionSettings& collisionSettings)
+            const glm::mat4& root,const world::CollisionScene& collisionScene,const CollisionSettings& collisionSettings,CollisionContext collisionContext)
             :binding(control.binding()),scratch(binding),pose(binding.asset().skeleton()),
              scene(collisionScene.version(),std::vector<world::SceneObject>(collisionScene.objects().begin(),collisionScene.objects().end())),
-             settings(collisionSettings),world(root),path(coordinates.begin(),coordinates.end()),
+             settings(collisionSettings),context(std::move(collisionContext)),world(root),path(coordinates.begin(),coordinates.end()),
              ids(sideIndex==0 ? std::array{JointId::LeftShoulder,JointId::LeftElbow,JointId::LeftWrist}:
                 std::array{JointId::RightShoulder,JointId::RightElbow,JointId::RightWrist}),side(sideIndex)
         {
@@ -119,16 +120,52 @@ namespace julia::embodiment
             radius=glm::length(glm::vec3{frame(ids[1])[3]-frame(ids[0])[3]})+
                 glm::length(glm::vec3{frame(ids[2])[3]-frame(ids[1])[3]})+
                 std::max(glm::length(handCalibration.localA),glm::length(handCalibration.localB))+.000001;
+            if (context.contactHand && context.contactHand!=side*3+3)
+                throw std::invalid_argument("Contact permission belongs to a different hand");
+            if (context.contactObject && !context.contactHand) throw std::invalid_argument("Contact object requires named hand");
+            if (context.handEnvelopes[side]) radius+=.10; // Bounds the enlarged proxy, not the full skinned mesh.
+            if (context.carried)
+            {
+                const auto& c=*context.carried;
+                const auto e=std::find_if(profile.effectors.begin(),profile.effectors.end(),[&](const auto& f) { return f.id==c.effector; });
+                const auto effect=static_cast<unsigned>(c.effector);
+                if (e==profile.effectors.end() || effect<side*4 || effect>side*4+2 || !c.object ||
+                    context.contactHand!=side*3+3 || !std::isfinite(c.radius) || c.radius<=0 || c.radius>.05 ||
+                    glm::length(glm::vec3{c.effectorFromObject[3]})>1)
+                    throw std::invalid_argument("Invalid carried sphere");
+                const auto gramAttachment=glm::transpose(glm::mat3{c.effectorFromObject})*glm::mat3{c.effectorFromObject};
+                for (int a=0;a<4;++a) for (int b=0;b<4;++b)
+                    if (!std::isfinite(c.effectorFromObject[a][b])) throw std::invalid_argument("Nonfinite attachment transform");
+                for (int a=0;a<3;++a) for (int b=0;b<3;++b)
+                    if (std::abs(gramAttachment[a][b]-(a==b ? 1.f:0.f))>1e-5f) throw std::invalid_argument("Attachment must be rigid");
+                if (glm::determinant(glm::mat3{c.effectorFromObject})<0 || std::abs(c.effectorFromObject[0][3])+
+                    std::abs(c.effectorFromObject[1][3])+std::abs(c.effectorFromObject[2][3])+std::abs(c.effectorFromObject[3][3]-1)>1e-6f)
+                    throw std::invalid_argument("Attachment must be proper affine rigid");
+                // Shoulder->elbow->wrist + wrist->effector + attachment offset + sphere support.
+                // Triangle inequality bounds any payload point under EACH of the six rotations.
+                radius=std::max(radius,static_cast<double>(glm::length(glm::vec3{frame(ids[1])[3]-frame(ids[0])[3]})+
+                    glm::length(glm::vec3{frame(ids[2])[3]-frame(ids[1])[3]})+
+                    glm::length(glm::vec3{e->frameInBodyBind[3]-frame(ids[2])[3]})+
+                    glm::length(glm::vec3{c.effectorFromObject[3]}))+c.radius+.000001);
+            }
             // Preserve exact pair order and filtering, including all fixed-body pairs.
             for (std::size_t i=0;i<calibration.size();++i)
             {
                 for (std::size_t j=0;j<scene.objects().size();++j)
-                    if (world::interacts(settings.bodyFilter,scene.objects()[j].filter)) pairs.push_back({i,j,true});
+                    if ((scene.objects()[j].id & (1ull<<63)) || world::interacts(settings.bodyFilter,scene.objects()[j].filter)) pairs.push_back({i,j,true});
                 for (std::size_t j=i+1;j<calibration.size();++j)
                     if (checksSelfPair(calibration[i].id,calibration[j].id)) pairs.push_back({i,j,false});
             }
+            if (context.carried)
+            {
+                const auto payload=calibration.size();
+                for (std::size_t j=0;j<scene.objects().size();++j)
+                    if (world::interacts(settings.bodyFilter,scene.objects()[j].filter)) pairs.push_back({payload,j,true});
+                for (std::size_t j=0;j<calibration.size();++j)
+                    if (calibration[j].id!=context.contactHand) pairs.push_back({payload,j,false});
+            }
             out.status=PathStatus::NotChecked; out.detail="verification paused"; out.sceneVersion=scene.version(); out.trace.reserve(128);
-            forms.reserve(calibration.size()); stack.reserve(settings.maxDepth+1);
+            forms.reserve(calibration.size()+(context.carried ? 1:0)); stack.reserve(settings.maxDepth+1);
             out.scratchBytes=sizeof(Impl)+path.capacity()*sizeof(ArmCoordinates)+pose.locals.capacity()*sizeof(glm::mat4)+
                 pose.globals.capacity()*sizeof(glm::mat4)+pose.palette.capacity()*sizeof(glm::mat4)+out.trace.capacity()*sizeof(std::array<glm::vec3,3>)+
                 forms.capacity()*sizeof(BodyCollider)+pairs.capacity()*sizeof(Pair)+stack.capacity()*sizeof(Interval)+
@@ -149,6 +186,18 @@ namespace julia::embodiment
                     throw std::invalid_argument("Collision path coordinates outside profile limits");
             scratch.apply(pose.locals); animation::computeGlobalTransforms(binding.asset().skeleton(),pose.locals,pose.globals);
             forms=bodyColliders(binding,pose.globals,world);
+            for (std::size_t handSide=0;handSide<2;++handSide) if (context.handEnvelopes[handSide])
+            {
+                const auto f=world*binding.jointFrame(handSide==0 ? JointId::LeftWrist:JointId::RightWrist,pose.globals);
+                forms[handSide*3+2].capsule={glm::dvec3{f*glm::vec4{0,.025f,0,1}},glm::dvec3{f*glm::vec4{0,.160f,0,1}},.045};
+            }
+            if (context.carried)
+            {
+                forms.reserve(calibration.size()+1);
+                const auto& c=*context.carried;
+                const auto center=glm::dvec3{(world*binding.effectorFrame(c.effector,pose.globals)*c.effectorFromObject)[3]};
+                forms.push_back({10,side==0 ? SegmentId::LeftHand:SegmentId::RightHand,{center,center,c.radius}});
+            }
             if (out.trace.size()<128 && lo-traceLastTick>=std::max(1.0,static_cast<double>(path.size())/120.0))
             {
                 std::array<glm::vec3,3> trace{};
@@ -217,6 +266,14 @@ namespace julia::embodiment
                 if (out.queries>=settings.maxQueries) { finish(PathStatus::Incomplete,"query budget exhausted"); break; }
                 if (out.queries-queryBegin>=maxQueries) break;
                 const auto& p=pairs[pair++]; const auto& a=forms[p.first];
+                // Spatially bounded allowance: the selected sphere must be within 12 cm
+                // of this hand's grip. It cannot mask another form or scene object.
+                if (p.sceneObject && a.id==context.contactHand && scene.objects()[p.second].id==context.contactObject)
+                {
+                    const auto e=side==0 ? EffectorId::LeftGrip:EffectorId::RightGrip;
+                    const auto center=glm::dvec3{(world*binding.effectorFrame(e,pose.globals))[3]};
+                    if (glm::length(center-scene.objects()[p.second].position)<=.12) { ++out.queries; continue; }
+                }
                 const auto c=p.sceneObject ? world::clearance(a.capsule,scene.objects()[p.second]):
                     world::clearance(a.capsule,forms[p.second].capsule);
                 ++out.queries;
@@ -224,7 +281,7 @@ namespace julia::embodiment
                 {
                     gap=c.gap; out.contact=c; out.bodyForm=a.id;
                     out.otherBodyForm=p.sceneObject ? 0:forms[p.second].id;
-                    out.object=p.sceneObject ? scene.objects()[p.second].id:0;
+                    out.object=p.sceneObject ? scene.objects()[p.second].id:(a.id==10 && context.carried ? context.carried->object:0);
                 }
             }
             out.microseconds+=std::chrono::duration<double,std::micro>(std::chrono::steady_clock::now()-begin).count();
@@ -232,8 +289,8 @@ namespace julia::embodiment
         }
     };
     ArmPathCheckJob::ArmPathCheckJob(const DirectBodyControl& control,std::size_t side,std::span<const ArmCoordinates> path,
-        const glm::mat4& world,const world::CollisionScene& scene,const CollisionSettings& settings)
-        :impl_(std::make_unique<Impl>(control,side,path,world,scene,settings)) {}
+        const glm::mat4& world,const world::CollisionScene& scene,const CollisionSettings& settings,CollisionContext context)
+        :impl_(std::make_unique<Impl>(control,side,path,world,scene,settings,std::move(context))) {}
     ArmPathCheckJob::~ArmPathCheckJob()=default;
     ArmPathCheckJob::ArmPathCheckJob(ArmPathCheckJob&&) noexcept=default;
     ArmPathCheckJob& ArmPathCheckJob::operator=(ArmPathCheckJob&&) noexcept=default;
@@ -241,9 +298,9 @@ namespace julia::embodiment
     bool ArmPathCheckJob::done() const { return impl_->phase==Impl::Phase::Done; }
     const PathCheck& ArmPathCheckJob::result() const { return impl_->out; }
     PathCheck checkArmPath(const DirectBodyControl& control,std::size_t side,std::span<const ArmCoordinates> path,
-        const glm::mat4& world,const world::CollisionScene& scene,const CollisionSettings& settings)
+        const glm::mat4& world,const world::CollisionScene& scene,const CollisionSettings& settings,CollisionContext context)
     {
-        ArmPathCheckJob job(control,side,path,world,scene,settings);
+        ArmPathCheckJob job(control,side,path,world,scene,settings,std::move(context));
         job.advance(std::numeric_limits<unsigned>::max(),std::numeric_limits<unsigned>::max());
         return job.result();
     }

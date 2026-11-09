@@ -2,6 +2,7 @@
 #include "julia/embodiment/Animation.hpp"
 #include "julia/embodiment/BodyProfile.hpp"
 #include "julia/embodiment/ArmReach.hpp"
+#include "julia/embodiment/HandInteraction.hpp"
 #include "julia/embodiment/EyePoseLayer.hpp"
 #include "julia/runtime/FixedStepScheduler.hpp"
 #include <memory>
@@ -18,7 +19,8 @@ namespace julia::embodiment
     struct SetDirectMode { bool enabled; };
     struct ResetBody {};
     struct SetRoot { RootPose pose; };
-    // Changes are rejected while a reach is active. nullptr explicitly disables checks.
+    // Changes are rejected during reach/interaction ownership. nullptr disables the
+    // external environment; a live interactive object retains its own checked scene.
     struct SetCollisionScene { std::shared_ptr<const world::CollisionScene> scene; CollisionSettings settings; };
     enum class ClipOperation { Select, Play, Pause, Stop, Seek, Loop, TogglePlay, ToggleLoop, Step, Next };
     struct ClipCommand { ClipOperation operation; double value = 0; };
@@ -27,7 +29,8 @@ namespace julia::embodiment
     // Gaze in degrees; Target in resource coordinates; manual blink in x/y [0,1].
     struct EyeCommand { EyeOperation operation; glm::vec3 value{0}; };
     using BodyOperation = std::variant<SetCoordinate, ResetCoordinates, SetDirectMode, ResetBody,
-        SetRoot, ClipCommand, EyeCommand, StartReach, RetargetReach, CancelReach, SetCollisionScene>;
+        SetRoot, ClipCommand, EyeCommand, StartReach, RetargetReach, CancelReach, SetCollisionScene,
+        CreateInteractionSphere,DeleteInteractionObject,GraspObject,MoveHeldObject,ReleaseObject,CancelInteraction,SetHandClosure>;
     struct BodyCommand
     {
         std::uint64_t id, target, tick, epoch;
@@ -52,6 +55,9 @@ namespace julia::embodiment
         std::vector<glm::vec3> coordinates; // Diagnostic q, never inferred from arbitrary clips.
         render::EyeBehaviorOutput eyes;
         std::array<ReachObservation,2> reaches;
+        std::array<HandState,2> hands{};
+        std::optional<InteractiveObject> object;
+        InteractionObservation interaction;
         std::shared_ptr<const world::CollisionScene> collisionScene;
         CollisionSettings collisionSettings;
         PathCheck pathCheck; // Most recent proposed path, including rejected replacements.
@@ -70,6 +76,9 @@ namespace julia::embodiment
         bool direct = false;
         std::array<ReachObservation,2> reaches; // Metadata captured with the same snapshot pair as geometry.
         std::vector<glm::vec3> coordinates;
+        std::array<HandState,2> hands{};
+        std::optional<InteractiveObject> object;
+        InteractionObservation interaction;
         animation::Pose pose;
         explicit BodyDisplay(const animation::Skeleton& skeleton) : pose(skeleton) {}
         std::vector<BodyCollider> colliders;
@@ -108,6 +117,7 @@ namespace julia::embodiment
         std::unique_ptr<BodyRigBinding> binding_;
         std::unique_ptr<DirectBodyControl> control_;
         std::unique_ptr<ArmReach> reach_;
+        std::unique_ptr<HandInteraction> interaction_;
         EyePoseLayer eyes_;
         AnimationPlayer player_;
         RootPose root_;
@@ -118,11 +128,15 @@ namespace julia::embodiment
         std::vector<BodyCommandResult> results_;
         BodySnapshot previous_, current_;
         std::shared_ptr<const world::CollisionScene> collisionScene_;
+        std::shared_ptr<const world::CollisionScene> environmentScene_;
         CollisionSettings collisionSettings_;
         PathCheck pathCheck_;
         std::uint64_t sceneVersion_ = 0, checkingCommand_ = 0;
         void capture();
         void invalidatePath(const char* reason);
+        void rebuildCollision();
+        void displayObject(BodyDisplay& display,const BodySnapshot& selected) const;
+        void fillDisplayColliders(BodyDisplay& display) const;
         BodyCommandStatus apply(const BodyOperation& operation, std::uint64_t commandId);
     };
 }

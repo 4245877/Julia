@@ -29,6 +29,23 @@ namespace julia::embodiment
             control_ = std::make_unique<DirectBodyControl>(*binding_);
             reach_ = std::make_unique<ArmReach>(*control_);
             player_.setBodyControl(control_.get());
+            if (profile->name.starts_with("Raphtalia_prepared/")) {
+                interaction_=std::make_unique<HandInteraction>(id_,*control_,*reach_);
+                interaction_->geometryChanged=[this] { rebuildCollision(); };
+                interaction_->validateRest=[this](CollisionContext context) {
+                    const auto arm=interaction_->observation().arm;
+                    const auto ids=arm==ArmSide::Left ? std::array{JointId::LeftShoulder,JointId::LeftElbow,JointId::LeftWrist}:
+                        std::array{JointId::RightShoulder,JointId::RightElbow,JointId::RightWrist};
+                    ArmCoordinates q{};
+                    for (std::size_t k=0;k<6;++k) q[k]=control_->coordinate(ids[k<3 ? 0:k==3 ? 1:2],k<3 ? k:k==3 ? 0:k-4);
+                    // The prospective carried copy replaces the free collider in this local check.
+                    std::vector<world::SceneObject> objects;
+                    for (const auto& o:collisionScene_->objects()) if (!context.carried || o.id!=context.carried->object) objects.push_back(o);
+                    const world::CollisionScene scene(sceneVersion_,std::move(objects));
+                    return checkArmPath(*control_,arm==ArmSide::Left ? 0:1,std::span{&q,1},matrix(root_),scene,collisionSettings_,context);
+                };
+                player_.setHandLayer(&interaction_->hand);
+            }
         }
         eyes_.setEnabled(eyesEnabled);
         player_.setEyeLayer(&eyes_);
@@ -62,11 +79,64 @@ namespace julia::embodiment
         pathCheck_={}; pathCheck_.status=collisionScene_ ? PathStatus::Invalidated:PathStatus::Disabled;
         pathCheck_.sceneVersion=collisionScene_ ? sceneVersion_:0; pathCheck_.detail=reason;
     }
+    void BodyInstance::rebuildCollision()
+    {
+        // A phase boundary is legal only after the previous certified segment stopped.
+        if (reach_ && reach_->anyActive()) throw std::logic_error("Geometry mutation during active certified reach");
+        std::vector<world::SceneObject> objects;
+        if (environmentScene_) objects.assign(environmentScene_->objects().begin(),environmentScene_->objects().end());
+        if (interaction_) if (const auto c=interaction_->freeCollider()) objects.push_back(*c);
+        const bool enabled=environmentScene_ || (interaction_ && interaction_->object());
+        if (!enabled) collisionScene_.reset();
+        else if (environmentScene_ && (!interaction_ || !interaction_->object()) && environmentScene_->version()>sceneVersion_) {
+            sceneVersion_=environmentScene_->version(); collisionScene_=environmentScene_;
+        } else collisionScene_=std::make_shared<const world::CollisionScene>(++sceneVersion_,std::move(objects));
+        pathCheck_={};
+        if (!enabled) { reach_->setPathValidator({}); reach_->setPlanningValidator({},{}); return; }
+        pathCheck_.status=PathStatus::NotChecked; pathCheck_.sceneVersion=sceneVersion_;
+        reach_->setPathValidator([this](std::size_t side,std::span<const ArmCoordinates> path,unsigned delayTicks) {
+            const auto context=interaction_ ? interaction_->collisionContext():CollisionContext{};
+            pathCheck_=checkArmPath(*control_,side,path,matrix(root_),*collisionScene_,collisionSettings_,context);
+            pathCheck_.command=checkingCommand_; pathCheck_.segmentStartTick=tick_-1+delayTicks; return pathCheck_.status;
+        },sceneVersion_);
+        reach_->setPlanningValidator([this](std::size_t side,std::span<const ArmCoordinates> path) {
+            return std::make_unique<ArmPathCheckJob>(*control_,side,path,matrix(root_),*collisionScene_,collisionSettings_,
+                interaction_ ? interaction_->collisionContext():CollisionContext{});
+        },[this](PathCheck check) { pathCheck_=std::move(check); });
+    }
+    void BodyInstance::displayObject(BodyDisplay& display,const BodySnapshot& selected) const
+    {
+        display.object=selected.object;
+        if (display.object && display.object->state==ObjectState::Attached) {
+            const auto& o=*display.object;
+            const auto e=o.arm==ArmSide::Left ? EffectorId::LeftGrip:EffectorId::RightGrip;
+            display.object->worldPose=rigidPose(matrix(display.root)*binding_->effectorFrame(e,display.pose.globals)*o.effectorFromObject);
+        }
+    }
+    void BodyInstance::fillDisplayColliders(BodyDisplay& d) const
+    {
+        if (!binding_ || !d.direct || !d.collisionScene) return;
+        const auto world=matrix(d.root);
+        d.colliders=bodyColliders(*binding_,d.pose.globals,world);
+        for (std::size_t s=0;s<2;++s) if (d.hands[s].enabled) {
+            const auto f=world*binding_->jointFrame(s==0 ? JointId::LeftWrist:JointId::RightWrist,d.pose.globals);
+            d.colliders[s*3+2].capsule={glm::dvec3{f*glm::vec4{0,.025f,0,1}},glm::dvec3{f*glm::vec4{0,.160f,0,1}},.045};
+        }
+        if (d.object && d.object->state==ObjectState::Attached) {
+            const auto p=glm::dvec3{d.object->worldPose.position};
+            d.colliders.push_back({10,d.object->arm==ArmSide::Left ? SegmentId::LeftHand:SegmentId::RightHand,{p,p,d.object->radius}});
+        }
+    }
     BodyCommandStatus BodyInstance::apply(const BodyOperation& operation, std::uint64_t commandId)
     {
         using S = BodyCommandStatus;
         return std::visit([&](const auto& value) -> S {
             using T = std::decay_t<decltype(value)>;
+            if constexpr (std::is_same_v<T,SetCoordinate> || std::is_same_v<T,ResetCoordinates> ||
+                std::is_same_v<T,SetDirectMode> || std::is_same_v<T,SetRoot> || std::is_same_v<T,ResetBody> ||
+                std::is_same_v<T,StartReach> || std::is_same_v<T,RetargetReach> || std::is_same_v<T,CancelReach> ||
+                std::is_same_v<T,SetCollisionScene> || std::is_same_v<T,SetHandClosure>)
+                if (interaction_ && interaction_->locked()) throw std::invalid_argument("Interaction owns geometry; finish/cancel or release first");
             if constexpr (std::is_same_v<T, SetCoordinate>)
             {
                 if (!control_) throw std::invalid_argument("No calibrated body control");
@@ -106,6 +176,7 @@ namespace julia::embodiment
             {
                 root_ = {};
                 if (reach_) reach_->reset();
+                if (interaction_) interaction_->resetFree(epoch_+1);
                 invalidatePath("body reset; scene retained");
                 if (control_) { control_->reset(); control_->setEnabled(false); }
                 eyes_.reset(); eyes_.setEnabled(initialEyes_);
@@ -140,19 +211,48 @@ namespace julia::embodiment
                 validateCollisionSettings(value.settings);
                 if (value.scene && (value.scene->version()<=sceneVersion_ || glm::length(root_.position)>100))
                     throw std::invalid_argument("Scene version must increase; root must be within 100 metres");
-                collisionScene_=value.scene; collisionSettings_=value.settings; pathCheck_={};
-                if (collisionScene_) {
-                    sceneVersion_=collisionScene_->version();
-                    pathCheck_.status=PathStatus::NotChecked; pathCheck_.sceneVersion=sceneVersion_;
-                    reach_->setPathValidator([this](std::size_t side,std::span<const ArmCoordinates> path,unsigned delayTicks) {
-                        pathCheck_=checkArmPath(*control_,side,path,matrix(root_),*collisionScene_,collisionSettings_);
-                        pathCheck_.command=checkingCommand_; pathCheck_.segmentStartTick=tick_-1+delayTicks; return pathCheck_.status;
-                    },sceneVersion_);
-                    reach_->setPlanningValidator([this](std::size_t side,std::span<const ArmCoordinates> path) {
-                        return std::make_unique<ArmPathCheckJob>(*control_,side,path,matrix(root_),*collisionScene_,collisionSettings_);
-                    },[this](PathCheck check) { pathCheck_=std::move(check); });
-                } else { reach_->setPathValidator({}); reach_->setPlanningValidator({},{}); }
+                if (value.scene) {
+                    if (interaction_ && interaction_->object() && value.scene->objects().size()>=64)
+                        throw std::invalid_argument("No scene slot for interactive object");
+                    for (const auto& object:value.scene->objects()) {
+                        if (object.id & (1ull<<63)) throw std::invalid_argument("Scene uses reserved interactive object namespace");
+                        if (interaction_ && interaction_->object()) {
+                            const auto& item=*interaction_->object();
+                            const world::Capsule sphere{item.worldPose.position,item.worldPose.position,item.radius};
+                            if (world::clearance(sphere,object).gap<=value.settings.margin+value.settings.numericSlack)
+                                throw std::invalid_argument("Scene overlaps stationary interactive object");
+                        }
+                    }
+                }
+                environmentScene_=value.scene; collisionSettings_=value.settings;
+                if (value.scene) sceneVersion_=value.scene->version()-1;
+                rebuildCollision();
                 discontinuity_=true;
+            }
+            else if constexpr (std::is_same_v<T,CreateInteractionSphere> || std::is_same_v<T,DeleteInteractionObject> ||
+                std::is_same_v<T,GraspObject> || std::is_same_v<T,MoveHeldObject> || std::is_same_v<T,ReleaseObject> ||
+                std::is_same_v<T,CancelInteraction> || std::is_same_v<T,SetHandClosure>)
+            {
+                if (!interaction_) throw std::invalid_argument("Hand profile unavailable for this rig");
+                if constexpr (std::is_same_v<T,CreateInteractionSphere>) {
+                    if (environmentScene_) {
+                        if (environmentScene_->objects().size()>=64) throw std::invalid_argument("No scene slot for interactive object");
+                        const world::Capsule sphere{value.pose.position,value.pose.position,value.radius};
+                        for (const auto& o:environmentScene_->objects())
+                            if ((o.id & (1ull<<63)) || world::clearance(sphere,o).gap<=collisionSettings_.margin+collisionSettings_.numericSlack)
+                                throw std::invalid_argument("Object overlaps environment or uses reserved object namespace");
+                    }
+                    interaction_->create(value);
+                }
+                else if constexpr (std::is_same_v<T,DeleteInteractionObject>) interaction_->erase(value.object);
+                else if constexpr (std::is_same_v<T,GraspObject>) interaction_->grasp(commandId,epoch_,value,matrix(root_));
+                else if constexpr (std::is_same_v<T,MoveHeldObject>) interaction_->move(commandId,epoch_,value,matrix(root_));
+                else if constexpr (std::is_same_v<T,ReleaseObject>) interaction_->release(commandId,epoch_,value.object);
+                else if constexpr (std::is_same_v<T,CancelInteraction>) interaction_->cancel(value.action);
+                else {
+                    if (!control_->enabled() || reach_->anyActive()) throw std::invalid_argument("Hand diagnostics require idle direct mode");
+                    interaction_->hand.set(value.arm,value.closure,value.enabled);
+                }
             }
             else if constexpr (std::is_same_v<T, CancelReach>)
             {
@@ -230,6 +330,7 @@ namespace julia::embodiment
         if (tick_ == std::numeric_limits<std::uint64_t>::max()) throw std::overflow_error("Body tick exhausted");
         previous_ = current_; ++tick_; results_.clear(); discontinuity_ = false;
         if (reach_) reach_->clearEvents();
+        if (interaction_) interaction_->beginTick();
         std::sort(commands_.begin(),commands_.end(),[](const auto& a,const auto& b) {
             return a.tick != b.tick ? a.tick < b.tick : a.id < b.id; });
         std::vector<BodyCommand> due;
@@ -255,9 +356,11 @@ namespace julia::embodiment
         }
         // Commands take effect at the beginning of the interval ending at tick_.
         const auto clipTimeBefore = player_.timeSeconds();
+        if (interaction_) interaction_->hand.advance();
         if (reach_) reach_->advance(tick_);
         player_.update(runtime::BodyStepSeconds);
         if (reach_) reach_->measure(player_.globalTransforms(),matrix(root_));
+        if (interaction_) interaction_->advance(player_.globalTransforms(),matrix(root_));
         if ((!control_ || !control_->enabled()) && player_.timeSeconds() < clipTimeBefore)
             discontinuity_ = true; // Loop seam: no blending across the end/start cut.
         capture();
@@ -272,6 +375,7 @@ namespace julia::embodiment
         current_.eyesEnabled = eyes_.enabled(); current_.eyes = eyes_.behavior().output();
         current_.collisionScene=collisionScene_; current_.collisionSettings=collisionSettings_; current_.pathCheck=pathCheck_;
         if (reach_) current_.reaches = reach_->observations();
+        if (interaction_) { current_.hands=interaction_->hand.states(); current_.object=interaction_->object(); current_.interaction=interaction_->observation(); }
         if (control_) current_.coordinates.assign(control_->coordinates().begin(),control_->coordinates().end());
         std::fill(current_.animated.begin(),current_.animated.end(),false);
         if (!current_.direct && player_.state() != PlaybackState::Stopped && player_.clip())
@@ -295,6 +399,7 @@ namespace julia::embodiment
         if (!std::isfinite(alpha) || alpha < 0 || alpha > 1) throw std::invalid_argument("Invalid display fraction");
         BodyDisplay result(asset_->skeleton());
         result.reaches=current_.reaches;
+        result.hands=current_.hands; result.interaction=current_.interaction;
         result.collisionScene=current_.collisionScene; result.pathCheck=current_.pathCheck;
         result.fromTick = previous_.tick; result.toTick = current_.tick;
         result.direct = current_.direct;
@@ -309,7 +414,9 @@ namespace julia::embodiment
         {
             const auto& selected = alpha == 0 ? previous_ : current_;
             result.pose = selected.pose; result.root = selected.root; result.coordinates = selected.coordinates;
-            if (binding_ && result.direct && result.collisionScene) result.colliders=bodyColliders(*binding_,result.pose.globals,matrix(result.root));
+            result.hands=selected.hands; result.interaction=selected.interaction; result.reaches=selected.reaches;
+            result.collisionScene=selected.collisionScene; result.pathCheck=selected.pathCheck; displayObject(result,selected);
+            fillDisplayColliders(result);
             return result;
         }
         animation::setBindPose(asset_->skeleton(),result.pose.locals);
@@ -326,6 +433,11 @@ namespace julia::embodiment
                         glm::mat4_cast(glm::normalize(glm::slerp(a.rotation,b.rotation,weight))) *
                         glm::scale(glm::mat4{1},glm::mix(a.scale,b.scale,weight));
                 }
+        if (interaction_ && current_.direct) {
+            for (std::size_t k=0;k<2;++k) { result.hands[k].closure=glm::mix(previous_.hands[k].closure,current_.hands[k].closure,weight);
+                result.hands[k].blend=glm::mix(previous_.hands[k].blend,current_.hands[k].blend,weight); }
+            interaction_->hand.apply(result.pose.locals,result.hands);
+        }
         const render::EyeBehaviorOutput output{glm::mix(previous_.eyes.gazeDegrees,current_.eyes.gazeDegrees,weight),
             glm::mix(previous_.eyes.blinkLeft,current_.eyes.blinkLeft,weight),
             glm::mix(previous_.eyes.blinkRight,current_.eyes.blinkRight,weight)};
@@ -333,7 +445,8 @@ namespace julia::embodiment
         eyes_.applyOutput(result.pose.locals,base,output);
         animation::computeGlobalTransforms(asset_->skeleton(),result.pose.locals,result.pose.globals);
         animation::buildSkinningPalette(asset_->skeleton(),result.pose.globals,result.pose.palette);
-        if (binding_ && result.direct && result.collisionScene) result.colliders=bodyColliders(*binding_,result.pose.globals,matrix(result.root));
+        displayObject(result,current_);
+        fillDisplayColliders(result);
         return result;
     }
 }
