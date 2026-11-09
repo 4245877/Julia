@@ -37,7 +37,7 @@ namespace
         Definition def; Link b; b.name="Independent one metre uniform rod";
         b.mass=1; b.radius=.01; b.comInSegment={0,-.5,0};
         b.inertia={1./12.,.001,1./12.}; b.capsuleEnd={0,-1,0};
-        b.hinge={0,{0,0,1},-1,1,0}; def.links.push_back(b); return def;
+        b.hinges={{0,{0,0,1},-1,1,0}}; def.links.push_back(b); return def;
     }
     void analyticTest(std::ostream& out)
     {

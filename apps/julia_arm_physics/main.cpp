@@ -9,10 +9,10 @@ int main(int argc,char** argv)
         const auto options=bench::parse(argc,argv);
         const auto asset=julia::model_import::ModelImporter::loadFromFile(
             std::filesystem::path{JULIA_PHYSICS_ASSETS}/"models/Raphtalia_prepared.fbx");
-        const julia::physics::ArmRig rig{*asset};
+        const julia::physics::ArmRig rig{*asset,options.side,options.chain};
         julia::physics::PhysicsWorld world{julia::physics::benchDefinition(rig,options.scenario)};
         const auto parity=julia::physics::verifyFramesBeforeDynamics(rig,world);
-        julia::physics::resetBench(world,options.scenario);
+        bench::reset(world,options.scenario,options);
         bench::Log log{options.output}; bench::metadata(options.output,rig,world);
         std::cout<<"FK position_m="<<parity.position<<" rotation_element="<<parity.rotationElement<<'\n';
         julia::runtime::FixedStepScheduler scheduler;

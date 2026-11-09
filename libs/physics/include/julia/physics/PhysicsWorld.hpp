@@ -11,12 +11,14 @@ namespace julia::physics
 {
     inline constexpr double TickSeconds = 1.0/120.0;
     inline constexpr unsigned Substeps = 8;
-    using Coordinates = std::array<double,2>;
+    inline constexpr unsigned MaxCoordinates = 6;
+    using Coordinates = std::array<double,MaxCoordinates>;
     struct Hinge
     {
-        int coordinate = -1; // -1: explicitly welded; otherwise 0 or 1.
+        int coordinate = -1;
         glm::dvec3 axis{1,0,0}; // In joint frame, intrinsic rotation after bind.
         double lower = 0, upper = 0, damping = .02; // rad, rad, N m s/rad.
+        double limitTimeConstant = .01; // soft constraint seconds (>=2 substeps).
     };
     struct Link
     {
@@ -27,15 +29,18 @@ namespace julia::physics
         glm::dvec3 inertia{.001}; // Principal diagonal, kg m^2.
         double mass = 1, radius = .025; // kg, m.
         glm::dvec3 capsuleStart{0}, capsuleEnd{0,.2,0}; // In joint frame.
-        Hinge hinge;
+        // Ordered intrinsic rotations at the same pivot; empty means welded.
+        // All coordinates share this body's single mass and inertial frame.
+        std::vector<Hinge> hinges;
     };
     struct Drive { double kp=40, kd=4, maxTorque=8; }; // N m/rad, N m s/rad, N m.
     struct Wall { glm::dvec3 center{.2,1.05,.45}, halfSize{.35,.5,.03}; };
     struct Definition
     {
         std::vector<Link> links;
-        std::array<Drive,2> drives{{{80,8,12},{40,4,8}}};
+        std::array<Drive,MaxCoordinates> drives{{{80,8,12},{40,4,8},{40,4,8},{40,4,8},{8,.25,2},{6,.2,1.5}}};
         glm::dvec3 gravity{0,-9.81,0}; // m/s^2; Julia is Y-up.
+        double contactTimeConstant=.01;
         std::optional<Wall> wall;
     };
     enum class DriveMode { Disabled, Position, Torque };
@@ -60,8 +65,8 @@ namespace julia::physics
         double time=0;
         DriveMode mode=DriveMode::Disabled;
         unsigned dofs=0;
-        Coordinates target{}, q{}, v{}, calculatedTorque{}, appliedTorque{}, limitViolation{};
-        std::array<bool,2> saturated{}, saturatedThisTick{};
+        Coordinates target{}, q{}, v{}, calculatedTorque{}, appliedTorque{}, limitViolation{}, peakLimitViolationThisTick{};
+        std::array<bool,MaxCoordinates> saturated{}, saturatedThisTick{};
         std::vector<glm::dmat4> worldFromJoint;
         std::vector<glm::dvec3> comWorld;
         std::vector<Contact> contacts;
@@ -70,6 +75,15 @@ namespace julia::physics
         glm::dvec3 externalForce{0}, externalTorque{0};
         double kineticEnergy=0, potentialEnergy=0;
         Timing timing;
+    };
+    struct MassAudit
+    {
+        double totalMass=0;
+        glm::dvec3 comWorld{0};
+        glm::dmat3 inertiaAtComWorld{0};
+        std::vector<double> masses, massMatrix;
+        std::vector<glm::dvec3> comInJoint;
+        std::vector<glm::dmat3> inertiaInJoint;
     };
     // One owner advances this WORLD exactly eight times per outer tick. Read-only
     // snapshots/FK queries/render never integrate or set the live q/v.
@@ -93,6 +107,8 @@ namespace julia::physics
         const Snapshot& snapshot() const;
         // Scratch data only; explicitly allowed outside joint limits, never clamps.
         std::vector<glm::dmat4> forwardKinematics(Coordinates q) const;
+        // Compiled inertial data and generalized mass matrix, scratch only.
+        MassAudit massAudit(Coordinates q={}) const;
         std::size_t modelBytes() const;
         std::size_t dataBytes() const;
         std::size_t arenaHighWaterBytes() const;

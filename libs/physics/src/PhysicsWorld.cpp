@@ -35,7 +35,8 @@ namespace julia::physics
         }
         unsigned validate(const Definition& def)
         {
-            if(def.links.empty()||def.links.size()>4||!finite(def.gravity)||glm::length(def.gravity)>100)
+            if(def.links.empty()||def.links.size()>4||!finite(def.gravity)||glm::length(def.gravity)>100||
+                !std::isfinite(def.contactTimeConstant)||def.contactTimeConstant<2*TickSeconds/Substeps||def.contactTimeConstant>.1)
                 throw std::invalid_argument("Invalid physics links/gravity");
             int next=0;
             for(const auto& b:def.links)
@@ -47,12 +48,13 @@ namespace julia::physics
                     b.inertia.x>b.inertia.y+b.inertia.z+1e-12||b.inertia.y>b.inertia.x+b.inertia.z+1e-12||
                     b.inertia.z>b.inertia.x+b.inertia.y+1e-12)
                     throw std::invalid_argument("Invalid rigid frame, mass, COM, inertia or collider: "+b.name);
-                const auto& h=b.hinge;
-                if(h.coordinate != -1)
+                if(b.hinges.size()>3) throw std::invalid_argument("Too many rotations on body");
+                for(const auto& h:b.hinges)
                 {
-                    if(h.coordinate!=next||next>=2||!finite(h.axis)||std::abs(glm::length(h.axis)-1)>1e-5||
+                    if(h.coordinate!=next||next>=static_cast<int>(MaxCoordinates)||!finite(h.axis)||std::abs(glm::length(h.axis)-1)>1e-5||
                         !std::isfinite(h.lower)||!std::isfinite(h.upper)||h.lower>=h.upper||h.lower>0||h.upper<0||
-                        !std::isfinite(h.damping)||h.damping<0)
+                        !std::isfinite(h.damping)||h.damping<0||!std::isfinite(h.limitTimeConstant)||
+                        h.limitTimeConstant<2*TickSeconds/Substeps||h.limitTimeConstant>.1)
                         throw std::invalid_argument("Invalid hinge/order: "+b.name);
                     ++next;
                 }
@@ -70,12 +72,12 @@ namespace julia::physics
         std::string xml(const Definition& def)
         {
             std::ostringstream o; o.imbue(std::locale::classic()); o<<std::setprecision(17);
-            o<<"<mujoco model=\"Julia fixed arm 7A\"><compiler angle=\"radian\" inertiafromgeom=\"false\" fusestatic=\"false\"/>"
+            o<<"<mujoco model=\"Julia fixed arm\"><compiler angle=\"radian\" inertiafromgeom=\"false\" fusestatic=\"false\"/>"
                 "<size memory=\"2M\"/><option timestep=\""<<TickSeconds/Substeps<<"\" gravity=\"";
             vec(o,def.gravity);
             o<<"\" integrator=\"implicitfast\" solver=\"Newton\" iterations=\"50\" tolerance=\"1e-10\" cone=\"elliptic\">"
                 "<flag energy=\"enable\"/></option><default><geom contype=\"1\" conaffinity=\"2\" "
-                "friction=\"0.6 0.005 0.0001\" condim=\"3\" solref=\"0.01 1\"/>"
+                "friction=\"0.6 0.005 0.0001\" condim=\"3\" solref=\""<<def.contactTimeConstant<<" 1\"/>"
                 "<joint solreflimit=\"0.01 1\"/></default><worldbody>";
             if(def.wall)
             {
@@ -86,10 +88,11 @@ namespace julia::physics
             {
                 const auto& b=def.links[i];
                 o<<"<body name=\"b"<<i<<'"'; pose(o,b.parentFromJoint); o<<'>';
-                if(b.hinge.coordinate>=0)
+                for(const auto& h:b.hinges)
                 {
-                    o<<"<joint name=\"j"<<b.hinge.coordinate<<"\" type=\"hinge\" axis=\""; vec(o,b.hinge.axis);
-                    o<<"\" limited=\"true\" range=\""<<b.hinge.lower<<' '<<b.hinge.upper<<"\" damping=\""<<b.hinge.damping<<"\"/>";
+                    o<<"<joint name=\"j"<<h.coordinate<<"\" type=\"hinge\" pos=\"0 0 0\" axis=\""; vec(o,h.axis);
+                    o<<"\" limited=\"true\" range=\""<<h.lower<<' '<<h.upper<<"\" damping=\""<<h.damping
+                        <<"\" solreflimit=\""<<h.limitTimeConstant<<" 1\"/>";
                 }
                 auto inertiaPose=b.jointFromSegment;
                 inertiaPose[3]=b.jointFromSegment*glm::dvec4{b.comInSegment,1};
@@ -102,9 +105,9 @@ namespace julia::physics
             }
             for(std::size_t i=0;i<def.links.size();++i) o<<"</body>";
             o<<"</worldbody><actuator>";
-            for(const auto& b:def.links) if(b.hinge.coordinate>=0)
+            for(const auto& b:def.links) for(const auto& h:b.hinges)
             {
-                const auto k=static_cast<std::size_t>(b.hinge.coordinate);
+                const auto k=static_cast<std::size_t>(h.coordinate);
                 const auto limit=def.drives[k].maxTorque;
                 o<<"<motor name=\"motor"<<k<<"\" joint=\"j"<<k<<"\" gear=\"1\" ctrllimited=\"true\" ctrlrange=\""
                     <<-limit<<' '<<limit<<"\" forcelimited=\"true\" forcerange=\""<<-limit<<' '<<limit<<"\"/>";
@@ -130,7 +133,7 @@ namespace julia::physics
         Snapshot state;
         Coordinates effort{};
         std::vector<int> bodies;
-        std::array<Hinge,2> hinges;
+        std::array<Hinge,MaxCoordinates> hinges;
         std::vector<double> wrench;
         bool failed=false;
         explicit Impl(Definition definition):def(std::move(definition))
@@ -151,15 +154,15 @@ namespace julia::physics
             for(std::size_t i=0;i<def.links.size();++i)
             {
                 bodies.push_back(mj_name2id(m.get(),mjOBJ_BODY,("b"+std::to_string(i)).c_str()));
-                if(def.links[i].hinge.coordinate>=0) hinges[static_cast<std::size_t>(def.links[i].hinge.coordinate)]=def.links[i].hinge;
+                for(const auto& h:def.links[i].hinges) hinges[static_cast<std::size_t>(h.coordinate)]=h;
             }
             wrench.resize(static_cast<std::size_t>(m->nbody)*6);
         }
         [[noreturn]] void fail(const std::string& why)
         {
             failed=true;
-            std::ostringstream o; o<<why<<" tick="<<state.tick<<" steps="<<state.worldSteps
-                <<" q="<<d->qpos[0]<<','<<(state.dofs>1?d->qpos[1]:0);
+            std::ostringstream o; o<<why<<" tick="<<state.tick<<" steps="<<state.worldSteps<<" q=";
+            for(unsigned k=0;k<state.dofs;++k) o<<d->qpos[k]<<',';
             throw std::runtime_error(o.str());
         }
         void read()
@@ -169,6 +172,7 @@ namespace julia::physics
                 state.q[k]=d->qpos[k]; state.v[k]=d->qvel[k];
                 state.appliedTorque[k]=d->qfrc_actuator[k];
                 state.limitViolation[k]=std::max({0.,hinges[k].lower-state.q[k],state.q[k]-hinges[k].upper});
+                state.peakLimitViolationThisTick[k]=std::max(state.peakLimitViolationThisTick[k],state.limitViolation[k]);
                 if(!std::isfinite(state.q[k])||!std::isfinite(state.v[k])||!std::isfinite(d->qacc[k])||
                     !std::isfinite(state.appliedTorque[k])||std::abs(state.v[k])>50||state.limitViolation[k]>.04)
                     fail("Physical state/velocity/soft-limit threshold exceeded");
@@ -213,7 +217,7 @@ namespace julia::physics
     void PhysicsWorld::reset(Coordinates q)
     {
         auto& p=*impl_;
-        for(unsigned k=0;k<2;++k)
+        for(unsigned k=0;k<MaxCoordinates;++k)
             if(!std::isfinite(q[k])||(k>=p.state.dofs?q[k]!=0:(q[k]<p.hinges[k].lower||q[k]>p.hinges[k].upper)))
                 throw std::invalid_argument("Reset requires finite, in-range coordinates");
         const auto epoch=p.state.epoch+1; const auto dofs=p.state.dofs;
@@ -230,7 +234,7 @@ namespace julia::physics
         if(p.failed) return reject("Physics failed; reset required");
         if(kind!=CommandKind::Target&&kind!=CommandKind::Torque&&kind!=CommandKind::Disable)
             return reject("Unsupported command in fixed-base effort bench (no IK/attachment/root motion)");
-        for(unsigned k=0;k<2;++k)
+        for(unsigned k=0;k<MaxCoordinates;++k)
         {
             if(!std::isfinite(values[k])||(k>=p.state.dofs&&values[k]!=0)) return reject("Invalid coordinates");
             if(kind==CommandKind::Target&&k<p.state.dofs&&(values[k]<p.hinges[k].lower||values[k]>p.hinges[k].upper))
@@ -253,7 +257,7 @@ namespace julia::physics
     {
         auto& p=*impl_;
         if(p.failed) throw std::runtime_error("Physics failed; reset required");
-        auto& s=p.state; ++s.tick; s.timing={}; s.saturatedThisTick={};
+        auto& s=p.state; ++s.tick; s.timing={}; s.saturatedThisTick={}; s.peakLimitViolationThisTick={};
         s.peakContactsThisTick=0; s.peakNormalForceThisTick=0; s.maxPenetrationThisTick=0;
         s.externalForce={0,0,0}; s.externalTorque={0,0,0};
         std::copy(p.wrench.begin(),p.wrench.end(),p.d->xfrc_applied);
@@ -288,13 +292,43 @@ namespace julia::physics
     std::vector<glm::dmat4> PhysicsWorld::forwardKinematics(Coordinates q) const
     {
         auto& p=*impl_;
-        if(!std::isfinite(q[0])||!std::isfinite(q[1])) throw std::invalid_argument("Non-finite FK coordinates");
+        for(unsigned k=0;k<MaxCoordinates;++k)
+            if(!std::isfinite(q[k])||(k>=p.state.dofs&&q[k]!=0)) throw std::invalid_argument("Invalid FK coordinates");
         mj_resetData(p.m.get(),p.scratch.get());
         for(unsigned k=0;k<p.state.dofs;++k) p.scratch->qpos[k]=q[k];
         mj_kinematics(p.m.get(),p.scratch.get());
         std::vector<glm::dmat4> result;
         for(const auto id:p.bodies) result.push_back(bodyFrame(p.scratch.get(),id));
         return result;
+    }
+    MassAudit PhysicsWorld::massAudit(Coordinates q) const
+    {
+        const auto frames=forwardKinematics(q);
+        auto& p=*impl_; mj_forward(p.m.get(),p.scratch.get());
+        MassAudit a;
+        for(std::size_t i=0;i<p.bodies.size();++i)
+        {
+            const auto id=p.bodies[i]; const auto mass=p.m->body_mass[id];
+            a.masses.push_back(mass); a.totalMass+=mass;
+            const auto com=glm::dvec3{p.m->body_ipos[3*id],p.m->body_ipos[3*id+1],p.m->body_ipos[3*id+2]};
+            a.comInJoint.push_back(com);
+            const auto* quat=p.m->body_iquat+4*id;
+            const auto rot=glm::mat3_cast(glm::dquat{quat[0],quat[1],quat[2],quat[3]});
+            glm::dmat3 diagonal{0}; for(int k=0;k<3;++k) diagonal[k][k]=p.m->body_inertia[3*id+k];
+            a.inertiaInJoint.push_back(rot*diagonal*glm::transpose(rot));
+            a.comWorld+=mass*glm::dvec3{frames[i]*glm::dvec4{com,1}};
+        }
+        a.comWorld/=a.totalMass;
+        for(std::size_t i=0;i<frames.size();++i)
+        {
+            const glm::dmat3 r{frames[i]};
+            const auto d=glm::dvec3{frames[i]*glm::dvec4{a.comInJoint[i],1}}-a.comWorld;
+            a.inertiaAtComWorld+=r*a.inertiaInJoint[i]*glm::transpose(r)+
+                a.masses[i]*(glm::dot(d,d)*glm::dmat3{1}-glm::outerProduct(d,d));
+        }
+        a.massMatrix.resize(static_cast<std::size_t>(p.m->nv*p.m->nv));
+        mj_fullM(p.m.get(),a.massMatrix.data(),p.scratch->qM);
+        return a;
     }
     std::size_t PhysicsWorld::modelBytes() const { return sizeof(mjModel)+static_cast<std::size_t>(impl_->m->nbuffer); }
     std::size_t PhysicsWorld::dataBytes() const { return sizeof(mjData)+static_cast<std::size_t>(impl_->d->nbuffer+impl_->d->narena); }

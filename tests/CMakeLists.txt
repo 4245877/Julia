@@ -167,6 +167,12 @@ if(JULIA_BUILD_PHYSICS)
     julia_copy_mujoco(julia_test_arm_physics)
     add_test(NAME arm_physics COMMAND julia_test_arm_physics "${CMAKE_SOURCE_DIR}/build/diagnostics/stage7a/cpu")
     set_tests_properties(arm_physics PROPERTIES TIMEOUT 120 RUN_SERIAL TRUE)
+    add_executable(julia_test_arm_physics_full test_arm_physics_full.cpp)
+    target_compile_definitions(julia_test_arm_physics_full PRIVATE JULIA_TEST_ASSET_DIR="${CMAKE_SOURCE_DIR}/assets")
+    target_link_libraries(julia_test_arm_physics_full PRIVATE julia_physics_rig julia_model_import julia::warnings)
+    julia_copy_mujoco(julia_test_arm_physics_full)
+    add_test(NAME arm_physics_full COMMAND julia_test_arm_physics_full "${CMAKE_SOURCE_DIR}/build/diagnostics/stage7b/cpu")
+    set_tests_properties(arm_physics_full PROPERTIES TIMEOUT 180 RUN_SERIAL TRUE)
 endif()
 
 if(NOT JULIA_BUILD_DESKTOP)
@@ -177,6 +183,11 @@ if(JULIA_BUILD_PHYSICS)
     add_test(NAME desktop_physics COMMAND $<TARGET_FILE:julia_physics_desktop>
         --case impulse --verify "${CMAKE_SOURCE_DIR}/build/diagnostics/stage7a/gpu/impulse")
     set_tests_properties(desktop_physics PROPERTIES TIMEOUT 120 RUN_SERIAL TRUE WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+    foreach(side left right)
+        add_test(NAME desktop_physics_full_${side} COMMAND $<TARGET_FILE:julia_physics_desktop>
+            --chain full --side ${side} --case spatial --verify "${CMAKE_SOURCE_DIR}/build/diagnostics/stage7b/gpu/${side}-spatial")
+        set_tests_properties(desktop_physics_full_${side} PROPERTIES TIMEOUT 120 RUN_SERIAL TRUE WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+    endforeach()
 endif()
 
 # A real hidden OpenGL window verifies shaders, FBX loading and rendered pixels.

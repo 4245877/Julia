@@ -1,6 +1,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include "BenchIO.hpp"
+#include "BenchHud.hpp"
 #include "julia/render_opengl/GLModelLoader.hpp"
 #include "julia/render_opengl/OpenGLRenderer.hpp"
 #include "julia/runtime/FixedStepScheduler.hpp"
@@ -22,6 +23,7 @@ namespace
         julia::runtime::FixedStepScheduler* scheduler=nullptr;
         BenchCase scenario=BenchCase::Hold;
         bool reset=false;
+        unsigned selected=0, camera=0;
     };
     void key(GLFWwindow* window,int code,int,int action,int)
     {
@@ -30,19 +32,51 @@ namespace
         if(code==GLFW_KEY_ESCAPE) glfwSetWindowShouldClose(window,GLFW_TRUE);
         else if(code==GLFW_KEY_SPACE) input.scheduler->setPaused(!input.scheduler->paused());
         else if(code==GLFW_KEY_R) input.reset=true;
+        else if(code==GLFW_KEY_TAB) input.selected=(input.selected+1)%input.world->snapshot().dofs;
+        else if(code==GLFW_KEY_V) input.camera=(input.camera+1)%3;
         else if(code>=GLFW_KEY_1&&code<=GLFW_KEY_7) { input.scenario=static_cast<BenchCase>(code-GLFW_KEY_1); input.reset=true; }
         else if(code==GLFW_KEY_D) input.world->command(CommandKind::Disable);
         else if(code==GLFW_KEY_I) input.world->applyWrench(2,{0,0,-30});
         else if(code==GLFW_KEY_LEFT||code==GLFW_KEY_RIGHT||code==GLFW_KEY_UP||code==GLFW_KEY_DOWN)
         {
             auto target=input.world->snapshot().target;
+            const auto selected=input.world->snapshot().dofs==2?1u:input.selected;
             if(code==GLFW_KEY_LEFT) target[0]-=.05;
             if(code==GLFW_KEY_RIGHT) target[0]+=.05;
-            if(code==GLFW_KEY_DOWN) target[1]-=.05;
-            if(code==GLFW_KEY_UP) target[1]+=.05;
+            if(code==GLFW_KEY_DOWN) target[selected]-=.05;
+            if(code==GLFW_KEY_UP) target[selected]+=.05;
             std::string reason;
             if(!input.world->command(CommandKind::Target,target,&reason)) std::cerr<<reason<<'\n';
         }
+    }
+    void verifyCallbacks(GLFWwindow* window,const ArmRig& rig,BenchCase scenario)
+    {
+        PhysicsWorld world{benchDefinition(rig,scenario)}; resetBench(world,scenario);
+        julia::runtime::FixedStepScheduler scheduler; Input input{&world,&scheduler,scenario,false};
+        glfwSetWindowUserPointer(window,&input);
+        const auto initial=world.snapshot();
+        key(window,GLFW_KEY_TAB,0,GLFW_PRESS,0);
+        key(window,GLFW_KEY_UP,0,GLFW_PRESS,0);
+        if(input.selected!=1||world.snapshot().q!=initial.q||std::abs(world.snapshot().target[1]-initial.target[1]-.05)>1e-12)
+            throw std::runtime_error("Coordinate selection/target callback failed");
+        if(initial.dofs==MaxCoordinates)
+        {
+            key(window,GLFW_KEY_DOWN,0,GLFW_PRESS,0);
+            for(unsigned n=0;n<MaxCoordinates;++n)
+            {
+                key(window,GLFW_KEY_TAB,0,GLFW_PRESS,0); const auto before=world.snapshot().target;
+                key(window,GLFW_KEY_UP,0,GLFW_PRESS,0);
+                auto expected=before; expected[input.selected]+=.05;
+                if(world.snapshot().target!=expected||world.snapshot().q!=initial.q) throw std::runtime_error("Six-axis target callback failed");
+                key(window,GLFW_KEY_DOWN,0,GLFW_PRESS,0);
+            }
+        }
+        key(window,GLFW_KEY_SPACE,0,GLFW_PRESS,0); key(window,GLFW_KEY_V,0,GLFW_PRESS,0);
+        key(window,GLFW_KEY_R,0,GLFW_PRESS,0);
+        if(!scheduler.paused()||input.camera!=1||!input.reset) throw std::runtime_error("Pause/camera/reset callback failed");
+        key(window,GLFW_KEY_D,0,GLFW_PRESS,0); key(window,GLFW_KEY_I,0,GLFW_PRESS,0); world.step();
+        if(world.snapshot().mode!=DriveMode::Disabled||world.snapshot().externalForce.z!=-30) throw std::runtime_error("Drive/wrench callback failed");
+        glfwSetWindowUserPointer(window,nullptr);
     }
     Pixels readPixels()
     {
@@ -71,7 +105,9 @@ namespace
         std::vector<DebugLineVertex> v;
         const auto target=rig.visualFrames(view.targetPose);
         for(std::size_t i=0;i<2;++i) line(v,glm::dvec3{target[i][3]},glm::dvec3{target[i+1][3]},{1,.2f,1});
+        for(int k=0;k<3;++k) line(v,glm::dvec3{target[2][3]},glm::dvec3{target[2][3]}+glm::dvec3{target[2][k]}*.07,{1,.2f,1});
         const auto& s=view.physics;
+        for(int k=0;k<3;++k) line(v,glm::dvec3{s.worldFromJoint[2][3]},glm::dvec3{s.worldFromJoint[2][3]}+glm::dvec3{s.worldFromJoint[2][k]}*.07,{.2f,1,.2f});
         for(std::size_t i=0;i<def.links.size();++i)
         {
             const auto& b=def.links[i]; const auto& frame=s.worldFromJoint[i];
@@ -123,10 +159,11 @@ int main(int argc,char** argv)
         if(!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) throw std::runtime_error("GLAD load failed");
         {
             const auto asset=julia::model_import::ModelImporter::loadFromFile(std::filesystem::path{JULIA_PHYSICS_ASSETS}/"models/Raphtalia_prepared.fbx");
-            const ArmRig rig{*asset};
+            const ArmRig rig{*asset,options.side,options.chain};
+            if(options.verify) verifyCallbacks(window,rig,options.scenario);
             auto model=julia::render_opengl::GLModelLoader::upload(asset);
             auto world=std::make_unique<PhysicsWorld>(benchDefinition(rig,options.scenario));
-            verifyFramesBeforeDynamics(rig,*world); resetBench(*world,options.scenario);
+            verifyFramesBeforeDynamics(rig,*world); bench::reset(*world,options.scenario,options);
             auto view=publish(rig,world->snapshot());
             auto log=std::make_unique<bench::Log>(options.output); bench::metadata(options.output,rig,*world);
             std::ofstream report{options.output/"gpu.txt"};
@@ -134,24 +171,29 @@ int main(int argc,char** argv)
             julia::render_opengl::OpenGLRenderer renderer; renderer.initialize(Width,Height,JULIA_PHYSICS_ASSETS);
             julia::render_opengl::CameraConfig camera;
             camera.position={1.65f,1.45f,2.5f}; camera.target={.08f,.90f,.10f}; camera.orthographicHeight=1.85f;
-            renderer.setCamera(camera);
+            auto displayCamera=camera;
+            const auto setCamera=[&](const julia::render_opengl::CameraConfig& c) { displayCamera=c; renderer.setCamera(c); };
+            setCamera(camera);
+            julia::runtime::FixedStepScheduler scheduler;
+            Input input{world.get(),&scheduler,options.scenario,false};
             const auto bodyFromResource=rig.binding().profile().bodyFromResource;
             const auto draw=[&](bool debug) {
                 renderer.beginFrame(); renderer.renderModel(model,bodyFromResource,view.actualPose.palette);
-                if(debug) renderer.renderDebugLines(overlay(rig,world->definition(),view));
+                if(debug) {
+                    renderer.renderDebugLines(overlay(rig,world->definition(),view));
+                    renderer.renderDebugLines(bench::hud(view,displayCamera,input.selected,scheduler.paused()));
+                }
                 if(glGetError()!=GL_NO_ERROR) throw std::runtime_error("OpenGL render error");
             };
             draw(false); const auto first=readPixels();
             draw(true); savePixels(options.output/"frame_0.ppm",readPixels());
-            julia::runtime::FixedStepScheduler scheduler;
-            Input input{world.get(),&scheduler,options.scenario,false};
             glfwSetWindowUserPointer(window,&input); glfwSetKeyCallback(window,key);
             double last=glfwGetTime(), renderSum=0,gpuSum=0,paletteSum=0;
-            unsigned renders=0,captures=1; std::uint64_t nextCapture=120;
+            unsigned renders=0,captures=1; std::uint64_t nextCapture=120,lastCapture=0;
             unsigned experiment=0; auto activeCase=options.scenario;
             GLuint query=0; glGenQueries(1,&query);
             const auto limit=options.verify||options.explicitTicks?options.ticks:std::numeric_limits<std::uint64_t>::max();
-            std::cout<<"Fixed base. 1..7: passive/hold/heavy/inertia/weak/impulse/contact; R reset; Space pause; arrows target; D passive; I pulse; Esc exit.\n";
+            std::cout<<"Fixed base. 1..7: passive/hold/heavy/inertia/weak/impulse/contact; R reset; Space pause; Tab coordinate; Up/Down target; V camera; D passive; I pulse; Esc exit.\n";
             while(!glfwWindowShouldClose(window)&&world->snapshot().tick<limit)
             {
                 glfwPollEvents();
@@ -162,7 +204,7 @@ int main(int argc,char** argv)
                         world=std::make_unique<PhysicsWorld>(benchDefinition(rig,input.scenario));
                         verifyFramesBeforeDynamics(rig,*world); activeCase=input.scenario;
                     }
-                    resetBench(*world,input.scenario);
+                    bench::reset(*world,input.scenario,options);
                     input.world=world.get(); input.reset=false;
                     scheduler=julia::runtime::FixedStepScheduler{};
                     view=publish(rig,world->snapshot()); // Collapse display history at experiment entry.
@@ -175,42 +217,59 @@ int main(int argc,char** argv)
                     stepBench(*world,input.scenario); view=publish(rig,world->snapshot()); log->row(view,world->definition());
                 };
                 scheduler.advance(options.verify?1./options.fps:now-last,tick,glfwGetWindowAttrib(window,GLFW_ICONIFIED)!=0); last=now;
-                if(options.verify&&world->snapshot().tick<nextCapture&&world->snapshot().tick!=246&&world->snapshot().tick!=limit) continue;
+                // Draw every scheduler frame, including repeated states at 144 Hz.
+                // Only read back/export the selected control frames.
+                const auto currentTick=world->snapshot().tick;
+                const bool capture=options.verify&&currentTick!=lastCapture&&
+                    (currentTick>=nextCapture||currentTick==246||currentTick==limit);
+                auto activeCamera=camera;
+                const float sign=options.side==ArmSide::Left?1.f:-1.f;
+                if(input.camera==1) { activeCamera.target=glm::vec3{view.actualWrist}; activeCamera.position=activeCamera.target+glm::vec3{sign*.6f,.25f,.65f}; activeCamera.orthographicHeight=.4f; }
+                if(input.camera==2) { activeCamera.position={-sign*1.8f,1.6f,1.5f}; }
+                setCamera(activeCamera);
                 const auto stateBefore=world->snapshot();
                 const auto begin=Clock::now(); glBeginQuery(GL_TIME_ELAPSED,query); draw(true); glEndQuery(GL_TIME_ELAPSED);
                 renderSum+=std::chrono::duration<double,std::micro>(Clock::now()-begin).count();
                 paletteSum+=renderer.lastPaletteUploadCpuMilliseconds()*1000;
                 GLuint64 ns=0; glGetQueryObjectui64v(query,GL_QUERY_RESULT,&ns); gpuSum+=static_cast<double>(ns)/1000; ++renders;
-                if(options.verify)
+                if(capture)
                 {
+                    lastCapture=currentTick;
                     const auto image=readPixels();
                     savePixels(options.output/("frame_"+std::to_string(view.physics.tick)+".ppm"),image); ++captures;
                     draw(true); if(image!=readPixels()) throw std::runtime_error("Repeated GPU draw changed snapshot pixels");
                     if(world->snapshot().q!=stateBefore.q||world->snapshot().tick!=stateBefore.tick) throw std::runtime_error("Render advanced physics");
-                    auto closeCamera=camera; closeCamera.target={.18f,1.13f,.22f}; closeCamera.position={1.6f,1.25f,1.3f};
-                    closeCamera.orthographicHeight=.85f; renderer.setCamera(closeCamera); draw(true);
+                    auto closeCamera=camera; closeCamera.target=glm::vec3{view.actualWrist}; closeCamera.position=closeCamera.target+glm::vec3{sign*.8f,.2f,.8f};
+                    closeCamera.orthographicHeight=.85f; setCamera(closeCamera); draw(true);
                     savePixels(options.output/("arm_"+std::to_string(view.physics.tick)+".ppm"),readPixels());
-                    renderer.setCamera(camera);
+                    closeCamera.orthographicHeight=.3f; setCamera(closeCamera); draw(true);
+                    savePixels(options.output/("wrist_"+std::to_string(view.physics.tick)+".ppm"),readPixels());
+                    closeCamera.position=closeCamera.target+glm::vec3{-sign*.8f,.4f,-.6f}; closeCamera.orthographicHeight=.85f;
+                    setCamera(closeCamera); draw(true);
+                    savePixels(options.output/("reverse_"+std::to_string(view.physics.tick)+".ppm"),readPixels());
+                    setCamera(activeCamera);
                     if(world->snapshot().tick>=nextCapture) nextCapture+=120;
                 }
                 std::ostringstream title;
-                title<<std::fixed<<std::setprecision(2)<<"FIXED BASE "<<benchCaseName(input.scenario)<<" q* "<<view.physics.target[0]<<','<<view.physics.target[1]
-                    <<" q "<<view.physics.q[0]<<','<<view.physics.q[1]<<" calcNm "<<view.physics.calculatedTorque[0]<<','<<view.physics.calculatedTorque[1]
-                    <<" appliedNm "<<view.physics.appliedTorque[0]<<','<<view.physics.appliedTorque[1]
-                    <<" SAT "<<view.physics.saturatedThisTick[0]<<view.physics.saturatedThisTick[1]<<" contacts "<<view.physics.contacts.size()
-                    <<" N "<<view.physics.peakNormalForceThisTick<<" solver "<<view.physics.solverIterations<<" masses ";
-                for(const auto& b:world->definition().links) title<<b.mass<<' ';
-                title<<"COM(hand) "<<view.physics.comWorld[2].x<<','<<view.physics.comWorld[2].y<<','<<view.physics.comWorld[2].z;
+                title<<std::fixed<<std::setprecision(2)<<"FIXED "<<(options.side==ArmSide::Left?"L":"R")<<" "<<benchCaseName(input.scenario)<<" sel="<<input.selected;
+                for(unsigned k=0;k<view.physics.dofs;++k)
+                    title<<" |"<<k<<" q*/q "<<view.physics.target[k]<<'/'<<view.physics.q[k]<<" v "<<view.physics.v[k]
+                        <<" Nm "<<view.physics.calculatedTorque[k]<<'/'<<view.physics.appliedTorque[k]
+                        <<" S"<<view.physics.saturatedThisTick[k]<<" lim "<<view.physics.limitViolation[k];
+                title<<" contacts "<<view.physics.contacts.size()<<" N "<<view.physics.peakNormalForceThisTick<<" solver "<<view.physics.solverIterations;
                 glfwSetWindowTitle(window,title.str().c_str()); glfwSwapBuffers(window);
             }
             glDeleteQueries(1,&query);
             draw(false); const auto meshDelta=changed(first,readPixels());
             if(options.verify&&(meshDelta<=1000||captures<5||world->snapshot().tick!=limit||world->snapshot().worldSteps!=limit*Substeps))
                 throw std::runtime_error("GPU pose/capture/exact tick acceptance failed");
+            if(options.verify&&renders!=(limit*options.fps+119)/120)
+                throw std::runtime_error("Expected one draw per scheduler frame");
             if(glGetError()!=GL_NO_ERROR) throw std::runtime_error("OpenGL final error");
             report<<"case="<<benchCaseName(input.scenario)<<" fps="<<options.fps<<" ticks="<<world->snapshot().tick<<" steps="<<world->snapshot().worldSteps
-                <<" captures="<<captures<<" mesh_changed_bytes="<<meshDelta<<" GL_errors=0\n"
+                <<" renders="<<renders<<" captures="<<captures<<" mesh_changed_bytes="<<meshDelta<<" GL_errors=0\n"
                 <<"render_submit_mean_us="<<(renders?renderSum/renders:0)<<" GPU_elapsed_mean_us="<<(renders?gpuSum/renders:0)
+                <<" callback_checks="<<(options.verify?"PASS":"not-run")<<" OS_input=not-tested "
                 <<" palette_upload_mean_us="<<(renders?paletteSum/renders:0)<<" (query synchronized)\nPASS\n";
             std::cout<<"PASS desktop physics; ticks="<<world->snapshot().tick<<" captures="<<captures<<'\n';
         }

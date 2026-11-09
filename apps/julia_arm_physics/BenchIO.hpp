@@ -5,12 +5,17 @@
 #include <iomanip>
 #include <iostream>
 #include <limits>
+#include <optional>
+#include <sstream>
 
 namespace bench
 {
     struct Options
     {
         julia::physics::BenchCase scenario=julia::physics::BenchCase::Hold;
+        julia::physics::ArmSide side=julia::physics::ArmSide::Left;
+        julia::physics::ArmChain chain=julia::physics::ArmChain::Two;
+        std::optional<julia::physics::Coordinates> target;
         std::uint64_t ticks=720;
         unsigned fps=60;
         bool verify=false, explicitTicks=false;
@@ -24,6 +29,26 @@ namespace bench
             const std::string flag=argv[i];
             const auto value=[&]() { if(++i>=argc) throw std::invalid_argument("Missing value for "+flag); return std::string{argv[i]}; };
             if(flag=="--case") o.scenario=julia::physics::parseBenchCase(value());
+            else if(flag=="--side")
+            {
+                const auto s=value();
+                if(s!="left"&&s!="right") throw std::invalid_argument("Side must be left or right");
+                o.side=s=="left"?julia::physics::ArmSide::Left:julia::physics::ArmSide::Right;
+            }
+            else if(flag=="--chain")
+            {
+                const auto s=value();
+                if(s!="two"&&s!="full") throw std::invalid_argument("Chain must be two or full");
+                o.chain=s=="two"?julia::physics::ArmChain::Two:julia::physics::ArmChain::Full;
+            }
+            else if(flag=="--target")
+            {
+                auto s=value(); for(auto& c:s) if(c==',') c=' ';
+                std::istringstream in{s}; julia::physics::Coordinates q{};
+                for(auto& x:q) if(!(in>>x)) throw std::invalid_argument("Target needs six radian values (two-chain: q0,q1,0,0,0,0)");
+                std::string extra; if(in>>extra) throw std::invalid_argument("Too many target coordinates");
+                o.target=q;
+            }
             else if(flag=="--output") o.output=value();
             else if(flag=="--verify") { o.verify=true; o.output=value(); }
             else if(flag=="--ticks"||flag=="--fps")
@@ -37,7 +62,15 @@ namespace bench
             }
             else throw std::invalid_argument("Unknown option "+flag);
         }
+        if(o.target&&o.scenario==julia::physics::BenchCase::Spatial)
+            throw std::invalid_argument("Spatial generates targets; use --case hold with --target");
         return o;
+    }
+    inline void reset(julia::physics::PhysicsWorld& world,julia::physics::BenchCase scenario,const Options& o)
+    {
+        julia::physics::resetBench(world,scenario);
+        std::string reason;
+        if(o.target&&!world.command(julia::physics::CommandKind::Target,*o.target,&reason)) throw std::invalid_argument(reason);
     }
     struct Log
     {
