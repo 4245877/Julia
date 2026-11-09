@@ -130,6 +130,15 @@ endif()
 add_test(NAME body_interaction COMMAND julia_test_body_interaction "${CMAKE_SOURCE_DIR}/build/diagnostics/stage6f/cpu")
 set_tests_properties(body_interaction PROPERTIES TIMEOUT 240)
 
+add_executable(julia_test_leg_support test_leg_support.cpp)
+target_compile_definitions(julia_test_leg_support PRIVATE JULIA_TEST_ASSET_DIR="${CMAKE_SOURCE_DIR}/assets")
+target_link_libraries(julia_test_leg_support PRIVATE julia_model_import julia_embodiment julia::warnings)
+if(WIN32)
+    target_link_libraries(julia_test_leg_support PRIVATE psapi)
+endif()
+add_test(NAME leg_support COMMAND julia_test_leg_support "${CMAKE_SOURCE_DIR}/build/diagnostics/stage6g/cpu")
+set_tests_properties(leg_support PROPERTIES TIMEOUT 240)
+
 if(NOT JULIA_BUILD_DESKTOP)
     return()
 endif()
@@ -221,3 +230,7 @@ set_tests_properties(desktop_detour PROPERTIES WORKING_DIRECTORY "${CMAKE_BINARY
 add_test(NAME desktop_interaction COMMAND $<TARGET_FILE:julia_desktop>
     --verify-interaction "${CMAKE_SOURCE_DIR}/build/diagnostics/stage6f/gpu")
 set_tests_properties(desktop_interaction PROPERTIES WORKING_DIRECTORY "${CMAKE_BINARY_DIR}" TIMEOUT 180 RUN_SERIAL TRUE)
+
+add_test(NAME desktop_support COMMAND $<TARGET_FILE:julia_desktop>
+    --verify-support "${CMAKE_SOURCE_DIR}/build/diagnostics/stage6g/gpu")
+set_tests_properties(desktop_support PROPERTIES WORKING_DIRECTORY "${CMAKE_BINARY_DIR}" TIMEOUT 180 RUN_SERIAL TRUE)

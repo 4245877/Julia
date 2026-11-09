@@ -3,6 +3,7 @@
 #include "../common/CollisionDemo.hpp"
 #include "../common/SpatialDemo.hpp"
 #include "../common/InteractionDemo.hpp"
+#include "../common/SupportDemo.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 #include <charconv>
 #include <filesystem>
@@ -40,7 +41,7 @@ int main(int argc,char** argv)
         ReachTarget reachTarget;
         int effectorOffset=0;
         RootPose root;
-        bool eyes=true, multiDemo=false, interactionDemo=false;
+        bool eyes=true, multiDemo=false, interactionDemo=false, supportDemo=false, explicitTicks=false;
         std::optional<bool> collisionDemo;
         std::filesystem::path source=std::filesystem::path{JULIA_ASSET_DIR}/"models/Raphtalia_prepared.fbx", output;
         for (int i=1;i<argc;++i)
@@ -49,6 +50,7 @@ int main(int argc,char** argv)
             if (argument=="--help")
             {
                 std::cout << "julia_body_sim [--ticks N] [--clip INDEX] [--elbow RADIANS] [--no-eyes] [--model PATH] [--output CSV]\n"
+                    << "  --support-demo (explicit alignment, four small root moves; default 12000 ticks)\n"
                     << "  --interaction-demo (one sphere; grasp, move, release; --right optional)\n  --reach X Y Z [--right] [--effector wrist|palm|grip] [--world] [--root X Y Z YAW_RADIANS]\n"
                     << "  --orientation W X Y Z (PositionAndOrientation); --position-only; --spatial-demo 0|1|2\n"
                     << "  --tolerance METRES --angular-tolerance RADIANS; --retarget-orientation W X Y Z\n"
@@ -61,6 +63,7 @@ int main(int argc,char** argv)
                     << "  --planning-poses-per-tick N --planning-pose-budget N --planning-queries-per-tick N --planning-query-budget N\n";
                 return 0;
             }
+            if (argument=="--support-demo") { supportDemo=true; continue; }
             if (argument=="--interaction-demo") { interactionDemo=true; continue; }
             if (argument=="--allow-detour") { reachTarget.strategy=MovementStrategy::AllowDetour; continue; }
             if (argument=="--position-only") { reachTarget.task=ReachTask::PositionOnly; continue; }
@@ -96,7 +99,7 @@ int main(int argc,char** argv)
             }
             if (i+1>=argc) throw std::invalid_argument("Missing option value");
             const std::string_view value{argv[++i]};
-            if (argument=="--ticks") ticks=number<std::uint64_t>(value);
+            if (argument=="--ticks") { ticks=number<std::uint64_t>(value); explicitTicks=true; }
             else if (argument=="--spatial-demo") spatialSample=number<unsigned>(value);
             else if (argument=="--tolerance") reachTarget.tolerance=number<float>(value);
             else if (argument=="--angular-tolerance") reachTarget.angularTolerance=number<float>(value);
@@ -137,6 +140,23 @@ int main(int argc,char** argv)
         const auto profile=raphtaliaBodyProfile();
         const bool calibrated=validateBodyProfile(profile,*asset).empty();
         BodyInstance body(1,asset,calibrated ? &profile:nullptr,eyes);
+        if (supportDemo) {
+            if (!calibrated) throw std::invalid_argument("Support demo requires Raphtalia");
+            if (!explicitTicks) ticks=12000;
+            body.enqueue(SetRoot{root}); body.enqueue(SetDirectMode{true}); body.step();
+            app::SupportDemo demo; demo.start(body);
+            std::ofstream trace;
+            if (!output.empty()) { if (!output.parent_path().empty()) std::filesystem::create_directories(output.parent_path()); trace.open(output); if (!trace) throw std::runtime_error("Cannot open support trace"); }
+            for (std::uint64_t t=0;t<ticks;++t) {
+                demo.drive(body); body.step(); if (trace) app::supportTrace(trace,body.snapshot());
+                for (const auto& r:body.results()) if (r.status==BodyCommandStatus::Rejected) throw std::runtime_error(r.reason);
+                if (body.snapshot().support.result=="PlanRejected") throw std::runtime_error(body.snapshot().support.reason);
+            }
+            const auto& o=body.snapshot().support;
+            std::cout << "support=" << supportPhaseName(o.phase) << " stage=" << demo.stage << " result=" << o.result << " reason=" << o.reason << "\n";
+            for (unsigned s=0;s<2;++s) std::cout << "foot=" << s << " p=" << o.anchors[s].positionError << " angle=" << o.anchors[s].angularError << " gap=" << o.anchors[s].minGap << ':' << o.anchors[s].maxGap << "\n";
+            return demo.done(body.snapshot()) ? 0:1;
+        }
         if (interactionDemo) {
             if (!calibrated) throw std::invalid_argument("Interaction demo requires Raphtalia");
             app::InteractionDemo demo; demo.arm=reachTarget.arm; demo.root=root; demo.start(body);

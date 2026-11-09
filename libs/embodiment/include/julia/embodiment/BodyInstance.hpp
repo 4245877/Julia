@@ -3,6 +3,7 @@
 #include "julia/embodiment/BodyProfile.hpp"
 #include "julia/embodiment/ArmReach.hpp"
 #include "julia/embodiment/HandInteraction.hpp"
+#include "julia/embodiment/LegSupport.hpp"
 #include "julia/embodiment/EyePoseLayer.hpp"
 #include "julia/runtime/FixedStepScheduler.hpp"
 #include <memory>
@@ -30,7 +31,8 @@ namespace julia::embodiment
     struct EyeCommand { EyeOperation operation; glm::vec3 value{0}; };
     using BodyOperation = std::variant<SetCoordinate, ResetCoordinates, SetDirectMode, ResetBody,
         SetRoot, ClipCommand, EyeCommand, StartReach, RetargetReach, CancelReach, SetCollisionScene,
-        CreateInteractionSphere,DeleteInteractionObject,GraspObject,MoveHeldObject,ReleaseObject,CancelInteraction,SetHandClosure>;
+        CreateInteractionSphere,DeleteInteractionObject,GraspObject,MoveHeldObject,ReleaseObject,CancelInteraction,SetHandClosure,
+        SetSupportSurface,EnableSupport,AlignSupport,MoveSupportRoot,CancelSupportMotion,DisableSupport>;
     struct BodyCommand
     {
         std::uint64_t id, target, tick, epoch;
@@ -58,6 +60,7 @@ namespace julia::embodiment
         std::array<HandState,2> hands{};
         std::optional<InteractiveObject> object;
         InteractionObservation interaction;
+        SupportObservation support;
         std::shared_ptr<const world::CollisionScene> collisionScene;
         CollisionSettings collisionSettings;
         PathCheck pathCheck; // Most recent proposed path, including rejected replacements.
@@ -79,6 +82,7 @@ namespace julia::embodiment
         std::array<HandState,2> hands{};
         std::optional<InteractiveObject> object;
         InteractionObservation interaction;
+        SupportObservation support;
         animation::Pose pose;
         explicit BodyDisplay(const animation::Skeleton& skeleton) : pose(skeleton) {}
         std::vector<BodyCollider> colliders;
@@ -118,6 +122,7 @@ namespace julia::embodiment
         std::unique_ptr<DirectBodyControl> control_;
         std::unique_ptr<ArmReach> reach_;
         std::unique_ptr<HandInteraction> interaction_;
+        std::unique_ptr<LegSupport> support_;
         EyePoseLayer eyes_;
         AnimationPlayer player_;
         RootPose root_;

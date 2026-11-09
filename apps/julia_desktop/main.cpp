@@ -653,7 +653,8 @@ namespace
         for (int i = 0; i < 6; ++i)
         {
             state.inputContext = {};
-            keyCallback(window, GLFW_KEY_F10, 0, GLFW_PRESS, 0);
+            std::cout << "Support: Ctrl+J demo; F2 then Ctrl+H enable, Ctrl+H align; Alt+Z/C,V/N,O/P root +/-5 mm; Alt+Delete cancel; Ctrl+Shift+H disable after rest.\n";
+        keyCallback(window, GLFW_KEY_F10, 0, GLFW_PRESS, 0);
             require(state.displayCommand == julia::desktop::DisplayCommand::ToggleMode, "F10 did not route mode switch");
             display.execute(state.displayCommand);
             state.displayCommand = julia::desktop::DisplayCommand::None;
@@ -789,6 +790,7 @@ namespace
 
 int main(int argc, char** argv)
 {
+    const bool supportVerification = argc > 1 && std::string_view{argv[1]} == "--verify-support";
     const bool interactionVerification = argc > 1 && std::string_view{argv[1]} == "--verify-interaction";
     const bool spatialVerification = argc > 1 && std::string_view{argv[1]} == "--verify-spatial";
     const bool rankedVerification = argc > 1 && std::string_view{argv[1]} == "--verify-ranked";
@@ -796,7 +798,7 @@ int main(int argc, char** argv)
     const bool detourVerification = argc > 1 && std::string_view{argv[1]} == "--verify-detour";
     const bool collisionVerification = argc > 1 && std::string_view{argv[1]} == "--verify-collision";
     const bool reachVerification = argc > 1 && std::string_view{argv[1]} == "--verify-ik";
-    const bool bodyVerification = interactionVerification || spatialVerification || rankedVerification || multiIKVerification || detourVerification || collisionVerification || reachVerification || (argc > 1 && std::string_view{argv[1]} == "--verify-body");
+    const bool bodyVerification = supportVerification || interactionVerification || spatialVerification || rankedVerification || multiIKVerification || detourVerification || collisionVerification || reachVerification || (argc > 1 && std::string_view{argv[1]} == "--verify-body");
     if (bodyVerification && argc != 3) { std::cerr << "Usage: julia_desktop --verify-body output_directory\n"; return 2; }
     const bool verification = argc > 1 && std::string_view{argv[1]} == "--verify";
     const bool animationVerification = argc > 1 &&
@@ -1107,10 +1109,11 @@ int main(int argc, char** argv)
         std::cout << "Ranking: Ctrl+F12 selects FirstValid/Ranked; Alt+F12 selects elbow +X/-X in Body; F7 commits via Start/Retarget. Ranked requires AllowDetour.\n";
         std::cout << "Spatial: Ctrl+F7 toggles task (captures hand orientation); Alt+F7 cycles 3 procedural poses; Ctrl+Shift+F7 effector. Ctrl+Z/C,V/N,O/P rotates target local XYZ by 5 deg (Shift 1). F7 commits.\n";
         std::cout << "Interaction: Ctrl+G starts one-sphere grasp/move/release demo; Shift+F7 selects hand in direct mode; Ctrl+Shift+G releases a stationary held object; Ctrl+Delete cancels and keeps any attachment.\n";
+        std::cout << "Support: F2 then Ctrl+J demo; Ctrl+H enable, Ctrl+H align; Alt+Z/C,V/N,O/P root +/-5 mm; Ctrl+Backspace cancel; Ctrl+Shift+H disable after rest.\n";
         keyCallback(window, GLFW_KEY_F1, 0, GLFW_PRESS, 0);
         if (bodyVerification)
         {
-            const auto verify=interactionVerification ? julia::desktop::verifyDesktopInteraction:spatialVerification ? julia::desktop::verifyDesktopSpatial:rankedVerification ? julia::desktop::verifyDesktopRanked:multiIKVerification ? julia::desktop::verifyDesktopMultiIK:detourVerification ? julia::desktop::verifyDesktopDetour:collisionVerification ? julia::desktop::verifyDesktopCollision:
+            const auto verify=supportVerification ? julia::desktop::verifyDesktopSupport:interactionVerification ? julia::desktop::verifyDesktopInteraction:spatialVerification ? julia::desktop::verifyDesktopSpatial:rankedVerification ? julia::desktop::verifyDesktopRanked:multiIKVerification ? julia::desktop::verifyDesktopMultiIK:detourVerification ? julia::desktop::verifyDesktopDetour:collisionVerification ? julia::desktop::verifyDesktopCollision:
                 reachVerification ? julia::desktop::verifyDesktopReach:julia::desktop::verifyDesktopBody;
             verify(window,renderer,model,body,*bodyDiagnostics,fitModel,
                 std::filesystem::path{argv[2]},keyCallback);

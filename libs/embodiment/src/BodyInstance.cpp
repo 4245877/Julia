@@ -30,6 +30,7 @@ namespace julia::embodiment
             reach_ = std::make_unique<ArmReach>(*control_);
             player_.setBodyControl(control_.get());
             if (profile->name.starts_with("Raphtalia_prepared/")) {
+                support_=std::make_unique<LegSupport>(*control_);
                 interaction_=std::make_unique<HandInteraction>(id_,*control_,*reach_);
                 interaction_->geometryChanged=[this] { rebuildCollision(); };
                 interaction_->validateRest=[this](CollisionContext context) {
@@ -137,7 +138,25 @@ namespace julia::embodiment
                 std::is_same_v<T,StartReach> || std::is_same_v<T,RetargetReach> || std::is_same_v<T,CancelReach> ||
                 std::is_same_v<T,SetCollisionScene> || std::is_same_v<T,SetHandClosure>)
                 if (interaction_ && interaction_->locked()) throw std::invalid_argument("Interaction owns geometry; finish/cancel or release first");
-            if constexpr (std::is_same_v<T, SetCoordinate>)
+            if constexpr (std::is_same_v<T,EnableSupport> || std::is_same_v<T,AlignSupport> || std::is_same_v<T,MoveSupportRoot>)
+                if ((reach_ && reach_->anyActive()) || (interaction_ && interaction_->locked()))
+                    throw std::invalid_argument("Support conflicts with active Reach/HandInteraction/Attached object");
+            if constexpr (std::is_same_v<T,SetCoordinate> || std::is_same_v<T,StartReach> || std::is_same_v<T,RetargetReach> ||
+                std::is_same_v<T,CancelReach> || std::is_same_v<T,GraspObject> || std::is_same_v<T,MoveHeldObject> ||
+                std::is_same_v<T,ReleaseObject> || std::is_same_v<T,SetHandClosure> || std::is_same_v<T,SetCollisionScene>)
+                if (support_ && support_->enabled()) throw std::invalid_argument("KinematicSupport owns geometry; disable support and wait for rest");
+            if constexpr (std::is_same_v<T,SetSupportSurface> || std::is_same_v<T,EnableSupport> || std::is_same_v<T,AlignSupport> ||
+                std::is_same_v<T,MoveSupportRoot> || std::is_same_v<T,CancelSupportMotion> || std::is_same_v<T,DisableSupport>)
+            {
+                if (!support_) throw std::invalid_argument("Calibrated leg support unavailable");
+                if constexpr (std::is_same_v<T,SetSupportSurface>) support_->setSurface(value.surface);
+                else if constexpr (std::is_same_v<T,EnableSupport>) { support_->enable(matrix(root_)); invalidatePath("KinematicSupport owns geometry; arm certificates invalidated"); }
+                else if constexpr (std::is_same_v<T,AlignSupport>) support_->plan(commandId,epoch_,matrix(root_),std::nullopt);
+                else if constexpr (std::is_same_v<T,MoveSupportRoot>) support_->plan(commandId,epoch_,matrix(root_),value.worldPosition);
+                else if constexpr (std::is_same_v<T,CancelSupportMotion>) support_->cancel();
+                else support_->cancel(true);
+            }
+            else if constexpr (std::is_same_v<T, SetCoordinate>)
             {
                 if (!control_) throw std::invalid_argument("No calibrated body control");
                 if (reach_->owns(value.joint)) throw std::invalid_argument("Coordinate owned by active reach; cancel and wait for stop");
@@ -150,6 +169,7 @@ namespace julia::embodiment
             else if constexpr (std::is_same_v<T, ResetCoordinates>)
             {
                 if (!control_) throw std::invalid_argument("No calibrated body control");
+                if (support_) support_->interrupt("Coordinates reset: explicit discontinuity");
                 reach_->interrupt(ReachReason::CoordinatesReset);
                 invalidatePath("coordinates reset");
                 control_->reset(); discontinuity_ = true;
@@ -158,6 +178,7 @@ namespace julia::embodiment
             {
                 if (!control_) throw std::invalid_argument("No calibrated body control");
                 if (control_->enabled()!=value.enabled) { reach_->interrupt(ReachReason::ModeChanged); invalidatePath("mode changed"); }
+                if (support_) support_->interrupt("Direct mode command: explicit discontinuity");
                 control_->setEnabled(value.enabled); discontinuity_ = true;
             }
             else if constexpr (std::is_same_v<T, SetRoot>)
@@ -167,6 +188,7 @@ namespace julia::embodiment
                     !std::isfinite(q.z) || !std::isfinite(q.w) || !std::isfinite(glm::length(q)) || glm::length(q) < 1e-8f)
                     throw std::invalid_argument("Invalid root pose");
                 if (collisionScene_ && glm::length(value.pose.position)>100) throw std::invalid_argument("Collision mode supports root within 100 world metres");
+                if (support_) support_->interrupt("Root teleport: explicit discontinuity");
                 if (reach_) reach_->interrupt(ReachReason::RootChanged);
                 invalidatePath("root teleported");
                 root_ = {value.pose.position, glm::normalize(q)};
@@ -174,6 +196,7 @@ namespace julia::embodiment
             }
             else if constexpr (std::is_same_v<T, ResetBody>)
             {
+                if (support_) support_->interrupt("ResetBody: explicit discontinuity / epoch change");
                 root_ = {};
                 if (reach_) reach_->reset();
                 if (interaction_) interaction_->resetFree(epoch_+1);
@@ -331,6 +354,7 @@ namespace julia::embodiment
         previous_ = current_; ++tick_; results_.clear(); discontinuity_ = false;
         if (reach_) reach_->clearEvents();
         if (interaction_) interaction_->beginTick();
+        if (support_) support_->beginTick();
         std::sort(commands_.begin(),commands_.end(),[](const auto& a,const auto& b) {
             return a.tick != b.tick ? a.tick < b.tick : a.id < b.id; });
         std::vector<BodyCommand> due;
@@ -358,7 +382,9 @@ namespace julia::embodiment
         const auto clipTimeBefore = player_.timeSeconds();
         if (interaction_) interaction_->hand.advance();
         if (reach_) reach_->advance(tick_);
+        if (support_) support_->advance(root_.position);
         player_.update(runtime::BodyStepSeconds);
+        if (support_) support_->measure(player_.globalTransforms(),matrix(root_));
         if (reach_) reach_->measure(player_.globalTransforms(),matrix(root_));
         if (interaction_) interaction_->advance(player_.globalTransforms(),matrix(root_));
         if ((!control_ || !control_->enabled()) && player_.timeSeconds() < clipTimeBefore)
@@ -375,6 +401,7 @@ namespace julia::embodiment
         current_.eyesEnabled = eyes_.enabled(); current_.eyes = eyes_.behavior().output();
         current_.collisionScene=collisionScene_; current_.collisionSettings=collisionSettings_; current_.pathCheck=pathCheck_;
         if (reach_) current_.reaches = reach_->observations();
+        if (support_) current_.support=support_->observation();
         if (interaction_) { current_.hands=interaction_->hand.states(); current_.object=interaction_->object(); current_.interaction=interaction_->observation(); }
         if (control_) current_.coordinates.assign(control_->coordinates().begin(),control_->coordinates().end());
         std::fill(current_.animated.begin(),current_.animated.end(),false);
@@ -398,7 +425,7 @@ namespace julia::embodiment
     {
         if (!std::isfinite(alpha) || alpha < 0 || alpha > 1) throw std::invalid_argument("Invalid display fraction");
         BodyDisplay result(asset_->skeleton());
-        result.reaches=current_.reaches;
+        result.reaches=current_.reaches; result.support=current_.support;
         result.hands=current_.hands; result.interaction=current_.interaction;
         result.collisionScene=current_.collisionScene; result.pathCheck=current_.pathCheck;
         result.fromTick = previous_.tick; result.toTick = current_.tick;
@@ -414,6 +441,7 @@ namespace julia::embodiment
         {
             const auto& selected = alpha == 0 ? previous_ : current_;
             result.pose = selected.pose; result.root = selected.root; result.coordinates = selected.coordinates;
+            result.support=selected.support;
             result.hands=selected.hands; result.interaction=selected.interaction; result.reaches=selected.reaches;
             result.collisionScene=selected.collisionScene; result.pathCheck=selected.pathCheck; displayObject(result,selected);
             fillDisplayColliders(result);
@@ -445,6 +473,7 @@ namespace julia::embodiment
         eyes_.applyOutput(result.pose.locals,base,output);
         animation::computeGlobalTransforms(asset_->skeleton(),result.pose.locals,result.pose.globals);
         animation::buildSkinningPalette(asset_->skeleton(),result.pose.globals,result.pose.palette);
+        if (support_) result.support=support_->displayObservation(result.support,result.pose.globals,matrix(result.root));
         displayObject(result,current_);
         fillDisplayColliders(result);
         return result;

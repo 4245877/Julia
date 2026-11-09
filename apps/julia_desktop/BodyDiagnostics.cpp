@@ -21,7 +21,7 @@ namespace julia::desktop
         { if (!body.control()) throw std::invalid_argument("Body diagnostics require calibration"); return *body.control(); }
     }
     BodyDiagnostics::BodyDiagnostics(BodyInstance& body):control_(requireControl(body)),body_(body)
-    { select(JointId::LeftElbow); }
+    { soleContacts_=calibrateSoleContacts(control_.binding()); select(JointId::LeftElbow); }
     void BodyDiagnostics::select(JointId id,std::size_t coordinate)
     {
         (void)control_.coordinate(id,coordinate);
@@ -31,6 +31,13 @@ namespace julia::desktop
     {
         const auto& j=control_.binding().profile().joints[joint_]; const auto& c=j.coordinates[coordinate_];
         std::ostringstream s;
+        const auto& support=body_.snapshot().support;
+        if (support.enabled) {
+            s << "SUPPORT tick=" << body_.snapshot().tick << ' ' << supportPhaseName(support.phase)
+                << (support.kind==SupportKind::KinematicSupport ? " KinematicSupport":" Unbound") << " L/R=";
+            for (const auto& a:support.anchors) s << a.positionError*1000 << "mm/" << glm::degrees(a.angularError) << "deg ";
+            s << support.result << ' ' << support.reason << " | ";
+        }
         const auto& interaction=body_.snapshot().interaction;
         if (body_.snapshot().object) s << "OBJECT " << body_.snapshot().object->handle.id << ' '
             << interactionPhaseName(interaction.phase) << " closure=" << body_.snapshot().hands[interaction.arm==ArmSide::Left ? 0:1].closure
@@ -68,7 +75,27 @@ namespace julia::desktop
         const auto& joints=control_.binding().profile().joints;
         if (pendingMode_ && body_.snapshot().tick>=pendingMode_->first) pendingMode_.reset();
         const bool enabled=pendingMode_ ? pendingMode_->second:control_.enabled();
-        if (key==GLFW_KEY_G && (mods&GLFW_MOD_CONTROL)) {
+        if (key==GLFW_KEY_J && (mods&GLFW_MOD_CONTROL)) {
+            if (!body_.snapshot().direct) { result_="F2: select controlled pose before support demo"; return true; }
+            supportDemo_.start(body_); result_="support demo queued: explicit alignment then root motion";
+        }
+        else if (key==GLFW_KEY_H && (mods&GLFW_MOD_CONTROL)) {
+            supportDemo_.stage=0;
+            if (mods&GLFW_MOD_SHIFT) body_.enqueue(DisableSupport{});
+            else if (!body_.snapshot().support.enabled) body_.enqueue(EnableSupport{});
+            else body_.enqueue(AlignSupport{});
+            result_="support enable/align/disable queued";
+        }
+        else if ((key==GLFW_KEY_DELETE && (mods&GLFW_MOD_ALT)) || (key==GLFW_KEY_BACKSPACE && (mods&GLFW_MOD_CONTROL))) {
+            supportDemo_.stage=0; body_.enqueue(CancelSupportMotion{}); result_="finish support segment and rest";
+        }
+        else if ((mods&GLFW_MOD_ALT) && (key==GLFW_KEY_Z || key==GLFW_KEY_C || key==GLFW_KEY_V || key==GLFW_KEY_N || key==GLFW_KEY_O || key==GLFW_KEY_P)) {
+            supportDemo_.stage=0; auto target=body_.snapshot().root.position;
+            const int axis=(key==GLFW_KEY_Z || key==GLFW_KEY_C) ? 0:(key==GLFW_KEY_V || key==GLFW_KEY_N) ? 1:2;
+            target[axis]+=(key==GLFW_KEY_C || key==GLFW_KEY_N || key==GLFW_KEY_P) ? .005f:-.005f;
+            body_.enqueue(MoveSupportRoot{target}); result_="5 mm root move queued";
+        }
+        else if (key==GLFW_KEY_G && (mods&GLFW_MOD_CONTROL)) {
             if (!body_.snapshot().object) { demo_.arm=reachArm_; demo_.root=body_.snapshot().root; demo_.start(body_); }
             else if (mods&GLFW_MOD_SHIFT) { body_.enqueue(ReleaseObject{body_.snapshot().object->handle}); demo_.stage=0; }
             else { body_.enqueue(GraspObject{body_.snapshot().object->handle,reachArm_}); demo_.stage=2; }
@@ -226,6 +253,31 @@ namespace julia::desktop
             }
         }
         if (!overlay || !display.direct) { renderer.renderDebugLines(lines); return; }
+        if (display.support.enabled) {
+            const auto worldToBody=glm::inverse(rigidMatrix({display.root.position,display.root.rotation}));
+            const auto worldLine=[&](glm::vec3 a,glm::vec3 b,glm::vec3 color) {
+                line(glm::vec3{worldToBody*glm::vec4{a,1}},glm::vec3{worldToBody*glm::vec4{b,1}},color);
+            };
+            const auto& o=display.support; const auto center=(glm::vec3{o.anchors[0].desiredWorld[3]}+glm::vec3{o.anchors[1].desiredWorld[3]})*.5f;
+            for (int k=-5;k<=5;++k) {
+                const float t=k*.1f, y=o.surface.height;
+                worldLine({center.x+t,y,center.z-.5f},{center.x+t,y,center.z+.5f},{.3f,.4f,.3f});
+                worldLine({center.x-.5f,y,center.z+t},{center.x+.5f,y,center.z+t},{.3f,.4f,.3f});
+            }
+            const auto& contacts=soleContacts_;
+            for (unsigned side=0;side<2;++side) {
+                const auto& a=o.anchors[side]; axes(worldToBody*a.desiredWorld,.05f); axes(worldToBody*a.actualWorld,.035f);
+                for (unsigned k=0;k<4;++k) {
+                    const auto goal0=glm::vec3{a.desiredWorld*glm::vec4{contacts[side].points[k],1}};
+                    const auto goal1=glm::vec3{a.desiredWorld*glm::vec4{contacts[side].points[(k+1)%4],1}};
+                    worldLine(goal0,goal1,{1,.15f,1}); worldLine(a.worldPoints[k],a.worldPoints[(k+1)%4],{.1f,1,.2f});
+                    worldLine(goal0,a.worldPoints[k],{1,.1f,.1f});
+                }
+                for (unsigned k=0;k<2;++k) worldLine(a.chain[k],a.chain[k+1],{.1f,.7f,1});
+                axes(glm::translate(glm::mat4{1},glm::vec3{worldToBody*glm::vec4{a.chain[1],1}}),.025f);
+            }
+            axes(glm::mat4{1},.08f);
+        }
         for (const auto& j:p.joints)
         {
             std::uint32_t end=animation::NoNode;
@@ -783,6 +835,74 @@ namespace julia::desktop
         }
         report << "captures=" << captures << "\ncallbacks=F2,F7,ShiftF7,O,P,Delete\nwrists=left,right\n"
             << "render=interpolated_read_only\nGL_errors=0\nresult=PASS\n";
+    }
+
+    void verifyDesktopSupport(GLFWwindow* window,render_opengl::OpenGLRenderer& renderer,
+        const render_opengl::GLModel& model,BodyInstance& body,BodyDiagnostics& diagnostics,
+        const glm::mat4& fit,const std::filesystem::path& output,void (*input)(GLFWwindow*,int,int,int,int))
+    {
+        std::filesystem::create_directories(output); std::ofstream report(output/"desktop_support.txt"), trace(output/"support.csv");
+        report << "process=julia_desktop\nGL_RENDERER=" << glGetString(GL_RENDERER) << '\n';
+        const auto require=[](bool ok,const std::string& why) { if (!ok) throw std::runtime_error(why); };
+        body.enqueue(EyeCommand{EyeOperation::Enable,{0,0,0}}); input(window,GLFW_KEY_F2,0,GLFW_PRESS,0); body.step();
+        unsigned captures=0;
+        const auto capture=[&](const std::string& name,int view,bool overlay) {
+            const auto tick=body.snapshot().tick; const auto d=body.display(.37); const auto again=body.display(.37);
+            require(d.pose.palette==again.pose.palette && body.snapshot().tick==tick,"Support display mutated simulation");
+            const auto transform=fit*body.resourceRoot(d.root); const auto& binding=body.control()->binding();
+            const auto viewerFromWorld=fit*glm::inverse(binding.profile().bodyFromResource);
+            const auto centerWorld=(d.support.anchors[0].chain[0]+d.support.anchors[1].chain[0]+d.support.anchors[0].chain[2]+d.support.anchors[1].chain[2])*.25f-glm::vec3{0,.08f,0};
+            auto target=glm::vec3{viewerFromWorld*glm::vec4{centerWorld,1}};
+            render_opengl::CameraConfig camera; camera.target=target;
+            camera.position=target+(view==0 ? glm::vec3{0,.03f,1.95f}:view==1 ? glm::vec3{1.95f,.03f,0}:glm::vec3{-1.1f,.12f,-1.7f});
+            camera.nearPlane=.005f; renderer.setCamera(camera);
+            int width=0,height=0; glfwGetFramebufferSize(window,&width,&height); renderer.resize(width,height);
+            diagnostics.overlay=overlay; renderer.beginFrame(); renderer.renderModel(model,transform,d.pose.palette); diagnostics.draw(renderer,transform,d);
+            std::vector<unsigned char> pixels(static_cast<std::size_t>(width)*height*3);
+            glPixelStorei(GL_PACK_ALIGNMENT,1); glReadPixels(0,0,width,height,GL_RGB,GL_UNSIGNED_BYTE,pixels.data());
+            std::ofstream image(output/(name+"_"+std::to_string(view)+(overlay ? "_overlay":"")+".ppm"),std::ios::binary);
+            image << "P6\n" << width << ' ' << height << "\n255\n";
+            for (int y=height-1;y>=0;--y) image.write(reinterpret_cast<const char*>(pixels.data()+static_cast<std::size_t>(y)*width*3),width*3);
+            require(static_cast<bool>(image) && glGetError()==GL_NO_ERROR,"Support GPU capture failed"); glfwSwapBuffers(window); glfwPollEvents(); ++captures;
+        };
+        input(window,GLFW_KEY_J,0,GLFW_PRESS,GLFW_MOD_CONTROL);
+        auto previous=SupportPhase::Disabled; std::array<float,2> displayP{},displayA{},displayGap{};
+        for (unsigned t=0;t<12000;++t) {
+            diagnostics.updateInteractionDemo(); body.step(); app::supportTrace(trace,body.snapshot());
+            const auto& s=body.snapshot(); const auto& o=s.support;
+            for (const auto& r:body.results()) require(r.status!=BodyCommandStatus::Rejected,r.reason);
+            require(o.result!="PlanRejected",o.reason);
+            if (o.phase!=previous || (o.phase==SupportPhase::Moving && o.executedStates==180)) {
+                const auto name=std::to_string(s.tick)+"_"+supportPhaseName(o.phase);
+                report << "tick=" << s.tick << " phase=" << supportPhaseName(o.phase) << " p_L=" << o.anchors[0].positionError << " p_R=" << o.anchors[1].positionError << '\n';
+                for (int view=0;view<3;++view) capture(name,view,false);
+                capture(name,0,true); previous=o.phase;
+            }
+            if (o.kind==SupportKind::KinematicSupport) for (double alpha:{0.,.23,.5,.77,1.}) {
+                const auto d=body.display(alpha);
+                for (unsigned side=0;side<2;++side) if (d.support.anchors[side].bound) {
+                    const auto& f=d.support.anchors[side]; displayP[side]=std::max(displayP[side],f.positionError); displayA[side]=std::max(displayA[side],f.angularError);
+                    displayGap[side]=std::max({displayGap[side],std::abs(f.minGap),std::abs(f.maxGap)});
+                }
+            }
+        }
+        require(body.snapshot().support.result=="Succeeded" && body.snapshot().root.position==glm::vec3{0},"Desktop support cycle did not return");
+        for (unsigned side=0;side<2;++side) {
+            require(displayP[side]<=SupportPositionTolerance && displayA[side]<=SupportAngularTolerance && displayGap[side]<=SupportSurfaceTolerance,"Interpolated desktop soles slipped");
+            report << "display_side=" << side << " p=" << displayP[side] << " angle=" << displayA[side] << " gap=" << displayGap[side] << '\n';
+        }
+        // Independent keyboard handlers use the same limited root command and cancellation.
+        input(window,GLFW_KEY_V,0,GLFW_PRESS,GLFW_MOD_ALT); body.step();
+        for (unsigned t=0;t<4000 && body.snapshot().support.phase==SupportPhase::Planning;++t) body.step();
+        require(body.snapshot().support.phase==SupportPhase::Moving,body.snapshot().support.reason);
+        for (int t=0;t<50;++t) body.step(); input(window,GLFW_KEY_BACKSPACE,0,GLFW_PRESS,GLFW_MOD_CONTROL); body.step();
+        require(body.snapshot().support.cancellationPending,"Desktop cancellation did not preserve moving segment");
+        for (unsigned t=0;t<500 && body.snapshot().support.phase==SupportPhase::Moving;++t) body.step();
+        require(body.snapshot().support.result=="Cancelled","Desktop cancellation did not reach rest");
+        body.enqueue(MoveSupportRoot{{0,1,0}}); body.step(); require(body.results().back().status==BodyCommandStatus::Rejected,"High root was not rejected");
+        capture("cancelled_rejected",0,true);
+        input(window,GLFW_KEY_H,0,GLFW_PRESS,GLFW_MOD_CONTROL|GLFW_MOD_SHIFT); body.step(); require(!body.snapshot().support.enabled,"Desktop disable failed");
+        report << "captures=" << captures << "\ncallbacks=CtrlJ,AltV,CtrlBackspace,CtrlShiftH\nrender=read_only_interpolated\nsupport=KinematicSupport\nforces=unavailable\nGL_errors=0\nresult=PASS\n";
     }
 
     void verifyDesktopInteraction(GLFWwindow* window,render_opengl::OpenGLRenderer& renderer,
