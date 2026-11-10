@@ -9,8 +9,8 @@ int main(int argc,char** argv)
         bodybench::PhysicsWorld world{bodybench::bodyBenchDefinition(rig,o.scenario)};
         const auto parity=bodybench::verifyFramesBeforeDynamics(rig,world);
         bodybench::Log log{o.output}; bodybench::metadata(o.output,rig,world);
-        bodybench::resetBodyBench(rig,world,o.scenario); log.row(bodybench::publish(rig,world.snapshot()));
-        for(std::uint64_t n=0;n<o.ticks;++n) { bodybench::stepBodyBench(world,o.scenario); log.row(bodybench::publish(rig,world.snapshot())); }
+        bodybench::reset(rig,world,o.scenario,o); log.row(bodybench::publish(rig,world.snapshot()));
+        for(std::uint64_t n=0;n<o.ticks;++n) { bodybench::stepBodyBench(world,o.scenario,o.servo); log.row(bodybench::publish(rig,world.snapshot())); }
         std::cout<<"PASS free body case="<<bodybench::bodyCaseName(o.scenario)<<" ticks="<<world.snapshot().tick<<" steps="<<world.snapshot().worldSteps
             <<" FK_m="<<parity.position<<" rotation="<<parity.rotationElement<<'\n'; return 0;
     }

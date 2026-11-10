@@ -25,6 +25,7 @@ namespace julia::physics
         animation::Pose actualPose;
         glm::dmat4 worldFromResource{1};
         double mappingUs=0;
+        std::vector<glm::dmat4> referenceFrames;
     };
     BodyRenderSnapshot publish(const BodyRig& rig,const Snapshot& state);
     FkParity verifyFramesBeforeDynamics(const BodyRig& rig,const PhysicsWorld& world);
@@ -33,6 +34,6 @@ namespace julia::physics
     std::string bodyCaseName(BodyCase scenario);
     Definition bodyBenchDefinition(const BodyRig& rig,BodyCase scenario);
     void resetBodyBench(const BodyRig& rig,PhysicsWorld& world,BodyCase scenario);
-    void stepBodyBench(PhysicsWorld& world,BodyCase scenario);
+    void stepBodyBench(PhysicsWorld& world,BodyCase scenario,bool smoothScript=false);
     void writeBodyCalibration(std::ostream& out,const BodyRig& rig,const PhysicsWorld& world);
 }

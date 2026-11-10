@@ -1,10 +1,12 @@
 #pragma once
+#include "julia/physics/JointDrive.hpp"
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <array>
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <ostream>
 #include <string>
 #include <vector>
 
@@ -39,7 +41,6 @@ namespace julia::physics
         std::optional<glm::dvec3> boxHalfSize;
         glm::dmat4 jointFromBox{1};
     };
-    struct Drive { double kp=40, kd=4, maxTorque=8; }; // N m/rad, N m s/rad, N m.
     struct Wall { glm::dvec3 center{.2,1.05,.45}, halfSize{.35,.5,.03}; };
     struct Definition
     {
@@ -74,12 +75,12 @@ namespace julia::physics
         unsigned rootQposSize=0,rootQvelSize=0;
         std::vector<int> qpos, qvel, actuator; // Indexed by scalar coordinate.
     };
-    enum class DriveMode { Disabled, Position, Torque };
-    enum class CommandKind { Target, Torque, Disable, Reach, Attach, MoveRoot };
+    enum class CommandKind { Target, Torque, Disable, Reach, Attach, MoveRoot, SmoothTarget };
     struct Capabilities
     {
         bool fixedBase=true, effortDrive=true, positionDrive=true, externalWrench=true;
         bool contactForce=true, freeRoot=false, ik=false, attachment=false;
+        bool smoothDrive=true, fixedBaseGravity=true;
     };
     struct Contact
     {
@@ -90,7 +91,20 @@ namespace julia::physics
         // Endpoint solver estimate in contact frame; not a force sensor or impulse.
         std::optional<glm::dvec3> force;
     };
-    struct Timing { double controlUs=0, stepUs=0, readUs=0; };
+    struct Timing { double controlUs=0, stepUs=0, readUs=0, telemetryUs=0; };
+    struct DriveTelemetry
+    {
+        DriveMode sampleMode=DriveMode::Disabled;
+        // Completed-substep references and errors, matching snapshot q/v.
+        Coordinates qRef{},vRef{},positionError{},velocityError{};
+        // Last control evaluation at time-h, before the final integration.
+        Coordinates sampleQ{},sampleV{},sampleQRef{},sampleVRef{},pTorque{},dTorque{},feedforward{},limitedTorque{};
+        // Endpoint held actual torque * endpoint velocity; work at all substeps.
+        Coordinates power{},deliveredWork{},absorbedWork{},saturatedSeconds{},saturationRunSeconds{};
+        std::array<bool,MaxCoordinates> referenceReached{};
+        double passiveDampingPower=0,passiveDampingWork=0;
+        double externalPower=0,externalWork=0,mechanicalEnergyChange=0;
+    };
     struct Snapshot
     {
         std::uint64_t tick=0, epoch=0, worldSteps=0;
@@ -110,6 +124,8 @@ namespace julia::physics
         RootState root;
         glm::dvec3 totalComWorld{0}, linearMomentumWorld{0}, angularMomentumAboutComWorld{0};
         double totalMass=0;
+        ServoSettings servo;
+        DriveTelemetry drive;
     };
     struct MassAudit
     {
@@ -120,6 +136,8 @@ namespace julia::physics
         std::vector<glm::dvec3> comInJoint;
         std::vector<glm::dmat3> inertiaInJoint;
     };
+    void driveCsvHeader(std::ostream& out);
+    void driveCsvRow(std::ostream& out,const Snapshot& snapshot,unsigned substeps);
     // One owner advances this WORLD once per configured substep. Read-only
     // snapshots/FK queries/render never integrate or set the live q/v.
     class PhysicsWorld
@@ -137,6 +155,11 @@ namespace julia::physics
         // contact history, counters, targets and snapshots; increases epoch.
         void reset(Coordinates initial = {}, std::optional<RootState> root = std::nullopt);
         bool command(CommandKind kind, Coordinates values={}, std::string* reason=nullptr);
+        // Atomic validation; changing settings while Servo is running is rejected.
+        bool configureServo(ServoSettings settings,std::string* reason=nullptr);
+        // Pure gravity inverse-dynamics effort, at zero velocity, scratch only.
+        // Free-base support is deliberately unavailable in stage7d.
+        Coordinates gravityCompensation(Coordinates q) const;
         // Wrench in world axes, about chosen link COM. Held for the next tick only.
         void applyWrench(unsigned link, glm::dvec3 forceN, glm::dvec3 torqueNm={0,0,0});
         void step();

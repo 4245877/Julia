@@ -164,10 +164,37 @@ namespace julia::physics
         Snapshot state;
         StateLayout layout;
         Coordinates effort{};
+        std::array<JointReference,MaxCoordinates> references;
         std::vector<int> bodies;
         std::array<Hinge,MaxCoordinates> hinges;
         std::vector<double> wrench;
         bool failed=false;
+        double initialMechanicalEnergy=0;
+        double wrenchPower() const
+        {
+            double power=0;
+            for(const auto id:bodies)
+            {
+                const auto offset=static_cast<std::size_t>(id)*6;
+                if(std::all_of(wrench.begin()+static_cast<std::ptrdiff_t>(offset),wrench.begin()+static_cast<std::ptrdiff_t>(offset+6),[](double x) { return x==0; })) continue;
+                mjtNum velocity[6]{}; mj_objectVelocity(m.get(),d.get(),mjOBJ_BODY,id,velocity,0);
+                for(unsigned k=0;k<3;++k) power+=wrench[offset+k]*velocity[k+3]+wrench[offset+k+3]*velocity[k];
+            }
+            return power;
+        }
+        Coordinates gravity(const mjtNum* qpos)
+        {
+            // Only scratch is changed. Zero qvel removes Coriolis/centrifugal
+            // terms; RNE(acc=0) includes gravity but no passive/contact/wrench.
+            mj_resetData(m.get(),scratch.get());
+            mju_copy(scratch->qpos,qpos,m->nq);
+            mj_kinematics(m.get(),scratch.get()); mj_comPos(m.get(),scratch.get());
+            mj_comVel(m.get(),scratch.get());
+            mj_rne(m.get(),scratch.get(),0,scratch->qfrc_bias);
+            Coordinates result{};
+            for(unsigned k=0;k<state.dofs;++k) result[k]=scratch->qfrc_bias[layout.qvel[k]];
+            return result;
+        }
         explicit Impl(Definition definition):def(std::move(definition))
         {
             state.dofs=validate(def);
@@ -305,7 +332,7 @@ namespace julia::physics
     }
     const StateLayout& PhysicsWorld::layout() const { return impl_->layout; }
     Capabilities PhysicsWorld::capabilities() const
-    { Capabilities c; c.freeRoot=impl_->def.freeRoot; c.fixedBase=!c.freeRoot; return c; }
+    { Capabilities c; c.freeRoot=impl_->def.freeRoot; c.fixedBase=!c.freeRoot; c.fixedBaseGravity=c.fixedBase; return c; }
     namespace
     {
         void setRoot(const StateLayout& l,mjData* d,const RootState& root)
@@ -331,26 +358,79 @@ namespace julia::physics
         p.state={}; p.state.epoch=epoch; p.state.dofs=dofs; p.state.target=q;
         p.effort={}; p.failed=false; std::fill(p.wrench.begin(),p.wrench.end(),0);
         for(unsigned k=0;k<dofs;++k) p.d->qpos[p.layout.qpos[k]]=q[k]; // ONLY explicit reset writes live q/v.
+        for(unsigned k=0;k<dofs;++k) p.references[k].reset(q[k]);
+        p.state.drive.qRef=q;
         if(root) setRoot(p.layout,p.d.get(),*root);
         mj_forward(p.m.get(),p.d.get()); p.read();
+        p.initialMechanicalEnergy=p.state.potentialEnergy+p.state.kineticEnergy;
     }
     bool PhysicsWorld::command(CommandKind kind,Coordinates values,std::string* reason)
     {
         auto& p=*impl_;
         const auto reject=[&](const std::string& s) { if(reason) *reason=s; return false; };
         if(p.failed) return reject("Physics failed; reset required");
-        if(kind!=CommandKind::Target&&kind!=CommandKind::Torque&&kind!=CommandKind::Disable)
+        if(kind!=CommandKind::Target&&kind!=CommandKind::SmoothTarget&&kind!=CommandKind::Torque&&kind!=CommandKind::Disable)
             return reject("Unsupported command in effort bench (no IK/attachment/kinematic root motion)");
         for(unsigned k=0;k<MaxCoordinates;++k)
         {
             if(!std::isfinite(values[k])||(k>=p.state.dofs&&values[k]!=0)) return reject("Invalid coordinates");
-            if(kind==CommandKind::Target&&k<p.state.dofs&&(values[k]<p.hinges[k].lower||values[k]>p.hinges[k].upper))
+            if((kind==CommandKind::Target||kind==CommandKind::SmoothTarget)&&k<p.state.dofs&&(values[k]<p.hinges[k].lower||values[k]>p.hinges[k].upper))
                 return reject("Target outside calibrated limits");
         }
-        if(kind==CommandKind::Target) { p.state.target=values; p.state.mode=DriveMode::Position; }
+        if(kind==CommandKind::SmoothTarget)
+        {
+            auto proposed=p.references;
+            try
+            {
+                for(unsigned k=0;k<p.state.dofs;++k)
+                {
+                    if(p.state.mode!=DriveMode::Servo) proposed[k].reset(p.state.q[k]);
+                    proposed[k].target(values[k],p.state.servo);
+                }
+            }
+            catch(const std::invalid_argument& e) { return reject(e.what()); }
+            p.references=std::move(proposed);
+            for(unsigned k=0;k<p.state.dofs;++k)
+            {
+                p.state.drive.qRef[k]=p.references[k].q(); p.state.drive.vRef[k]=p.references[k].v();
+                p.state.drive.referenceReached[k]=p.references[k].reached();
+            }
+            p.state.target=values; p.state.mode=DriveMode::Servo;
+        }
+        else if(kind==CommandKind::Target)
+        { p.state.target=values; p.state.mode=DriveMode::Position; p.state.drive.qRef=values; p.state.drive.vRef={}; }
         else if(kind==CommandKind::Torque) { p.effort=values; p.state.mode=DriveMode::Torque; }
         else p.state.mode=DriveMode::Disabled;
+        if(kind!=CommandKind::SmoothTarget)
+        { p.state.drive.vRef={}; p.state.drive.referenceReached={}; }
+        for(unsigned k=0;k<p.state.dofs;++k)
+        {
+            p.state.drive.positionError[k]=p.state.drive.qRef[k]-p.state.q[k];
+            p.state.drive.velocityError[k]=p.state.drive.vRef[k]-p.state.v[k];
+        }
         if(reason) reason->clear(); return true;
+    }
+    bool PhysicsWorld::configureServo(ServoSettings settings,std::string* reason)
+    {
+        auto& p=*impl_;
+        const auto reject=[&](const char* s) { if(reason) *reason=s; return false; };
+        if(p.failed) return reject("Physics failed; reset required");
+        if(!validServoSettings(settings))
+            return reject("Invalid servo speed/acceleration limits");
+        if(settings.gravityCompensation && p.def.freeRoot) return reject("Gravity compensation requires a fixed base; free root unsupported");
+        if(p.state.mode==DriveMode::Servo) return reject("Disable servo before changing settings");
+        p.state.servo=settings; if(reason) reason->clear(); return true;
+    }
+    Coordinates PhysicsWorld::gravityCompensation(Coordinates q) const
+    {
+        auto& p=*impl_;
+        if(p.def.freeRoot) throw std::invalid_argument("Gravity compensation requires a fixed base");
+        for(unsigned k=0;k<MaxCoordinates;++k)
+            if(!std::isfinite(q[k])||(k>=p.state.dofs&&q[k]!=0)) throw std::invalid_argument("Invalid gravity query");
+        // Local input buffer prevents aliasing the scratch qpos reset in gravity().
+        std::array<mjtNum,MaxCoordinates> qpos{};
+        for(unsigned k=0;k<p.state.dofs;++k) qpos[static_cast<std::size_t>(p.layout.qpos[k])]=q[k];
+        return p.gravity(qpos.data());
     }
     void PhysicsWorld::applyWrench(unsigned link,glm::dvec3 force,glm::dvec3 torque)
     {
@@ -373,22 +453,53 @@ namespace julia::physics
         for(unsigned sub=0;sub<p.def.substeps;++sub)
         {
             auto start=Clock::now();
+            const double h=TickSeconds/p.def.substeps;
+            s.drive.sampleMode=s.mode;
+            Coordinates ff{},beforeV{},actualTorque{};
+            const double externalBefore=p.wrenchPower();
+            if(s.mode==DriveMode::Servo && s.servo.gravityCompensation) ff=p.gravity(p.d->qpos);
             for(unsigned k=0;k<s.dofs;++k)
             {
-                const auto& drive=p.def.drives[k];
-                const double calculated=s.mode==DriveMode::Position ? drive.kp*(s.target[k]-p.d->qpos[p.layout.qpos[k]])-drive.kd*p.d->qvel[p.layout.qvel[k]] :
-                    (s.mode==DriveMode::Torque?p.effort[k]:0);
-                s.calculatedTorque[k]=calculated;
-                p.d->ctrl[p.layout.actuator[k]]=std::clamp(calculated,-drive.maxTorque,drive.maxTorque);
-                s.saturated[k]=std::abs(calculated)>drive.maxTorque;
+                auto& t=s.drive;
+                t.sampleQ[k]=p.d->qpos[p.layout.qpos[k]]; t.sampleV[k]=beforeV[k]=p.d->qvel[p.layout.qvel[k]];
+                t.sampleQRef[k]=s.mode==DriveMode::Position?s.target[k]:t.qRef[k]; t.sampleVRef[k]=t.vRef[k];
+                const auto output=evaluateDrive(p.def.drives[k],s.mode,t.sampleQRef[k],t.sampleVRef[k],t.sampleQ[k],t.sampleV[k],ff[k],p.effort[k]);
+                t.pTorque[k]=output.p; t.dTorque[k]=output.d; t.feedforward[k]=output.feedforward;
+                s.calculatedTorque[k]=output.requested; t.limitedTorque[k]=output.limited;
+                p.d->ctrl[p.layout.actuator[k]]=output.limited;
+                s.saturated[k]=output.saturated;
                 s.saturatedThisTick[k]=s.saturatedThisTick[k]||s.saturated[k];
+                t.saturationRunSeconds[k]=s.saturated[k]?t.saturationRunSeconds[k]+h:0;
+                if(s.saturated[k]) t.saturatedSeconds[k]+=h;
             }
             s.timing.controlUs+=us(start); start=Clock::now();
             mj_step(p.m.get(),p.d.get()); ++s.worldSteps;
             s.timing.stepUs+=us(start); start=Clock::now();
+            for(unsigned k=0;k<s.dofs;++k) actualTorque[k]=p.d->qfrc_actuator[p.layout.qvel[k]];
+            auto& t=s.drive; t.passiveDampingPower=0;
+            for(unsigned k=0;k<s.dofs;++k)
+            {
+                const double after=p.d->qvel[p.layout.qvel[k]], torque=actualTorque[k];
+                t.power[k]=torque*after;
+                const auto work=integratePower(torque*beforeV[k],t.power[k],h);
+                t.deliveredWork[k]+=work.delivered; t.absorbedWork[k]+=work.absorbed;
+                const double damping=p.hinges[k].damping;
+                t.passiveDampingPower-=damping*after*after;
+                t.passiveDampingWork-=.5*damping*(beforeV[k]*beforeV[k]+after*after)*h;
+                if(s.mode==DriveMode::Servo)
+                {
+                    p.references[k].advance(h); t.qRef[k]=p.references[k].q(); t.vRef[k]=p.references[k].v();
+                }
+                t.referenceReached[k]=s.mode==DriveMode::Servo && p.references[k].reached();
+                t.positionError[k]=t.qRef[k]-p.d->qpos[p.layout.qpos[k]]; t.velocityError[k]=t.vRef[k]-after;
+            }
+            s.timing.telemetryUs+=us(start); start=Clock::now();
             // mj_step leaves derived transforms at pre-integration q. Refresh ALL
             // endpoint observations with the last held ctrl; never alter live q/v.
             mj_forward(p.m.get(),p.d.get()); p.read();
+            s.drive.externalPower=p.wrenchPower();
+            s.drive.externalWork+=.5*(externalBefore+s.drive.externalPower)*h;
+            s.drive.mechanicalEnergyChange=s.kineticEnergy+s.potentialEnergy-p.initialMechanicalEnergy;
             s.timing.readUs+=us(start);
             const double expected=static_cast<double>(s.worldSteps)*(TickSeconds/p.def.substeps);
             if(std::abs(s.time-expected)>1e-8) p.fail("Physics time discontinuity");
@@ -442,4 +553,25 @@ namespace julia::physics
     std::size_t PhysicsWorld::dataBytes() const { return sizeof(mjData)+static_cast<std::size_t>(impl_->d->nbuffer+impl_->d->narena); }
     std::size_t PhysicsWorld::arenaHighWaterBytes() const { return static_cast<std::size_t>(impl_->d->maxuse_arena); }
     std::string PhysicsWorld::modelXml() const { return impl_->source; }
+    void driveCsvHeader(std::ostream& out)
+    {
+        out<<"schema,tick,epoch,coordinate,time_s,sample_time_s,mode,sample_mode,goal_rad,q_ref_rad,v_ref_rad_s,q_rad,v_rad_s,error_rad,error_rad_s,"
+            "sample_q_rad,sample_v_rad_s,sample_q_ref_rad,sample_v_ref_rad_s,p_Nm,d_Nm,ff_Nm,requested_Nm,limited_Nm,actual_Nm,"
+            "power_W,delivered_J,absorbed_J,net_J,saturated_last,saturated_tick,saturated_s,saturation_run_s,reference_reached,"
+            "gravity_compensation,max_ref_speed_rad_s,max_ref_acceleration_rad_s2,total_passive_damping_W,total_passive_damping_J,total_external_W,total_external_J,mechanical_energy_change_J\n";
+    }
+    void driveCsvRow(std::ostream& out,const Snapshot& s,unsigned substeps)
+    {
+        const auto& t=s.drive; out<<std::setprecision(17);
+        for(unsigned k=0;k<s.dofs;++k)
+            out<<1<<','<<s.tick<<','<<s.epoch<<','<<k<<','<<s.time<<','<<(s.tick?s.time-TickSeconds/substeps:0)<<','<<static_cast<int>(s.mode)
+                <<','<<static_cast<int>(t.sampleMode)
+                <<','<<s.target[k]<<','<<t.qRef[k]<<','<<t.vRef[k]<<','<<s.q[k]<<','<<s.v[k]<<','<<t.positionError[k]<<','<<t.velocityError[k]
+                <<','<<t.sampleQ[k]<<','<<t.sampleV[k]<<','<<t.sampleQRef[k]<<','<<t.sampleVRef[k]<<','<<t.pTorque[k]<<','<<t.dTorque[k]
+                <<','<<t.feedforward[k]<<','<<s.calculatedTorque[k]<<','<<t.limitedTorque[k]<<','<<s.appliedTorque[k]<<','<<t.power[k]
+                <<','<<t.deliveredWork[k]<<','<<t.absorbedWork[k]<<','<<t.deliveredWork[k]-t.absorbedWork[k]<<','<<s.saturated[k]<<','<<s.saturatedThisTick[k]
+                <<','<<t.saturatedSeconds[k]<<','<<t.saturationRunSeconds[k]<<','<<t.referenceReached[k]<<','<<s.servo.gravityCompensation
+                <<','<<s.servo.maxSpeed<<','<<s.servo.maxAcceleration<<','<<t.passiveDampingPower<<','<<t.passiveDampingWork
+                <<','<<t.externalPower<<','<<t.externalWork<<','<<t.mechanicalEnergyChange<<'\n';
+    }
 }

@@ -158,6 +158,16 @@ add_test(NAME stance_preparation COMMAND julia_test_stance_preparation "${CMAKE_
 set_tests_properties(stance_preparation PROPERTIES TIMEOUT 240)
 
 if(JULIA_BUILD_PHYSICS)
+    add_executable(julia_benchmark_legacy_drive ../tools/stage7d_legacy_benchmark.cpp)
+    target_compile_definitions(julia_benchmark_legacy_drive PRIVATE JULIA_TEST_ASSET_DIR="${CMAKE_SOURCE_DIR}/assets")
+    target_link_libraries(julia_benchmark_legacy_drive PRIVATE julia_physics_rig julia_model_import julia::warnings)
+    julia_copy_mujoco(julia_benchmark_legacy_drive)
+    add_executable(julia_test_joint_drive test_joint_drive.cpp)
+    target_compile_definitions(julia_test_joint_drive PRIVATE JULIA_TEST_ASSET_DIR="${CMAKE_SOURCE_DIR}/assets")
+    target_link_libraries(julia_test_joint_drive PRIVATE julia_physics_rig julia_model_import julia::warnings)
+    julia_copy_mujoco(julia_test_joint_drive)
+    add_test(NAME joint_drive COMMAND julia_test_joint_drive "${CMAKE_SOURCE_DIR}/build/diagnostics/stage7d/cpu")
+    set_tests_properties(joint_drive PROPERTIES TIMEOUT 240 RUN_SERIAL TRUE)
     add_executable(julia_test_body_physics test_body_physics.cpp)
     target_compile_definitions(julia_test_body_physics PRIVATE JULIA_TEST_ASSET_DIR="${CMAKE_SOURCE_DIR}/assets")
     target_link_libraries(julia_test_body_physics PRIVATE julia_physics_rig julia_model_import julia::warnings)
@@ -190,6 +200,17 @@ if(JULIA_BUILD_PHYSICS)
         add_test(NAME desktop_body_physics_${fps} COMMAND $<TARGET_FILE:julia_body_physics_desktop>
             --case drop --fps ${fps} --verify "${CMAKE_SOURCE_DIR}/build/diagnostics/stage7c/gpu/drop${fps}")
         set_tests_properties(desktop_body_physics_${fps} PROPERTIES TIMEOUT 120 RUN_SERIAL TRUE WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+    endforeach()
+    foreach(side left right)
+        add_test(NAME desktop_servo_${side} COMMAND $<TARGET_FILE:julia_physics_desktop>
+            --chain full --side ${side} --case retarget --drive servo-gravity --payload 0.5
+            --verify "${CMAKE_SOURCE_DIR}/build/diagnostics/stage7d/gpu/${side}")
+        set_tests_properties(desktop_servo_${side} PROPERTIES TIMEOUT 120 RUN_SERIAL TRUE WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+    endforeach()
+    foreach(scenario internal drop)
+        add_test(NAME desktop_servo_body_${scenario} COMMAND $<TARGET_FILE:julia_body_physics_desktop>
+            --case ${scenario} --drive servo --verify "${CMAKE_SOURCE_DIR}/build/diagnostics/stage7d/gpu/body-${scenario}")
+        set_tests_properties(desktop_servo_body_${scenario} PROPERTIES TIMEOUT 120 RUN_SERIAL TRUE WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
     endforeach()
     add_test(NAME desktop_body_physics_tilt COMMAND $<TARGET_FILE:julia_body_physics_desktop>
         --case tilt --verify "${CMAKE_SOURCE_DIR}/build/diagnostics/stage7c/gpu/tilt60")

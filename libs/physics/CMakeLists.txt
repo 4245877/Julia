@@ -1,6 +1,6 @@
 include(JuliaMuJoCo)
 find_package(glm CONFIG REQUIRED)
-add_library(julia_physics STATIC src/PhysicsWorld.cpp)
+add_library(julia_physics STATIC src/PhysicsWorld.cpp src/JointDrive.cpp)
 
 target_include_directories(julia_physics PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include

@@ -130,6 +130,7 @@ namespace julia::physics
     {
         const auto start=std::chrono::steady_clock::now();
         BodyRenderSnapshot view{state,rig.visualPose(state.q),rig.worldFromBody(state.root)*glm::dmat4{rig.binding().profile().bodyFromResource}};
+        if(state.mode==DriveMode::Servo) view.referenceFrames=rig.visualFrames(rig.visualPose(state.drive.qRef),state.root);
         view.mappingUs=std::chrono::duration<double,std::micro>(std::chrono::steady_clock::now()-start).count(); return view;
     }
     FkParity verifyFramesBeforeDynamics(const BodyRig& rig,const PhysicsWorld& world)
@@ -193,11 +194,12 @@ namespace julia::physics
         world.reset({},root);
         if(c!=BodyCase::Passive) world.command(CommandKind::Target);
     }
-    void stepBodyBench(PhysicsWorld& world,BodyCase c)
+    void stepBodyBench(PhysicsWorld& world,BodyCase c,bool smoothScript)
     {
         const auto tick=world.snapshot().tick;
         if(c==BodyCase::Pulse&&tick>=90&&tick<102) world.applyWrench(3,{200,0,0});
-        if(c==BodyCase::Internal)
+        if(c==BodyCase::Internal && (!smoothScript||world.snapshot().mode==DriveMode::Servo) &&
+            (world.snapshot().mode!=DriveMode::Servo||tick%120==0))
         {
             Coordinates target{}; const double time=world.snapshot().time;
             for(const auto& b:world.definition().links) for(const auto& h:b.hinges)
@@ -205,7 +207,7 @@ namespace julia::physics
                 const auto k=static_cast<std::size_t>(h.coordinate);
                 target[k]=(h.lower+h.upper)*.5+(h.upper-h.lower)*.2*std::sin(2*time+.2*static_cast<double>(k));
             }
-            if(!world.command(CommandKind::Target,target)) throw std::runtime_error("Internal command rejected");
+            if(!world.command(world.snapshot().mode==DriveMode::Servo?CommandKind::SmoothTarget:CommandKind::Target,target)) throw std::runtime_error("Internal command rejected");
         }
         world.step();
     }

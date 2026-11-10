@@ -36,6 +36,14 @@ namespace
         else if(code==GLFW_KEY_V) input.camera=(input.camera+1)%3;
         else if(code>=GLFW_KEY_1&&code<=GLFW_KEY_7) { input.scenario=static_cast<BenchCase>(code-GLFW_KEY_1); input.reset=true; }
         else if(code==GLFW_KEY_D) input.world->command(CommandKind::Disable);
+        else if(code==GLFW_KEY_S) input.world->command(CommandKind::SmoothTarget,input.world->snapshot().target);
+        else if(code==GLFW_KEY_G)
+        {
+            const auto goal=input.world->snapshot().target; auto settings=input.world->snapshot().servo;
+            settings.gravityCompensation=!settings.gravityCompensation;
+            input.world->command(CommandKind::Disable);
+            input.world->configureServo(settings); input.world->command(CommandKind::SmoothTarget,goal);
+        }
         else if(code==GLFW_KEY_I) input.world->applyWrench(2,{0,0,-30});
         else if(code==GLFW_KEY_LEFT||code==GLFW_KEY_RIGHT||code==GLFW_KEY_UP||code==GLFW_KEY_DOWN)
         {
@@ -46,18 +54,19 @@ namespace
             if(code==GLFW_KEY_DOWN) target[selected]-=.05;
             if(code==GLFW_KEY_UP) target[selected]+=.05;
             std::string reason;
-            if(!input.world->command(CommandKind::Target,target,&reason)) std::cerr<<reason<<'\n';
+            if(!input.world->command(input.world->snapshot().mode==DriveMode::Servo?CommandKind::SmoothTarget:CommandKind::Target,target,&reason)) std::cerr<<reason<<'\n';
         }
     }
-    void verifyCallbacks(GLFWwindow* window,const ArmRig& rig,BenchCase scenario)
+    void verifyCallbacks(GLFWwindow* window,const ArmRig& rig,const bench::Options& options)
     {
-        PhysicsWorld world{benchDefinition(rig,scenario)}; resetBench(world,scenario);
+        const auto scenario=options.scenario;
+        PhysicsWorld world{benchDefinition(rig,scenario,options.massScale,options.payloadKg)}; bench::reset(world,scenario,options);
         julia::runtime::FixedStepScheduler scheduler; Input input{&world,&scheduler,scenario,false};
         glfwSetWindowUserPointer(window,&input);
         const auto initial=world.snapshot();
         key(window,GLFW_KEY_TAB,0,GLFW_PRESS,0);
         key(window,GLFW_KEY_UP,0,GLFW_PRESS,0);
-        if(input.selected!=1||world.snapshot().q!=initial.q||std::abs(world.snapshot().target[1]-initial.target[1]-.05)>1e-12)
+        if(input.selected!=1||world.snapshot().q!=initial.q||world.snapshot().mode!=initial.mode||std::abs(world.snapshot().target[1]-initial.target[1]-.05)>1e-12)
             throw std::runtime_error("Coordinate selection/target callback failed");
         if(initial.dofs==ArmCoordinates)
         {
@@ -74,6 +83,9 @@ namespace
         key(window,GLFW_KEY_SPACE,0,GLFW_PRESS,0); key(window,GLFW_KEY_V,0,GLFW_PRESS,0);
         key(window,GLFW_KEY_R,0,GLFW_PRESS,0);
         if(!scheduler.paused()||input.camera!=1||!input.reset) throw std::runtime_error("Pause/camera/reset callback failed");
+        key(window,GLFW_KEY_S,0,GLFW_PRESS,0); key(window,GLFW_KEY_G,0,GLFW_PRESS,0);
+        if(world.snapshot().mode!=DriveMode::Servo||world.snapshot().servo.gravityCompensation==initial.servo.gravityCompensation||world.snapshot().q!=initial.q)
+            throw std::runtime_error("Servo/gravity callback failed");
         key(window,GLFW_KEY_D,0,GLFW_PRESS,0); key(window,GLFW_KEY_I,0,GLFW_PRESS,0); world.step();
         if(world.snapshot().mode!=DriveMode::Disabled||world.snapshot().externalForce.z!=-30) throw std::runtime_error("Drive/wrench callback failed");
         glfwSetWindowUserPointer(window,nullptr);
@@ -107,6 +119,12 @@ namespace
         for(std::size_t i=0;i<2;++i) line(v,glm::dvec3{target[i][3]},glm::dvec3{target[i+1][3]},{1,.2f,1});
         for(int k=0;k<3;++k) line(v,glm::dvec3{target[2][3]},glm::dvec3{target[2][3]}+glm::dvec3{target[2][k]}*.07,{1,.2f,1});
         const auto& s=view.physics;
+        if(s.mode==DriveMode::Servo)
+        {
+            const auto reference=rig.visualFrames(*view.referencePose);
+            for(std::size_t i=0;i<2;++i) line(v,glm::dvec3{reference[i][3]},glm::dvec3{reference[i+1][3]},{1,.65f,0});
+            for(int k=0;k<3;++k) line(v,glm::dvec3{reference[2][3]},glm::dvec3{reference[2][3]}+glm::dvec3{reference[2][k]}*.08,{1,.65f,0});
+        }
         for(int k=0;k<3;++k) line(v,glm::dvec3{s.worldFromJoint[2][3]},glm::dvec3{s.worldFromJoint[2][3]}+glm::dvec3{s.worldFromJoint[2][k]}*.07,{.2f,1,.2f});
         for(std::size_t i=0;i<def.links.size();++i)
         {
@@ -160,9 +178,9 @@ int main(int argc,char** argv)
         {
             const auto asset=julia::model_import::ModelImporter::loadFromFile(std::filesystem::path{JULIA_PHYSICS_ASSETS}/"models/Raphtalia_prepared.fbx");
             const ArmRig rig{*asset,options.side,options.chain};
-            if(options.verify) verifyCallbacks(window,rig,options.scenario);
+            if(options.verify) verifyCallbacks(window,rig,options);
             auto model=julia::render_opengl::GLModelLoader::upload(asset);
-            auto world=std::make_unique<PhysicsWorld>(benchDefinition(rig,options.scenario));
+            auto world=std::make_unique<PhysicsWorld>(benchDefinition(rig,options.scenario,options.massScale,options.payloadKg));
             verifyFramesBeforeDynamics(rig,*world); bench::reset(*world,options.scenario,options);
             auto view=publish(rig,world->snapshot());
             auto log=std::make_unique<bench::Log>(options.output); bench::metadata(options.output,rig,*world);
@@ -201,7 +219,7 @@ int main(int argc,char** argv)
                 {
                     if(activeCase!=input.scenario)
                     {
-                        world=std::make_unique<PhysicsWorld>(benchDefinition(rig,input.scenario));
+                        world=std::make_unique<PhysicsWorld>(benchDefinition(rig,input.scenario,options.massScale,options.payloadKg));
                         verifyFramesBeforeDynamics(rig,*world); activeCase=input.scenario;
                     }
                     bench::reset(*world,input.scenario,options);
@@ -238,7 +256,9 @@ int main(int argc,char** argv)
                     const auto image=readPixels();
                     savePixels(options.output/("frame_"+std::to_string(view.physics.tick)+".ppm"),image); ++captures;
                     draw(true); if(image!=readPixels()) throw std::runtime_error("Repeated GPU draw changed snapshot pixels");
-                    if(world->snapshot().q!=stateBefore.q||world->snapshot().tick!=stateBefore.tick) throw std::runtime_error("Render advanced physics");
+                    if(world->snapshot().q!=stateBefore.q||world->snapshot().tick!=stateBefore.tick||world->snapshot().drive.qRef!=stateBefore.drive.qRef||
+                        world->snapshot().drive.deliveredWork!=stateBefore.drive.deliveredWork||world->snapshot().drive.absorbedWork!=stateBefore.drive.absorbedWork)
+                        throw std::runtime_error("Render advanced physics/control/work");
                     auto closeCamera=camera; closeCamera.target=glm::vec3{view.actualWrist}; closeCamera.position=closeCamera.target+glm::vec3{sign*.8f,.2f,.8f};
                     closeCamera.orthographicHeight=.85f; setCamera(closeCamera); draw(true);
                     savePixels(options.output/("arm_"+std::to_string(view.physics.tick)+".ppm"),readPixels());

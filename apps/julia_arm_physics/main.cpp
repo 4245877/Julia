@@ -10,7 +10,7 @@ int main(int argc,char** argv)
         const auto asset=julia::model_import::ModelImporter::loadFromFile(
             std::filesystem::path{JULIA_PHYSICS_ASSETS}/"models/Raphtalia_prepared.fbx");
         const julia::physics::ArmRig rig{*asset,options.side,options.chain};
-        julia::physics::PhysicsWorld world{julia::physics::benchDefinition(rig,options.scenario)};
+        julia::physics::PhysicsWorld world{julia::physics::benchDefinition(rig,options.scenario,options.massScale,options.payloadKg)};
         const auto parity=julia::physics::verifyFramesBeforeDynamics(rig,world);
         bench::reset(world,options.scenario,options);
         bench::Log log{options.output}; bench::metadata(options.output,rig,world);

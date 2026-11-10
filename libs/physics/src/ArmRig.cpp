@@ -118,7 +118,8 @@ namespace julia::physics
     RenderSnapshot publish(const ArmRig& rig,const Snapshot& state)
     {
         const auto start=std::chrono::steady_clock::now();
-        RenderSnapshot view{state,rig.visualPose(state.q),rig.visualPose(state.target)};
+        RenderSnapshot view{state,rig.visualPose(state.q),rig.visualPose(state.target),std::nullopt};
+        if(state.mode==DriveMode::Servo) view.referencePose=rig.visualPose(state.drive.qRef);
         view.actualWrist=glm::dvec3{rig.visualFrames(view.actualPose)[2][3]};
         view.targetWrist=glm::dvec3{rig.visualFrames(view.targetPose)[2][3]};
         view.mappingUs=std::chrono::duration<double,std::micro>(std::chrono::steady_clock::now()-start).count();
@@ -194,7 +195,7 @@ namespace julia::physics
     }
     BenchCase parseBenchCase(const std::string& name)
     {
-        for(auto c:{BenchCase::Passive,BenchCase::Hold,BenchCase::Heavy,BenchCase::Inertia,BenchCase::Weak,BenchCase::Impulse,BenchCase::Contact,BenchCase::ZeroGravity,BenchCase::Spatial,BenchCase::ImpulseX,BenchCase::ImpulseY})
+        for(auto c:{BenchCase::Passive,BenchCase::Hold,BenchCase::Heavy,BenchCase::Inertia,BenchCase::Weak,BenchCase::Impulse,BenchCase::Contact,BenchCase::ZeroGravity,BenchCase::Spatial,BenchCase::ImpulseX,BenchCase::ImpulseY,BenchCase::Retarget})
             if(benchCaseName(c)==name) return c;
         throw std::invalid_argument("Unknown case; use passive|zero-g|hold|heavy|inertia|weak|impulse|impulse-x|impulse-y|contact|spatial");
     }
@@ -204,13 +205,13 @@ namespace julia::physics
         case BenchCase::Passive:return "passive"; case BenchCase::Hold:return "hold"; case BenchCase::Heavy:return "heavy";
         case BenchCase::Inertia:return "inertia"; case BenchCase::Weak:return "weak"; case BenchCase::Impulse:return "impulse";
         case BenchCase::Contact:return "contact"; case BenchCase::ZeroGravity:return "zero-g";
-        case BenchCase::Spatial:return "spatial"; case BenchCase::ImpulseX:return "impulse-x"; case BenchCase::ImpulseY:return "impulse-y"; }
+        case BenchCase::Spatial:return "spatial"; case BenchCase::ImpulseX:return "impulse-x"; case BenchCase::ImpulseY:return "impulse-y"; case BenchCase::Retarget:return "retarget"; }
         throw std::invalid_argument("Invalid bench case");
     }
-    Definition benchDefinition(const ArmRig& rig,BenchCase scenario)
+    Definition benchDefinition(const ArmRig& rig,BenchCase scenario,double massScale,double payloadKg)
     {
-        auto def=rig.description(scenario==BenchCase::Heavy?2.:1.,scenario==BenchCase::Inertia?4.:1.,
-            scenario==BenchCase::Heavy||scenario==BenchCase::Weak?2.:0.,scenario==BenchCase::Contact);
+        auto def=rig.description(massScale*(scenario==BenchCase::Heavy?2.:1.),scenario==BenchCase::Inertia?4.:1.,
+            payloadKg+(scenario==BenchCase::Heavy||scenario==BenchCase::Weak?2.:0.),scenario==BenchCase::Contact);
         if(scenario==BenchCase::Weak) for(auto& d:def.drives) d.maxTorque=.35;
         if(scenario==BenchCase::ZeroGravity) def.gravity={0,0,0};
         return def;
@@ -226,9 +227,15 @@ namespace julia::physics
     void stepBench(PhysicsWorld& world,BenchCase scenario)
     {
         const auto next=world.snapshot().tick+1;
+        const auto targetKind=world.snapshot().mode==DriveMode::Servo?CommandKind::SmoothTarget:CommandKind::Target;
+        if(scenario==BenchCase::Retarget && world.snapshot().mode==DriveMode::Servo && (next==61||next==181))
+        {
+            const Coordinates goal=next==61?Coordinates{.35,.15,-.15,.5,-.1,-.1}:Coordinates{.7,.25,.15,.8,.2,.12};
+            if(!world.command(targetKind,goal)) throw std::runtime_error("Retarget command rejected");
+        }
         if(next>=241&&next<=246)
         {
-            if(scenario==BenchCase::Impulse) world.applyWrench(2,{0,0,-30});
+            if(scenario==BenchCase::Impulse) world.applyWrench(2,{0,0,world.snapshot().mode==DriveMode::Servo?-15.:-30.});
             if(scenario==BenchCase::ImpulseX) world.applyWrench(2,{30,0,0});
             if(scenario==BenchCase::ImpulseY) world.applyWrench(2,{0,30,0});
         }
@@ -238,7 +245,7 @@ namespace julia::physics
             Coordinates target{.55,.25,0,.7,0,0};
             const Coordinates amplitude{.25,.18,.25,.3,.3,.2};
             for(unsigned k=0;k<ArmCoordinates;++k) target[k]+=amplitude[k]*std::sin(next*TickSeconds*(1.+.17*k));
-            if(!world.command(CommandKind::Target,target)) throw std::runtime_error("Spatial target rejected");
+            if(!world.command(targetKind,target)) throw std::runtime_error("Spatial target rejected");
         }
         world.step();
     }

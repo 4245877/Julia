@@ -19,7 +19,9 @@ namespace bench
         std::uint64_t ticks=720;
         unsigned fps=60;
         bool verify=false, explicitTicks=false;
-        std::filesystem::path output="build/diagnostics/stage7a/run";
+        bool servo=false, gravityCompensation=false;
+        double massScale=1,payloadKg=0;
+        std::filesystem::path output="build/diagnostics/stage7d/interactive-arm";
     };
     inline Options parse(int argc,char** argv)
     {
@@ -29,6 +31,19 @@ namespace bench
             const std::string flag=argv[i];
             const auto value=[&]() { if(++i>=argc) throw std::invalid_argument("Missing value for "+flag); return std::string{argv[i]}; };
             if(flag=="--case") o.scenario=julia::physics::parseBenchCase(value());
+            else if(flag=="--drive")
+            {
+                const auto s=value();
+                if(s!="legacy"&&s!="servo"&&s!="servo-gravity") throw std::invalid_argument("Drive: legacy|servo|servo-gravity");
+                o.servo=s!="legacy"; o.gravityCompensation=s=="servo-gravity";
+            }
+            else if(flag=="--mass-scale"||flag=="--payload")
+            {
+                const auto s=value(); std::size_t used=0; const double n=std::stod(s,&used);
+                if(used!=s.size()||!std::isfinite(n)||n<0||(flag=="--mass-scale"&&(n==0||n>4))||n>20)
+                    throw std::invalid_argument("Invalid mass scale/payload");
+                if(flag=="--mass-scale") o.massScale=n; else o.payloadKg=n;
+            }
             else if(flag=="--side")
             {
                 const auto s=value();
@@ -64,6 +79,8 @@ namespace bench
         }
         if(o.target&&o.scenario==julia::physics::BenchCase::Spatial)
             throw std::invalid_argument("Spatial generates targets; use --case hold with --target");
+        if(o.scenario==julia::physics::BenchCase::Retarget && (!o.servo||o.chain!=julia::physics::ArmChain::Full||o.target))
+            throw std::invalid_argument("Retarget requires --chain full --drive servo or servo-gravity and generates its own targets");
         return o;
     }
     inline void reset(julia::physics::PhysicsWorld& world,julia::physics::BenchCase scenario,const Options& o)
@@ -71,22 +88,31 @@ namespace bench
         julia::physics::resetBench(world,scenario);
         std::string reason;
         if(o.target&&!world.command(julia::physics::CommandKind::Target,*o.target,&reason)) throw std::invalid_argument(reason);
+        if(o.servo)
+        {
+            if(scenario==julia::physics::BenchCase::Passive||scenario==julia::physics::BenchCase::ZeroGravity)
+                throw std::invalid_argument("Passive scenarios cannot enable servo");
+            if(!world.configureServo({.6,2,o.gravityCompensation},&reason)||
+                !world.command(julia::physics::CommandKind::SmoothTarget,world.snapshot().target,&reason)) throw std::invalid_argument(reason);
+        }
     }
     struct Log
     {
-        std::ofstream csv, links, contacts;
+        std::ofstream csv, links, contacts,drive;
         explicit Log(const std::filesystem::path& dir)
         {
             std::filesystem::create_directories(dir);
             csv.open(dir/"state.csv"); links.open(dir/"links.csv"); contacts.open(dir/"contacts.csv");
             if(!csv||!links||!contacts) throw std::runtime_error("Cannot create bench CSV");
             julia::physics::csvHeader(csv);
+            drive.open(dir/"drive-v1.csv"); julia::physics::driveCsvHeader(drive);
             links<<"tick,epoch,link,mass_kg,com_x_m,com_y_m,com_z_m,Ixx_kg_m2,Iyy_kg_m2,Izz_kg_m2\n";
             contacts<<"tick,epoch,geom1,geom2,distance_m,x_m,y_m,z_m,nx,ny,nz,normal_N,tangent1_N,tangent2_N\n";
         }
         void row(const julia::physics::RenderSnapshot& view,const julia::physics::Definition& def)
         {
             julia::physics::csvRow(csv,view);
+            julia::physics::driveCsvRow(drive,view.physics,def.substeps);
             links<<std::setprecision(17); contacts<<std::setprecision(17);
             const auto& s=view.physics;
             for(std::size_t i=0;i<def.links.size();++i)
@@ -102,7 +128,7 @@ namespace bench
                 else contacts<<",NA,NA,NA";
                 contacts<<'\n';
             }
-            if(!csv||!links||!contacts) throw std::runtime_error("Bench CSV write failed");
+            if(!csv||!links||!contacts||!drive) throw std::runtime_error("Bench CSV write failed");
         }
     };
     inline void metadata(const std::filesystem::path& dir,const julia::physics::ArmRig& rig,const julia::physics::PhysicsWorld& world)

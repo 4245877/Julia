@@ -29,6 +29,7 @@ namespace julia::physics
     {
         Snapshot physics;
         animation::Pose actualPose, targetPose;
+        std::optional<animation::Pose> referencePose;
         glm::dvec3 actualWrist{0}, targetWrist{0};
         double mappingUs=0;
     };
@@ -37,10 +38,10 @@ namespace julia::physics
     RenderSnapshot publish(const ArmRig& rig,const Snapshot& state);
     struct FkParity { double position=0, rotationElement=0; unsigned configurations=0; double minShoulderAxisDeterminant=1; };
     FkParity verifyFramesBeforeDynamics(const ArmRig& rig,const PhysicsWorld& world);
-    enum class BenchCase { Passive, Hold, Heavy, Inertia, Weak, Impulse, Contact, ZeroGravity, Spatial, ImpulseX, ImpulseY };
+    enum class BenchCase { Passive, Hold, Heavy, Inertia, Weak, Impulse, Contact, ZeroGravity, Spatial, ImpulseX, ImpulseY, Retarget };
     BenchCase parseBenchCase(const std::string& name);
     std::string benchCaseName(BenchCase scenario);
-    Definition benchDefinition(const ArmRig& rig,BenchCase scenario);
+    Definition benchDefinition(const ArmRig& rig,BenchCase scenario,double massScale=1,double payloadKg=0);
     void resetBench(PhysicsWorld& world,BenchCase scenario);
     void stepBench(PhysicsWorld& world,BenchCase scenario);
     void csvHeader(std::ostream& out);

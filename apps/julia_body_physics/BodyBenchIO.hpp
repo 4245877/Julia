@@ -15,7 +15,8 @@ namespace bodybench
         std::uint64_t ticks=720;
         unsigned fps=60;
         bool verify=false, explicitTicks=false;
-        std::filesystem::path output="build/diagnostics/stage7c/run";
+        bool servo=false,gravityCompensation=false;
+        std::filesystem::path output="build/diagnostics/stage7d/interactive-body";
     };
     inline Options parse(int argc,char** argv)
     {
@@ -25,6 +26,12 @@ namespace bodybench
             const std::string flag=argv[i];
             const auto value=[&]() { if(++i>=argc) throw std::invalid_argument("Missing value: "+flag); return std::string{argv[i]}; };
             if(flag=="--case") o.scenario=parseBodyCase(value());
+            else if(flag=="--drive")
+            {
+                const auto s=value();
+                if(s!="legacy"&&s!="servo"&&s!="servo-gravity") throw std::invalid_argument("Drive: legacy|servo|servo-gravity");
+                o.servo=s!="legacy"; o.gravityCompensation=s=="servo-gravity";
+            }
             else if(flag=="--output") o.output=value();
             else if(flag=="--verify") { o.verify=true; o.output=value(); }
             else if(flag=="--ticks"||flag=="--fps")
@@ -40,9 +47,20 @@ namespace bodybench
         }
         return o;
     }
+    inline void reset(const BodyRig& rig,PhysicsWorld& world,BodyCase scenario,const Options& o)
+    {
+        resetBodyBench(rig,world,scenario);
+        if(o.servo)
+        {
+            if(scenario==BodyCase::Passive) throw std::invalid_argument("Passive cannot enable servo");
+            std::string reason;
+            if(!world.configureServo({.6,2,o.gravityCompensation},&reason)||
+                !world.command(CommandKind::SmoothTarget,world.snapshot().target,&reason)) throw std::invalid_argument(reason);
+        }
+    }
     struct Log
     {
-        std::ofstream state,joints,contacts;
+        std::ofstream state,joints,contacts,drive;
         explicit Log(const std::filesystem::path& dir)
         {
             std::filesystem::create_directories(dir);
@@ -51,11 +69,13 @@ namespace bodybench
             state<<"tick,epoch,time_s,world_steps,root_x_m,root_y_m,root_z_m,qw,qx,qy,qz,vx_world_m_s,vy_world_m_s,vz_world_m_s,wx_local_rad_s,wy_local_rad_s,wz_local_rad_s,com_x_m,com_y_m,com_z_m,px_kg_m_s,py_kg_m_s,pz_kg_m_s,Lx_kg_m2_s,Ly_kg_m2_s,Lz_kg_m2_s,kinetic_J,potential_J,contacts,peak_contacts,peak_normal_N,peak_penetration_m,solver_iterations,warnings,external_fx_N,external_fy_N,external_fz_N,mapping_us\n";
             joints<<"tick,epoch,coordinate,q_rad,v_rad_s,target_rad,calculated_Nm,applied_Nm,saturated_tick,limit_rad,peak_limit_rad\n";
             contacts<<"tick,epoch,geom1,geom2,link1,link2,distance_m,x_m,y_m,z_m,nx,ny,nz,normal_N,tangent1_N,tangent2_N\n";
+            drive.open(dir/"drive-v1.csv"); driveCsvHeader(drive);
             state<<std::setprecision(17); joints<<std::setprecision(17); contacts<<std::setprecision(17);
         }
         void row(const BodyRenderSnapshot& view)
         {
             const auto& s=view.physics; const auto& r=s.root;
+            driveCsvRow(drive,s,16);
             const auto vec=[&](glm::dvec3 v) { state<<','<<v.x<<','<<v.y<<','<<v.z; };
             state<<s.tick<<','<<s.epoch<<','<<s.time<<','<<s.worldSteps;
             vec(r.position); state<<','<<r.orientation.w<<','<<r.orientation.x<<','<<r.orientation.y<<','<<r.orientation.z;
@@ -72,7 +92,7 @@ namespace bodybench
                 if(c.force) contacts<<','<<c.force->x<<','<<c.force->y<<','<<c.force->z; else contacts<<",NA,NA,NA";
                 contacts<<'\n';
             }
-            if(!state||!joints||!contacts) throw std::runtime_error("CSV write failed");
+            if(!state||!joints||!contacts||!drive) throw std::runtime_error("CSV write failed");
         }
     };
     inline void metadata(const std::filesystem::path& dir,const BodyRig& rig,const PhysicsWorld& world)

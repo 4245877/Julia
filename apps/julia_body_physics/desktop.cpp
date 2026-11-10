@@ -1,6 +1,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include "BodyBenchIO.hpp"
+#include "../julia_arm_physics/BenchHud.hpp"
 #include "julia/render_opengl/GLModelLoader.hpp"
 #include "julia/render_opengl/OpenGLRenderer.hpp"
 #include "julia/runtime/FixedStepScheduler.hpp"
@@ -35,23 +36,24 @@ namespace
         else if(code==GLFW_KEY_V) i.camera=(i.camera+1)%3;
         else if(code==GLFW_KEY_TAB) i.selected=(i.selected+1)%i.world->snapshot().dofs;
         else if(code==GLFW_KEY_D) i.world->command(CommandKind::Disable);
+        else if(code==GLFW_KEY_S) i.world->command(CommandKind::SmoothTarget,i.world->snapshot().target);
         else if(code==GLFW_KEY_I) i.world->applyWrench(3,{200,0,0});
         else if(code>=GLFW_KEY_1&&code<=GLFW_KEY_5) { i.scenario=static_cast<BodyCase>(code-GLFW_KEY_1); i.reset=true; }
         else if(code==GLFW_KEY_UP||code==GLFW_KEY_DOWN)
         {
             auto target=i.world->snapshot().target; target[i.selected]+=code==GLFW_KEY_UP?.02:-.02;
-            std::string reason; if(!i.world->command(CommandKind::Target,target,&reason)) std::cerr<<reason<<'\n';
+            std::string reason; if(!i.world->command(i.world->snapshot().mode==DriveMode::Servo?CommandKind::SmoothTarget:CommandKind::Target,target,&reason)) std::cerr<<reason<<'\n';
         }
     }
-    void verifyCallbacks(GLFWwindow* window,const BodyRig& rig)
+    void verifyCallbacks(GLFWwindow* window,const BodyRig& rig,const bodybench::Options& options)
     {
-        PhysicsWorld w{bodyBenchDefinition(rig,BodyCase::Drop)}; resetBodyBench(rig,w,BodyCase::Drop);
+        PhysicsWorld w{bodyBenchDefinition(rig,BodyCase::Drop)}; bodybench::reset(rig,w,BodyCase::Drop,options);
         julia::runtime::FixedStepScheduler scheduler; Input i{&w,&scheduler}; glfwSetWindowUserPointer(window,&i);
         const auto initial=w.snapshot();
         for(unsigned k=0;k<41;++k)
         {
             key(window,GLFW_KEY_UP,0,GLFW_PRESS,0);
-            if(w.snapshot().target[i.selected]!=.02||w.snapshot().q!=initial.q||w.snapshot().root.position!=initial.root.position) throw std::runtime_error("Target callback wrote physics");
+            if(w.snapshot().target[i.selected]!=.02||w.snapshot().q!=initial.q||w.snapshot().mode!=initial.mode||w.snapshot().root.position!=initial.root.position) throw std::runtime_error("Target callback wrote physics");
             key(window,GLFW_KEY_DOWN,0,GLFW_PRESS,0); key(window,GLFW_KEY_TAB,0,GLFW_PRESS,0);
         }
         key(window,GLFW_KEY_D,0,GLFW_PRESS,0); key(window,GLFW_KEY_I,0,GLFW_PRESS,0); w.step();
@@ -150,26 +152,37 @@ int main(int argc,char** argv)
         if(!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) throw std::runtime_error("GLAD load failed");
         {
             const auto asset=julia::model_import::ModelImporter::loadFromFile(std::filesystem::path{JULIA_PHYSICS_ASSETS}/"models/Raphtalia_prepared.fbx");
-            const BodyRig rig{*asset}; if(o.verify) verifyCallbacks(window,rig);
+            const BodyRig rig{*asset}; if(o.verify) verifyCallbacks(window,rig,o);
             auto model=julia::render_opengl::GLModelLoader::upload(asset);
             auto world=std::make_unique<PhysicsWorld>(bodyBenchDefinition(rig,o.scenario)); verifyFramesBeforeDynamics(rig,*world);
-            resetBodyBench(rig,*world,o.scenario); auto view=publish(rig,world->snapshot());
+            bodybench::reset(rig,*world,o.scenario,o); auto view=publish(rig,world->snapshot());
             auto log=std::make_unique<bodybench::Log>(o.output); bodybench::metadata(o.output,rig,*world); log->row(view);
             std::ofstream report{o.output/"gpu.txt"}; report<<"GPU="<<glGetString(GL_RENDERER)<<" OpenGL="<<glGetString(GL_VERSION)<<'\n';
             julia::render_opengl::OpenGLRenderer renderer; renderer.initialize(Width,Height,JULIA_PHYSICS_ASSETS);
             julia::runtime::FixedStepScheduler scheduler; Input input{world.get(),&scheduler,o.scenario};
             glfwSetWindowUserPointer(window,&input); glfwSetKeyCallback(window,key);
+            julia::render_opengl::CameraConfig displayCamera;
             const auto camera=[&](unsigned index)
             {
                 julia::render_opengl::CameraConfig c;
                 c.target=glm::vec3{view.physics.totalComWorld}; c.target.y=.75f;
                 c.position=c.target+(index==0?glm::vec3{2,1.1f,3}:index==1?glm::vec3{-2,1,-3}:glm::vec3{.2f,3,1});
-                c.orthographicHeight=2.8f; renderer.setCamera(c);
+                c.orthographicHeight=2.8f; displayCamera=c; renderer.setCamera(c);
             };
             const auto draw=[&](bool debug)
             {
                 renderer.beginFrame(); renderer.renderModel(model,glm::mat4{view.worldFromResource},view.actualPose.palette);
-                if(debug) renderer.renderDebugLines(overlay(world->definition(),view.physics));
+                if(debug)
+                {
+                    auto lines=overlay(world->definition(),view.physics);
+                    for(std::size_t k=1;k<view.referenceFrames.size();++k)
+                    {
+                        const auto parent=world->definition().links[k].parent;
+                        if(parent>=0) line(lines,glm::dvec3{view.referenceFrames[static_cast<std::size_t>(parent)][3]},glm::dvec3{view.referenceFrames[k][3]},{1,.65f,0});
+                    }
+                    renderer.renderDebugLines(lines);
+                    renderer.renderDebugLines(bench::driveHud(view.physics,displayCamera,input.selected,scheduler.paused(),Width,Height,false));
+                }
                 if(glGetError()!=GL_NO_ERROR) throw std::runtime_error("GL render error");
             };
             camera(0); draw(false); const auto first=readPixels(); draw(true); save(o.output/"frame_0.ppm",readPixels());
@@ -183,12 +196,12 @@ int main(int argc,char** argv)
                 if(input.reset)
                 {
                     if(active!=input.scenario) { world=std::make_unique<PhysicsWorld>(bodyBenchDefinition(rig,input.scenario)); active=input.scenario; }
-                    resetBodyBench(rig,*world,active); scheduler=julia::runtime::FixedStepScheduler{}; input.world=world.get(); input.reset=false;
+                    bodybench::reset(rig,*world,active,o); scheduler=julia::runtime::FixedStepScheduler{}; input.world=world.get(); input.reset=false;
                     view=publish(rig,world->snapshot()); const auto dir=o.output/("reset_"+std::to_string(++experiment)+"_"+bodyCaseName(active));
                     log=std::make_unique<bodybench::Log>(dir); bodybench::metadata(dir,rig,*world); log->row(view);
                 }
                 const double now=glfwGetTime(); scheduler.advance(o.verify?1./o.fps:now-last,[&]
-                { if(world->snapshot().tick<limit) { stepBodyBench(*world,active); view=publish(rig,world->snapshot()); log->row(view); } },glfwGetWindowAttrib(window,GLFW_ICONIFIED)!=0); last=now;
+                { if(world->snapshot().tick<limit) { stepBodyBench(*world,active,o.servo); view=publish(rig,world->snapshot()); log->row(view); } },glfwGetWindowAttrib(window,GLFW_ICONIFIED)!=0); last=now;
                 camera(input.camera); const auto state=world->snapshot(); const auto start=std::chrono::steady_clock::now();
                 glBeginQuery(GL_TIME_ELAPSED,query); draw(true); glEndQuery(GL_TIME_ELAPSED);
                 submission.push_back(std::chrono::duration<double,std::micro>(std::chrono::steady_clock::now()-start).count());
@@ -197,7 +210,9 @@ int main(int argc,char** argv)
                 {
                     const auto pixels=readPixels(); save(o.output/("frame_"+std::to_string(state.tick)+".ppm"),pixels); ++captures;
                     draw(true); if(pixels!=readPixels()) throw std::runtime_error("Repeated render changed pixels");
-                    if(world->snapshot().tick!=state.tick||world->snapshot().root.position!=state.root.position||world->snapshot().q!=state.q) throw std::runtime_error("Render advanced physics");
+                    if(world->snapshot().tick!=state.tick||world->snapshot().root.position!=state.root.position||world->snapshot().q!=state.q||
+                        world->snapshot().drive.qRef!=state.drive.qRef||world->snapshot().drive.deliveredWork!=state.drive.deliveredWork||
+                        world->snapshot().drive.absorbedWork!=state.drive.absorbedWork) throw std::runtime_error("Render advanced physics/control/work");
                     for(unsigned angle=1;angle<3;++angle) { camera(angle); draw(true); save(o.output/("angle"+std::to_string(angle)+"_"+std::to_string(state.tick)+".ppm"),readPixels()); }
                     camera(input.camera); nextCapture=state.tick<180?nextCapture+30:nextCapture+180;
                 }
