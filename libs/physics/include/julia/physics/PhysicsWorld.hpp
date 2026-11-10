@@ -1,5 +1,6 @@
 #pragma once
 #include "julia/physics/JointDrive.hpp"
+#include "julia/physics/ContactControl.hpp"
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <array>
@@ -49,6 +50,7 @@ namespace julia::physics
         glm::dvec3 gravity{0,-9.81,0}; // m/s^2; Julia is Y-up.
         double contactTimeConstant=.01;
         std::optional<Wall> wall;
+        std::optional<ContactTool> contactTool; // Select explicit pair and its accumulated observations; controller separately enabled.
         bool freeRoot=false, selfCollision=false;
         unsigned substeps=Substeps; // One world step per substep, independent of link count.
         std::optional<double> floorHeight;
@@ -81,6 +83,7 @@ namespace julia::physics
         bool fixedBase=true, effortDrive=true, positionDrive=true, externalWrench=true;
         bool contactForce=true, freeRoot=false, ik=false, attachment=false;
         bool smoothDrive=true, fixedBaseGravity=true;
+        bool normalForceControl=false;
     };
     struct Contact
     {
@@ -90,8 +93,14 @@ namespace julia::physics
         double distance=0;
         // Endpoint solver estimate in contact frame; not a force sensor or impulse.
         std::optional<glm::dvec3> force;
+        glm::dmat3 worldFromContact{1}; // Columns = normal, tangent1, tangent2 in world.
+        glm::dvec3 forceOn2World{0},torqueOn2World{0}; // Opposite signs on geom1.
+        glm::dvec3 velocity1World{0},velocity2World{0},angular1World{0},angular2World{0};
+        std::array<double,5> friction{}; // Actual compiled/mixed contact coefficients.
+        bool active=false; // Solver constraint exists, not just broad/narrow phase proximity.
     };
-    struct Timing { double controlUs=0, stepUs=0, readUs=0, telemetryUs=0; };
+    PairObservation aggregateContacts(const std::vector<Contact>& contacts,int tool,int surface,glm::dvec3 normal);
+    struct Timing { double controlUs=0, stepUs=0, readUs=0, telemetryUs=0, contactUs=0, contactControlUs=0; };
     struct DriveTelemetry
     {
         DriveMode sampleMode=DriveMode::Disabled;
@@ -126,6 +135,9 @@ namespace julia::physics
         double totalMass=0;
         ServoSettings servo;
         DriveTelemetry drive;
+        ContactStatus contact;
+        // ALL constraints (contact, limits, equality, etc). Never labelled contact power.
+        double constraintPower=0;
     };
     struct MassAudit
     {
@@ -136,14 +148,24 @@ namespace julia::physics
         std::vector<glm::dvec3> comInJoint;
         std::vector<glm::dmat3> inertiaInJoint;
     };
+    struct ContactMaterial
+    {
+        int geom1=-1,geom2=-1,dimension=0;
+        std::array<double,5> friction{},solimp{};
+        std::array<double,2> solref{};
+    };
     void driveCsvHeader(std::ostream& out);
     void driveCsvRow(std::ostream& out,const Snapshot& snapshot,unsigned substeps);
+    void contactCsvHeader(std::ostream& out);
+    void contactCsvRow(std::ostream& out,const Snapshot& snapshot);
+    void contactPointsCsvHeader(std::ostream& out);
+    void contactPointsCsvRow(std::ostream& out,const Snapshot& snapshot);
     // One owner advances this WORLD once per configured substep. Read-only
     // snapshots/FK queries/render never integrate or set the live q/v.
     class PhysicsWorld
     {
     public:
-        explicit PhysicsWorld(Definition definition);
+        explicit PhysicsWorld(Definition definition,Coordinates initial={});
         ~PhysicsWorld();
         PhysicsWorld(const PhysicsWorld&)=delete;
         PhysicsWorld& operator=(const PhysicsWorld&)=delete;
@@ -157,6 +179,11 @@ namespace julia::physics
         bool command(CommandKind kind, Coordinates values={}, std::string* reason=nullptr);
         // Atomic validation; changing settings while Servo is running is rejected.
         bool configureServo(ServoSettings settings,std::string* reason=nullptr);
+        // Exclusive ownership of all six hinges, fixed Full arm with sphere tool.
+        // Start requires Disabled; other drive commands require Disable first.
+        bool startContact(ContactSettings settings={},std::string* reason=nullptr);
+        bool contactForceTarget(double forceN,std::string* reason=nullptr);
+        void cancelContact(); // Rate-limited unload and retreat, no q/v writes.
         // Pure gravity inverse-dynamics effort, at zero velocity, scratch only.
         // Free-base support is deliberately unavailable in stage7d.
         Coordinates gravityCompensation(Coordinates q) const;
@@ -168,6 +195,7 @@ namespace julia::physics
         std::vector<glm::dmat4> forwardKinematics(Coordinates q, std::optional<RootState> root = std::nullopt) const;
         // Compiled inertial data and generalized mass matrix, scratch only.
         MassAudit massAudit(Coordinates q={}, std::optional<RootState> root = std::nullopt) const;
+        std::optional<ContactMaterial> contactMaterial() const; // Compiled explicit pair, scratch/live unchanged.
         std::size_t modelBytes() const;
         std::size_t dataBytes() const;
         std::size_t arenaHighWaterBytes() const;

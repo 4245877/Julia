@@ -158,6 +158,12 @@ add_test(NAME stance_preparation COMMAND julia_test_stance_preparation "${CMAKE_
 set_tests_properties(stance_preparation PROPERTIES TIMEOUT 240)
 
 if(JULIA_BUILD_PHYSICS)
+    add_executable(julia_test_contact_control test_contact_control.cpp)
+    target_compile_definitions(julia_test_contact_control PRIVATE JULIA_TEST_ASSET_DIR="${CMAKE_SOURCE_DIR}/assets")
+    target_link_libraries(julia_test_contact_control PRIVATE julia_physics_rig julia_model_import julia::warnings)
+    julia_copy_mujoco(julia_test_contact_control)
+    add_test(NAME contact_control COMMAND julia_test_contact_control "${CMAKE_SOURCE_DIR}/build/diagnostics/stage7e/cpu")
+    set_tests_properties(contact_control PROPERTIES TIMEOUT 240 RUN_SERIAL TRUE)
     add_executable(julia_benchmark_legacy_drive ../tools/stage7d_legacy_benchmark.cpp)
     target_compile_definitions(julia_benchmark_legacy_drive PRIVATE JULIA_TEST_ASSET_DIR="${CMAKE_SOURCE_DIR}/assets")
     target_link_libraries(julia_benchmark_legacy_drive PRIVATE julia_physics_rig julia_model_import julia::warnings)
@@ -197,6 +203,11 @@ endif()
 
 if(JULIA_BUILD_PHYSICS)
     foreach(fps 30 60 144)
+        foreach(side left right)
+            add_test(NAME desktop_contact_${side}_${fps} COMMAND $<TARGET_FILE:julia_contact_desktop>
+                --side ${side} --fps ${fps} --verify "${CMAKE_SOURCE_DIR}/build/diagnostics/stage7e/gpu/${side}-${fps}")
+            set_tests_properties(desktop_contact_${side}_${fps} PROPERTIES TIMEOUT 120 RUN_SERIAL TRUE WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+        endforeach()
         add_test(NAME desktop_body_physics_${fps} COMMAND $<TARGET_FILE:julia_body_physics_desktop>
             --case drop --fps ${fps} --verify "${CMAKE_SOURCE_DIR}/build/diagnostics/stage7c/gpu/drop${fps}")
         set_tests_properties(desktop_body_physics_${fps} PROPERTIES TIMEOUT 120 RUN_SERIAL TRUE WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")

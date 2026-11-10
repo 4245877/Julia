@@ -66,6 +66,17 @@ namespace julia::physics
                 }
             }
             if(next==0 && !def.freeRoot) throw std::invalid_argument("No physical coordinates");
+            if(def.contactTool)
+            {
+                const auto& t=*def.contactTool;
+                if(t.link>=def.links.size()||!finite(t.pointInJoint)||!finite(t.normalWorld)||
+                    std::abs(glm::length(t.normalWorld)-1)>1e-8||!std::isfinite(t.radius)||t.radius<=0||t.radius>.1||
+                    (t.surface=="wall"&&std::abs(std::abs(t.normalWorld.x)+std::abs(t.normalWorld.y)+std::abs(t.normalWorld.z)-1)>1e-8)||
+                    (t.surface=="floor"&&glm::length(t.normalWorld-glm::dvec3{0,1,0})>1e-8)||
+                    !std::isfinite(t.friction)||t.friction<.01||t.friction>1||
+                    (t.surface!="wall"&&t.surface!="floor")||(t.surface=="wall"&&!def.wall)||(t.surface=="floor"&&!def.floorHeight))
+                    throw std::invalid_argument("Invalid contact tool/pair");
+            }
             for(const auto& d:def.drives)
                 if(!std::isfinite(d.kp)||!std::isfinite(d.kd)||!std::isfinite(d.maxTorque)||
                     d.kp<0||d.kp>1000||d.kd<0||d.kd>100||d.maxTorque<=0||d.maxTorque>100)
@@ -133,6 +144,13 @@ namespace julia::physics
             for(std::size_t i=0;i<def.links.size();++i)
                 if(def.links[i].parent==-1||(i==0&&def.links[i].parent==-2)) emit(i);
             o<<"</worldbody><contact>";
+            if(def.contactTool)
+            {
+                const auto& t=*def.contactTool;
+                o<<"<pair geom1=\""<<t.surface<<"\" geom2=\"g"<<t.link<<"\" condim=\"3\" friction=\""
+                    <<t.friction<<' '<<t.friction<<" 0.005 0.0001 0.0001\" solref=\""<<def.contactTimeConstant
+                    <<" 1\" solimp=\"0.9 0.95 0.001 0.5 2\"/>";
+            }
             for(const auto& pair:def.exclusions) o<<"<exclude body1=\"b"<<pair[0]<<"\" body2=\"b"<<pair[1]<<"\"/>";
             o<<"</contact><actuator>";
 
@@ -170,6 +188,46 @@ namespace julia::physics
         std::vector<double> wrench;
         bool failed=false;
         double initialMechanicalEnergy=0;
+        ContactController contactController;
+        int toolGeom=-1,surfaceGeom=-1;
+        glm::dvec3 pointVelocity(int body,glm::dvec3 point,glm::dvec3* angular=nullptr) const
+        {
+            if(body==0) { if(angular) *angular={0,0,0}; return {0,0,0}; }
+            mjtNum v[6]{}; mj_objectVelocity(m.get(),d.get(),mjOBJ_BODY,body,v,0);
+            const glm::dvec3 w{v[0],v[1],v[2]},linear{v[3],v[4],v[5]};
+            const glm::dvec3 com{d->xipos[3*body],d->xipos[3*body+1],d->xipos[3*body+2]};
+            if(angular) *angular=w;
+            return linear+glm::cross(w,point-com);
+        }
+        ContactInput contactInput(bool jacobian=false) const
+        {
+            ContactInput in; in.time=d->time; in.q=state.q; in.v=state.v;
+            if(!def.contactTool) return in;
+            const auto& t=*def.contactTool;
+            in.worldFromTool=state.worldFromJoint[t.link];
+            in.worldFromTool[3]=state.worldFromJoint[t.link]*glm::dvec4{t.pointInJoint,1};
+            in.point=glm::dvec3{in.worldFromTool[3]};
+            in.velocity=pointVelocity(bodies[t.link],in.point);
+            in.pair=aggregateContacts(state.contacts,toolGeom,surfaceGeom,t.normalWorld);
+            if(!in.pair.records) in.pair.friction=m->pair_friction[0];
+            const auto surfacePoint=t.surface=="wall"?def.wall->center+def.wall->halfSize*t.normalWorld:
+                glm::dvec3{0,*def.floorHeight,0};
+            in.pair.geometricGap=glm::dot(in.point-surfacePoint,t.normalWorld)-t.radius;
+            in.pair.near=std::abs(in.pair.geometricGap)<=.002;
+            if(t.surface=="wall") for(int axis=0;axis<3;++axis)
+                if(std::abs(t.normalWorld[axis])<.5&&std::abs(in.point[axis]-def.wall->center[axis])>def.wall->halfSize[axis]+t.radius)
+                    in.pair.near=false;
+            if(jacobian)
+            {
+                // Fixed maximum nv (44 hinges + 6 root), no per-sample allocation.
+                std::array<mjtNum,3*(MaxCoordinates+6)> j{};
+                const mjtNum point[3]{in.point.x,in.point.y,in.point.z};
+                mj_jac(m.get(),d.get(),j.data(),nullptr,point,bodies[t.link]);
+                for(unsigned k=0;k<state.dofs;++k) for(int axis=0;axis<3;++axis)
+                    in.jacobian[k][axis]=j[static_cast<std::size_t>(axis*m->nv+layout.qvel[k])];
+            }
+            return in;
+        }
         double wrenchPower() const
         {
             double power=0;
@@ -229,6 +287,15 @@ namespace julia::physics
                 layout.actuator.push_back(mj_name2id(m.get(),mjOBJ_ACTUATOR,("motor"+std::to_string(k)).c_str()));
             }
             wrench.resize(static_cast<std::size_t>(m->nbody)*6);
+            if(def.contactTool)
+            {
+                toolGeom=mj_name2id(m.get(),mjOBJ_GEOM,("g"+std::to_string(def.contactTool->link)).c_str());
+                surfaceGeom=mj_name2id(m.get(),mjOBJ_GEOM,def.contactTool->surface.c_str());
+                if(toolGeom<0||surfaceGeom<0) throw std::runtime_error("Compiled contact geometry missing");
+                if(m->npair!=1||std::abs(m->pair_friction[0]-def.contactTool->friction)>1e-12||
+                    std::abs(m->pair_friction[1]-def.contactTool->friction)>1e-12)
+                    throw std::runtime_error("Compiled explicit contact pair friction mismatch");
+            }
         }
         [[noreturn]] void fail(const std::string& why)
         {
@@ -302,6 +369,18 @@ namespace julia::physics
                 contact.link1=linkFor(c.geom[0]); contact.link2=linkFor(c.geom[1]);
                 contact.point={c.pos[0],c.pos[1],c.pos[2]}; contact.normal={c.frame[0],c.frame[1],c.frame[2]};
                 contact.distance=c.dist; contact.force=glm::dvec3{f[0],f[1],f[2]};
+                {
+                    const auto contactStart=Clock::now();
+                    for(int axis=0;axis<3;++axis) for(int component=0;component<3;++component)
+                        contact.worldFromContact[axis][component]=c.frame[3*axis+component];
+                    contact.forceOn2World=contact.worldFromContact**contact.force;
+                    contact.torqueOn2World=contact.worldFromContact*glm::dvec3{f[3],f[4],f[5]};
+                    contact.velocity1World=pointVelocity(m->geom_bodyid[c.geom[0]],contact.point,&contact.angular1World);
+                    contact.velocity2World=pointVelocity(m->geom_bodyid[c.geom[1]],contact.point,&contact.angular2World);
+                    for(unsigned k=0;k<5;++k) contact.friction[k]=c.friction[k];
+                    contact.active=c.efc_address>=0&&c.exclude==0;
+                    state.timing.contactUs+=us(contactStart);
+                }
                 if(!finite(*contact.force)||glm::length(*contact.force)>def.maxContactForce||c.dist < -def.maxPenetration)
                     fail("Contact force/penetration threshold exceeded links="+std::to_string(contact.link1)+","+std::to_string(contact.link2)+
                         " distance_m="+std::to_string(c.dist)+" force_N="+std::to_string(glm::length(*contact.force)));
@@ -319,9 +398,10 @@ namespace julia::physics
             if(!std::isfinite(state.potentialEnergy)||!std::isfinite(state.kineticEnergy)||state.kineticEnergy>def.maxKineticEnergy)
                 fail("Energy threshold exceeded");
             state.time=d->time;
+            { state.constraintPower=0; for(int k=0;k<m->nv;++k) state.constraintPower+=d->qfrc_constraint[k]*d->qvel[k]; }
         }
     };
-    PhysicsWorld::PhysicsWorld(Definition def):impl_(std::make_unique<Impl>(std::move(def))) { reset(); }
+    PhysicsWorld::PhysicsWorld(Definition def,Coordinates initial):impl_(std::make_unique<Impl>(std::move(def))) { reset(initial); }
     PhysicsWorld::~PhysicsWorld()=default;
     const Definition& PhysicsWorld::definition() const { return impl_->def; }
     const Snapshot& PhysicsWorld::snapshot() const { return impl_->state; }
@@ -332,7 +412,16 @@ namespace julia::physics
     }
     const StateLayout& PhysicsWorld::layout() const { return impl_->layout; }
     Capabilities PhysicsWorld::capabilities() const
-    { Capabilities c; c.freeRoot=impl_->def.freeRoot; c.fixedBase=!c.freeRoot; c.fixedBaseGravity=c.fixedBase; return c; }
+    {
+        const auto& p=*impl_; Capabilities c; c.freeRoot=p.def.freeRoot; c.fixedBase=!c.freeRoot; c.fixedBaseGravity=c.fixedBase;
+        if(c.fixedBase&&p.state.dofs==ArmCoordinates&&p.def.contactTool)
+        {
+            const auto& t=*p.def.contactTool; const auto& b=p.def.links[t.link];
+            c.normalForceControl=!b.boxHalfSize&&glm::length(b.capsuleEnd-b.capsuleStart)<=1e-12&&
+                glm::length(b.capsuleStart-t.pointInJoint)<=1e-12&&std::abs(b.radius-t.radius)<=1e-12;
+        }
+        return c;
+    }
     namespace
     {
         void setRoot(const StateLayout& l,mjData* d,const RootState& root)
@@ -360,8 +449,10 @@ namespace julia::physics
         for(unsigned k=0;k<dofs;++k) p.d->qpos[p.layout.qpos[k]]=q[k]; // ONLY explicit reset writes live q/v.
         for(unsigned k=0;k<dofs;++k) p.references[k].reset(q[k]);
         p.state.drive.qRef=q;
+        p.contactController.reset();
         if(root) setRoot(p.layout,p.d.get(),*root);
         mj_forward(p.m.get(),p.d.get()); p.read();
+        if(p.def.contactTool) { p.contactController.observe(p.contactInput(),0); p.state.contact=p.contactController.status(); }
         p.initialMechanicalEnergy=p.state.potentialEnergy+p.state.kineticEnergy;
     }
     bool PhysicsWorld::command(CommandKind kind,Coordinates values,std::string* reason)
@@ -377,6 +468,7 @@ namespace julia::physics
             if((kind==CommandKind::Target||kind==CommandKind::SmoothTarget)&&k<p.state.dofs&&(values[k]<p.hinges[k].lower||values[k]>p.hinges[k].upper))
                 return reject("Target outside calibrated limits");
         }
+        if(p.contactController.owns()&&kind!=CommandKind::Disable) return reject("Contact owns all arm coordinates; Disable before changing drive mode");
         if(kind==CommandKind::SmoothTarget)
         {
             auto proposed=p.references;
@@ -400,7 +492,7 @@ namespace julia::physics
         else if(kind==CommandKind::Target)
         { p.state.target=values; p.state.mode=DriveMode::Position; p.state.drive.qRef=values; p.state.drive.vRef={}; }
         else if(kind==CommandKind::Torque) { p.effort=values; p.state.mode=DriveMode::Torque; }
-        else p.state.mode=DriveMode::Disabled;
+        else { p.state.mode=DriveMode::Disabled; p.contactController.disable(); p.state.contact=p.contactController.status(); }
         if(kind!=CommandKind::SmoothTarget)
         { p.state.drive.vRef={}; p.state.drive.referenceReached={}; }
         for(unsigned k=0;k<p.state.dofs;++k)
@@ -415,12 +507,42 @@ namespace julia::physics
         auto& p=*impl_;
         const auto reject=[&](const char* s) { if(reason) *reason=s; return false; };
         if(p.failed) return reject("Physics failed; reset required");
+        if(p.contactController.owns()) return reject("Contact owns arm; Disable before configuring Servo");
         if(!validServoSettings(settings))
             return reject("Invalid servo speed/acceleration limits");
         if(settings.gravityCompensation && p.def.freeRoot) return reject("Gravity compensation requires a fixed base; free root unsupported");
         if(p.state.mode==DriveMode::Servo) return reject("Disable servo before changing settings");
         p.state.servo=settings; if(reason) reason->clear(); return true;
     }
+    bool PhysicsWorld::startContact(ContactSettings settings,std::string* reason)
+    {
+        auto& p=*impl_;
+        const auto reject=[&](const char* why) { if(reason) *reason=why; return false; };
+        if(p.failed) return reject("Physics failed; reset required");
+        if(!validContactSettings(settings)) return reject("Invalid contact settings");
+        if(p.def.freeRoot||p.state.dofs!=ArmCoordinates||!p.def.contactTool)
+            return reject("Managed contact supports only an explicitly configured fixed Full arm");
+        const auto& tool=*p.def.contactTool; const auto& b=p.def.links[tool.link];
+        if(b.boxHalfSize||glm::length(b.capsuleEnd-b.capsuleStart)>1e-12||
+            glm::length(b.capsuleStart-tool.pointInJoint)>1e-12||std::abs(b.radius-tool.radius)>1e-12)
+            return reject("Managed contact requires the declared sphere tool collider");
+        if(p.state.mode!=DriveMode::Disabled) return reject("Disable the previous drive before starting contact");
+        auto proposed=p.contactController;
+        proposed.start(settings,tool.normalWorld,p.contactInput());
+        p.contactController=std::move(proposed); p.state.mode=DriveMode::Contact;
+        p.state.target=p.state.q; p.state.drive.qRef=p.state.q; p.state.drive.vRef={}; p.state.drive.referenceReached={};
+        p.state.contact=p.contactController.status();
+        if(reason) reason->clear(); return true;
+    }
+    bool PhysicsWorld::contactForceTarget(double force,std::string* reason)
+    {
+        auto& p=*impl_;
+        if(p.failed||p.state.mode!=DriveMode::Contact||!p.contactController.retarget(force))
+        { if(reason) *reason="Force target requires active Ramp/Hold and finite force in [1,8] N"; return false; }
+        p.state.contact=p.contactController.status(); if(reason) reason->clear(); return true;
+    }
+    void PhysicsWorld::cancelContact()
+    { auto& p=*impl_; p.contactController.cancel(); p.state.contact=p.contactController.status(); }
     Coordinates PhysicsWorld::gravityCompensation(Coordinates q) const
     {
         auto& p=*impl_;
@@ -456,14 +578,25 @@ namespace julia::physics
             const double h=TickSeconds/p.def.substeps;
             s.drive.sampleMode=s.mode;
             Coordinates ff{},beforeV{},actualTorque{};
+            Coordinates contactEffort{};
             const double externalBefore=p.wrenchPower();
             if(s.mode==DriveMode::Servo && s.servo.gravityCompensation) ff=p.gravity(p.d->qpos);
+            if(s.mode==DriveMode::Contact)
+            {
+                const auto contactStart=Clock::now();
+                // Uses only the previous completed endpoint. No solver callback,
+                // no SmoothTarget replanning, one owner for all six coordinates.
+                contactEffort=p.contactController.evaluate(p.contactInput(true),h);
+                s.timing.contactControlUs+=us(contactStart);
+                ff=p.gravity(p.d->qpos);
+            }
             for(unsigned k=0;k<s.dofs;++k)
             {
                 auto& t=s.drive;
                 t.sampleQ[k]=p.d->qpos[p.layout.qpos[k]]; t.sampleV[k]=beforeV[k]=p.d->qvel[p.layout.qvel[k]];
                 t.sampleQRef[k]=s.mode==DriveMode::Position?s.target[k]:t.qRef[k]; t.sampleVRef[k]=t.vRef[k];
-                const auto output=evaluateDrive(p.def.drives[k],s.mode,t.sampleQRef[k],t.sampleVRef[k],t.sampleQ[k],t.sampleV[k],ff[k],p.effort[k]);
+                const auto output=evaluateDrive(p.def.drives[k],s.mode,t.sampleQRef[k],t.sampleVRef[k],t.sampleQ[k],t.sampleV[k],ff[k],
+                    s.mode==DriveMode::Contact?contactEffort[k]:p.effort[k]);
                 t.pTorque[k]=output.p; t.dTorque[k]=output.d; t.feedforward[k]=output.feedforward;
                 s.calculatedTorque[k]=output.requested; t.limitedTorque[k]=output.limited;
                 p.d->ctrl[p.layout.actuator[k]]=output.limited;
@@ -472,6 +605,8 @@ namespace julia::physics
                 t.saturationRunSeconds[k]=s.saturated[k]?t.saturationRunSeconds[k]+h:0;
                 if(s.saturated[k]) t.saturatedSeconds[k]+=h;
             }
+            if(s.mode==DriveMode::Contact)
+                p.contactController.applied(std::any_of(s.saturated.begin(),s.saturated.begin()+s.dofs,[](bool b) { return b; }),h);
             s.timing.controlUs+=us(start); start=Clock::now();
             mj_step(p.m.get(),p.d.get()); ++s.worldSteps;
             s.timing.stepUs+=us(start); start=Clock::now();
@@ -497,6 +632,12 @@ namespace julia::physics
             // mj_step leaves derived transforms at pre-integration q. Refresh ALL
             // endpoint observations with the last held ctrl; never alter live q/v.
             mj_forward(p.m.get(),p.d.get()); p.read();
+            if(p.def.contactTool)
+            {
+                const auto contactStart=Clock::now();
+                p.contactController.observe(p.contactInput(),h); s.contact=p.contactController.status();
+                s.timing.contactUs+=us(contactStart);
+            }
             s.drive.externalPower=p.wrenchPower();
             s.drive.externalWork+=.5*(externalBefore+s.drive.externalPower)*h;
             s.drive.mechanicalEnergyChange=s.kineticEnergy+s.potentialEnergy-p.initialMechanicalEnergy;
@@ -547,6 +688,14 @@ namespace julia::physics
         }
         a.massMatrix.resize(static_cast<std::size_t>(p.m->nv*p.m->nv));
         mj_fullM(p.m.get(),a.massMatrix.data(),p.scratch->qM);
+        return a;
+    }
+    std::optional<ContactMaterial> PhysicsWorld::contactMaterial() const
+    {
+        const auto& p=*impl_; if(!p.def.contactTool) return std::nullopt;
+        ContactMaterial a; a.geom1=p.m->pair_geom1[0]; a.geom2=p.m->pair_geom2[0]; a.dimension=p.m->pair_dim[0];
+        for(unsigned k=0;k<5;++k) { a.friction[k]=p.m->pair_friction[k]; a.solimp[k]=p.m->pair_solimp[k]; }
+        for(unsigned k=0;k<2;++k) a.solref[k]=p.m->pair_solref[k];
         return a;
     }
     std::size_t PhysicsWorld::modelBytes() const { return sizeof(mjModel)+static_cast<std::size_t>(impl_->m->nbuffer); }
