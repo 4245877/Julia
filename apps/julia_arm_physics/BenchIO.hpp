@@ -45,7 +45,7 @@ namespace bench
             {
                 auto s=value(); for(auto& c:s) if(c==',') c=' ';
                 std::istringstream in{s}; julia::physics::Coordinates q{};
-                for(auto& x:q) if(!(in>>x)) throw std::invalid_argument("Target needs six radian values (two-chain: q0,q1,0,0,0,0)");
+                for(unsigned k=0;k<julia::physics::ArmCoordinates;++k) if(!(in>>q[k])) throw std::invalid_argument("Target needs six radian values (two-chain: q0,q1,0,0,0,0)");
                 std::string extra; if(in>>extra) throw std::invalid_argument("Too many target coordinates");
                 o.target=q;
             }

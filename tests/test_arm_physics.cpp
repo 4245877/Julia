@@ -109,7 +109,7 @@ namespace
         JULIA_CHECK(!w.command(CommandKind::Target,{2,0},&reason));
         JULIA_CHECK(!w.command(CommandKind::Torque,{std::numeric_limits<double>::quiet_NaN(),0},&reason));
         JULIA_CHECK(w.snapshot().q==before.q&&w.snapshot().target==before.target);
-        JULIA_CHECK(PhysicsWorld::capabilities().fixedBase&&!PhysicsWorld::capabilities().freeRoot&&!PhysicsWorld::capabilities().ik);
+        JULIA_CHECK(w.capabilities().fixedBase&&!w.capabilities().freeRoot&&!w.capabilities().ik);
         JULIA_CHECK(w.command(CommandKind::Torque,{100,-100}));
         JULIA_CHECK(w.snapshot().q==before.q);
         w.step(); const auto s=w.snapshot();

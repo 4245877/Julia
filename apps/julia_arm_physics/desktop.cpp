@@ -59,10 +59,10 @@ namespace
         key(window,GLFW_KEY_UP,0,GLFW_PRESS,0);
         if(input.selected!=1||world.snapshot().q!=initial.q||std::abs(world.snapshot().target[1]-initial.target[1]-.05)>1e-12)
             throw std::runtime_error("Coordinate selection/target callback failed");
-        if(initial.dofs==MaxCoordinates)
+        if(initial.dofs==ArmCoordinates)
         {
             key(window,GLFW_KEY_DOWN,0,GLFW_PRESS,0);
-            for(unsigned n=0;n<MaxCoordinates;++n)
+            for(unsigned n=0;n<ArmCoordinates;++n)
             {
                 key(window,GLFW_KEY_TAB,0,GLFW_PRESS,0); const auto before=world.snapshot().target;
                 key(window,GLFW_KEY_UP,0,GLFW_PRESS,0);

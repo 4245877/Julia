@@ -17,7 +17,7 @@ set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
 option(JULIA_BUILD_TESTS "Build Julia unit tests" ON)
 option(JULIA_BUILD_DESKTOP "Build the OpenGL plugin, desktop application and GPU tests" ON)
-option(JULIA_BUILD_PHYSICS "Build the isolated MuJoCo arm bench" ON)
+option(JULIA_BUILD_PHYSICS "Build MuJoCo backend and isolated physical benches" ON)
 
 add_subdirectory(libs/core)
 add_subdirectory(libs/diagnostics)
@@ -43,6 +43,7 @@ endif()
 
 if(JULIA_BUILD_PHYSICS)
     add_subdirectory(apps/julia_arm_physics)
+    add_subdirectory(apps/julia_body_physics)
 endif()
 
 if(JULIA_BUILD_TESTS)

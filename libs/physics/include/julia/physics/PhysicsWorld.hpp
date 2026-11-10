@@ -1,5 +1,6 @@
 #pragma once
 #include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <array>
 #include <cstdint>
 #include <memory>
@@ -11,7 +12,8 @@ namespace julia::physics
 {
     inline constexpr double TickSeconds = 1.0/120.0;
     inline constexpr unsigned Substeps = 8;
-    inline constexpr unsigned MaxCoordinates = 6;
+    inline constexpr unsigned ArmCoordinates = 6;
+    inline constexpr unsigned MaxCoordinates = 44;
     using Coordinates = std::array<double,MaxCoordinates>;
     struct Hinge
     {
@@ -23,7 +25,8 @@ namespace julia::physics
     struct Link
     {
         std::string name;
-        // Serial tree: previous link is parent; first link is fixed to world.
+        // -2: legacy serial predecessor; -1: world; otherwise earlier link index.
+        int parent = -2;
         glm::dmat4 parentFromJoint{1}, jointFromSegment{1};
         glm::dvec3 comInSegment{0}; // metres; inertia at COM in segment axes.
         glm::dvec3 inertia{.001}; // Principal diagonal, kg m^2.
@@ -32,6 +35,9 @@ namespace julia::physics
         // Ordered intrinsic rotations at the same pivot; empty means welded.
         // All coordinates share this body's single mass and inertial frame.
         std::vector<Hinge> hinges;
+        // Optional oriented box in joint frame (feet). Otherwise capsule/sphere.
+        std::optional<glm::dvec3> boxHalfSize;
+        glm::dmat4 jointFromBox{1};
     };
     struct Drive { double kp=40, kd=4, maxTorque=8; }; // N m/rad, N m s/rad, N m.
     struct Wall { glm::dvec3 center{.2,1.05,.45}, halfSize{.35,.5,.03}; };
@@ -42,6 +48,31 @@ namespace julia::physics
         glm::dvec3 gravity{0,-9.81,0}; // m/s^2; Julia is Y-up.
         double contactTimeConstant=.01;
         std::optional<Wall> wall;
+        bool freeRoot=false, selfCollision=false;
+        unsigned substeps=Substeps; // One world step per substep, independent of link count.
+        std::optional<double> floorHeight;
+        // Additional exclusions, on top of MuJoCo's parent/weld filtering.
+        std::vector<std::array<unsigned,2>> exclusions;
+        // Explicit experiment envelope, SI units. Legacy arm defaults unchanged.
+        double maxJointSpeed=50, maxLimitViolation=.04, maxPenetration=.015;
+        double maxContactForce=10000, maxKineticEnergy=2000;
+        double maxRootLinearSpeed=20, maxRootAngularSpeed=50;
+        unsigned maxContacts=64;
+    };
+    struct RootState
+    {
+        glm::dvec3 position{0}; // World position of physical root joint origin, m.
+        glm::dquat orientation{1,0,0,0}; // body -> world; constructor (w,x,y,z).
+        glm::dvec3 linearVelocityWorld{0}; // At root origin, m/s, world axes.
+        glm::dvec3 angularVelocityLocal{0}; // rad/s, root body axes (MuJoCo qvel).
+    };
+    glm::dmat4 rootTransform(const RootState& root);
+    struct StateLayout
+    {
+        unsigned nq=0,nv=0,nu=0;
+        int rootQpos=-1, rootQvel=-1;
+        unsigned rootQposSize=0,rootQvelSize=0;
+        std::vector<int> qpos, qvel, actuator; // Indexed by scalar coordinate.
     };
     enum class DriveMode { Disabled, Position, Torque };
     enum class CommandKind { Target, Torque, Disable, Reach, Attach, MoveRoot };
@@ -53,6 +84,7 @@ namespace julia::physics
     struct Contact
     {
         int geom1=-1, geom2=-1;
+        int link1=-1, link2=-1; // -1: static environment.
         glm::dvec3 point{0}, normal{0};
         double distance=0;
         // Endpoint solver estimate in contact frame; not a force sensor or impulse.
@@ -75,6 +107,9 @@ namespace julia::physics
         glm::dvec3 externalForce{0}, externalTorque{0};
         double kineticEnergy=0, potentialEnergy=0;
         Timing timing;
+        RootState root;
+        glm::dvec3 totalComWorld{0}, linearMomentumWorld{0}, angularMomentumAboutComWorld{0};
+        double totalMass=0;
     };
     struct MassAudit
     {
@@ -85,7 +120,7 @@ namespace julia::physics
         std::vector<glm::dvec3> comInJoint;
         std::vector<glm::dmat3> inertiaInJoint;
     };
-    // One owner advances this WORLD exactly eight times per outer tick. Read-only
+    // One owner advances this WORLD once per configured substep. Read-only
     // snapshots/FK queries/render never integrate or set the live q/v.
     class PhysicsWorld
     {
@@ -95,20 +130,21 @@ namespace julia::physics
         PhysicsWorld(const PhysicsWorld&)=delete;
         PhysicsWorld& operator=(const PhysicsWorld&)=delete;
         const Definition& definition() const;
-        static Capabilities capabilities() { return {}; }
+        Capabilities capabilities() const;
+        const StateLayout& layout() const;
         static std::string backendVersion();
         // Explicit experiment boundary: clears q/v, ctrl, warmstart, forces,
         // contact history, counters, targets and snapshots; increases epoch.
-        void reset(Coordinates initial = {});
+        void reset(Coordinates initial = {}, std::optional<RootState> root = std::nullopt);
         bool command(CommandKind kind, Coordinates values={}, std::string* reason=nullptr);
         // Wrench in world axes, about chosen link COM. Held for the next tick only.
         void applyWrench(unsigned link, glm::dvec3 forceN, glm::dvec3 torqueNm={0,0,0});
         void step();
         const Snapshot& snapshot() const;
         // Scratch data only; explicitly allowed outside joint limits, never clamps.
-        std::vector<glm::dmat4> forwardKinematics(Coordinates q) const;
+        std::vector<glm::dmat4> forwardKinematics(Coordinates q, std::optional<RootState> root = std::nullopt) const;
         // Compiled inertial data and generalized mass matrix, scratch only.
-        MassAudit massAudit(Coordinates q={}) const;
+        MassAudit massAudit(Coordinates q={}, std::optional<RootState> root = std::nullopt) const;
         std::size_t modelBytes() const;
         std::size_t dataBytes() const;
         std::size_t arenaHighWaterBytes() const;

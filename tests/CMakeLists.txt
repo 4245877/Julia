@@ -158,6 +158,12 @@ add_test(NAME stance_preparation COMMAND julia_test_stance_preparation "${CMAKE_
 set_tests_properties(stance_preparation PROPERTIES TIMEOUT 240)
 
 if(JULIA_BUILD_PHYSICS)
+    add_executable(julia_test_body_physics test_body_physics.cpp)
+    target_compile_definitions(julia_test_body_physics PRIVATE JULIA_TEST_ASSET_DIR="${CMAKE_SOURCE_DIR}/assets")
+    target_link_libraries(julia_test_body_physics PRIVATE julia_physics_rig julia_model_import julia::warnings)
+    julia_copy_mujoco(julia_test_body_physics)
+    add_test(NAME body_physics COMMAND julia_test_body_physics "${CMAKE_SOURCE_DIR}/build/diagnostics/stage7c/cpu")
+    set_tests_properties(body_physics PROPERTIES TIMEOUT 240 RUN_SERIAL TRUE)
     add_executable(julia_test_arm_physics test_arm_physics.cpp)
     target_compile_definitions(julia_test_arm_physics PRIVATE JULIA_TEST_ASSET_DIR="${CMAKE_SOURCE_DIR}/assets")
     target_link_libraries(julia_test_arm_physics PRIVATE julia_physics_rig julia_model_import julia::warnings)
@@ -180,6 +186,14 @@ if(NOT JULIA_BUILD_DESKTOP)
 endif()
 
 if(JULIA_BUILD_PHYSICS)
+    foreach(fps 30 60 144)
+        add_test(NAME desktop_body_physics_${fps} COMMAND $<TARGET_FILE:julia_body_physics_desktop>
+            --case drop --fps ${fps} --verify "${CMAKE_SOURCE_DIR}/build/diagnostics/stage7c/gpu/drop${fps}")
+        set_tests_properties(desktop_body_physics_${fps} PROPERTIES TIMEOUT 120 RUN_SERIAL TRUE WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+    endforeach()
+    add_test(NAME desktop_body_physics_tilt COMMAND $<TARGET_FILE:julia_body_physics_desktop>
+        --case tilt --verify "${CMAKE_SOURCE_DIR}/build/diagnostics/stage7c/gpu/tilt60")
+    set_tests_properties(desktop_body_physics_tilt PROPERTIES TIMEOUT 120 RUN_SERIAL TRUE WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
     add_test(NAME desktop_physics COMMAND $<TARGET_FILE:julia_physics_desktop>
         --case impulse --verify "${CMAKE_SOURCE_DIR}/build/diagnostics/stage7a/gpu/impulse")
     set_tests_properties(desktop_physics PROPERTIES TIMEOUT 120 RUN_SERIAL TRUE WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")

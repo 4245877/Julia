@@ -145,12 +145,12 @@ namespace julia::physics
             }
             for(unsigned mask=0;mask<64;++mask)
             {
-                Coordinates q{}; for(unsigned k=0;k<MaxCoordinates;++k) q[k]=(mask&(1u<<k))?hi[k]-.001:lo[k]+.001;
+                Coordinates q{}; for(unsigned k=0;k<ArmCoordinates;++k) q[k]=(mask&(1u<<k))?hi[k]-.001:lo[k]+.001;
                 configurations.push_back(q);
             }
             for(unsigned n=0;n<96;++n)
             {
-                Coordinates q{}; for(unsigned k=0;k<MaxCoordinates;++k)
+                Coordinates q{}; for(unsigned k=0;k<ArmCoordinates;++k)
                     q[k]=lo[k]+(hi[k]-lo[k])*static_cast<double>((n*(13+2*k)+7*k)%97)/96.;
                 configurations.push_back(q);
             }
@@ -217,7 +217,7 @@ namespace julia::physics
     }
     void resetBench(PhysicsWorld& world,BenchCase scenario)
     {
-        const bool full=world.snapshot().dofs==MaxCoordinates;
+        const bool full=world.snapshot().dofs==ArmCoordinates;
         world.reset(full?Coordinates{.2,.1,.1,.3,.1,.05}:Coordinates{.2,.3});
         if(scenario!=BenchCase::Passive&&scenario!=BenchCase::ZeroGravity&&
             !world.command(CommandKind::Target,full?Coordinates{.8,.3,.2,.9,.3,.18}:Coordinates{.8,.9}))
@@ -234,10 +234,10 @@ namespace julia::physics
         }
         if(scenario==BenchCase::Spatial)
         {
-            if(world.snapshot().dofs!=MaxCoordinates) throw std::invalid_argument("Spatial requires --chain full");
+            if(world.snapshot().dofs!=ArmCoordinates) throw std::invalid_argument("Spatial requires --chain full");
             Coordinates target{.55,.25,0,.7,0,0};
             const Coordinates amplitude{.25,.18,.25,.3,.3,.2};
-            for(unsigned k=0;k<MaxCoordinates;++k) target[k]+=amplitude[k]*std::sin(next*TickSeconds*(1.+.17*k));
+            for(unsigned k=0;k<ArmCoordinates;++k) target[k]+=amplitude[k]*std::sin(next*TickSeconds*(1.+.17*k));
             if(!world.command(CommandKind::Target,target)) throw std::runtime_error("Spatial target rejected");
         }
         world.step();
@@ -246,7 +246,7 @@ namespace julia::physics
     {
         out<<"tick,epoch,time_s,world_steps,mode";
         for(const auto* label:{"target","q","v","calculated","applied","saturated","limit","saturated_last","peak_limit"})
-            for(unsigned k=0;k<MaxCoordinates;++k) out<<','<<label<<k;
+            for(unsigned k=0;k<ArmCoordinates;++k) out<<','<<label<<k;
         out<<",wrist_x_m,wrist_y_m,wrist_z_m,target_x_m,target_y_m,target_z_m,contacts,peak_contacts,peak_normal_N,"
             "max_penetration_m,solver_iterations,warnings,external_x_N,external_y_N,external_z_N,kinetic_J,potential_J,"
             "control_us,substeps_us,read_us,mapping_us\n";
@@ -254,11 +254,11 @@ namespace julia::physics
     void csvRow(std::ostream& out,const RenderSnapshot& view)
     {
         const auto& s=view.physics; out<<std::setprecision(17)<<s.tick<<','<<s.epoch<<','<<s.time<<','<<s.worldSteps<<','<<static_cast<int>(s.mode);
-        for(const auto& pair:{s.target,s.q,s.v,s.calculatedTorque,s.appliedTorque}) for(const auto x:pair) out<<','<<x;
-        for(auto b:s.saturatedThisTick) out<<','<<b;
-        for(auto x:s.limitViolation) out<<','<<x;
-        for(auto b:s.saturated) out<<','<<b;
-        for(auto x:s.peakLimitViolationThisTick) out<<','<<x;
+        for(const auto& pair:{s.target,s.q,s.v,s.calculatedTorque,s.appliedTorque}) for(unsigned k=0;k<ArmCoordinates;++k) out<<','<<pair[k];
+        for(unsigned k=0;k<ArmCoordinates;++k) out<<','<<s.saturatedThisTick[k];
+        for(unsigned k=0;k<ArmCoordinates;++k) out<<','<<s.limitViolation[k];
+        for(unsigned k=0;k<ArmCoordinates;++k) out<<','<<s.saturated[k];
+        for(unsigned k=0;k<ArmCoordinates;++k) out<<','<<s.peakLimitViolationThisTick[k];
         for(int i=0;i<3;++i) out<<','<<view.actualWrist[i];
         for(int i=0;i<3;++i) out<<','<<view.targetWrist[i];
         out<<','<<s.contacts.size()<<','<<s.peakContactsThisTick<<','<<s.peakNormalForceThisTick<<','<<s.maxPenetrationThisTick

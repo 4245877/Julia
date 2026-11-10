@@ -18,7 +18,7 @@ namespace
 {
     double difference(Coordinates a,Coordinates b)
     {
-        double e=0; for(unsigned k=0;k<MaxCoordinates;++k) e=std::max(e,std::abs(a[k]-b[k])); return e;
+        double e=0; for(unsigned k=0;k<ArmCoordinates;++k) e=std::max(e,std::abs(a[k]-b[k])); return e;
     }
     double matrixError(const glm::dmat3& a,const glm::dmat3& b)
     {
@@ -53,9 +53,9 @@ namespace
                 com+=b.mass*glm::dvec3{f[i]*b.jointFromSegment*glm::dvec4{b.comInSegment,1}};
             }
             com/=a.totalMass; JULIA_CHECK(glm::length(a.comWorld-com)<1e-8);
-            std::array<std::vector<glm::dvec3>,MaxCoordinates> linear,angular;
+            std::array<std::vector<glm::dvec3>,ArmCoordinates> linear,angular;
             const double eps=1e-5;
-            for(unsigned k=0;k<MaxCoordinates;++k)
+            for(unsigned k=0;k<ArmCoordinates;++k)
             {
                 auto plus=q,minus=q; plus[k]+=eps; minus[k]-=eps;
                 const auto fp=cpuFrames(def,plus),fm=cpuFrames(def,minus);
@@ -67,7 +67,7 @@ namespace
                     angular[k].push_back({spin[1][2],spin[2][0],spin[0][1]});
                 }
             }
-            std::array<double,MaxCoordinates*MaxCoordinates> matrix{};
+            std::array<double,ArmCoordinates*ArmCoordinates> matrix{};
             for(std::size_t i=0;i<def.links.size();++i)
             {
                 const auto& b=def.links[i]; const glm::dmat3 r{f[i]*b.jointFromSegment};
@@ -75,21 +75,21 @@ namespace
                 const auto inertia=r*diag*glm::transpose(r);
                 const auto delta=glm::dvec3{f[i]*b.jointFromSegment*glm::dvec4{b.comInSegment,1}}-com;
                 totalInertia+=inertia+b.mass*(glm::dot(delta,delta)*glm::dmat3{1}-glm::outerProduct(delta,delta));
-                for(unsigned j=0;j<MaxCoordinates;++j) for(unsigned k=0;k<MaxCoordinates;++k)
-                    matrix[j*MaxCoordinates+k]+=b.mass*glm::dot(linear[j][i],linear[k][i])+glm::dot(angular[j][i],inertia*angular[k][i]);
+                for(unsigned j=0;j<ArmCoordinates;++j) for(unsigned k=0;k<ArmCoordinates;++k)
+                    matrix[j*ArmCoordinates+k]+=b.mass*glm::dot(linear[j][i],linear[k][i])+glm::dot(angular[j][i],inertia*angular[k][i]);
             }
             JULIA_CHECK(matrixError(totalInertia,a.inertiaAtComWorld)<1e-8);
             double maxError=0;
             for(std::size_t i=0;i<matrix.size();++i) maxError=std::max(maxError,std::abs(matrix[i]-a.massMatrix[i]));
             JULIA_CHECK(maxError<1e-7);
             // Cholesky checks all directions of generalized kinetic energy.
-            std::array<double,MaxCoordinates*MaxCoordinates> l{};
-            for(unsigned i=0;i<MaxCoordinates;++i) for(unsigned j=0;j<=i;++j)
+            std::array<double,ArmCoordinates*ArmCoordinates> l{};
+            for(unsigned i=0;i<ArmCoordinates;++i) for(unsigned j=0;j<=i;++j)
             {
-                double x=a.massMatrix[i*MaxCoordinates+j];
-                for(unsigned k=0;k<j;++k) x-=l[i*MaxCoordinates+k]*l[j*MaxCoordinates+k];
-                if(i==j) { JULIA_CHECK(x>1e-7); l[i*MaxCoordinates+j]=std::sqrt(x); }
-                else l[i*MaxCoordinates+j]=x/l[j*MaxCoordinates+j];
+                double x=a.massMatrix[i*ArmCoordinates+j];
+                for(unsigned k=0;k<j;++k) x-=l[i*ArmCoordinates+k]*l[j*ArmCoordinates+k];
+                if(i==j) { JULIA_CHECK(x>1e-7); l[i*ArmCoordinates+j]=std::sqrt(x); }
+                else l[i*ArmCoordinates+j]=x/l[j*ArmCoordinates+j];
             }
             out<<"inertia payload="<<payload<<" mass="<<a.totalMass<<" com="<<com.x<<','<<com.y<<','<<com.z
                 <<" mass_matrix_max_error="<<maxError<<" tensor_diag="<<totalInertia[0][0]<<','<<totalInertia[1][1]<<','<<totalInertia[2][2]<<'\n';
@@ -103,7 +103,7 @@ namespace
         auto def=rig.description(); def.gravity={0,0,0}; PhysicsWorld w{def};
         const Coordinates initial{.2,.1,.1,.3,.1,.05}; w.reset(initial);
         const auto before=w.snapshot();
-        for(unsigned k=0;k<MaxCoordinates;++k)
+        for(unsigned k=0;k<ArmCoordinates;++k)
         {
             auto q=initial; q[k]=std::numeric_limits<double>::infinity();
             JULIA_CHECK(!w.command(CommandKind::Target,q));
@@ -114,7 +114,7 @@ namespace
         JULIA_CHECK(w.snapshot().q==before.q&&w.snapshot().epoch==before.epoch);
         JULIA_CHECK(w.command(CommandKind::Torque,{100,-100,100,-100,100,-100}));
         JULIA_CHECK(w.snapshot().q==initial); w.step();
-        for(unsigned k=0;k<MaxCoordinates;++k)
+        for(unsigned k=0;k<ArmCoordinates;++k)
         {
             JULIA_CHECK(w.snapshot().saturatedThisTick[k]);
             JULIA_CHECK(std::abs(std::abs(w.snapshot().appliedTorque[k])-def.drives[k].maxTorque)<1e-9);
@@ -136,7 +136,7 @@ namespace
     {
         auto def=rig.description(); def.gravity={0,0,0}; PhysicsWorld w{def};
         const Coordinates initial{.3,.2,.1,.6,.1,.05};
-        for(unsigned k=0;k<MaxCoordinates;++k)
+        for(unsigned k=0;k<ArmCoordinates;++k)
         {
             w.reset(initial); auto target=initial; target[k]+=.12;
             JULIA_CHECK(w.command(CommandKind::Target,target)); JULIA_CHECK(w.snapshot().q==initial);
@@ -179,7 +179,7 @@ namespace
             for(const auto& s:run)
             {
                 bool sat=false;
-                for(unsigned k=0;k<MaxCoordinates;++k)
+                for(unsigned k=0;k<ArmCoordinates;++k)
                 {
                     JULIA_CHECK(std::isfinite(s.q[k])&&std::isfinite(s.v[k])&&std::abs(s.appliedTorque[k])<=w.definition().drives[k].maxTorque+1e-9);
                     violation=std::max(violation,s.peakLimitViolationThisTick[k]); sat=sat||s.saturatedThisTick[k];
