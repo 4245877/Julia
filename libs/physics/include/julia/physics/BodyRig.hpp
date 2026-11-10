@@ -29,7 +29,8 @@ namespace julia::physics
     };
     BodyRenderSnapshot publish(const BodyRig& rig,const Snapshot& state);
     FkParity verifyFramesBeforeDynamics(const BodyRig& rig,const PhysicsWorld& world);
-    enum class BodyCase { Drop, Tilt, Pulse, Internal, Passive };
+    enum class BodyCase { Drop, Tilt, Pulse, Internal, Passive, Stand, StandPulse };
+    StandSettings preparedStand(const BodyRig& rig,const PhysicsWorld& world,const glm::dmat4& placement=glm::dmat4{1});
     BodyCase parseBodyCase(const std::string& name);
     std::string bodyCaseName(BodyCase scenario);
     Definition bodyBenchDefinition(const BodyRig& rig,BodyCase scenario);

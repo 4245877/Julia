@@ -37,8 +37,8 @@ namespace
         else if(code==GLFW_KEY_TAB) i.selected=(i.selected+1)%i.world->snapshot().dofs;
         else if(code==GLFW_KEY_D) i.world->command(CommandKind::Disable);
         else if(code==GLFW_KEY_S) i.world->command(CommandKind::SmoothTarget,i.world->snapshot().target);
-        else if(code==GLFW_KEY_I) i.world->applyWrench(3,{200,0,0});
-        else if(code>=GLFW_KEY_1&&code<=GLFW_KEY_5) { i.scenario=static_cast<BodyCase>(code-GLFW_KEY_1); i.reset=true; }
+        else if(code==GLFW_KEY_I) i.world->applyWrench(3,i.world->snapshot().mode==DriveMode::Stand?i.world->snapshot().stand.rootGoal.orientation*glm::dvec3{3,0,0}:glm::dvec3{200,0,0});
+        else if(code>=GLFW_KEY_1&&code<=GLFW_KEY_7) { i.scenario=static_cast<BodyCase>(code-GLFW_KEY_1); i.reset=true; }
         else if(code==GLFW_KEY_UP||code==GLFW_KEY_DOWN)
         {
             auto target=i.world->snapshot().target; target[i.selected]+=code==GLFW_KEY_UP?.02:-.02;
@@ -76,7 +76,7 @@ namespace
             line(v,center+a,center+b,color);
         }
     }
-    std::vector<DebugLineVertex> overlay(const Definition& def,const Snapshot& s)
+    std::vector<DebugLineVertex> overlay(const Definition& def,const Snapshot& s,bool proxies=true)
     {
         std::vector<DebugLineVertex> v;
         if(def.floorHeight) for(int k=-20;k<=20;++k)
@@ -84,7 +84,7 @@ namespace
             const double t=k*.15,y=*def.floorHeight;
             line(v,{-3,y,t},{3,y,t},{.4f,.5f,.5f}); line(v,{t,y,-3},{t,y,3},{.4f,.5f,.5f});
         }
-        for(std::size_t i=0;i<def.links.size();++i)
+        if(proxies) for(std::size_t i=0;i<def.links.size();++i)
         {
             const auto& b=def.links[i]; const auto& frame=s.worldFromJoint[i];
             const glm::vec3 color{.05f,.85f,.95f};
@@ -111,10 +111,47 @@ namespace
         }
         sphere(v,s.totalComWorld,.035,{1,1,0}); cross(v,s.totalComWorld,.07,{1,1,0});
         cross(v,s.root.position,.05,{1,0,1});
+        if(s.mode==DriveMode::Stand)
+        {
+            const glm::vec3 goalColor{1,.55f,.05f};
+            cross(v,s.stand.rootGoal.position,.07,goalColor); sphere(v,s.stand.comGoal,.025,goalColor);
+            line(v,s.totalComWorld,s.totalComWorld+s.support.dynamics.comVelocity,glm::vec3{1,1,0});
+            for(const auto& w:s.stand.predictedReaction)
+            {
+                // Offset glyphs distinguish predicted forces from measured forces.
+                const auto origin=w.origin+glm::dvec3{0,.015,0};
+                line(v,origin,origin+w.force*.0005,goalColor);
+                const auto cop=pressureCenter(w,{0,0,0}); if(cop.point) cross(v,*cop.point,.022,goalColor);
+            }
+            const auto rotation=glm::mat3_cast(s.stand.rootGoal.orientation);
+            for(int axis=0;axis<3;++axis) line(v,s.stand.rootGoal.position,s.stand.rootGoal.position+.12*rotation[axis],goalColor);
+        }
+        const auto& observation=s.support;
+        if(observation.enabled&&observation.floorAvailable)
+        {
+            cross(v,observation.comProjection,.045,{1,1,0}); line(v,s.totalComWorld,observation.comProjection,{1,1,0});
+            const auto region=[&](const PlanarRegion& r,glm::vec3 color) {
+                for(const auto p:r.vertices) cross(v,p,.008,color);
+                if(r.vertices.size()>=2) for(std::size_t k=0;k<r.vertices.size();++k) line(v,r.vertices[k],r.vertices[(k+1)%r.vertices.size()],color);
+            };
+            region(observation.loadedRegion,{.2f,1,.2f});
+            for(std::size_t side=0;side<2;++side)
+            {
+                const auto& f=observation.feet[side]; const glm::vec3 color=side==0?glm::vec3{.2f,1,.3f}:glm::vec3{.3f,.5f,1};
+                region(f.soleProjection,{.65f,.65f,.65f}); region(f.loadedRegion,color);
+                if(f.cop.point) { cross(v,*f.cop.point,.035,color); sphere(v,*f.cop.point,.018,color); }
+                const double magnitude=glm::length(f.wrench.force);
+                line(v,f.wrench.origin,f.wrench.origin+f.wrench.force*std::min(.0005,.4/std::max(1.,magnitude)),color);
+            }
+            if(observation.combinedCop.point) cross(v,*observation.combinedCop.point,.05,{1,1,1});
+        }
         for(const auto& c:s.contacts)
         {
-            cross(v,c.point,.015,{1,1,0}); line(v,c.point,c.point+c.normal*.10,{1,1,0});
-            if(c.force) line(v,c.point,c.point+c.normal*std::min(.35,c.force->x*.0001),{1,0,0});
+            const bool self=c.link1>=0&&c.link2>=0;
+            const bool foot=(c.link1==observation.feet[0].link||c.link2==observation.feet[0].link||c.link1==observation.feet[1].link||c.link2==observation.feet[1].link)&&!self;
+            const glm::vec3 color=self?glm::vec3{1,.2f,1}:foot?glm::vec3{1,1,0}:glm::vec3{1,.35f,.05f};
+            cross(v,c.point,.015,color); line(v,c.point,c.point+c.normal*.10,color);
+            if(c.force) line(v,c.point,c.point+c.forceOn2World*.0001,color);
         }
         return v;
     }
@@ -154,27 +191,36 @@ int main(int argc,char** argv)
             const auto asset=julia::model_import::ModelImporter::loadFromFile(std::filesystem::path{JULIA_PHYSICS_ASSETS}/"models/Raphtalia_prepared.fbx");
             const BodyRig rig{*asset}; if(o.verify) verifyCallbacks(window,rig,o);
             auto model=julia::render_opengl::GLModelLoader::upload(asset);
-            auto world=std::make_unique<PhysicsWorld>(bodyBenchDefinition(rig,o.scenario)); verifyFramesBeforeDynamics(rig,*world);
+            auto world=std::make_unique<PhysicsWorld>(bodybench::definition(rig,o.scenario,o)); verifyFramesBeforeDynamics(rig,*world);
             bodybench::reset(rig,*world,o.scenario,o); auto view=publish(rig,world->snapshot());
-            auto log=std::make_unique<bodybench::Log>(o.output); bodybench::metadata(o.output,rig,*world); log->row(view);
+            auto log=std::make_unique<bodybench::Log>(o.output,o.substeps); bodybench::metadata(o.output,rig,*world); log->row(view);
             std::ofstream report{o.output/"gpu.txt"}; report<<"GPU="<<glGetString(GL_RENDERER)<<" OpenGL="<<glGetString(GL_VERSION)<<'\n';
             julia::render_opengl::OpenGLRenderer renderer; renderer.initialize(Width,Height,JULIA_PHYSICS_ASSETS);
             julia::runtime::FixedStepScheduler scheduler; Input input{world.get(),&scheduler,o.scenario};
             glfwSetWindowUserPointer(window,&input); glfwSetKeyCallback(window,key);
             julia::render_opengl::CameraConfig displayCamera;
+            unsigned displayCameraIndex=0;
             const auto camera=[&](unsigned index)
             {
                 julia::render_opengl::CameraConfig c;
                 c.target=glm::vec3{view.physics.totalComWorld}; c.target.y=.75f;
-                c.position=c.target+(index==0?glm::vec3{2,1.1f,3}:index==1?glm::vec3{-2,1,-3}:glm::vec3{.2f,3,1});
-                c.orthographicHeight=2.8f; displayCamera=c; renderer.setCamera(c);
+                c.position=c.target+(index==0?glm::vec3{2,1.1f,3}:index==1?glm::vec3{-2,1,-3}:glm::vec3{0,3,.01f});
+                c.orthographicHeight=2.8f;
+                if(index==2)
+                {
+                    auto lo=view.physics.support.comProjection,hi=lo;
+                    for(const auto& f:view.physics.support.feet) for(const auto p:f.soleProjection.vertices) { lo=glm::min(lo,p); hi=glm::max(hi,p); }
+                    c.target=glm::vec3{(lo+hi)*.5}; c.position=c.target+glm::vec3{0,3,0}; c.up={0,0,-1};
+                    c.orthographicHeight=static_cast<float>(std::max({.8,(hi.z-lo.z)*1.3,(hi.x-lo.x)*1.3*Height/Width}));
+                }
+                displayCameraIndex=index; displayCamera=c; renderer.setCamera(c);
             };
             const auto draw=[&](bool debug)
             {
-                renderer.beginFrame(); renderer.renderModel(model,glm::mat4{view.worldFromResource},view.actualPose.palette);
+                renderer.beginFrame(); if(displayCameraIndex!=2) renderer.renderModel(model,glm::mat4{view.worldFromResource},view.actualPose.palette);
                 if(debug)
                 {
-                    auto lines=overlay(world->definition(),view.physics);
+                    auto lines=overlay(world->definition(),view.physics,displayCameraIndex!=2);
                     for(std::size_t k=1;k<view.referenceFrames.size();++k)
                     {
                         const auto parent=world->definition().links[k].parent;
@@ -189,19 +235,19 @@ int main(int argc,char** argv)
             std::vector<double> submission,gpu,palette; GLuint query=0; glGenQueries(1,&query);
             auto active=o.scenario; unsigned experiment=0,renders=0,captures=1; std::uint64_t nextCapture=30;
             const auto limit=o.verify||o.explicitTicks?o.ticks:std::numeric_limits<std::uint64_t>::max(); double last=glfwGetTime();
-            std::cout<<"Free root, no balance. 1 drop, 2 tilt, 3 pulse, 4 internal zero-g, 5 passive; R reset, Space pause, V camera, Tab coordinate, Up/Down target, D passive, I 200 N one-tick pulse, Esc exit.\n";
+            std::cout<<"Free root. Explicit stand/stand-pulse: limited two-foot control; other cases no balance. R reset, Space pause, V camera, D passive, Esc exit.\n";
             while(!glfwWindowShouldClose(window)&&world->snapshot().tick<limit)
             {
                 glfwPollEvents();
                 if(input.reset)
                 {
-                    if(active!=input.scenario) { world=std::make_unique<PhysicsWorld>(bodyBenchDefinition(rig,input.scenario)); active=input.scenario; }
+                    if(active!=input.scenario) { world=std::make_unique<PhysicsWorld>(bodybench::definition(rig,input.scenario,o)); active=input.scenario; }
                     bodybench::reset(rig,*world,active,o); scheduler=julia::runtime::FixedStepScheduler{}; input.world=world.get(); input.reset=false;
                     view=publish(rig,world->snapshot()); const auto dir=o.output/("reset_"+std::to_string(++experiment)+"_"+bodyCaseName(active));
-                    log=std::make_unique<bodybench::Log>(dir); bodybench::metadata(dir,rig,*world); log->row(view);
+                    log=std::make_unique<bodybench::Log>(dir,o.substeps); bodybench::metadata(dir,rig,*world); log->row(view);
                 }
                 const double now=glfwGetTime(); scheduler.advance(o.verify?1./o.fps:now-last,[&]
-                { if(world->snapshot().tick<limit) { stepBodyBench(*world,active,o.servo); view=publish(rig,world->snapshot()); log->row(view); } },glfwGetWindowAttrib(window,GLFW_ICONIFIED)!=0); last=now;
+                { if(world->snapshot().tick<limit) { bodybench::step(*world,active,o); view=publish(rig,world->snapshot()); log->row(view); } },glfwGetWindowAttrib(window,GLFW_ICONIFIED)!=0); last=now;
                 camera(input.camera); const auto state=world->snapshot(); const auto start=std::chrono::steady_clock::now();
                 glBeginQuery(GL_TIME_ELAPSED,query); draw(true); glEndQuery(GL_TIME_ELAPSED);
                 submission.push_back(std::chrono::duration<double,std::micro>(std::chrono::steady_clock::now()-start).count());

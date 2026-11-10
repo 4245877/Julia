@@ -1,4 +1,5 @@
 #include "julia/physics/PhysicsWorld.hpp"
+#include "StandControl.hpp"
 #include <mujoco/mujoco.h>
 #include <glm/gtc/quaternion.hpp>
 #include <algorithm>
@@ -66,6 +67,15 @@ namespace julia::physics
                 }
             }
             if(next==0 && !def.freeRoot) throw std::invalid_argument("No physical coordinates");
+            if(def.supportObservation)
+            {
+                const auto& s=*def.supportObservation;
+                for(double x:{s.confirmForce,s.lossForce,s.confirmSeconds,s.lossSeconds,s.copMinimumForce,s.nearDistance})
+                    if(!std::isfinite(x)||x<=0) throw std::invalid_argument("Invalid support observation threshold");
+                if(s.lossForce>=s.confirmForce||s.feet[0].segment==s.feet[1].segment||s.feet[0].geom==s.feet[1].geom)
+                    throw std::invalid_argument("Invalid independent support pairs");
+                for(const auto& f:s.feet) if(f.segment.empty()||f.geom.empty()||!rigid(f.jointFromSole)) throw std::invalid_argument("Invalid Sole frame/identity");
+            }
             if(def.contactTool)
             {
                 const auto& t=*def.contactTool;
@@ -189,7 +199,63 @@ namespace julia::physics
         bool failed=false;
         double initialMechanicalEnergy=0;
         ContactController contactController;
+        StandControl standController;
         int toolGeom=-1,surfaceGeom=-1;
+        std::array<int,2> footLinks{-1,-1},footGeoms{-1,-1};
+        int floorGeom=-1;
+        std::vector<glm::dmat4> footBoxes;
+        std::vector<glm::dvec3> footHalfSizes;
+        glm::dvec3 initialLinearMomentum{0},initialAngularMomentum{0};
+        Wrench externalResultant() const
+        {
+            Wrench w; w.origin=state.totalComWorld;
+            for(std::size_t i=0;i<bodies.size();++i)
+            {
+                const auto k=static_cast<std::size_t>(bodies[i])*6;
+                w.add(state.comWorld[i],{wrench[k],wrench[k+1],wrench[k+2]},{wrench[k+3],wrench[k+4],wrench[k+5]});
+            }
+            return w;
+        }
+        Wrench environmentResultant() const
+        {
+            Wrench result; result.origin=state.totalComWorld;
+            for(const auto& c:state.contacts) if((c.link1>=0)!=(c.link2>=0))
+            {
+                const auto w=contactWrench(c,c.link1>=0?c.geom1:c.geom2,state.totalComWorld);
+                result.force+=w.force; result.moment+=w.moment;
+            }
+            return result;
+        }
+        Wrench totalResultant() const
+        {
+            auto w=environmentResultant(); const auto a=externalResultant();
+            w.force+=state.totalMass*def.gravity+a.force; w.moment+=a.moment; return w;
+        }
+        void observeSupport(double h,const Wrench& before={})
+        {
+            if(!def.supportObservation) return;
+            const auto start=Clock::now();
+            auto& o=state.support;
+            observeSupports(o,state,*def.supportObservation,footLinks,footGeoms,floorGeom,def.floorHeight,footBoxes,footHalfSizes,h);
+            auto& a=o.dynamics; a.valid=def.freeRoot;
+            a.comVelocity=state.linearMomentumWorld/state.totalMass;
+            std::array<mjtNum,3*(MaxCoordinates+6)> jac{};
+            mj_jacSubtreeCom(m.get(),d.get(),jac.data(),bodies[0]); a.comVelocityJacobian={0,0,0};
+            for(int axis=0;axis<3;++axis) for(int j=0;j<m->nv;++j) a.comVelocityJacobian[axis]+=jac[static_cast<std::size_t>(axis*m->nv+j)]*d->qvel[j];
+            a.gravity={state.totalComWorld,state.totalMass*def.gravity,{0,0,0}};
+            a.environment=environmentResultant(); a.applied=externalResultant(); a.total=totalResultant();
+            if(h>0)
+            {
+                const auto impulse=.5*h*(before.force+a.total.force),angular=.5*h*(before.moment+a.total.moment);
+                a.linearImpulse+=impulse; a.angularImpulse+=angular; a.tickLinearImpulse+=impulse; a.tickAngularImpulse+=angular;
+                a.linearImpulseEndpoint+=h*a.total.force; a.angularImpulseEndpoint+=h*a.total.moment; ++a.samples;
+                a.substeps.push_back({state.time,h,state.totalComWorld,state.linearMomentumWorld,state.angularMomentumAboutComWorld,before.force,before.moment,a.total.force,a.total.moment});
+            }
+            a.deltaLinearMomentum=state.linearMomentumWorld-initialLinearMomentum;
+            a.deltaAngularMomentum=state.angularMomentumAboutComWorld-initialAngularMomentum;
+            a.linearResidual=a.deltaLinearMomentum-a.linearImpulse; a.angularResidual=a.deltaAngularMomentum-a.angularImpulse;
+            state.timing.supportUs+=us(start);
+        }
         glm::dvec3 pointVelocity(int body,glm::dvec3 point,glm::dvec3* angular=nullptr) const
         {
             if(body==0) { if(angular) *angular={0,0,0}; return {0,0,0}; }
@@ -287,6 +353,21 @@ namespace julia::physics
                 layout.actuator.push_back(mj_name2id(m.get(),mjOBJ_ACTUATOR,("motor"+std::to_string(k)).c_str()));
             }
             wrench.resize(static_cast<std::size_t>(m->nbody)*6);
+            if(def.supportObservation)
+            {
+                floorGeom=mj_name2id(m.get(),mjOBJ_GEOM,"floor");
+                for(std::size_t side=0;side<2;++side)
+                {
+                    const auto& f=def.supportObservation->feet[side];
+                    const auto it=std::find_if(def.links.begin(),def.links.end(),[&](const auto& b) { return b.segment==f.segment; });
+                    if(it==def.links.end()||!it->boxHalfSize||std::count_if(def.links.begin(),def.links.end(),[&](const auto& b) { return b.segment==f.segment; })!=1)
+                        throw std::invalid_argument("Missing/ambiguous semantic foot box: "+f.segment);
+                    footLinks[side]=static_cast<int>(it-def.links.begin());
+                    footGeoms[side]=mj_name2id(m.get(),mjOBJ_GEOM,f.geom.c_str());
+                    if(footGeoms[side]<0||m->geom_bodyid[footGeoms[side]]!=bodies[static_cast<std::size_t>(footLinks[side])]) throw std::invalid_argument("Compiled foot geom does not match semantic segment");
+                    footBoxes.push_back(it->jointFromBox); footHalfSizes.push_back(*it->boxHalfSize);
+                }
+            }
             if(def.contactTool)
             {
                 toolGeom=mj_name2id(m.get(),mjOBJ_GEOM,("g"+std::to_string(def.contactTool->link)).c_str());
@@ -450,8 +531,11 @@ namespace julia::physics
         for(unsigned k=0;k<dofs;++k) p.references[k].reset(q[k]);
         p.state.drive.qRef=q;
         p.contactController.reset();
+        p.standController.reset();
         if(root) setRoot(p.layout,p.d.get(),*root);
         mj_forward(p.m.get(),p.d.get()); p.read();
+        p.initialLinearMomentum=p.state.linearMomentumWorld; p.initialAngularMomentum=p.state.angularMomentumAboutComWorld;
+        p.observeSupport(0);
         if(p.def.contactTool) { p.contactController.observe(p.contactInput(),0); p.state.contact=p.contactController.status(); }
         p.initialMechanicalEnergy=p.state.potentialEnergy+p.state.kineticEnergy;
     }
@@ -469,6 +553,7 @@ namespace julia::physics
                 return reject("Target outside calibrated limits");
         }
         if(p.contactController.owns()&&kind!=CommandKind::Disable) return reject("Contact owns all arm coordinates; Disable before changing drive mode");
+        if(p.state.mode==DriveMode::Stand&&kind!=CommandKind::Disable) return reject("Stand owns all hinges; Disable and prepared reset required");
         if(kind==CommandKind::SmoothTarget)
         {
             auto proposed=p.references;
@@ -492,7 +577,7 @@ namespace julia::physics
         else if(kind==CommandKind::Target)
         { p.state.target=values; p.state.mode=DriveMode::Position; p.state.drive.qRef=values; p.state.drive.vRef={}; }
         else if(kind==CommandKind::Torque) { p.effort=values; p.state.mode=DriveMode::Torque; }
-        else { p.state.mode=DriveMode::Disabled; p.contactController.disable(); p.state.contact=p.contactController.status(); }
+        else { p.state.mode=DriveMode::Disabled; p.contactController.disable(); p.state.contact=p.contactController.status(); p.standController.disable(); p.state.stand=p.standController.status; }
         if(kind!=CommandKind::SmoothTarget)
         { p.state.drive.vRef={}; p.state.drive.referenceReached={}; }
         for(unsigned k=0;k<p.state.dofs;++k)
@@ -508,6 +593,7 @@ namespace julia::physics
         const auto reject=[&](const char* s) { if(reason) *reason=s; return false; };
         if(p.failed) return reject("Physics failed; reset required");
         if(p.contactController.owns()) return reject("Contact owns arm; Disable before configuring Servo");
+        if(p.state.mode==DriveMode::Stand) return reject("Stand owns hinges; Disable before configuring Servo");
         if(!validServoSettings(settings))
             return reject("Invalid servo speed/acceleration limits");
         if(settings.gravityCompensation && p.def.freeRoot) return reject("Gravity compensation requires a fixed base; free root unsupported");
@@ -541,6 +627,40 @@ namespace julia::physics
         { if(reason) *reason="Force target requires active Ramp/Hold and finite force in [1,8] N"; return false; }
         p.state.contact=p.contactController.status(); if(reason) reason->clear(); return true;
     }
+    bool PhysicsWorld::startStand(const StandSettings& settings,std::string* reason)
+    {
+        auto& p=*impl_;
+        const auto reject=[&](const char* why) { if(reason) *reason=why; return false; };
+        if(p.failed||p.state.mode!=DriveMode::Disabled||p.state.tick!=0) return reject("Stand requires Disabled immediately after prepared reset");
+        if(!p.def.freeRoot||p.state.dofs!=41||p.def.links.size()!=20||!p.def.floorHeight||!p.def.supportObservation||
+            !p.state.support.dynamics.valid||p.def.gravity!=glm::dvec3{0,-9.81,0}||p.def.contactTool||
+            std::abs(p.state.totalMass-55)>1e-8||(p.def.substeps!=16&&p.def.substeps!=32&&p.def.substeps!=64))
+            return reject("Stand supports the observed 55kg free BodyRig on a stationary horizontal floor");
+        for(const auto link:p.footLinks) if(link<0||!p.def.links[static_cast<std::size_t>(link)].boxHalfSize||
+            glm::length(*p.def.links[static_cast<std::size_t>(link)].boxHalfSize-glm::dvec3{.045,.025,.085})>1e-10)
+            return reject("Stand requires the audited foot box dimensions");
+        if(!finite(settings.comGoal)||!finite(settings.rootGoal.position)||
+            !std::isfinite(glm::length(settings.rootGoal.orientation))||std::abs(glm::length(settings.rootGoal.orientation)-1)>1e-8||
+            glm::length(settings.rootGoal.linearVelocityWorld)!=0||glm::length(settings.rootGoal.angularVelocityLocal)!=0||
+            !std::isfinite(glm::length(settings.thoraxGoal))||std::abs(glm::length(settings.thoraxGoal)-1)>1e-8)
+            return reject("Invalid stand goals");
+        for(unsigned k=0;k<MaxCoordinates;++k)
+            if(!std::isfinite(settings.posture[k])||(k>=41?settings.posture[k]!=0:
+                settings.posture[k]<p.hinges[k].lower||settings.posture[k]>p.hinges[k].upper)) return reject("Invalid stand posture");
+        for(const auto& w:settings.nominalReaction) if(!finite(w.origin)||!finite(w.force)||!finite(w.moment)||w.force.y<30||glm::length(w.force)>1000||glm::length(w.moment)>100)
+            return reject("Invalid nominal reaction prediction");
+        p.standController.start(settings,p.state,p.def); p.state.stand=p.standController.status;
+        p.state.mode=DriveMode::Stand; p.state.target=settings.posture; p.state.drive.qRef=settings.posture; p.state.drive.vRef={};
+        if(reason) reason->clear(); return true;
+    }
+    bool PhysicsWorld::standBalanceFeedback(bool enabled,std::string* reason)
+    {
+        auto& p=*impl_;
+        if(p.failed||p.state.mode!=DriveMode::Stand||p.state.stand.phase==StandPhase::Lost)
+        { if(reason) *reason="Balance ablation requires active Stand"; return false; }
+        p.standController.balanceFeedback(enabled); p.state.stand=p.standController.status;
+        if(reason) reason->clear(); return true;
+    }
     void PhysicsWorld::cancelContact()
     { auto& p=*impl_; p.contactController.cancel(); p.state.contact=p.contactController.status(); }
     Coordinates PhysicsWorld::gravityCompensation(Coordinates q) const
@@ -567,8 +687,11 @@ namespace julia::physics
         auto& p=*impl_;
         if(p.failed) throw std::runtime_error("Physics failed; reset required");
         auto& s=p.state; ++s.tick; s.timing={}; s.saturatedThisTick={}; s.peakLimitViolationThisTick={};
+        p.standController.status.controllerUs=0;
         s.peakContactsThisTick=0; s.peakNormalForceThisTick=0; s.maxPenetrationThisTick=0;
         s.externalForce={0,0,0}; s.externalTorque={0,0,0};
+        s.support.dynamics.tickLinearImpulse={0,0,0}; s.support.dynamics.tickAngularImpulse={0,0,0};
+        s.support.dynamics.substeps.clear();
         std::copy(p.wrench.begin(),p.wrench.end(),p.d->xfrc_applied);
         for(std::size_t b=0;b<p.wrench.size();b+=6)
         { s.externalForce+=glm::dvec3{p.wrench[b],p.wrench[b+1],p.wrench[b+2]}; s.externalTorque+=glm::dvec3{p.wrench[b+3],p.wrench[b+4],p.wrench[b+5]}; }
@@ -576,9 +699,13 @@ namespace julia::physics
         {
             auto start=Clock::now();
             const double h=TickSeconds/p.def.substeps;
+            const auto observationStart=Clock::now();
+            const auto beforeResultant=p.def.supportObservation?p.totalResultant():Wrench{};
+            s.timing.supportUs+=p.def.supportObservation?us(observationStart):0;
             s.drive.sampleMode=s.mode;
             Coordinates ff{},beforeV{},actualTorque{};
             Coordinates contactEffort{};
+            Coordinates standEffort{};
             const double externalBefore=p.wrenchPower();
             if(s.mode==DriveMode::Servo && s.servo.gravityCompensation) ff=p.gravity(p.d->qpos);
             if(s.mode==DriveMode::Contact)
@@ -590,13 +717,21 @@ namespace julia::physics
                 s.timing.contactControlUs+=us(contactStart);
                 ff=p.gravity(p.d->qpos);
             }
+            if(s.mode==DriveMode::Stand)
+            {
+                // Four bounded inverse-dynamics evaluations per external tick (480Hz).
+                // Validate actual supports at every physical substep before reuse.
+                standEffort=p.standController.evaluate(p.m.get(),p.d.get(),p.layout,p.def,s,p.bodies,p.footLinks,h,
+                    sub%(p.def.substeps/4)==0);
+                s.stand=p.standController.status;
+            }
             for(unsigned k=0;k<s.dofs;++k)
             {
                 auto& t=s.drive;
                 t.sampleQ[k]=p.d->qpos[p.layout.qpos[k]]; t.sampleV[k]=beforeV[k]=p.d->qvel[p.layout.qvel[k]];
                 t.sampleQRef[k]=s.mode==DriveMode::Position?s.target[k]:t.qRef[k]; t.sampleVRef[k]=t.vRef[k];
                 const auto output=evaluateDrive(p.def.drives[k],s.mode,t.sampleQRef[k],t.sampleVRef[k],t.sampleQ[k],t.sampleV[k],ff[k],
-                    s.mode==DriveMode::Contact?contactEffort[k]:p.effort[k]);
+                    s.mode==DriveMode::Stand?standEffort[k]:s.mode==DriveMode::Contact?contactEffort[k]:p.effort[k]);
                 t.pTorque[k]=output.p; t.dTorque[k]=output.d; t.feedforward[k]=output.feedforward;
                 s.calculatedTorque[k]=output.requested; t.limitedTorque[k]=output.limited;
                 p.d->ctrl[p.layout.actuator[k]]=output.limited;
@@ -632,6 +767,7 @@ namespace julia::physics
             // mj_step leaves derived transforms at pre-integration q. Refresh ALL
             // endpoint observations with the last held ctrl; never alter live q/v.
             mj_forward(p.m.get(),p.d.get()); p.read();
+            p.observeSupport(h,beforeResultant);
             if(p.def.contactTool)
             {
                 const auto contactStart=Clock::now();
@@ -701,6 +837,7 @@ namespace julia::physics
     std::size_t PhysicsWorld::modelBytes() const { return sizeof(mjModel)+static_cast<std::size_t>(impl_->m->nbuffer); }
     std::size_t PhysicsWorld::dataBytes() const { return sizeof(mjData)+static_cast<std::size_t>(impl_->d->nbuffer+impl_->d->narena); }
     std::size_t PhysicsWorld::arenaHighWaterBytes() const { return static_cast<std::size_t>(impl_->d->maxuse_arena); }
+    std::size_t PhysicsWorld::standControllerBytes() const { return sizeof(StandControl); }
     std::string PhysicsWorld::modelXml() const { return impl_->source; }
     void driveCsvHeader(std::ostream& out)
     {

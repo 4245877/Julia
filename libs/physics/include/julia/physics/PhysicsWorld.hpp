@@ -1,6 +1,7 @@
 #pragma once
 #include "julia/physics/JointDrive.hpp"
 #include "julia/physics/ContactControl.hpp"
+#include "julia/physics/SupportObservation.hpp"
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <array>
@@ -28,6 +29,7 @@ namespace julia::physics
     struct Link
     {
         std::string name;
+        std::string segment; // Semantic identity, independent of joint/compiled order.
         // -2: legacy serial predecessor; -1: world; otherwise earlier link index.
         int parent = -2;
         glm::dmat4 parentFromJoint{1}, jointFromSegment{1};
@@ -51,6 +53,7 @@ namespace julia::physics
         double contactTimeConstant=.01;
         std::optional<Wall> wall;
         std::optional<ContactTool> contactTool; // Select explicit pair and its accumulated observations; controller separately enabled.
+        std::optional<SupportSettings> supportObservation; // Read-only multiple-pair observer, no control ownership.
         bool freeRoot=false, selfCollision=false;
         unsigned substeps=Substeps; // One world step per substep, independent of link count.
         std::optional<double> floorHeight;
@@ -77,6 +80,30 @@ namespace julia::physics
         unsigned rootQposSize=0,rootQvelSize=0;
         std::vector<int> qpos, qvel, actuator; // Indexed by scalar coordinate.
     };
+    enum class StandPhase { Disabled, Establishing, Stabilizing, Holding, Lost };
+    const char* standPhaseName(StandPhase phase);
+    struct StandSettings
+    {
+        Coordinates posture{};
+        RootState rootGoal;
+        glm::dvec3 comGoal{0};
+        glm::dquat thoraxGoal{1,0,0,0};
+        std::array<Wrench,2> nominalReaction;
+        bool balanceFeedback=true;
+    };
+    struct StandStatus
+    {
+        StandPhase phase=StandPhase::Disabled;
+        std::string reason="disabled";
+        bool balanceFeedback=true,feasible=false;
+        double sampleTime=0,holdSeconds=0,restSeconds=0,controllerUs=0;
+        double comError=0,speed=0,tilt=0,thoraxTilt=0,heightError=0,footDisplacement=0,footAngle=0;
+        double requestedUtilization=0,baseResidual=0,contactResidual=0;
+        unsigned evaluations=0,linearSolves=0;
+        glm::dvec3 comGoal{0},desiredComAcceleration{0};
+        RootState rootGoal;
+        std::array<Wrench,2> predictedReaction;
+    };
     enum class CommandKind { Target, Torque, Disable, Reach, Attach, MoveRoot, SmoothTarget };
     struct Capabilities
     {
@@ -100,7 +127,7 @@ namespace julia::physics
         bool active=false; // Solver constraint exists, not just broad/narrow phase proximity.
     };
     PairObservation aggregateContacts(const std::vector<Contact>& contacts,int tool,int surface,glm::dvec3 normal);
-    struct Timing { double controlUs=0, stepUs=0, readUs=0, telemetryUs=0, contactUs=0, contactControlUs=0; };
+    struct Timing { double controlUs=0, stepUs=0, readUs=0, telemetryUs=0, contactUs=0, contactControlUs=0, supportUs=0; };
     struct DriveTelemetry
     {
         DriveMode sampleMode=DriveMode::Disabled;
@@ -136,6 +163,8 @@ namespace julia::physics
         ServoSettings servo;
         DriveTelemetry drive;
         ContactStatus contact;
+        SupportObservation support;
+        StandStatus stand;
         // ALL constraints (contact, limits, equality, etc). Never labelled contact power.
         double constraintPower=0;
     };
@@ -160,6 +189,8 @@ namespace julia::physics
     void contactCsvRow(std::ostream& out,const Snapshot& snapshot);
     void contactPointsCsvHeader(std::ostream& out);
     void contactPointsCsvRow(std::ostream& out,const Snapshot& snapshot);
+    void standCsvHeader(std::ostream& out);
+    void standCsvRow(std::ostream& out,const Snapshot& snapshot);
     // One owner advances this WORLD once per configured substep. Read-only
     // snapshots/FK queries/render never integrate or set the live q/v.
     class PhysicsWorld
@@ -183,6 +214,9 @@ namespace julia::physics
         // Start requires Disabled; other drive commands require Disable first.
         bool startContact(ContactSettings settings={},std::string* reason=nullptr);
         bool contactForceTarget(double forceN,std::string* reason=nullptr);
+        // Explicit prepared-reset experiment only. Owns every hinge; no root actuator.
+        bool startStand(const StandSettings& settings,std::string* reason=nullptr);
+        bool standBalanceFeedback(bool enabled,std::string* reason=nullptr);
         void cancelContact(); // Rate-limited unload and retreat, no q/v writes.
         // Pure gravity inverse-dynamics effort, at zero velocity, scratch only.
         // Free-base support is deliberately unavailable in stage7d.
@@ -199,6 +233,7 @@ namespace julia::physics
         std::size_t modelBytes() const;
         std::size_t dataBytes() const;
         std::size_t arenaHighWaterBytes() const;
+        std::size_t standControllerBytes() const;
         std::string modelXml() const;
     private:
         struct Impl;

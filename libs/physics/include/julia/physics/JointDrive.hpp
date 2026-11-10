@@ -4,7 +4,7 @@
 namespace julia::physics
 {
     struct Drive { double kp=40, kd=4, maxTorque=8; }; // Nm/rad, Nm s/rad, Nm.
-    enum class DriveMode { Disabled, Position, Torque, Servo, Contact };
+    enum class DriveMode { Disabled, Position, Torque, Servo, Contact, Stand };
     struct ServoSettings
     {
         double maxSpeed=.6, maxAcceleration=2; // rad/s, rad/s2, reference only.

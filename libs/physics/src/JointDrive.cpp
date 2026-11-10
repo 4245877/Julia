@@ -70,6 +70,7 @@ namespace julia::physics
         }
         else if(mode==DriveMode::Torque) o.requested=torque;
         else if(mode==DriveMode::Contact) { o.feedforward=ff; o.requested=torque+ff; }
+        else if(mode==DriveMode::Stand) { o.feedforward=torque; o.requested=torque; }
         o.limited=std::clamp(o.requested,-drive.maxTorque,drive.maxTorque);
         o.saturated=std::abs(o.requested)>drive.maxTorque;
         return o;

@@ -6,11 +6,11 @@ int main(int argc,char** argv)
         const auto o=bodybench::parse(argc,argv);
         const auto asset=julia::model_import::ModelImporter::loadFromFile(std::filesystem::path{JULIA_PHYSICS_ASSETS}/"models/Raphtalia_prepared.fbx");
         const bodybench::BodyRig rig{*asset};
-        bodybench::PhysicsWorld world{bodybench::bodyBenchDefinition(rig,o.scenario)};
+        bodybench::PhysicsWorld world{bodybench::definition(rig,o.scenario,o)};
         const auto parity=bodybench::verifyFramesBeforeDynamics(rig,world);
-        bodybench::Log log{o.output}; bodybench::metadata(o.output,rig,world);
+        bodybench::Log log{o.output,o.substeps}; bodybench::metadata(o.output,rig,world);
         bodybench::reset(rig,world,o.scenario,o); log.row(bodybench::publish(rig,world.snapshot()));
-        for(std::uint64_t n=0;n<o.ticks;++n) { bodybench::stepBodyBench(world,o.scenario,o.servo); log.row(bodybench::publish(rig,world.snapshot())); }
+        for(std::uint64_t n=0;n<o.ticks;++n) { bodybench::step(world,o.scenario,o); log.row(bodybench::publish(rig,world.snapshot())); }
         std::cout<<"PASS free body case="<<bodybench::bodyCaseName(o.scenario)<<" ticks="<<world.snapshot().tick<<" steps="<<world.snapshot().worldSteps
             <<" FK_m="<<parity.position<<" rotation="<<parity.rotationElement<<'\n'; return 0;
     }

@@ -11,7 +11,7 @@ namespace julia::physics
         for(const auto& c:contacts)
         {
             const bool selected=(c.geom1==tool&&c.geom2==surface)||(c.geom2==tool&&c.geom1==surface);
-            const bool active=c.active&&c.force&&c.force->x>1e-9;
+            const bool active=forceActive(c);
             if(!selected) { if(active) ++o.foreignActive; continue; }
             ++o.records; o.near=o.near||c.distance<=.002;
             o.penetration=std::max(o.penetration,-c.distance);

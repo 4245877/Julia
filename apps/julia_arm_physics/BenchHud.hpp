@@ -17,7 +17,7 @@ namespace bench
         unsigned selected,bool paused,int width=960,int heightPixels=720,bool fixedBase=true)
     {
         std::ostringstream text; text<<std::fixed<<std::setprecision(3);
-        text<<(fixedBase?"FIXED BASE":"FREE ROOT / NO BALANCE")<<"   TICK "<<s.tick<<"   "<<(paused?"PAUSED":"RUNNING")<<"   SELECTED "<<selected<<"\n";
+        text<<(fixedBase?"FIXED BASE":s.mode==julia::physics::DriveMode::Stand?"FREE ROOT / LIMITED TWO FOOT STAND":"FREE ROOT / NO BALANCE")<<"   TICK "<<s.tick<<"   "<<(paused?"PAUSED":"RUNNING")<<"   SELECTED "<<selected<<"\n";
         text<<"Q: RAD  V: RAD/S  TORQUE: NM   "<<(fixedBase?"TARGET MAGENTA / ACTUAL GREEN":"REFERENCE ORANGE / ACTUAL CYAN")<<"\n";
         text<<"MODE "<<static_cast<int>(s.mode)<<"  GRAVITY FF "<<(s.servo.gravityCompensation?"ON":"OFF")<<"  REF ORANGE\n";
         text<<"AXIS   TARGET    ACTUAL    V        CALC      APPLIED   SAT   LIMIT / PEAK\n";
@@ -35,6 +35,35 @@ namespace bench
         }
         text<<"BODY E "<<s.kineticEnergy+s.potentialEnergy<<" J  DELTA "<<s.drive.mechanicalEnergyChange<<" J\n";
         text<<"PASSIVE "<<s.drive.passiveDampingWork<<" J  EXTERNAL "<<s.drive.externalWork<<" J\n";
+        if(!fixedBase)
+        {
+            if(s.mode==julia::physics::DriveMode::Stand)
+            {
+                const auto& t=s.stand;
+                text<<"STAND "<<julia::physics::standPhaseName(t.phase)<<" / "<<t.reason<<" FEEDBACK "<<t.balanceFeedback<<" HOLD "<<t.holdSeconds<<" S\n";
+                text<<"COM ERR "<<t.comError<<" M SPEED "<<t.speed<<" M/S TILT "<<t.tilt<<" RAD UTIL "<<t.requestedUtilization<<"\n";
+                text<<"PREDICTED ORANGE / ACTUAL GREEN-BLUE / GOAL ROOT ORANGE\n";
+                text<<"PRED N "<<t.predictedReaction[0].force.y<<" / "<<t.predictedReaction[1].force.y<<" N, SOLVES "<<t.linearSolves<<" CTRL "<<t.controllerUs<<" US\n";
+            }
+            const auto& o=s.support;
+            if(!o.enabled) text<<"SUPPORT OBSERVER DISABLED\n";
+            else
+            {
+                text<<"SOLE GRAY / LOADED HULL GREEN / COM YELLOW / TOTAL COP WHITE\nLEFT GREEN / RIGHT BLUE / OTHER CONTACT ORANGE / SELF MAGENTA\n";
+                for(std::size_t side=0;side<2;++side)
+                {
+                    const auto& f=o.feet[side];
+                    text<<(side==0?"LEFT ":"RIGHT ")<<"NEAR "<<f.near<<" RECORDS "<<f.records<<" ACTIVE "<<f.active<<" LOADED "<<f.load.loaded<<" N "<<f.normalForce<<" T "<<glm::length(f.tangentForce)<<" N\n";
+                    text<<"M@SOLE "<<f.wrench.moment.x<<' '<<f.wrench.moment.y<<' '<<f.wrench.moment.z<<" NM / SLIP "<<f.slipSpeed<<" M/S\n";
+                    text<<"COP "<<julia::physics::copReasonName(f.cop.reason);
+                    if(f.cop.point) text<<' '<<f.cop.point->x<<' '<<f.cop.point->z<<" M";
+                    text<<" / REGION "<<julia::physics::regionName(f.loadedRegion.kind)<<"\n";
+                }
+                const auto& d=o.dynamics;
+                text<<"TOTAL COP "<<julia::physics::copReasonName(o.combinedCop.reason)<<" / OTHER "<<o.otherEnvironmentActive<<" SELF "<<o.selfActive<<"\n";
+                text<<"COM V "<<glm::length(d.comVelocity)<<" M/S / INTEGRAL RESIDUAL P "<<glm::length(d.linearResidual)<<" NS L "<<glm::length(d.angularResidual)<<" NMS\n";
+            }
+        }
         text<<"TAB: AXIS  UP/DOWN: TARGET  V: CAMERA  R: RESET  SPACE: PAUSE\n";
         auto str=text.str();
         struct Vertex { float x,y,z; unsigned char color[4]; };

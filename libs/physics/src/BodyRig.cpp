@@ -44,6 +44,7 @@ namespace julia::physics
         const std::array<double,20> masses{8,4,7,8,1,4,.3,1.6,.9,.3,.3,1.6,.9,.3,5,2.6,.8,5,2.6,.8};
         const std::array<double,20> radii{.07,.06,.065,.065,.025,.08,.022,.032,.027,.032,.022,.032,.027,.032,.045,.037,.04,.045,.037,.04};
         const auto& p=binding_.profile(); int coordinate=0;
+        SupportSettings observation;
         const std::array<Drive,6> armDrives{{{80,8,12},{60,6,12},{12,.4,3},{40,4,8},{8,.25,2},{6,.2,1.5}}};
         for(std::size_t i=0;i<p.joints.size();++i)
         {
@@ -56,6 +57,7 @@ namespace julia::physics
             const auto y=delta/length, ref=std::abs(y.z)<.95?glm::dvec3{0,0,1}:glm::dvec3{1,0,0};
             const auto x=glm::normalize(glm::cross(y,ref)), z=glm::cross(x,y);
             Link b; b.name=j.name; b.parent=parents_[i];
+            b.segment=j.name;
             b.parentFromJoint=b.parent<0?frame:glm::inverse(proper(p.joints[static_cast<std::size_t>(b.parent)].frameInBodyBind))*frame;
             b.jointFromSegment[0]=glm::dvec4{x,0}; b.jointFromSegment[1]=glm::dvec4{y,0}; b.jointFromSegment[2]=glm::dvec4{z,0};
             b.mass=mass; b.radius=radius; b.comInSegment={0,length*.5,0};
@@ -68,10 +70,13 @@ namespace julia::physics
                 b.capsuleStart=b.comInSegment; b.capsuleEnd=b.comInSegment;
                 b.inertia=glm::dvec3{.4*mass*radius*radius};
             }
-            if(i==16||i==19)
+            if(j.segment==embodiment::SegmentId::LeftFoot||j.segment==embodiment::SegmentId::RightFoot)
             {
-                const auto id=i==16?embodiment::EffectorId::LeftSole:embodiment::EffectorId::RightSole;
+                const bool left=j.segment==embodiment::SegmentId::LeftFoot;
+                const auto id=left?embodiment::EffectorId::LeftSole:embodiment::EffectorId::RightSole;
                 const auto e=std::find_if(p.effectors.begin(),p.effectors.end(),[&](const auto& f) { return f.id==id; });
+                b.segment=left?"LeftFoot":"RightFoot";
+                observation.feet[left?0:1]={b.segment,"g"+std::to_string(i),glm::inverse(frame)*proper(e->frameInBodyBind)};
                 b.jointFromBox=glm::translate(glm::inverse(frame)*proper(e->frameInBodyBind),glm::dvec3{0,.025,-.035});
                 b.boxHalfSize=glm::dvec3{.045,.025,.085};
                 b.jointFromSegment=b.jointFromBox; b.comInSegment={0,0,0};
@@ -96,6 +101,7 @@ namespace julia::physics
             }
             def.links.push_back(std::move(b));
         }
+        def.supportObservation=observation;
         return def;
     }
     animation::Pose BodyRig::visualPose(Coordinates measured) const
@@ -170,13 +176,13 @@ namespace julia::physics
     }
     BodyCase parseBodyCase(const std::string& name)
     {
-        for(const auto c:{BodyCase::Drop,BodyCase::Tilt,BodyCase::Pulse,BodyCase::Internal,BodyCase::Passive}) if(bodyCaseName(c)==name) return c;
+        for(const auto c:{BodyCase::Drop,BodyCase::Tilt,BodyCase::Pulse,BodyCase::Internal,BodyCase::Passive,BodyCase::Stand,BodyCase::StandPulse}) if(bodyCaseName(c)==name) return c;
         throw std::invalid_argument("Unknown body scenario: "+name);
     }
     std::string bodyCaseName(BodyCase c)
     {
         switch(c) { case BodyCase::Drop:return "drop"; case BodyCase::Tilt:return "tilt"; case BodyCase::Pulse:return "pulse";
-            case BodyCase::Internal:return "internal"; case BodyCase::Passive:return "passive"; }
+            case BodyCase::Internal:return "internal"; case BodyCase::Passive:return "passive"; case BodyCase::Stand:return "stand"; case BodyCase::StandPulse:return "stand-pulse"; }
         throw std::invalid_argument("Invalid body scenario");
     }
     Definition bodyBenchDefinition(const BodyRig& rig,BodyCase c)
@@ -187,6 +193,8 @@ namespace julia::physics
     }
     void resetBodyBench(const BodyRig& rig,PhysicsWorld& world,BodyCase c)
     {
+        if(c==BodyCase::Stand||c==BodyCase::StandPulse)
+        { const auto plan=preparedStand(rig,world); world.reset(plan.posture,plan.rootGoal); if(!world.startStand(plan)) throw std::runtime_error("Stand start rejected"); return; }
         auto transform=glm::translate(glm::dmat4{1},glm::dvec3{0,.25,0});
         if(c==BodyCase::Tilt) transform=glm::translate(glm::dmat4{1},glm::dvec3{0,.5,0})*glm::rotate(glm::dmat4{1},.65,glm::dvec3{0,0,1});
         auto root=rig.initialRoot(transform);
@@ -197,6 +205,13 @@ namespace julia::physics
     void stepBodyBench(PhysicsWorld& world,BodyCase c,bool smoothScript)
     {
         const auto tick=world.snapshot().tick;
+        if(c==BodyCase::StandPulse&&world.snapshot().mode==DriveMode::Stand)
+        {
+            // Application is an explicit experiment load at the Chest COM.
+            const auto rotation=world.snapshot().stand.rootGoal.orientation;
+            if(tick>=600&&tick<612) world.applyWrench(3,rotation*glm::dvec3{3,0,0});
+            if(tick>=1080&&tick<1092) world.applyWrench(3,rotation*glm::dvec3{0,0,3});
+        }
         if(c==BodyCase::Pulse&&tick>=90&&tick<102) world.applyWrench(3,{200,0,0});
         if(c==BodyCase::Internal && (!smoothScript||world.snapshot().mode==DriveMode::Servo) &&
             (world.snapshot().mode!=DriveMode::Servo||tick%120==0))
