@@ -82,6 +82,13 @@ namespace julia::physics
     };
     enum class StandPhase { Disabled, Establishing, Stabilizing, Holding, Lost };
     const char* standPhaseName(StandPhase phase);
+    enum class StandVariant { Equality7g, Bounded7h };
+    enum class ComPhase { Idle, Moving, Settling, Reached, Cancelled, Failed };
+    const char* comPhaseName(ComPhase phase);
+    struct ComMotionSettings
+    {
+        double maxDisplacement=.005,maxSpeed=.001,maxAcceleration=.002;
+    };
     struct StandSettings
     {
         Coordinates posture{};
@@ -90,6 +97,9 @@ namespace julia::physics
         glm::dquat thoraxGoal{1,0,0,0};
         std::array<Wrench,2> nominalReaction;
         bool balanceFeedback=true;
+        StandVariant variant=StandVariant::Equality7g;
+        bool comCommands=false; // Explicit research comparator also allowed with Equality7g.
+        ComMotionSettings motion;
     };
     struct StandStatus
     {
@@ -103,6 +113,20 @@ namespace julia::physics
         glm::dvec3 comGoal{0},desiredComAcceleration{0};
         RootState rootGoal;
         std::array<Wrench,2> predictedReaction;
+        StandVariant variant=StandVariant::Equality7g;
+        ComPhase comPhase=ComPhase::Idle;
+        glm::dvec3 commandCom{0},referenceVelocity{0},referenceAcceleration{0},initialCom{0};
+        double achievedSeconds=0,commandError=0,solverUs=0,inequalityViolation=0,stationarity=0;
+        unsigned commandSerial=0,qpIterations=0,activeInequalities=0,activeCaps=0,activeFriction=0,activeNormals=0;
+        std::string solverCode="not_run";
+        std::array<std::array<glm::dvec3,4>,2> cornerForces{},cornerPoints{};
+        RootState solverRoot;
+        Coordinates solverQ{},solverV{},solverTorque{};
+        std::array<double,47> acceleration{};
+        std::array<double,12> contactAcceleration{},contactJdot{};
+        unsigned solverSampleCount=0;
+        std::array<double,4> solverTimesUs{};
+        std::array<unsigned,4> solverIterations{},solverActive{};
     };
     enum class CommandKind { Target, Torque, Disable, Reach, Attach, MoveRoot, SmoothTarget };
     struct Capabilities
@@ -191,6 +215,10 @@ namespace julia::physics
     void contactPointsCsvRow(std::ostream& out,const Snapshot& snapshot);
     void standCsvHeader(std::ostream& out);
     void standCsvRow(std::ostream& out,const Snapshot& snapshot);
+    void comCsvHeader(std::ostream& out);
+    void comCsvRow(std::ostream& out,const Snapshot& snapshot);
+    void comSolverCsvHeader(std::ostream& out);
+    void comSolverCsvRow(std::ostream& out,const Snapshot& snapshot);
     // One owner advances this WORLD once per configured substep. Read-only
     // snapshots/FK queries/render never integrate or set the live q/v.
     class PhysicsWorld
@@ -217,6 +245,10 @@ namespace julia::physics
         // Explicit prepared-reset experiment only. Owns every hinge; no root actuator.
         bool startStand(const StandSettings& settings,std::string* reason=nullptr);
         bool standBalanceFeedback(bool enabled,std::string* reason=nullptr);
+        // Offset (X,Z) in the placement frame frozen by startStand, relative to initial COM goal.
+        // Atomically reject unsupported/outside/nonfinite targets; never project a command.
+        bool standComTarget(glm::dvec2 offset,std::string* reason=nullptr);
+        bool cancelStandCom(std::string* reason=nullptr); // Bounded stop from current reference.
         void cancelContact(); // Rate-limited unload and retreat, no q/v writes.
         // Pure gravity inverse-dynamics effort, at zero velocity, scratch only.
         // Free-base support is deliberately unavailable in stage7d.

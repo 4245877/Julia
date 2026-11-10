@@ -19,6 +19,13 @@ namespace julia::physics
         using Clock=std::chrono::steady_clock;
         double us(Clock::time_point a) { return std::chrono::duration<double,std::micro>(Clock::now()-a).count(); }
         bool finite(glm::dvec3 v) { return std::isfinite(v.x)&&std::isfinite(v.y)&&std::isfinite(v.z); }
+        bool comCommandSupports(const Snapshot& s)
+        {
+            const auto& o=s.support;
+            if(!o.enabled||!o.floorAvailable||!o.dynamics.valid||o.otherEnvironmentActive||!o.combinedCop.point) return false;
+            for(const auto& f:o.feet) if(!f.load.loaded||f.active==0||!f.near||!f.cop.point||f.normalForce<30||f.slipSpeed>.05) return false;
+            return true;
+        }
         bool rigid(const glm::dmat4& m)
         {
             for(int c=0;c<4;++c) for(int r=0;r<4;++r) if(!std::isfinite(m[c][r])) return false;
@@ -632,6 +639,11 @@ namespace julia::physics
         auto& p=*impl_;
         const auto reject=[&](const char* why) { if(reason) *reason=why; return false; };
         if(p.failed||p.state.mode!=DriveMode::Disabled||p.state.tick!=0) return reject("Stand requires Disabled immediately after prepared reset");
+        if((settings.variant!=StandVariant::Equality7g&&settings.variant!=StandVariant::Bounded7h)||
+            !std::isfinite(settings.motion.maxDisplacement)||settings.motion.maxDisplacement<.002||settings.motion.maxDisplacement>.005||
+            !std::isfinite(settings.motion.maxSpeed)||settings.motion.maxSpeed<1e-5||settings.motion.maxSpeed>.001||
+            !std::isfinite(settings.motion.maxAcceleration)||settings.motion.maxAcceleration<1e-5||settings.motion.maxAcceleration>.002)
+            return reject("Invalid bounded COM motion settings");
         if(!p.def.freeRoot||p.state.dofs!=41||p.def.links.size()!=20||!p.def.floorHeight||!p.def.supportObservation||
             !p.state.support.dynamics.valid||p.def.gravity!=glm::dvec3{0,-9.81,0}||p.def.contactTool||
             std::abs(p.state.totalMass-55)>1e-8||(p.def.substeps!=16&&p.def.substeps!=32&&p.def.substeps!=64))
@@ -644,6 +656,8 @@ namespace julia::physics
             glm::length(settings.rootGoal.linearVelocityWorld)!=0||glm::length(settings.rootGoal.angularVelocityLocal)!=0||
             !std::isfinite(glm::length(settings.thoraxGoal))||std::abs(glm::length(settings.thoraxGoal)-1)>1e-8)
             return reject("Invalid stand goals");
+        if(settings.comCommands&&glm::length(settings.rootGoal.orientation*glm::dvec3{0,1,0}-glm::dvec3{0,1,0})>1e-8)
+            return reject("COM command placement must preserve world up (translation and yaw only)");
         for(unsigned k=0;k<MaxCoordinates;++k)
             if(!std::isfinite(settings.posture[k])||(k>=41?settings.posture[k]!=0:
                 settings.posture[k]<p.hinges[k].lower||settings.posture[k]>p.hinges[k].upper)) return reject("Invalid stand posture");
@@ -660,6 +674,22 @@ namespace julia::physics
         { if(reason) *reason="Balance ablation requires active Stand"; return false; }
         p.standController.balanceFeedback(enabled); p.state.stand=p.standController.status;
         if(reason) reason->clear(); return true;
+    }
+    bool PhysicsWorld::standComTarget(glm::dvec2 offset,std::string* reason)
+    {
+        auto& p=*impl_;
+        if(p.failed||p.state.mode!=DriveMode::Stand) { if(reason) *reason="COM target requires active Stand"; return false; }
+        if(!comCommandSupports(p.state)) { if(reason) *reason="COM target requires current measured two-foot supports"; return false; }
+        if(!p.standController.target(offset,reason)) return false;
+        p.state.stand=p.standController.status; return true;
+    }
+    bool PhysicsWorld::cancelStandCom(std::string* reason)
+    {
+        auto& p=*impl_;
+        if(p.failed||p.state.mode!=DriveMode::Stand) { if(reason) *reason="COM cancel requires active Stand"; return false; }
+        if(!comCommandSupports(p.state)) { if(reason) *reason="COM cancel requires current measured two-foot supports"; return false; }
+        if(!p.standController.cancel(reason)) return false;
+        p.state.stand=p.standController.status; return true;
     }
     void PhysicsWorld::cancelContact()
     { auto& p=*impl_; p.contactController.cancel(); p.state.contact=p.contactController.status(); }
@@ -688,6 +718,7 @@ namespace julia::physics
         if(p.failed) throw std::runtime_error("Physics failed; reset required");
         auto& s=p.state; ++s.tick; s.timing={}; s.saturatedThisTick={}; s.peakLimitViolationThisTick={};
         p.standController.status.controllerUs=0;
+        p.standController.status.solverSampleCount=0;
         s.peakContactsThisTick=0; s.peakNormalForceThisTick=0; s.maxPenetrationThisTick=0;
         s.externalForce={0,0,0}; s.externalTorque={0,0,0};
         s.support.dynamics.tickLinearImpulse={0,0,0}; s.support.dynamics.tickAngularImpulse={0,0,0};

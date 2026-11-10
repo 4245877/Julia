@@ -44,6 +44,13 @@ namespace bench
                 text<<"COM ERR "<<t.comError<<" M SPEED "<<t.speed<<" M/S TILT "<<t.tilt<<" RAD UTIL "<<t.requestedUtilization<<"\n";
                 text<<"PREDICTED ORANGE / ACTUAL GREEN-BLUE / GOAL ROOT ORANGE\n";
                 text<<"PRED N "<<t.predictedReaction[0].force.y<<" / "<<t.predictedReaction[1].force.y<<" N, SOLVES "<<t.linearSolves<<" CTRL "<<t.controllerUs<<" US\n";
+                if(t.variant==julia::physics::StandVariant::Bounded7h||t.commandSerial>0)
+                {
+                    text<<"COM "<<julia::physics::comPhaseName(t.comPhase)<<" #"<<t.commandSerial<<" ERR "<<1000*t.commandError<<" MM HOLD "<<t.achievedSeconds<<" S\n";
+                    text<<"GOAL MAGENTA / REFERENCE ORANGE / ACTUAL YELLOW; TOP INSET X30\n";
+                    text<<"QP "<<t.solverCode<<" IT "<<t.qpIterations<<" ACTIVE "<<t.activeInequalities<<" CAPS "<<t.activeCaps<<" FRICTION "<<t.activeFriction<<" NORMAL "<<t.activeNormals<<"\n";
+                    text<<"J/L X-/X+  K Z+  O ORIGIN  C CANCEL; 8 SHIFT / 9 RETARGET\n";
+                }
             }
             const auto& o=s.support;
             if(!o.enabled) text<<"SUPPORT OBSERVER DISABLED\n";

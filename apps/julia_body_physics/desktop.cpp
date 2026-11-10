@@ -38,7 +38,14 @@ namespace
         else if(code==GLFW_KEY_D) i.world->command(CommandKind::Disable);
         else if(code==GLFW_KEY_S) i.world->command(CommandKind::SmoothTarget,i.world->snapshot().target);
         else if(code==GLFW_KEY_I) i.world->applyWrench(3,i.world->snapshot().mode==DriveMode::Stand?i.world->snapshot().stand.rootGoal.orientation*glm::dvec3{3,0,0}:glm::dvec3{200,0,0});
-        else if(code>=GLFW_KEY_1&&code<=GLFW_KEY_7) { i.scenario=static_cast<BodyCase>(code-GLFW_KEY_1); i.reset=true; }
+        else if(code>=GLFW_KEY_1&&code<=GLFW_KEY_9) { i.scenario=static_cast<BodyCase>(code-GLFW_KEY_1); i.reset=true; }
+        else if(code==GLFW_KEY_J||code==GLFW_KEY_L||code==GLFW_KEY_K||code==GLFW_KEY_O||code==GLFW_KEY_C)
+        {
+            std::string reason;
+            const auto ok=code==GLFW_KEY_C?i.world->cancelStandCom(&reason):i.world->standComTarget(
+                code==GLFW_KEY_J?glm::dvec2{-.003,0}:code==GLFW_KEY_L?glm::dvec2{.003,0}:code==GLFW_KEY_K?glm::dvec2{0,.003}:glm::dvec2{0},&reason);
+            if(!ok) std::cerr<<reason<<'\n';
+        }
         else if(code==GLFW_KEY_UP||code==GLFW_KEY_DOWN)
         {
             auto target=i.world->snapshot().target; target[i.selected]+=code==GLFW_KEY_UP?.02:-.02;
@@ -114,7 +121,26 @@ namespace
         if(s.mode==DriveMode::Stand)
         {
             const glm::vec3 goalColor{1,.55f,.05f};
-            cross(v,s.stand.rootGoal.position,.07,goalColor); sphere(v,s.stand.comGoal,.025,goalColor);
+            cross(v,s.stand.rootGoal.position,.07,goalColor); sphere(v,s.stand.comGoal,s.stand.variant==StandVariant::Bounded7h?.002:.025,goalColor);
+            if(s.stand.variant==StandVariant::Bounded7h||s.stand.commandSerial>0)
+            {
+                const auto& t=s.stand; const auto rotation=glm::mat3_cast(t.rootGoal.orientation);
+                auto base=t.rootGoal.position+rotation*glm::dvec3{.40,0,0}; base.y=s.support.planeOrigin.y+.02;
+                // Fixed metric inset. Its origin follows only the frozen placement goal.
+                const auto origin=t.initialCom;
+                const auto point=[&](glm::dvec3 p) { auto d=p-origin; d.y=0; return base+30.*d; };
+                line(v,base-.16*rotation[0],base+.16*rotation[0],{.05f,.05f,.05f});
+                line(v,base-.16*rotation[2],base+.16*rotation[2],{.05f,.05f,.05f});
+                for(int tick=-5;tick<=5;++tick)
+                {
+                    const auto xTick=base+.03*static_cast<double>(tick)*rotation[0],zTick=base+.03*static_cast<double>(tick)*rotation[2];
+                    line(v,xTick-.004*rotation[2],xTick+.004*rotation[2],{.05f,.05f,.05f});
+                    line(v,zTick-.004*rotation[0],zTick+.004*rotation[0],{.05f,.05f,.05f});
+                }
+                cross(v,point(t.commandCom),.009,{1,0,1}); cross(v,point(t.comGoal),.006,{1,.5f,0});
+                cross(v,point(s.totalComWorld),.003,{1,1,0});
+                sphere(v,t.commandCom,.003,{1,0,1}); sphere(v,t.comGoal,.002,{1,.5f,0});
+            }
             line(v,s.totalComWorld,s.totalComWorld+s.support.dynamics.comVelocity,glm::vec3{1,1,0});
             for(const auto& w:s.stand.predictedReaction)
             {
@@ -211,7 +237,7 @@ int main(int argc,char** argv)
                     auto lo=view.physics.support.comProjection,hi=lo;
                     for(const auto& f:view.physics.support.feet) for(const auto p:f.soleProjection.vertices) { lo=glm::min(lo,p); hi=glm::max(hi,p); }
                     c.target=glm::vec3{(lo+hi)*.5}; c.position=c.target+glm::vec3{0,3,0}; c.up={0,0,-1};
-                    c.orthographicHeight=static_cast<float>(std::max({.8,(hi.z-lo.z)*1.3,(hi.x-lo.x)*1.3*Height/Width}));
+                    c.orthographicHeight=static_cast<float>(std::max({view.physics.stand.variant==StandVariant::Bounded7h?1.15:.8,(hi.z-lo.z)*1.3,(hi.x-lo.x)*1.3*Height/Width}));
                 }
                 displayCameraIndex=index; displayCamera=c; renderer.setCamera(c);
             };

@@ -72,15 +72,17 @@ namespace julia::physics
         reset(); settings_=settings; start_=state.time;
         status.phase=StandPhase::Establishing; status.reason="awaiting_measured_load"; status.balanceFeedback=settings.balanceFeedback;
         status.rootGoal=settings.rootGoal; status.comGoal=settings.comGoal;
+        status.variant=settings.variant; status.initialCom=status.commandCom=initialCom_=reference_=settings.comGoal;
         for(std::size_t side=0;side<2;++side) initialFeet_[side]=footFrame(state,definition,side,state.support.feet[side].link);
     }
-    void StandControl::disable() { status.phase=StandPhase::Disabled; status.reason="disabled"; status.feasible=false; held_={}; }
-    void StandControl::lost(const char* reason) { status.phase=StandPhase::Lost; status.reason=reason; status.feasible=false; held_={}; }
+    void StandControl::disable() { status.phase=StandPhase::Disabled; status.reason="disabled"; status.feasible=false; status.comPhase=ComPhase::Idle; status.achievedSeconds=0; held_={}; }
+    void StandControl::lost(const char* reason) { status.phase=StandPhase::Lost; status.reason=reason; status.feasible=false; status.comPhase=ComPhase::Failed; status.achievedSeconds=0; held_={}; }
     Coordinates StandControl::evaluate(const mjModel* m,mjData* d,const StateLayout& layout,
         const Definition& def,Snapshot& s,const std::vector<int>& bodies,const std::array<int,2>& footLinks,double dt,bool update)
     {
         const ControllerTimer timer{status.controllerUs};
         if(status.phase==StandPhase::Lost||status.phase==StandPhase::Disabled) return {};
+        if(settings_.comCommands) advanceReference(dt);
         const auto& o=s.support;
         const auto velocity=s.linearMomentumWorld/s.totalMass;
         const auto error=settings_.comGoal-s.totalComWorld;
@@ -89,11 +91,23 @@ namespace julia::physics
         status.tilt=glm::length(orientError); status.heightError=std::abs(s.root.position.y-settings_.rootGoal.position.y);
         status.thoraxTilt=glm::length(rotationError(settings_.thoraxGoal,glm::quat_cast(glm::dmat3{s.worldFromJoint[2]})));
         status.footDisplacement=0; status.footAngle=0;
+        bool contactGeometry=true;
         for(std::size_t side=0;side<2;++side)
         {
             const auto f=footFrame(s,def,side,footLinks[side]); const auto delta=glm::dvec3{f[3]-initialFeet_[side][3]};
             status.footDisplacement=std::max(status.footDisplacement,glm::length(glm::dvec2{delta.x,delta.z}));
             status.footAngle=std::max(status.footAngle,glm::length(rotationError(glm::quat_cast(glm::dmat3{initialFeet_[side]}),glm::quat_cast(glm::dmat3{f}))));
+            if(settings_.variant==StandVariant::Bounded7h)
+            {
+                const auto link=static_cast<std::size_t>(footLinks[side]); const auto box=s.worldFromJoint[link]*def.links[link].jointFromBox;
+                contactGeometry=contactGeometry&&o.feet[side].near&&box[1].y>=std::cos(.05);
+                for(int corner=0;corner<4;++corner)
+                {
+                    const auto p=box*glm::dvec4{(corner&1)?.045:-.045,-.025,(corner&2)?.085:-.085,1};
+                    const double height=p.y-o.planeOrigin.y;
+                    contactGeometry=contactGeometry&&height>=-.004&&height<=.002;
+                }
+            }
         }
         if(!o.enabled||!o.floorAvailable||!o.dynamics.valid) lost("observation_unavailable");
         else if(o.otherEnvironmentActive) lost("nonfoot_contact");
@@ -105,8 +119,19 @@ namespace julia::physics
             (!o.feet[0].cop.point||!o.feet[1].cop.point||!o.combinedCop.point)) lost("cop_unavailable");
         else if(status.phase!=StandPhase::Establishing &&
             (o.feet[0].slipSpeed>.05||o.feet[1].slipSpeed>.05)) lost("sliding");
+        else if(!contactGeometry) lost("contact_model_geometry");
         for(unsigned k=0;k<s.dofs;++k) if(s.limitViolation[k]>.005||s.drive.saturationRunSeconds[k]>.10) lost("joint_limit_or_saturation");
         if(status.phase==StandPhase::Lost) return {};
+        if(settings_.comCommands)
+        {
+            const auto delta=status.commandCom-s.totalComWorld;
+            status.commandError=glm::length(glm::dvec2{delta.x,delta.z});
+            const bool achieved=curveTime_>=curveDuration_&&status.commandError<=.0005&&status.speed<=.001&&
+                o.feet[0].load.loaded&&o.feet[1].load.loaded&&o.feet[0].active>0&&o.feet[1].active>0&&
+                o.feet[0].normalForce>=30&&o.feet[1].normalForce>=30;
+            status.achievedSeconds=achieved?status.achievedSeconds+dt:0;
+            if(status.commandSerial>0&&curveTime_>=curveDuration_) status.comPhase=status.achievedSeconds>=2?(cancelled_?ComPhase::Cancelled:ComPhase::Reached):ComPhase::Settling;
+        }
         if(status.phase==StandPhase::Establishing && o.feet[0].load.loaded&&o.feet[1].load.loaded)
         { status.phase=StandPhase::Stabilizing; status.reason="settling"; }
         if(status.phase==StandPhase::Establishing && s.time-start_>2) { lost("establishment_timeout"); return {}; }
@@ -148,6 +173,7 @@ namespace julia::physics
         }
         previousJ_=j; previousComJ_=jc; previous_=true; lastUpdate_=s.time;
         glm::dvec3 desired=settings_.balanceFeedback?40.*error-12.*velocity:glm::dvec3{0};
+        if(settings_.comCommands&&settings_.balanceFeedback) desired+=12.*status.referenceVelocity+status.referenceAcceleration;
         desired.y=100*error.y-20*velocity.y; status.desiredComAcceleration=desired;
         // qvel root angular coordinates are local. Convert world orientation error.
         const auto localOrient=glm::conjugate(s.root.orientation)*orientError;
@@ -165,6 +191,13 @@ namespace julia::physics
         for(int i=0;i<N;++i) ka[i*K+i]+=1e-8;
         for(int r=0;r<C;++r)
         { ba[N+r]=contactGoal[r]-jdot[r]; for(int c=0;c<N;++c) ka[(N+r)*K+c]=ka[c*K+N+r]=j[r*N+c]; }
+        if(settings_.variant==StandVariant::Bounded7h)
+        {
+            status.solverRoot=s.root; status.solverQ=s.q; status.solverV=s.v;
+            std::array<double,N*N> mass{}; mj_fullM(m,mass.data(),d->qM);
+            if(!bounded(m,d,layout,def,mass,j,ka,ba,contactGoal,jdot,points,rotations)) lost(status.solverCode.c_str());
+            return held_;
+        }
         ++status.linearSolves;
         if(!solve<K>(ka,ba)) { lost("acceleration_solve_failed"); return {}; }
         std::array<double,N*N> mass{}; mj_fullM(m,mass.data(),d->qM);
