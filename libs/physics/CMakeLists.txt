@@ -1,6 +1,6 @@
 include(JuliaMuJoCo)
 find_package(glm CONFIG REQUIRED)
-add_library(julia_physics STATIC src/PhysicsWorld.cpp src/JointDrive.cpp src/ContactControl.cpp src/ContactObservation.cpp src/SupportObservation.cpp src/StandControl.cpp src/StandCom.cpp src/StandLoad.cpp src/StandBounded.cpp src/BoundedQp.cpp src/BoundedQpReference.cpp src/BoundedQpOptimized.cpp)
+add_library(julia_physics STATIC src/PhysicsWorld.cpp src/JointDrive.cpp src/ContactControl.cpp src/ContactObservation.cpp src/SupportObservation.cpp src/StandControl.cpp src/StandCom.cpp src/StandLoad.cpp src/StandCoordinated.cpp src/StandBounded.cpp src/BoundedQp.cpp src/BoundedQpReference.cpp src/BoundedQpOptimized.cpp)
 
 target_include_directories(julia_physics PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include

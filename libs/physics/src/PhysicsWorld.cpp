@@ -641,6 +641,10 @@ namespace julia::physics
         if(p.failed||p.state.mode!=DriveMode::Disabled||p.state.tick!=0) return reject("Stand requires Disabled immediately after prepared reset");
         if(settings.loadCommands&&(settings.comCommands||settings.variant!=StandVariant::Bounded7h||settings.boundedSolver!=BoundedSolver::Optimized7i))
             return reject("Load commands require exclusive bounded optimized control");
+        if(settings.coordinatedCommands&&(settings.comCommands||settings.loadCommands||settings.variant!=StandVariant::Bounded7h||settings.boundedSolver!=BoundedSolver::Optimized7i))
+            return reject("Coordinated commands require exclusive bounded optimized control");
+        if(!settings.coordinatedCommands&&(!settings.coordinatedComTask||!settings.coordinatedLoadTask))
+            return reject("Coordinated task ablation requires coordinated commands");
         if((settings.variant!=StandVariant::Equality7g&&settings.variant!=StandVariant::Bounded7h)||
             (settings.boundedSolver!=BoundedSolver::Reference7h&&settings.boundedSolver!=BoundedSolver::Optimized7i)||
             (settings.variant!=StandVariant::Bounded7h&&settings.boundedSolver!=BoundedSolver::Reference7h)||
@@ -660,7 +664,7 @@ namespace julia::physics
             glm::length(settings.rootGoal.linearVelocityWorld)!=0||glm::length(settings.rootGoal.angularVelocityLocal)!=0||
             !std::isfinite(glm::length(settings.thoraxGoal))||std::abs(glm::length(settings.thoraxGoal)-1)>1e-8)
             return reject("Invalid stand goals");
-        if((settings.comCommands||settings.loadCommands)&&glm::length(settings.rootGoal.orientation*glm::dvec3{0,1,0}-glm::dvec3{0,1,0})>1e-8)
+        if((settings.comCommands||settings.loadCommands||settings.coordinatedCommands)&&glm::length(settings.rootGoal.orientation*glm::dvec3{0,1,0}-glm::dvec3{0,1,0})>1e-8)
             return reject("COM command placement must preserve world up (translation and yaw only)");
         for(unsigned k=0;k<MaxCoordinates;++k)
             if(!std::isfinite(settings.posture[k])||(k>=41?settings.posture[k]!=0:
@@ -717,6 +721,30 @@ namespace julia::physics
         if(p.failed||p.state.mode!=DriveMode::Stand||!comCommandSupports(p.state))
         { if(reason) *reason="Load return requires current measured two-foot Stand supports"; return false; }
         if(!p.standController.loadReturn(reason)) return false;
+        p.state.stand=p.standController.status; return true;
+    }
+    bool PhysicsWorld::standCoordinatedTarget(const CoordinatedTarget& target,std::string* reason)
+    {
+        auto& p=*impl_;
+        if(p.failed||p.state.mode!=DriveMode::Stand||!comCommandSupports(p.state))
+        { if(reason) *reason="Coordinated target requires current measured two-foot Stand supports"; return false; }
+        if(!p.standController.coordinatedTarget(target,reason)) return false;
+        p.state.stand=p.standController.status; return true;
+    }
+    bool PhysicsWorld::cancelStandCoordinated(std::string* reason)
+    {
+        auto& p=*impl_;
+        if(p.failed||p.state.mode!=DriveMode::Stand||!comCommandSupports(p.state))
+        { if(reason) *reason="Coordinated cancel requires current measured two-foot Stand supports"; return false; }
+        if(!p.standController.coordinatedCancel(reason)) return false;
+        p.state.stand=p.standController.status; return true;
+    }
+    bool PhysicsWorld::returnStandCoordinated(std::string* reason)
+    {
+        auto& p=*impl_;
+        if(p.failed||p.state.mode!=DriveMode::Stand||!comCommandSupports(p.state))
+        { if(reason) *reason="Coordinated return requires current measured two-foot Stand supports"; return false; }
+        if(!p.standController.coordinatedReturn(reason)) return false;
         p.state.stand=p.standController.status; return true;
     }
     void PhysicsWorld::cancelContact()
@@ -827,7 +855,7 @@ namespace julia::physics
             // endpoint observations with the last held ctrl; never alter live q/v.
             mj_forward(p.m.get(),p.d.get()); p.read();
             p.observeSupport(h,beforeResultant);
-            if(p.standController.status.load.enabled)
+            if(p.standController.status.load.enabled||p.standController.status.coordinated.enabled)
             { p.standController.observeLoad(s,h); s.stand=p.standController.status; }
             if(p.def.contactTool)
             {

@@ -53,10 +53,11 @@ namespace julia::physics
             { p.g[N+i]+=weight*wrenchMap[r*F+i]*target; for(int k=0;k<F;++k) p.h[(N+i)*V+N+k]+=weight*wrenchMap[r*F+i]*wrenchMap[r*F+k]; }
         }
         for(int i=0;i<F;++i) p.h[(N+i)*V+N+i]+=1e-6;
-        if(settings_.loadCommands&&settings_.loadTask&&status.load.baselineValid)
+        if(((settings_.loadCommands&&settings_.loadTask)||(settings_.coordinatedCommands&&settings_.coordinatedLoadTask))&&status.load.baselineValid)
         {
             // Dimensionless differential normal force. Resultant/free-root dynamics
-            // and every previous hard bound remain in the same coupled QP.
+            // and every previous hard bound remain in the same coupled QP. In the
+            // coordinated mode status.load.reference mirrors the common-time alpha curve.
             std::array<double,F> row{};
             for(int c=0;c<4;++c) { row[c*3+1]=1-status.load.reference; row[12+c*3+1]=-status.load.reference; }
             for(int i=0;i<F;++i) for(int k=0;k<F;++k) p.h[(N+i)*V+N+k]+=row[i]*row[k];
@@ -138,7 +139,7 @@ namespace julia::physics
             for(int c=0;c<4;++c) { const int f=N+side*12+c*3; status.cornerForces[side][c]=forceFrames[side]*(100.*glm::dvec3{result.x[f],result.x[f+1],result.x[f+2]}); }
         }
         status.feasible=status.baseResidual<1e-6&&status.contactResidual<1e-6&&status.requestedUtilization<=1.000001;
-        if(settings_.loadCommands)
+        if(settings_.loadCommands||settings_.coordinatedCommands)
         {
             const double sum=wrench[1]+wrench[7];
             status.load.predictedValid=sum>=60&&wrench[1]>=30&&wrench[7]>=30;

@@ -93,7 +93,15 @@ namespace julia::physics
             if(loadBaselineGood_&&std::abs(t.baselineSeconds-2)<dt*.1)
             {t.baselineValid=true;t.alpha0=t.command=t.reference=loadSum_/t.baselineSeconds;t.phase=ComPhase::Idle;}
             else {t.alpha0=t.command=t.reference=NaN;t.phase=ComPhase::Failed;}
+            if(settings_.coordinatedCommands)
+            {
+                // Stage7k: the shared calibration starts the alpha reference at rest at alpha0.
+                auto& c=status.coordinated;
+                c.goalAlpha=c.alphaReference=t.alpha0;c.alphaVelocity=c.alphaAcceleration=0;
+                if(!t.baselineValid)c.phase=ComPhase::Failed;
+            }
         }
+        if(settings_.coordinatedCommands){observeCoordinated(s,dt);return;}
         if(status.phase==StandPhase::Lost||status.phase==StandPhase::Disabled)
         {t.integral=t.feedback=t.achievedSeconds=0;t.predictedValid=false;t.predicted=NaN;return;}
         if(t.serial==0)return;

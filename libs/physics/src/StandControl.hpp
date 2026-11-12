@@ -18,6 +18,9 @@ namespace julia::physics
         bool loadTarget(double alpha,std::string* reason);
         bool loadCancel(std::string* reason);
         bool loadReturn(std::string* reason);
+        bool coordinatedTarget(const CoordinatedTarget& target,std::string* reason);
+        bool coordinatedCancel(std::string* reason);
+        bool coordinatedReturn(std::string* reason);
         void observeLoad(const Snapshot& state,double dt);
         Coordinates evaluate(const mjModel* model,mjData* data,const StateLayout& layout,
             const Definition& definition,Snapshot& state,const std::vector<int>& bodies,
@@ -41,6 +44,13 @@ namespace julia::physics
         bool loadBaselineGood_=true,loadFilterValid_=false,loadCancelled_=false;
         bool planLoad(double alpha,bool cancel,std::string* reason);
         void advanceLoad(double dt);
+        // Stage7k coordinated command: two C2 curves on one time base.
+        std::array<glm::dvec3,6> coordCom_{};
+        std::array<double,6> coordAlpha_{};
+        double coordTime_=0,coordDuration_=0;
+        bool planCoordinated(glm::dvec3 comGoal,glm::dvec2 offset,double alphaGoal,bool cancel,std::string* reason);
+        void advanceCoordinated(double dt);
+        void observeCoordinated(const Snapshot& state,double dt);
         qp::Solver solver_;
         qp::Problem problem_;
         qp::Result result_;

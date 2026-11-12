@@ -39,6 +39,23 @@ namespace
         else if(code==GLFW_KEY_S) i.world->command(CommandKind::SmoothTarget,i.world->snapshot().target);
         else if(code==GLFW_KEY_I) i.world->applyWrench(3,i.world->snapshot().mode==DriveMode::Stand?i.world->snapshot().stand.rootGoal.orientation*glm::dvec3{3,0,0}:glm::dvec3{200,0,0});
         else if(code>=GLFW_KEY_1&&code<=GLFW_KEY_9) { i.scenario=static_cast<BodyCase>(code-GLFW_KEY_1); i.reset=true; }
+        else if(i.world->snapshot().stand.coordinated.enabled&&(code==GLFW_KEY_J||code==GLFW_KEY_L||code==GLFW_KEY_K||code==GLFW_KEY_O||code==GLFW_KEY_C||
+            code==GLFW_KEY_LEFT_BRACKET||code==GLFW_KEY_RIGHT_BRACKET||code==GLFW_KEY_COMMA||code==GLFW_KEY_PERIOD))
+        {
+            // Stage7k: L/J/K = A/B/C pairs, [/] alpha only, ,/. COM only, C cancel, O return.
+            std::string reason; bool ok=false;
+            const double alpha0=i.world->snapshot().stand.load.alpha0;
+            CoordinatedTarget target;
+            if(code==GLFW_KEY_L) { target.comOffset=glm::dvec2{.003,0}; target.alpha=alpha0+.05; }
+            else if(code==GLFW_KEY_J) { target.comOffset=glm::dvec2{-.003,0}; target.alpha=alpha0-.05; }
+            else if(code==GLFW_KEY_K) { target.comOffset=glm::dvec2{0,.003}; target.alpha=alpha0+.05; }
+            else if(code==GLFW_KEY_LEFT_BRACKET||code==GLFW_KEY_RIGHT_BRACKET) target.alpha=alpha0+(code==GLFW_KEY_LEFT_BRACKET?-.05:.05);
+            else if(code==GLFW_KEY_COMMA||code==GLFW_KEY_PERIOD) target.comOffset=glm::dvec2{code==GLFW_KEY_COMMA?-.003:.003,0};
+            if(code==GLFW_KEY_C) ok=i.world->cancelStandCoordinated(&reason);
+            else if(code==GLFW_KEY_O) ok=i.world->returnStandCoordinated(&reason);
+            else ok=i.world->standCoordinatedTarget(target,&reason);
+            if(!ok) std::cerr<<reason<<'\n';
+        }
         else if(i.world->snapshot().stand.load.enabled&&(code==GLFW_KEY_LEFT_BRACKET||code==GLFW_KEY_RIGHT_BRACKET||code==GLFW_KEY_O||code==GLFW_KEY_C))
         {
             std::string reason;
@@ -91,6 +108,26 @@ namespace
                     after.root.orientation!=before.root.orientation||after.tick!=before.tick)
                     throw std::runtime_error("Load target/cancel/return callback failed or wrote physics");
             }
+        }
+        if(bodybench::isCoord(options.scenario))
+        {
+            PhysicsWorld coordWorld{bodybench::definition(rig,options.scenario,options)};
+            bodybench::reset(rig,coordWorld,options.scenario,options);
+            for(unsigned tick=0;tick<481;++tick) coordWorld.step();
+            i.world=&coordWorld;
+            const auto before=coordWorld.snapshot();
+            if(!before.stand.load.baselineValid||before.stand.coordinated.serial!=0) throw std::runtime_error("Coordinated callback baseline unavailable");
+            for(const auto code:{GLFW_KEY_L,GLFW_KEY_J,GLFW_KEY_K,GLFW_KEY_RIGHT_BRACKET,GLFW_KEY_COMMA,GLFW_KEY_C,GLFW_KEY_O})
+            {
+                const auto serial=coordWorld.snapshot().stand.coordinated.serial;
+                key(window,code,0,GLFW_PRESS,0);
+                const auto& after=coordWorld.snapshot();
+                if(after.stand.coordinated.serial!=serial+1||after.q!=before.q||after.v!=before.v||after.root.position!=before.root.position||
+                    after.root.orientation!=before.root.orientation||after.tick!=before.tick)
+                    throw std::runtime_error("Coordinated target/cancel/return callback failed or wrote physics");
+            }
+            const auto& final=coordWorld.snapshot().stand.coordinated;
+            if(final.goalOffset!=glm::dvec2{0}||final.goalAlpha!=before.stand.load.alpha0) throw std::runtime_error("Coordinated return callback goal mismatch");
         }
         glfwSetWindowUserPointer(window,nullptr);
     }
@@ -162,9 +199,21 @@ namespace
                     line(v,xTick-.004*rotation[2],xTick+.004*rotation[2],{.05f,.05f,.05f});
                     line(v,zTick-.004*rotation[0],zTick+.004*rotation[0],{.05f,.05f,.05f});
                 }
-                cross(v,point(t.commandCom),.009,{1,0,1}); cross(v,point(t.comGoal),.006,{1,.5f,0});
+                // Coordinated mode: terminal COM goal magenta, common-time reference orange.
+                const auto goal=t.coordinated.enabled?t.coordinated.goalCom:t.commandCom;
+                const auto reference=t.coordinated.enabled?t.coordinated.comReference:t.comGoal;
+                cross(v,point(goal),.009,{1,0,1}); cross(v,point(reference),.006,{1,.5f,0});
                 cross(v,point(s.totalComWorld),.003,{1,1,0});
-                sphere(v,t.commandCom,.003,{1,0,1}); sphere(v,t.comGoal,.002,{1,.5f,0});
+                sphere(v,goal,.003,{1,0,1}); sphere(v,reference,.002,{1,.5f,0});
+                if(t.coordinated.enabled&&t.coordinated.serial>0)
+                {
+                    // Alpha bar beside the inset: 0.1 of alpha per 6 cm, centred at alpha0.
+                    const auto& c=t.coordinated; const auto bar=base+.22*rotation[0];
+                    const auto at=[&](double alpha) { return bar+.6*(alpha-t.load.alpha0)*rotation[2]; };
+                    line(v,at(t.load.alpha0-.05),at(t.load.alpha0+.05),{.05f,.05f,.05f});
+                    cross(v,at(c.goalAlpha),.009,{1,0,1}); cross(v,at(c.alphaReference),.006,{1,.5f,0});
+                    if(t.load.actualValid) cross(v,at(t.load.actual),.004,{1,1,0});
+                }
             }
             line(v,s.totalComWorld,s.totalComWorld+s.support.dynamics.comVelocity,glm::vec3{1,1,0});
             for(const auto& w:s.stand.predictedReaction)
@@ -317,6 +366,14 @@ int main(int argc,char** argv)
                 std::ostringstream title; title<<std::fixed<<std::setprecision(2)<<"FREE "<<bodyCaseName(active)<<" t="<<state.time<<" y="<<state.root.position.y<<"m v="<<glm::length(state.root.linearVelocityWorld)
                     <<"m/s q"<<input.selected<<'='<<state.q[input.selected]<<"rad tau="<<state.appliedTorque[input.selected]<<"Nm lim="<<std::setprecision(3)<<violation
                     <<"rad con="<<state.contacts.size()<<" N="<<std::setprecision(0)<<state.peakNormalForceThisTick<<" pen="<<std::setprecision(1)<<1000*state.maxPenetrationThisTick<<"mm it="<<state.solverIterations;
+                if(state.stand.coordinated.enabled)
+                {
+                    const auto& c=state.stand.coordinated;
+                    title<<" PAIR #"<<c.serial<<' '<<comPhaseName(c.phase)<<" goal="<<std::setprecision(1)<<1000*c.goalOffset.x<<'/'<<1000*c.goalOffset.y<<"mm,"
+                        <<std::setprecision(3)<<c.goalAlpha<<" COM="<<std::setprecision(2)<<1000*c.actualOffset.x<<'/'<<1000*c.actualOffset.y<<"mm alpha=";
+                    if(state.stand.load.actualValid) title<<std::setprecision(3)<<state.stand.load.actual; else title<<"INVALID";
+                    title<<" Fn="<<std::setprecision(1)<<state.support.feet[0].normalForce<<'/'<<state.support.feet[1].normalForce<<"N hold="<<c.achievedSeconds<<"s";
+                }
                 if(state.stand.load.enabled)
                 {
                     const auto& a=state.stand.load;

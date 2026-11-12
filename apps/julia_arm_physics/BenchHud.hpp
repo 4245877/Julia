@@ -46,10 +46,26 @@ namespace bench
                 text<<"PRED N "<<t.predictedReaction[0].force.y<<" / "<<t.predictedReaction[1].force.y<<" N, SOLVES "<<t.linearSolves<<" CTRL "<<t.controllerUs<<" US\n";
                 if(t.variant==julia::physics::StandVariant::Bounded7h||t.commandSerial>0)
                 {
-                    if(!t.load.enabled) text<<"COM "<<julia::physics::comPhaseName(t.comPhase)<<" #"<<t.commandSerial<<" ERR "<<1000*t.commandError<<" MM HOLD "<<t.achievedSeconds<<" S\n";
+                    if(!t.load.enabled&&!t.coordinated.enabled) text<<"COM "<<julia::physics::comPhaseName(t.comPhase)<<" #"<<t.commandSerial<<" ERR "<<1000*t.commandError<<" MM HOLD "<<t.achievedSeconds<<" S\n";
                     text<<"GOAL MAGENTA / REFERENCE ORANGE / ACTUAL YELLOW; TOP INSET X30\n";
                     text<<"QP "<<t.solverCode<<" IT "<<t.qpIterations<<" ACTIVE "<<t.activeInequalities<<" CAPS "<<t.activeCaps<<" FRICTION "<<t.activeFriction<<" NORMAL "<<t.activeNormals<<"\n";
-                    if(!t.load.enabled) text<<"J/L X-/X+  K Z+  O ORIGIN  C CANCEL; 8 SHIFT / 9 RETARGET\n";
+                    if(!t.load.enabled&&!t.coordinated.enabled) text<<"J/L X-/X+  K Z+  O ORIGIN  C CANCEL; 8 SHIFT / 9 RETARGET\n";
+                }
+                if(t.coordinated.enabled)
+                {
+                    const auto& c=t.coordinated; const auto& a=t.load;
+                    text<<"PAIR "<<julia::physics::comPhaseName(c.phase)<<" #"<<c.serial<<(c.cancelled?" CANCEL STOP":"")<<" COM TASK "<<(c.comTaskEnabled?"ON":"OFF")
+                        <<" LOAD TASK "<<(c.loadTaskEnabled?"ON":"OFF")<<" T "<<c.elapsed<<"/"<<c.duration<<" S JOINT HOLD "<<c.achievedSeconds<<" S\n";
+                    text<<"GOAL COM "<<1000*c.goalOffset.x<<" / "<<1000*c.goalOffset.y<<" MM  ALPHA "<<c.goalAlpha<<"\n";
+                    const auto reference=glm::conjugate(t.rootGoal.orientation)*(c.comReference-t.initialCom);
+                    text<<"REF  COM "<<1000*reference.x<<" / "<<1000*reference.z<<" MM  ALPHA "<<c.alphaReference<<"  V "<<1000*glm::length(c.comVelocity)<<" MM/S "<<c.alphaVelocity<<" /S\n";
+                    text<<"ACT  COM "<<1000*c.actualOffset.x<<" / "<<1000*c.actualOffset.y<<" MM  ALPHA ";
+                    if(a.actualValid) text<<a.actual; else text<<"INVALID";
+                    text<<" PRED "; if(a.predictedValid) text<<a.predicted; else text<<"INVALID";
+                    text<<"\nALPHA0 "; if(a.baselineValid) text<<a.alpha0; else text<<"CALIBRATING";
+                    text<<"  FN L/R "<<s.support.feet[0].normalForce<<" / "<<s.support.feet[1].normalForce<<" N\n";
+                    text<<"COM ERR "<<1000*c.comError<<" MM DIR "<<1000*c.directional<<" MM SPEED "<<1000*c.speed<<" MM/S  OK COM "<<c.comOk<<" ALPHA "<<c.alphaOk<<" SUPPORT "<<c.supportsOk<<"\n";
+                    text<<"L/J/K PAIR A/B/C  [/] ALPHA ONLY  ,/. COM ONLY  C STOP  O RETURN\n";
                 }
                 if(t.load.enabled)
                 {

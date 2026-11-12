@@ -108,6 +108,30 @@ namespace julia::physics
         bool comCommands=false; // Explicit research comparator also allowed with Equality7g.
         ComMotionSettings motion;
         bool loadCommands=false,loadTask=true; // Stage7j: explicit bounded/optimized only.
+        // Stage7k: one atomic {COM offset, alpha} command. Explicit bounded/optimized only,
+        // exclusive with comCommands/loadCommands. Task flags are research ablations of the
+        // same commands: false keeps that reference out of the QP (COM goal stays initial).
+        bool coordinatedCommands=false,coordinatedComTask=true,coordinatedLoadTask=true;
+    };
+    // Missing component keeps its accepted terminal goal; at least one is required.
+    struct CoordinatedTarget
+    {
+        std::optional<glm::dvec2> comOffset; // m, placement-frame X/Z relative to initial COM goal.
+        std::optional<double> alpha;         // Absolute left normal fraction.
+    };
+    struct CoordinatedStatus
+    {
+        bool enabled=false,comTaskEnabled=false,loadTaskEnabled=false,cancelled=false,stopped=true;
+        bool comOk=false,alphaOk=false,supportsOk=false;
+        unsigned serial=0,planAttempts=0;
+        ComPhase phase=ComPhase::Idle;
+        double duration=0,elapsed=0,achievedSeconds=0;
+        glm::dvec2 goalOffset{0}; // Terminal goals of the accepted command (cancel: generated stop goals).
+        double goalAlpha=0;
+        glm::dvec3 goalCom{0},comReference{0},comVelocity{0},comAcceleration{0};
+        double alphaReference=0,alphaVelocity=0,alphaAcceleration=0;
+        glm::dvec2 actualOffset{0}; // Measured COM in the frozen placement frame.
+        double comError=0,referenceError=0,speed=0,directional=0,alphaError=0;
     };
     struct LoadStatus
     {
@@ -145,6 +169,7 @@ namespace julia::physics
         std::array<unsigned,4> solverIterations{},solverActive{};
         std::array<BoundedProfile,4> boundedProfiles{};
         LoadStatus load;
+        CoordinatedStatus coordinated;
     };
     enum class CommandKind { Target, Torque, Disable, Reach, Attach, MoveRoot, SmoothTarget };
     struct Capabilities
@@ -237,6 +262,8 @@ namespace julia::physics
     void comCsvRow(std::ostream& out,const Snapshot& snapshot);
     void loadCsvHeader(std::ostream& out);
     void loadCsvRow(std::ostream& out,const Snapshot& snapshot);
+    void coordinatedCsvHeader(std::ostream& out);
+    void coordinatedCsvRow(std::ostream& out,const Snapshot& snapshot);
     void comSolverCsvHeader(std::ostream& out);
     void comSolverCsvRow(std::ostream& out,const Snapshot& snapshot);
     // One owner advances this WORLD once per configured substep. Read-only
@@ -272,6 +299,11 @@ namespace julia::physics
         bool standLoadTarget(double alpha,std::string* reason=nullptr);
         bool cancelStandLoad(std::string* reason=nullptr);
         bool returnStandLoad(std::string* reason=nullptr);
+        // Stage7k: both components planned with one common certified duration, one serial.
+        // Rejection of either component leaves both accepted curves unchanged.
+        bool standCoordinatedTarget(const CoordinatedTarget& target,std::string* reason=nullptr);
+        bool cancelStandCoordinated(std::string* reason=nullptr); // Publishes both generated stop goals.
+        bool returnStandCoordinated(std::string* reason=nullptr); // Separate return to (0,0; alpha0).
         void cancelContact(); // Rate-limited unload and retreat, no q/v writes.
         // Pure gravity inverse-dynamics effort, at zero velocity, scratch only.
         // Free-base support is deliberately unavailable in stage7d.
