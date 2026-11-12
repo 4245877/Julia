@@ -15,10 +15,15 @@ namespace julia::physics
         void balanceFeedback(bool enabled) { settings_.balanceFeedback=enabled; status.balanceFeedback=enabled; }
         bool target(glm::dvec2 offset,std::string* reason);
         bool cancel(std::string* reason);
+        bool loadTarget(double alpha,std::string* reason);
+        bool loadCancel(std::string* reason);
+        bool loadReturn(std::string* reason);
+        void observeLoad(const Snapshot& state,double dt);
         Coordinates evaluate(const mjModel* model,mjData* data,const StateLayout& layout,
             const Definition& definition,Snapshot& state,const std::vector<int>& bodies,
             const std::array<int,2>& footLinks,double dt,bool update);
         StandStatus status;
+        bool inspectQp(qp::Problem& problem,qp::Result& result) const;
     private:
         StandSettings settings_;
         std::array<glm::dmat4,2> initialFeet_{};
@@ -31,8 +36,14 @@ namespace julia::physics
         std::array<glm::dvec3,6> curve_{};
         double curveTime_=0,curveDuration_=0;
         bool cancelled_=false;
+        std::array<double,6> loadCurve_{};
+        double loadTime_=0,loadDuration_=0,loadSum_=0;
+        bool loadBaselineGood_=true,loadFilterValid_=false,loadCancelled_=false;
+        bool planLoad(double alpha,bool cancel,std::string* reason);
+        void advanceLoad(double dt);
         qp::Solver solver_;
         qp::Problem problem_;
+        qp::Result result_;
         bool plan(glm::dvec3 goal,bool cancel,std::string* reason);
         void advanceReference(double dt);
         bool bounded(const mjModel* model,const mjData* data,const StateLayout& layout,const Definition& def,

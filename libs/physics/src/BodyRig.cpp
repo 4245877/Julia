@@ -176,14 +176,15 @@ namespace julia::physics
     }
     BodyCase parseBodyCase(const std::string& name)
     {
-        for(const auto c:{BodyCase::Drop,BodyCase::Tilt,BodyCase::Pulse,BodyCase::Internal,BodyCase::Passive,BodyCase::Stand,BodyCase::StandPulse,BodyCase::ComShift,BodyCase::ComRetarget}) if(bodyCaseName(c)==name) return c;
+        for(const auto c:{BodyCase::Drop,BodyCase::Tilt,BodyCase::Pulse,BodyCase::Internal,BodyCase::Passive,BodyCase::Stand,BodyCase::StandPulse,BodyCase::ComShift,BodyCase::ComRetarget,BodyCase::LoadShift,BodyCase::LoadRetarget}) if(bodyCaseName(c)==name) return c;
         throw std::invalid_argument("Unknown body scenario: "+name);
     }
     std::string bodyCaseName(BodyCase c)
     {
         switch(c) { case BodyCase::Drop:return "drop"; case BodyCase::Tilt:return "tilt"; case BodyCase::Pulse:return "pulse";
             case BodyCase::Internal:return "internal"; case BodyCase::Passive:return "passive"; case BodyCase::Stand:return "stand"; case BodyCase::StandPulse:return "stand-pulse";
-            case BodyCase::ComShift:return "com-shift"; case BodyCase::ComRetarget:return "com-retarget"; }
+            case BodyCase::ComShift:return "com-shift"; case BodyCase::ComRetarget:return "com-retarget";
+            case BodyCase::LoadShift:return "load-shift"; case BodyCase::LoadRetarget:return "load-retarget"; }
         throw std::invalid_argument("Invalid body scenario");
     }
     Definition bodyBenchDefinition(const BodyRig& rig,BodyCase c)

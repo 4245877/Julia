@@ -6,6 +6,8 @@ namespace julia::physics::qp
 {
     constexpr int Variables=71,Equalities=18,Inequalities=128,Dimension=Variables+Equalities;
     enum class Code { Feasible, Infeasible, Budget, Numerical, Invalid };
+    enum class Implementation { Reference7h, Optimized7i };
+    struct Profile { double inputUs=0,linearUs=0,activeUs=0,verifyUs=0; };
     const char* name(Code code);
     // min .5*x'H*x-g'x; E*x=d; A*x>=b. Rows use fixed strides.
     struct Problem
@@ -32,8 +34,12 @@ namespace julia::physics::qp
     class Solver
     {
     public:
-        Result solve(const Problem& p,unsigned budget=128);
+        Result solve(const Problem& p,unsigned budget=128,Implementation implementation=Implementation::Reference7h);
+        const Profile& profile() const { return profile_; }
     private:
+        Result solveReference(const Problem& p,unsigned budget);
+        Result solveOptimized(const Problem& p,unsigned budget);
+        Profile profile_;
         std::array<double,Dimension*Dimension> inverse_{},matrix_{};
         std::array<double,Variables*Inequalities> projected_{};
         std::array<double,Variables*Variables> gram_{};

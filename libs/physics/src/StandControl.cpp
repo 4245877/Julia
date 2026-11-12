@@ -73,16 +73,18 @@ namespace julia::physics
         status.phase=StandPhase::Establishing; status.reason="awaiting_measured_load"; status.balanceFeedback=settings.balanceFeedback;
         status.rootGoal=settings.rootGoal; status.comGoal=settings.comGoal;
         status.variant=settings.variant; status.initialCom=status.commandCom=initialCom_=reference_=settings.comGoal;
+        status.load.enabled=settings.loadCommands; status.load.taskEnabled=settings.loadTask;
         for(std::size_t side=0;side<2;++side) initialFeet_[side]=footFrame(state,definition,side,state.support.feet[side].link);
     }
-    void StandControl::disable() { status.phase=StandPhase::Disabled; status.reason="disabled"; status.feasible=false; status.comPhase=ComPhase::Idle; status.achievedSeconds=0; held_={}; }
-    void StandControl::lost(const char* reason) { status.phase=StandPhase::Lost; status.reason=reason; status.feasible=false; status.comPhase=ComPhase::Failed; status.achievedSeconds=0; held_={}; }
+    void StandControl::disable() { status.phase=StandPhase::Disabled; status.reason="disabled"; status.feasible=false; status.comPhase=ComPhase::Idle; status.achievedSeconds=0; held_={}; status.load.phase=ComPhase::Idle; status.load.integral=status.load.feedback=status.load.achievedSeconds=0; }
+    void StandControl::lost(const char* reason) { status.phase=StandPhase::Lost; status.reason=reason; status.feasible=false; status.comPhase=ComPhase::Failed; status.achievedSeconds=0; held_={}; status.load.phase=ComPhase::Failed; status.load.integral=status.load.feedback=status.load.achievedSeconds=0; }
     Coordinates StandControl::evaluate(const mjModel* m,mjData* d,const StateLayout& layout,
         const Definition& def,Snapshot& s,const std::vector<int>& bodies,const std::array<int,2>& footLinks,double dt,bool update)
     {
         const ControllerTimer timer{status.controllerUs};
         if(status.phase==StandPhase::Lost||status.phase==StandPhase::Disabled) return {};
         if(settings_.comCommands) advanceReference(dt);
+        if(settings_.loadCommands) advanceLoad(dt);
         const auto& o=s.support;
         const auto velocity=s.linearMomentumWorld/s.totalMass;
         const auto error=settings_.comGoal-s.totalComWorld;

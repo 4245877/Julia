@@ -7,6 +7,7 @@
 using namespace julia::physics;
 namespace
 {
+    BoundedSolver selected=BoundedSolver::Reference7h;
     void same(const Snapshot& a,const Snapshot& b)
     {
         JULIA_CHECK(a.q==b.q&&a.v==b.v&&a.appliedTorque==b.appliedTorque&&a.root.position==b.root.position&&a.root.orientation==b.root.orientation);
@@ -15,9 +16,11 @@ namespace
     }
     void api(const BodyRig& rig,std::ostream& report)
     {
-        PhysicsWorld a{rig.description()},b{rig.description()}; auto p=preparedStand(rig,a); p.variant=StandVariant::Bounded7h; p.comCommands=true;
+        PhysicsWorld a{rig.description()},b{rig.description()}; auto p=preparedStand(rig,a); p.variant=StandVariant::Bounded7h; p.boundedSolver=selected; p.comCommands=true;
         a.reset(p.posture,p.rootGoal); b.reset(p.posture,p.rootGoal);
         auto tilted=p; tilted.rootGoal.orientation=glm::angleAxis(.001,glm::dvec3{1,0,0});
+        auto invalidSolver=p; invalidSolver.boundedSolver=static_cast<BoundedSolver>(99); JULIA_CHECK(!a.startStand(invalidSolver));
+        invalidSolver=p; invalidSolver.variant=StandVariant::Equality7g; invalidSolver.boundedSolver=BoundedSolver::Optimized7i; JULIA_CHECK(!a.startStand(invalidSolver));
         JULIA_CHECK(!a.startStand(tilted)); same(a.snapshot(),b.snapshot());
         for(const auto bad:{0.,-1.,std::numeric_limits<double>::quiet_NaN(),std::numeric_limits<double>::infinity()})
         {
@@ -58,7 +61,7 @@ namespace
     }
     void performance(const BodyRig& rig,const std::filesystem::path& dir,std::ostream& report)
     {
-        PhysicsWorld w{rig.description()}; auto plan=preparedStand(rig,w); plan.variant=StandVariant::Bounded7h; plan.comCommands=true;
+        PhysicsWorld w{rig.description()}; auto plan=preparedStand(rig,w); plan.variant=StandVariant::Bounded7h; plan.boundedSolver=selected; plan.comCommands=true;
         w.reset(plan.posture,plan.rootGoal); JULIA_CHECK(w.startStand(plan));
         std::ofstream raw{dir/"performance.csv"}; raw<<"tick,tick_us,controller_us,solver_us,qp_iterations,active,evaluations,physics_iterations\n"<<std::setprecision(17);
         std::ofstream solverRaw{dir/"solver-performance.csv"}; solverRaw<<"tick,evaluation,solver_us,qp_iterations,active\n"<<std::setprecision(17);
@@ -84,7 +87,7 @@ namespace
     }
     void sequence(const BodyRig& rig,const std::filesystem::path& dir,std::ostream& report)
     {
-        bodybench::Options o; o.scenario=BodyCase::ComShift; o.bounded=true; o.comPulses=true;
+        bodybench::Options o; o.scenario=BodyCase::ComShift; o.bounded=true; o.boundedSolver=selected; o.comPulses=true;
         PhysicsWorld w{bodybench::definition(rig,o.scenario,o)}; bodybench::reset(rig,w,o.scenario,o);
         bodybench::Log log{dir/"sequence-pulse"}; bodybench::metadata(dir/"sequence-pulse",rig,w); log.row(publish(rig,w.snapshot()));
         const auto origin=w.snapshot().totalComWorld; double displacement=0; std::array<bool,4> achieved{};
@@ -107,7 +110,7 @@ namespace
     {
         for(const auto* name:{"weak","outside-initial","support-loss","outside-force","disable","unsupported-contact"})
         {
-            bodybench::Options o; o.scenario=BodyCase::Stand; o.bounded=true;
+            bodybench::Options o; o.scenario=BodyCase::Stand; o.bounded=true; o.boundedSolver=selected;
             if(std::string{name}=="weak") o.effortScale=.5;
             else if(std::string{name}=="outside-initial") o.initialShiftX=.05;
             else if(std::string{name}=="support-loss") o.standEvent="lift";
@@ -116,7 +119,7 @@ namespace
             PhysicsWorld w{bodybench::definition(rig,o.scenario,o)};
             if(std::string{name}=="unsupported-contact")
             {
-                auto plan=preparedStand(rig,w); plan.variant=StandVariant::Bounded7h;
+                auto plan=preparedStand(rig,w); plan.variant=StandVariant::Bounded7h; plan.boundedSolver=selected;
                 auto initial=plan.rootGoal; initial.position.y+=.003;
                 w.reset(plan.posture,initial); JULIA_CHECK(w.startStand(plan));
             }
@@ -145,6 +148,7 @@ int main(int argc,char** argv)
         const auto dir=std::filesystem::path{argc>1?argv[1]:"build/diagnostics/stage7h/cpu"}; std::filesystem::create_directories(dir);
         std::ofstream report{dir/"com-control.txt"}; report<<std::setprecision(17);
         const auto asset=julia::model_import::ModelImporter::loadFromFile(std::filesystem::path{JULIA_TEST_ASSET_DIR}/"models/Raphtalia_prepared.fbx"); const BodyRig rig{*asset};
+        if(argc>2&&std::string{argv[2]}=="optimized") selected=BoundedSolver::Optimized7i;
         api(rig,report); sequence(rig,dir,report); negatives(rig,dir,report); performance(rig,dir,report); report<<"PASS\n"; return JULIA_TEST_RESULT();
     }
     catch(const std::exception& e) { std::cerr<<"COM FAILURE: "<<e.what()<<'\n'; return 1; }

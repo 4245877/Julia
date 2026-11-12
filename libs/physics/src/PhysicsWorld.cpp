@@ -639,7 +639,11 @@ namespace julia::physics
         auto& p=*impl_;
         const auto reject=[&](const char* why) { if(reason) *reason=why; return false; };
         if(p.failed||p.state.mode!=DriveMode::Disabled||p.state.tick!=0) return reject("Stand requires Disabled immediately after prepared reset");
+        if(settings.loadCommands&&(settings.comCommands||settings.variant!=StandVariant::Bounded7h||settings.boundedSolver!=BoundedSolver::Optimized7i))
+            return reject("Load commands require exclusive bounded optimized control");
         if((settings.variant!=StandVariant::Equality7g&&settings.variant!=StandVariant::Bounded7h)||
+            (settings.boundedSolver!=BoundedSolver::Reference7h&&settings.boundedSolver!=BoundedSolver::Optimized7i)||
+            (settings.variant!=StandVariant::Bounded7h&&settings.boundedSolver!=BoundedSolver::Reference7h)||
             !std::isfinite(settings.motion.maxDisplacement)||settings.motion.maxDisplacement<.002||settings.motion.maxDisplacement>.005||
             !std::isfinite(settings.motion.maxSpeed)||settings.motion.maxSpeed<1e-5||settings.motion.maxSpeed>.001||
             !std::isfinite(settings.motion.maxAcceleration)||settings.motion.maxAcceleration<1e-5||settings.motion.maxAcceleration>.002)
@@ -656,7 +660,7 @@ namespace julia::physics
             glm::length(settings.rootGoal.linearVelocityWorld)!=0||glm::length(settings.rootGoal.angularVelocityLocal)!=0||
             !std::isfinite(glm::length(settings.thoraxGoal))||std::abs(glm::length(settings.thoraxGoal)-1)>1e-8)
             return reject("Invalid stand goals");
-        if(settings.comCommands&&glm::length(settings.rootGoal.orientation*glm::dvec3{0,1,0}-glm::dvec3{0,1,0})>1e-8)
+        if((settings.comCommands||settings.loadCommands)&&glm::length(settings.rootGoal.orientation*glm::dvec3{0,1,0}-glm::dvec3{0,1,0})>1e-8)
             return reject("COM command placement must preserve world up (translation and yaw only)");
         for(unsigned k=0;k<MaxCoordinates;++k)
             if(!std::isfinite(settings.posture[k])||(k>=41?settings.posture[k]!=0:
@@ -689,6 +693,30 @@ namespace julia::physics
         if(p.failed||p.state.mode!=DriveMode::Stand) { if(reason) *reason="COM cancel requires active Stand"; return false; }
         if(!comCommandSupports(p.state)) { if(reason) *reason="COM cancel requires current measured two-foot supports"; return false; }
         if(!p.standController.cancel(reason)) return false;
+        p.state.stand=p.standController.status; return true;
+    }
+    bool PhysicsWorld::standLoadTarget(double alpha,std::string* reason)
+    {
+        auto& p=*impl_;
+        if(p.failed||p.state.mode!=DriveMode::Stand||!comCommandSupports(p.state))
+        { if(reason) *reason="Load target requires current measured two-foot Stand supports"; return false; }
+        if(!p.standController.loadTarget(alpha,reason)) return false;
+        p.state.stand=p.standController.status; return true;
+    }
+    bool PhysicsWorld::cancelStandLoad(std::string* reason)
+    {
+        auto& p=*impl_;
+        if(p.failed||p.state.mode!=DriveMode::Stand||!comCommandSupports(p.state))
+        { if(reason) *reason="Load cancel requires current measured two-foot Stand supports"; return false; }
+        if(!p.standController.loadCancel(reason)) return false;
+        p.state.stand=p.standController.status; return true;
+    }
+    bool PhysicsWorld::returnStandLoad(std::string* reason)
+    {
+        auto& p=*impl_;
+        if(p.failed||p.state.mode!=DriveMode::Stand||!comCommandSupports(p.state))
+        { if(reason) *reason="Load return requires current measured two-foot Stand supports"; return false; }
+        if(!p.standController.loadReturn(reason)) return false;
         p.state.stand=p.standController.status; return true;
     }
     void PhysicsWorld::cancelContact()
@@ -799,6 +827,8 @@ namespace julia::physics
             // endpoint observations with the last held ctrl; never alter live q/v.
             mj_forward(p.m.get(),p.d.get()); p.read();
             p.observeSupport(h,beforeResultant);
+            if(p.standController.status.load.enabled)
+            { p.standController.observeLoad(s,h); s.stand=p.standController.status; }
             if(p.def.contactTool)
             {
                 const auto contactStart=Clock::now();
@@ -869,6 +899,7 @@ namespace julia::physics
     std::size_t PhysicsWorld::dataBytes() const { return sizeof(mjData)+static_cast<std::size_t>(impl_->d->nbuffer+impl_->d->narena); }
     std::size_t PhysicsWorld::arenaHighWaterBytes() const { return static_cast<std::size_t>(impl_->d->maxuse_arena); }
     std::size_t PhysicsWorld::standControllerBytes() const { return sizeof(StandControl); }
+    bool PhysicsWorld::inspectStandQp(qp::Problem& problem,qp::Result& result) const { return impl_->standController.inspectQp(problem,result); }
     std::string PhysicsWorld::modelXml() const { return impl_->source; }
     void driveCsvHeader(std::ostream& out)
     {

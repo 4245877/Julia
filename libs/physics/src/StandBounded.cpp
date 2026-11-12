@@ -2,9 +2,15 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <limits>
 
 namespace julia::physics
 {
+    bool StandControl::inspectQp(qp::Problem& problem,qp::Result& result) const
+    {
+        if(status.variant!=StandVariant::Bounded7h||status.sampleTime==0) return false;
+        problem=problem_; result=result_; return true;
+    }
     bool StandControl::bounded(const mjModel*,const mjData* d,const StateLayout& layout,const Definition& def,
         const std::array<double,47*47>& mass,const std::array<double,12*47>& j,
         const std::array<double,59*59>& cost,const std::array<double,59>& task,
@@ -47,6 +53,14 @@ namespace julia::physics
             { p.g[N+i]+=weight*wrenchMap[r*F+i]*target; for(int k=0;k<F;++k) p.h[(N+i)*V+N+k]+=weight*wrenchMap[r*F+i]*wrenchMap[r*F+k]; }
         }
         for(int i=0;i<F;++i) p.h[(N+i)*V+N+i]+=1e-6;
+        if(settings_.loadCommands&&settings_.loadTask&&status.load.baselineValid)
+        {
+            // Dimensionless differential normal force. Resultant/free-root dynamics
+            // and every previous hard bound remain in the same coupled QP.
+            std::array<double,F> row{};
+            for(int c=0;c<4;++c) { row[c*3+1]=1-status.load.reference; row[12+c*3+1]=-status.load.reference; }
+            for(int i=0;i<F;++i) for(int k=0;k<F;++k) p.h[(N+i)*V+N+k]+=row[i]*row[k];
+        }
         for(int r=0;r<12;++r)
         { p.target[r]=contact[r]-jdot[r]; for(int i=0;i<N;++i) p.equality[r*V+i]=j[r*N+i]; }
         for(int r=0;r<6;++r)
@@ -74,8 +88,19 @@ namespace julia::physics
         }
         for(int side=0;side<2;++side)
         { const int r=p.m++; p.lower[r]=.3; for(int c=0;c<4;++c) p.inequality[r*V+N+side*12+c*3+1]=1; }
-        const auto result=solver_.solve(p);
+        const auto prepared=std::chrono::steady_clock::now();
+        const auto result=solver_.solve(p,128,settings_.boundedSolver==BoundedSolver::Optimized7i?
+            qp::Implementation::Optimized7i:qp::Implementation::Reference7h);
         status.solverUs=std::chrono::duration<double,std::micro>(std::chrono::steady_clock::now()-start).count();
+        result_=result;
+        const auto physicalStart=std::chrono::steady_clock::now();
+        const auto sample=status.solverSampleCount;
+        if(sample<4)
+        {
+            const auto& timing=solver_.profile();
+            status.boundedProfiles[sample]={std::chrono::duration<double,std::micro>(prepared-start).count(),
+                timing.inputUs,timing.linearUs,timing.activeUs,timing.verifyUs,0};
+        }
         if(status.solverSampleCount<4)
         {
             const auto i=status.solverSampleCount++; status.solverTimesUs[i]=status.solverUs;
@@ -87,7 +112,11 @@ namespace julia::physics
         for(int r=0;r<p.m;++r) if(result.multipliers[r]>1e-9)
         { if(r<82) ++status.activeCaps; else if(r>=122||(r-82)%5==0) ++status.activeNormals; else ++status.activeFriction; }
         ++status.linearSolves;
-        if(result.code!=qp::Code::Feasible) return false;
+        if(result.code!=qp::Code::Feasible)
+        {
+            if(sample<4) status.boundedProfiles[sample].physicalUs=std::chrono::duration<double,std::micro>(std::chrono::steady_clock::now()-physicalStart).count();
+            return false;
+        }
         for(int i=0;i<N;++i) status.acceleration[i]=result.x[i];
         status.contactAcceleration=contact; status.contactJdot=jdot;
         std::array<double,12> wrench{};
@@ -109,8 +138,15 @@ namespace julia::physics
             for(int c=0;c<4;++c) { const int f=N+side*12+c*3; status.cornerForces[side][c]=forceFrames[side]*(100.*glm::dvec3{result.x[f],result.x[f+1],result.x[f+2]}); }
         }
         status.feasible=status.baseResidual<1e-6&&status.contactResidual<1e-6&&status.requestedUtilization<=1.000001;
+        if(settings_.loadCommands)
+        {
+            const double sum=wrench[1]+wrench[7];
+            status.load.predictedValid=sum>=60&&wrench[1]>=30&&wrench[7]>=30;
+            status.load.predicted=status.load.predictedValid?wrench[1]/sum:std::numeric_limits<double>::quiet_NaN();
+        }
         status.solverTorque=held_;
         if(!status.feasible) status.solverCode="physical_residual_failure";
+        if(sample<4) status.boundedProfiles[sample].physicalUs=std::chrono::duration<double,std::micro>(std::chrono::steady_clock::now()-physicalStart).count();
         return status.feasible;
     }
 }

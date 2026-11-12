@@ -39,6 +39,13 @@ namespace
         else if(code==GLFW_KEY_S) i.world->command(CommandKind::SmoothTarget,i.world->snapshot().target);
         else if(code==GLFW_KEY_I) i.world->applyWrench(3,i.world->snapshot().mode==DriveMode::Stand?i.world->snapshot().stand.rootGoal.orientation*glm::dvec3{3,0,0}:glm::dvec3{200,0,0});
         else if(code>=GLFW_KEY_1&&code<=GLFW_KEY_9) { i.scenario=static_cast<BodyCase>(code-GLFW_KEY_1); i.reset=true; }
+        else if(i.world->snapshot().stand.load.enabled&&(code==GLFW_KEY_LEFT_BRACKET||code==GLFW_KEY_RIGHT_BRACKET||code==GLFW_KEY_O||code==GLFW_KEY_C))
+        {
+            std::string reason;
+            const auto ok=code==GLFW_KEY_C?i.world->cancelStandLoad(&reason):code==GLFW_KEY_O?i.world->returnStandLoad(&reason):
+                i.world->standLoadTarget(i.world->snapshot().stand.load.alpha0+(code==GLFW_KEY_LEFT_BRACKET?-.05:.05),&reason);
+            if(!ok) std::cerr<<reason<<'\n';
+        }
         else if(code==GLFW_KEY_J||code==GLFW_KEY_L||code==GLFW_KEY_K||code==GLFW_KEY_O||code==GLFW_KEY_C)
         {
             std::string reason;
@@ -67,6 +74,24 @@ namespace
         if(w.snapshot().externalForce.x!=200||w.snapshot().mode!=DriveMode::Disabled) throw std::runtime_error("Drive/wrench callback failed");
         key(window,GLFW_KEY_SPACE,0,GLFW_PRESS,0); key(window,GLFW_KEY_R,0,GLFW_PRESS,0); key(window,GLFW_KEY_V,0,GLFW_PRESS,0);
         if(!scheduler.paused()||!i.reset||i.camera!=1) throw std::runtime_error("Pause/reset/camera callback failed");
+        if(bodybench::isLoad(options.scenario))
+        {
+            PhysicsWorld loadWorld{bodybench::definition(rig,options.scenario,options)};
+            bodybench::reset(rig,loadWorld,options.scenario,options);
+            for(unsigned tick=0;tick<481;++tick) loadWorld.step();
+            i.world=&loadWorld;
+            const auto before=loadWorld.snapshot();
+            if(!before.stand.load.baselineValid) throw std::runtime_error("Load callback baseline unavailable");
+            for(const auto code:{GLFW_KEY_RIGHT_BRACKET,GLFW_KEY_LEFT_BRACKET,GLFW_KEY_C,GLFW_KEY_O})
+            {
+                const auto serial=loadWorld.snapshot().stand.load.serial;
+                key(window,code,0,GLFW_PRESS,0);
+                const auto& after=loadWorld.snapshot();
+                if(after.stand.load.serial!=serial+1||after.q!=before.q||after.v!=before.v||after.root.position!=before.root.position||
+                    after.root.orientation!=before.root.orientation||after.tick!=before.tick)
+                    throw std::runtime_error("Load target/cancel/return callback failed or wrote physics");
+            }
+        }
         glfwSetWindowUserPointer(window,nullptr);
     }
     void line(std::vector<DebugLineVertex>& v,glm::dvec3 a,glm::dvec3 b,glm::vec3 color)
@@ -292,6 +317,13 @@ int main(int argc,char** argv)
                 std::ostringstream title; title<<std::fixed<<std::setprecision(2)<<"FREE "<<bodyCaseName(active)<<" t="<<state.time<<" y="<<state.root.position.y<<"m v="<<glm::length(state.root.linearVelocityWorld)
                     <<"m/s q"<<input.selected<<'='<<state.q[input.selected]<<"rad tau="<<state.appliedTorque[input.selected]<<"Nm lim="<<std::setprecision(3)<<violation
                     <<"rad con="<<state.contacts.size()<<" N="<<std::setprecision(0)<<state.peakNormalForceThisTick<<" pen="<<std::setprecision(1)<<1000*state.maxPenetrationThisTick<<"mm it="<<state.solverIterations;
+                if(state.stand.load.enabled)
+                {
+                    const auto& a=state.stand.load;
+                    title<<" alpha L cmd/ref="<<std::setprecision(3)<<a.command<<'/'<<a.reference<<" actual=";
+                    if(a.actualValid) title<<a.actual; else title<<"INVALID";
+                    title<<" Fn="<<std::setprecision(1)<<state.support.feet[0].normalForce<<'/'<<state.support.feet[1].normalForce<<"N";
+                }
                 glfwSetWindowTitle(window,title.str().c_str()); glfwSwapBuffers(window);
             }
             glDeleteQueries(1,&query); camera(0); draw(false); const auto final=readPixels(); std::size_t delta=0;

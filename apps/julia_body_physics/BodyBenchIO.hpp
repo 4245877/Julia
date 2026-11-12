@@ -11,7 +11,8 @@ namespace bodybench
 {
     using namespace julia::physics;
     inline bool isCom(BodyCase c) { return c==BodyCase::ComShift||c==BodyCase::ComRetarget; }
-    inline bool isStand(BodyCase c) { return c==BodyCase::Stand||c==BodyCase::StandPulse||isCom(c); }
+    inline bool isLoad(BodyCase c) { return c==BodyCase::LoadShift||c==BodyCase::LoadRetarget; }
+    inline bool isStand(BodyCase c) { return c==BodyCase::Stand||c==BodyCase::StandPulse||isCom(c)||isLoad(c); }
     struct Options
     {
         BodyCase scenario=BodyCase::Drop;
@@ -22,6 +23,8 @@ namespace bodybench
         bool observer=true;
         unsigned substeps=16;
         bool standFeedback=true, bounded=false, explicitController=false, comPulses=false;
+        bool loadTask=true,explicitLoadTask=false;
+        BoundedSolver boundedSolver=BoundedSolver::Reference7h;
         unsigned feedbackOffTick=0;
         double yaw=0,initialShiftX=0,initialShiftZ=0,initialTilt=0,effortScale=1,contactTime=.01;
         std::string standEvent="none";
@@ -34,8 +37,11 @@ namespace bodybench
         {
             const std::string flag=argv[i];
             const auto value=[&]() { if(++i>=argc) throw std::invalid_argument("Missing value: "+flag); return std::string{argv[i]}; };
-            if(flag=="--stand-controller") { const auto v=value(); if(v!="bounded"&&v!="equality") throw std::invalid_argument("Controller: bounded|equality"); o.bounded=v=="bounded"; o.explicitController=true; }
+            if(flag=="--bounded-solver") { const auto v=value(); if(v!="reference"&&v!="optimized") throw std::invalid_argument("Bounded solver: reference|optimized"); o.boundedSolver=v=="optimized"?BoundedSolver::Optimized7i:BoundedSolver::Reference7h; }
+            else if(flag=="--stand-controller") { const auto v=value(); if(v!="bounded"&&v!="equality") throw std::invalid_argument("Controller: bounded|equality"); o.bounded=v=="bounded"; o.explicitController=true; }
             else if(flag=="--com-pulses") { const auto v=value(); if(v!="on"&&v!="off") throw std::invalid_argument("COM pulses: on|off"); o.comPulses=v=="on"; }
+            else if(flag=="--load-pulses") { const auto v=value(); if(v!="on"&&v!="off") throw std::invalid_argument("Load pulses: on|off"); o.comPulses=v=="on"; }
+            else if(flag=="--load-task") { const auto v=value(); if(v!="on"&&v!="off") throw std::invalid_argument("Load task: on|off"); o.loadTask=v=="on"; o.explicitLoadTask=true; }
             else if(flag=="--case") o.scenario=parseBodyCase(value());
             else if(flag=="--stand-feedback-off-tick") { const auto v=value(); std::size_t used=0; const auto n=std::stoul(v,&used); if(used!=v.size()||n<1||n>1200000) throw std::invalid_argument("Invalid ablation tick"); o.feedbackOffTick=static_cast<unsigned>(n); }
             else if(flag=="--stand-feedback") { const auto v=value(); if(v!="on"&&v!="off") throw std::invalid_argument("Stand feedback: on|off"); o.standFeedback=v=="on"; }
@@ -73,11 +79,14 @@ namespace bodybench
             else throw std::invalid_argument("Unknown option: "+flag);
         }
         const bool stand=isStand(o.scenario);
-        if(isCom(o.scenario)&&!o.explicitController) o.bounded=true;
-        if(stand&&!o.explicitTicks) o.ticks=isCom(o.scenario)?(o.scenario==BodyCase::ComShift?6480:2160):1920;
+        if((isCom(o.scenario)||isLoad(o.scenario))&&!o.explicitController) o.bounded=true;
+        if(isLoad(o.scenario)&&(!o.bounded||o.boundedSolver!=BoundedSolver::Optimized7i)) throw std::invalid_argument("Load case requires bounded controller and explicit --bounded-solver optimized");
+        if(o.explicitLoadTask&&!isLoad(o.scenario)) throw std::invalid_argument("Load task requires load case");
+        if(o.boundedSolver==BoundedSolver::Optimized7i&&(!stand||!o.bounded)) throw std::invalid_argument("Optimized solver requires bounded stand controller");
+        if(stand&&!o.explicitTicks) o.ticks=isLoad(o.scenario)?(o.scenario==BodyCase::LoadShift?7200:2880):isCom(o.scenario)?(o.scenario==BodyCase::ComShift?6480:2160):1920;
         if(std::abs(o.yaw)>3.15||std::abs(o.initialShiftX)>.1||std::abs(o.initialShiftZ)>.1||std::abs(o.initialTilt)>.2||o.effortScale<.05||o.effortScale>1||o.contactTime<.008||o.contactTime>.012)
             throw std::invalid_argument("Stand parameter outside experiment bounds");
-        if(o.comPulses&&!isCom(o.scenario)) throw std::invalid_argument("COM pulses require COM case");
+        if(o.comPulses&&!isCom(o.scenario)&&!isLoad(o.scenario)) throw std::invalid_argument("Pulses require COM or load case");
         if(!stand&&(o.explicitController||!o.standFeedback||o.feedbackOffTick!=0||o.yaw!=0||o.initialShiftX!=0||o.initialShiftZ!=0||o.initialTilt!=0||o.effortScale!=1||o.contactTime!=.01||o.standEvent!="none")) throw std::invalid_argument("Stand parameters require a stand case");
         if(stand&&(!o.observer||o.servo)) throw std::invalid_argument("Stand requires observer and exclusive stand drive");
         return o;
@@ -98,7 +107,9 @@ namespace bodybench
             auto placement=glm::rotate(glm::dmat4{1},o.yaw,glm::dvec3{0,1,0});
             if(o.yaw!=0) placement[3]=glm::dvec4{1.2,0,-.7,1};
             auto plan=preparedStand(rig,world,placement); plan.balanceFeedback=o.standFeedback;
-            plan.variant=(o.bounded||(isCom(scenario)&&!o.explicitController))?StandVariant::Bounded7h:StandVariant::Equality7g; plan.comCommands=isCom(scenario);
+            plan.variant=(o.bounded||((isCom(scenario)||isLoad(scenario))&&!o.explicitController))?StandVariant::Bounded7h:StandVariant::Equality7g; plan.comCommands=isCom(scenario);
+            plan.loadCommands=isLoad(scenario); plan.loadTask=o.loadTask;
+            plan.boundedSolver=o.boundedSolver;
             auto initial=plan.rootGoal; initial.position+=plan.rootGoal.orientation*glm::dvec3{o.initialShiftX,0,o.initialShiftZ};
             initial.orientation=initial.orientation*glm::angleAxis(o.initialTilt,glm::dvec3{1,0,0});
             world.reset(plan.posture,initial); std::string reason;
@@ -117,9 +128,30 @@ namespace bodybench
     {
         const auto tick=world.snapshot().tick;
         if(o.feedbackOffTick!=0&&tick==o.feedbackOffTick) { std::string reason; if(!world.standBalanceFeedback(false,&reason)) throw std::runtime_error(reason); }
-        if(tick==360&&o.standEvent=="disable") world.command(CommandKind::Disable);
-        if(tick>=360&&tick<384&&o.standEvent=="lift") world.applyWrench(16,{0,450,0});
-        if(tick>=360&&tick<384&&o.standEvent=="outside") world.applyWrench(3,{150,0,0});
+        const std::uint64_t eventTick=isLoad(scenario)?720:360;
+        if(tick==eventTick&&o.standEvent=="disable") world.command(CommandKind::Disable);
+        if(tick>=eventTick&&tick<eventTick+24&&o.standEvent=="lift") world.applyWrench(16,{0,450,0});
+        if(tick>=eventTick&&tick<eventTick+24&&o.standEvent=="outside") world.applyWrench(3,{150,0,0});
+        if(isLoad(scenario)&&world.snapshot().mode==DriveMode::Stand&&world.snapshot().stand.phase!=StandPhase::Lost&&world.snapshot().stand.phase!=StandPhase::Disabled)
+        {
+            const auto target=[&](double offset) { std::string reason; if(!world.standLoadTarget(world.snapshot().stand.load.alpha0+offset,&reason)) throw std::runtime_error(reason); };
+            const auto origin=[&]() { std::string reason; if(!world.returnStandLoad(&reason)) throw std::runtime_error(reason); };
+            if(tick==480) target(.05);
+            if(scenario==BodyCase::LoadShift)
+            {
+                if(tick==2640) target(-.05);
+                if(tick==5040) origin();
+                const auto rotation=world.snapshot().stand.rootGoal.orientation;
+                if(o.comPulses&&tick>=1680&&tick<1692) world.applyWrench(3,rotation*glm::dvec3{3,0,0});
+                if(o.comPulses&&tick>=4080&&tick<4092) world.applyWrench(3,rotation*glm::dvec3{0,0,3});
+            }
+            else
+            {
+                if(tick==600) target(-.05);
+                if(tick==720) { std::string reason; if(!world.cancelStandLoad(&reason)) throw std::runtime_error(reason); }
+                if(tick==1680) origin();
+            }
+        }
         if(isCom(scenario))
         {
             const auto target=[&](glm::dvec2 goal) { std::string reason; if(!world.standComTarget(goal,&reason)) throw std::runtime_error(reason); };
@@ -144,7 +176,7 @@ namespace bodybench
     }
     struct Log
     {
-        std::ofstream state,joints,contacts,drive,support,dynamics,regions,points,substeps,stand,com,comSolver;
+        std::ofstream state,joints,contacts,drive,support,dynamics,regions,points,substeps,stand,com,comSolver,load;
         unsigned substepsPerTick=16;
         explicit Log(const std::filesystem::path& dir,unsigned steps=16):substepsPerTick(steps)
         {
@@ -152,6 +184,7 @@ namespace bodybench
             state.open(dir/"state.csv"); joints.open(dir/"joints.csv"); contacts.open(dir/"contacts.csv");
             com.open(dir/"com-v1.csv"); comCsvHeader(com);
             comSolver.open(dir/"com-solver-v1.csv"); comSolverCsvHeader(comSolver);
+            load.open(dir/"load-v1.csv"); loadCsvHeader(load);
             stand.open(dir/"stand-v1.csv"); standCsvHeader(stand);
             if(!state||!joints||!contacts) throw std::runtime_error("Cannot create CSV");
             state<<"tick,epoch,time_s,world_steps,root_x_m,root_y_m,root_z_m,qw,qx,qy,qz,vx_world_m_s,vy_world_m_s,vz_world_m_s,wx_local_rad_s,wy_local_rad_s,wz_local_rad_s,com_x_m,com_y_m,com_z_m,px_kg_m_s,py_kg_m_s,pz_kg_m_s,Lx_kg_m2_s,Ly_kg_m2_s,Lz_kg_m2_s,kinetic_J,potential_J,contacts,peak_contacts,peak_normal_N,peak_penetration_m,solver_iterations,warnings,external_fx_N,external_fy_N,external_fz_N,mapping_us\n";
@@ -171,7 +204,7 @@ namespace bodybench
             driveCsvRow(drive,s,substepsPerTick);
             supportCsvRow(support,s); dynamicsCsvRow(dynamics,s); supportRegionsCsvRow(regions,s); contactPointsCsvRow(points,s);
             dynamicsSubstepsCsvRow(substeps,s);
-            standCsvRow(stand,s); comCsvRow(com,s); comSolverCsvRow(comSolver,s);
+            standCsvRow(stand,s); comCsvRow(com,s); comSolverCsvRow(comSolver,s); loadCsvRow(load,s);
             const auto vec=[&](glm::dvec3 v) { state<<','<<v.x<<','<<v.y<<','<<v.z; };
             state<<s.tick<<','<<s.epoch<<','<<s.time<<','<<s.worldSteps;
             vec(r.position); state<<','<<r.orientation.w<<','<<r.orientation.x<<','<<r.orientation.y<<','<<r.orientation.z;
@@ -188,7 +221,7 @@ namespace bodybench
                 if(c.force) contacts<<','<<c.force->x<<','<<c.force->y<<','<<c.force->z; else contacts<<",NA,NA,NA";
                 contacts<<'\n';
             }
-            if(!state||!joints||!contacts||!drive||!support||!dynamics||!regions||!points||!substeps||!com||!stand) throw std::runtime_error("CSV write failed");
+            if(!state||!joints||!contacts||!drive||!support||!dynamics||!regions||!points||!substeps||!com||!stand||!load) throw std::runtime_error("CSV write failed");
         }
     };
     inline void metadata(const std::filesystem::path& dir,const BodyRig& rig,const PhysicsWorld& world)

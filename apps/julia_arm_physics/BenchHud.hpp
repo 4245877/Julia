@@ -46,10 +46,22 @@ namespace bench
                 text<<"PRED N "<<t.predictedReaction[0].force.y<<" / "<<t.predictedReaction[1].force.y<<" N, SOLVES "<<t.linearSolves<<" CTRL "<<t.controllerUs<<" US\n";
                 if(t.variant==julia::physics::StandVariant::Bounded7h||t.commandSerial>0)
                 {
-                    text<<"COM "<<julia::physics::comPhaseName(t.comPhase)<<" #"<<t.commandSerial<<" ERR "<<1000*t.commandError<<" MM HOLD "<<t.achievedSeconds<<" S\n";
+                    if(!t.load.enabled) text<<"COM "<<julia::physics::comPhaseName(t.comPhase)<<" #"<<t.commandSerial<<" ERR "<<1000*t.commandError<<" MM HOLD "<<t.achievedSeconds<<" S\n";
                     text<<"GOAL MAGENTA / REFERENCE ORANGE / ACTUAL YELLOW; TOP INSET X30\n";
                     text<<"QP "<<t.solverCode<<" IT "<<t.qpIterations<<" ACTIVE "<<t.activeInequalities<<" CAPS "<<t.activeCaps<<" FRICTION "<<t.activeFriction<<" NORMAL "<<t.activeNormals<<"\n";
-                    text<<"J/L X-/X+  K Z+  O ORIGIN  C CANCEL; 8 SHIFT / 9 RETARGET\n";
+                    if(!t.load.enabled) text<<"J/L X-/X+  K Z+  O ORIGIN  C CANCEL; 8 SHIFT / 9 RETARGET\n";
+                }
+                if(t.load.enabled)
+                {
+                    const auto& a=t.load;
+                    text<<"LOAD "<<julia::physics::comPhaseName(a.phase)<<" #"<<a.serial<<" TASK "<<(a.taskEnabled?"ON":"OFF")<<" HOLD "<<a.achievedSeconds<<" S\n";
+                    text<<"ALPHA LEFT COMMAND "<<a.command<<" REF "<<a.reference<<" ACTUAL ";
+                    if(a.actualValid) text<<a.actual; else text<<"INVALID";
+                    text<<" PRED "; if(a.predictedValid) text<<a.predicted; else text<<"INVALID";
+                    text<<"\nALPHA0 "; if(a.baselineValid) text<<a.alpha0; else text<<"CALIBRATING";
+                    text<<"  FN L/R "<<s.support.feet[0].normalForce<<" / "<<s.support.feet[1].normalForce<<" N\n";
+                    text<<"COM ERR "<<1000*t.comError<<" MM  HORIZONTAL SPEED "<<1000*t.speed<<" MM/S\n";
+                    text<<"[ / ] ALPHA0 -/+ .05   O RETURN ALPHA0   C SMOOTH STOP\n";
                 }
             }
             const auto& o=s.support;

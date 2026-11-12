@@ -83,6 +83,12 @@ namespace julia::physics
     enum class StandPhase { Disabled, Establishing, Stabilizing, Holding, Lost };
     const char* standPhaseName(StandPhase phase);
     enum class StandVariant { Equality7g, Bounded7h };
+    enum class BoundedSolver { Reference7h, Optimized7i };
+    namespace qp { struct Problem; struct Result; }
+    struct BoundedProfile
+    {
+        double preparationUs=0,inputUs=0,linearUs=0,activeUs=0,verificationUs=0,physicalUs=0;
+    };
     enum class ComPhase { Idle, Moving, Settling, Reached, Cancelled, Failed };
     const char* comPhaseName(ComPhase phase);
     struct ComMotionSettings
@@ -98,8 +104,18 @@ namespace julia::physics
         std::array<Wrench,2> nominalReaction;
         bool balanceFeedback=true;
         StandVariant variant=StandVariant::Equality7g;
+        BoundedSolver boundedSolver=BoundedSolver::Reference7h;
         bool comCommands=false; // Explicit research comparator also allowed with Equality7g.
         ComMotionSettings motion;
+        bool loadCommands=false,loadTask=true; // Stage7j: explicit bounded/optimized only.
+    };
+    struct LoadStatus
+    {
+        bool enabled=false,taskEnabled=false,baselineValid=false,actualValid=false,predictedValid=false;
+        double alpha0=0,command=0,reference=0,velocity=0,acceleration=0;
+        double actual=0,predicted=0,filtered=0,integral=0,feedback=0,achievedSeconds=0,baselineSeconds=0;
+        unsigned serial=0;
+        ComPhase phase=ComPhase::Idle;
     };
     struct StandStatus
     {
@@ -127,6 +143,8 @@ namespace julia::physics
         unsigned solverSampleCount=0;
         std::array<double,4> solverTimesUs{};
         std::array<unsigned,4> solverIterations{},solverActive{};
+        std::array<BoundedProfile,4> boundedProfiles{};
+        LoadStatus load;
     };
     enum class CommandKind { Target, Torque, Disable, Reach, Attach, MoveRoot, SmoothTarget };
     struct Capabilities
@@ -217,6 +235,8 @@ namespace julia::physics
     void standCsvRow(std::ostream& out,const Snapshot& snapshot);
     void comCsvHeader(std::ostream& out);
     void comCsvRow(std::ostream& out,const Snapshot& snapshot);
+    void loadCsvHeader(std::ostream& out);
+    void loadCsvRow(std::ostream& out,const Snapshot& snapshot);
     void comSolverCsvHeader(std::ostream& out);
     void comSolverCsvRow(std::ostream& out,const Snapshot& snapshot);
     // One owner advances this WORLD once per configured substep. Read-only
@@ -249,6 +269,9 @@ namespace julia::physics
         // Atomically reject unsupported/outside/nonfinite targets; never project a command.
         bool standComTarget(glm::dvec2 offset,std::string* reason=nullptr);
         bool cancelStandCom(std::string* reason=nullptr); // Bounded stop from current reference.
+        bool standLoadTarget(double alpha,std::string* reason=nullptr);
+        bool cancelStandLoad(std::string* reason=nullptr);
+        bool returnStandLoad(std::string* reason=nullptr);
         void cancelContact(); // Rate-limited unload and retreat, no q/v writes.
         // Pure gravity inverse-dynamics effort, at zero velocity, scratch only.
         // Free-base support is deliberately unavailable in stage7d.
@@ -266,6 +289,8 @@ namespace julia::physics
         std::size_t dataBytes() const;
         std::size_t arenaHighWaterBytes() const;
         std::size_t standControllerBytes() const;
+        // Read-only diagnostic copy of the latest bounded QP and its result.
+        bool inspectStandQp(qp::Problem& problem,qp::Result& result) const;
         std::string modelXml() const;
     private:
         struct Impl;
