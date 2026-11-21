@@ -66,6 +66,12 @@ target_link_libraries(julia_test_body_instance PRIVATE julia_model_import julia_
 add_test(NAME body_instance COMMAND julia_test_body_instance "${CMAKE_BINARY_DIR}/verification/artifacts/stage4/cpu")
 set_tests_properties(body_instance PROPERTIES TIMEOUT 90)
 
+add_executable(julia_test_body_idle test_body_idle.cpp)
+target_compile_definitions(julia_test_body_idle PRIVATE JULIA_TEST_ASSET_DIR="${CMAKE_SOURCE_DIR}/assets")
+target_link_libraries(julia_test_body_idle PRIVATE julia_model_import julia_embodiment julia::warnings)
+add_test(NAME body_idle COMMAND julia_test_body_idle "${CMAKE_BINARY_DIR}/verification/artifacts/idle")
+set_tests_properties(body_idle PROPERTIES TIMEOUT 90)
+
 add_executable(julia_test_arm_reach test_arm_reach.cpp)
 target_compile_definitions(julia_test_arm_reach PRIVATE JULIA_TEST_ASSET_DIR="${CMAKE_SOURCE_DIR}/assets"
     JULIA_TEST_STAGE5_DIR="${CMAKE_BINARY_DIR}/verification/artifacts/stage5/cpu")
@@ -156,6 +162,12 @@ if(WIN32)
 endif()
 add_test(NAME stance_preparation COMMAND julia_test_stance_preparation "${CMAKE_BINARY_DIR}/verification/artifacts/stage6i/cpu")
 set_tests_properties(stance_preparation PROPERTIES TIMEOUT 240)
+
+add_executable(julia_test_ready_sphere test_ready_sphere.cpp)
+target_compile_definitions(julia_test_ready_sphere PRIVATE JULIA_TEST_ASSET_DIR="${CMAKE_SOURCE_DIR}/assets")
+target_link_libraries(julia_test_ready_sphere PRIVATE julia_model_import julia_embodiment julia::warnings)
+add_test(NAME ready_sphere COMMAND julia_test_ready_sphere "${CMAKE_BINARY_DIR}/verification/artifacts/ready-sphere/cpu")
+set_tests_properties(ready_sphere PROPERTIES TIMEOUT 90)
 
 if(JULIA_BUILD_PHYSICS)
     add_executable(julia_test_support_observation test_support_observation.cpp)
@@ -388,3 +400,7 @@ set_tests_properties(desktop_stance_reach PROPERTIES WORKING_DIRECTORY "${CMAKE_
 add_test(NAME desktop_stance_preparation COMMAND $<TARGET_FILE:julia_desktop>
     --verify-stance-preparation "${CMAKE_BINARY_DIR}/verification/artifacts/stage6i/gpu")
 set_tests_properties(desktop_stance_preparation PROPERTIES WORKING_DIRECTORY "${CMAKE_BINARY_DIR}" TIMEOUT 180 RUN_SERIAL TRUE)
+
+add_test(NAME desktop_ready_sphere COMMAND $<TARGET_FILE:julia_desktop>
+    --verify-ready-sphere "${CMAKE_BINARY_DIR}/verification/artifacts/ready-sphere/gpu" mixed)
+set_tests_properties(desktop_ready_sphere PROPERTIES WORKING_DIRECTORY "${CMAKE_BINARY_DIR}" TIMEOUT 90 RUN_SERIAL TRUE)

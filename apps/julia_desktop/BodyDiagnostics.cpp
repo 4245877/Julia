@@ -247,7 +247,7 @@ namespace julia::desktop
         if (!display.direct && !display.object) return;
         const auto& globals=display.pose.globals;
         const auto shownReach=[&](std::size_t side) -> const ReachObservation& {
-            if (display.interaction.preparation && display.preparationReach.action==display.interaction.action &&
+            if (display.interaction.sourceReach && display.preparationReach.action &&
                 side==(display.interaction.arm==ArmSide::Left ? 0u:1u)) return display.preparationReach;
             return display.reaches[side];
         };

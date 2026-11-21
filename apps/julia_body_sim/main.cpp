@@ -6,7 +6,10 @@
 #include "../common/SupportDemo.hpp"
 #include "../common/StanceReachDemo.hpp"
 #include "../common/StancePreparationDemo.hpp"
+#include "../common/ReadySphereDemo.hpp"
+#include "../common/ReadySphereTrace.hpp"
 #include <glm/gtc/matrix_transform.hpp>
+#include <algorithm>
 #include <charconv>
 #include <filesystem>
 #include <fstream>
@@ -26,6 +29,101 @@ namespace
             throw std::invalid_argument("Invalid numeric argument");
         return result;
     }
+
+    int runReadySphere(julia::embodiment::BodyInstance& body,std::uint64_t ticks,const std::filesystem::path& output)
+    {
+        using namespace julia;
+        using namespace julia::embodiment;
+        app::ReadySphereDemo demo;
+        std::ofstream trace;
+        if (!output.empty()) {
+            if (!output.parent_path().empty()) std::filesystem::create_directories(output.parent_path());
+            trace.open(output);
+            if (!trace) throw std::runtime_error("Cannot open Ready sphere trace");
+            app::readySphereTraceHeader(trace);
+        }
+        while (body.snapshot().tick<ticks) {
+            demo.drive(body);
+            if (demo.done() || demo.failed()) break;
+            body.step();
+            if (trace.is_open()) app::readySphereTrace(trace,body.snapshot());
+        }
+        if (trace.is_open() && !(trace << std::flush)) throw std::runtime_error("Cannot write Ready sphere trace");
+        const auto& s=body.snapshot();
+        std::cout << "ready_sphere_cycles=" << demo.completed() << " ticks=" << s.tick << " idle=" << idlePhaseName(s.idle.phase)
+            << " interaction=" << interactionPhaseName(s.interaction.phase) << " result=" << s.interaction.result
+            << " object=" << (s.object ? (s.object->state==ObjectState::Attached ? "Attached":"Free"):"Absent");
+        if (!demo.done()) std::cout << " reason=" << (demo.failed() ? demo.reason():"tick limit reached");
+        std::cout << '\n';
+        return demo.done() ? 0:1;
+    }
+
+    void runIdle(julia::embodiment::BodyInstance& body, const julia::embodiment::RootPose& root,
+        std::uint64_t ticks, std::uint64_t readyAt, std::uint64_t resumeAt, const std::filesystem::path& output)
+    {
+        using namespace julia::embodiment;
+        if (!body.control() || !ticks || (readyAt && (readyAt < 2 || readyAt > ticks)) ||
+            (resumeAt && (!readyAt || resumeAt <= readyAt || resumeAt > ticks)))
+            throw std::invalid_argument("Idle requires calibrated Raphtalia and ordered transition ticks in the run");
+
+        if (root.position != glm::vec3{0} || root.rotation != glm::quat{1,0,0,0}) {
+            body.enqueue(SetRoot{root});
+            if (root.position.y != 0) body.enqueue(SetSupportSurface{{1,2,root.position.y,true}});
+        }
+        body.setIdleView(IdleView{root.position + root.rotation * glm::vec3{0,1.5f,3}});
+        body.enqueue(StartIdle{});
+
+        std::ofstream trace;
+        if (!output.empty()) {
+            if (!output.parent_path().empty()) std::filesystem::create_directories(output.parent_path());
+            trace.open(output);
+            if (!trace) throw std::runtime_error("Cannot open Idle trace");
+            trace << "tick,phase,idle_seconds,root_x_m,root_y_m,root_z_m,gaze_yaw_deg,gaze_pitch_deg,blink_left,blink_right";
+            for (const auto* side : {"left", "right"})
+                trace << ',' << side << "_position_error_m," << side << "_angular_error_rad,"
+                    << side << "_min_gap_m," << side << "_max_gap_m";
+            for (const auto& joint : body.control()->binding().profile().joints)
+                for (const auto& coordinate : joint.coordinates)
+                    trace << ',' << joint.name << '_' << coordinate.name << "_rad";
+            trace << '\n' << std::setprecision(17);
+        }
+
+        float maxPosition = 0, maxAngle = 0, maxGap = 0;
+        julia::runtime::FixedStepScheduler scheduler;
+        scheduler.runTicks(ticks, [&] {
+            const auto tick = body.snapshot().tick + 1;
+            if (tick == readyAt) body.enqueue(SetIdleStance{true});
+            if (tick == resumeAt) body.enqueue(SetIdleStance{false});
+            body.step();
+            for (const auto& r : body.results())
+                if (r.status == BodyCommandStatus::Rejected) throw std::runtime_error(r.reason);
+            const auto& s = body.snapshot();
+            if (s.idle.phase == IdlePhase::Fault) throw std::runtime_error("Idle foot tracking failed at tick " + std::to_string(tick));
+            for (const auto& foot : s.support.anchors) {
+                maxPosition = std::max(maxPosition, foot.positionError);
+                maxAngle = std::max(maxAngle, foot.angularError);
+                maxGap = std::max({maxGap, -foot.minGap, foot.maxGap});
+            }
+            if (!trace.is_open()) return;
+            trace << s.tick << ',' << idlePhaseName(s.idle.phase) << ',' << s.idle.phaseSeconds << ','
+                << s.root.position.x << ',' << s.root.position.y << ',' << s.root.position.z << ','
+                << s.eyes.gazeDegrees.x << ',' << s.eyes.gazeDegrees.y << ',' << s.eyes.blinkLeft << ',' << s.eyes.blinkRight;
+            for (const auto& foot : s.support.anchors)
+                trace << ',' << foot.positionError << ',' << foot.angularError << ',' << foot.minGap << ',' << foot.maxGap;
+            const auto& joints = body.control()->binding().profile().joints;
+            for (std::size_t i = 0; i < joints.size(); ++i)
+                for (std::size_t k = 0; k < joints[i].coordinates.size(); ++k)
+                    trace << ',' << s.coordinates[i][static_cast<int>(k)];
+            trace << '\n';
+        });
+        if (trace.is_open()) {
+            trace.flush();
+            if (!trace) throw std::runtime_error("Cannot write Idle trace");
+        }
+        std::cout << "completed_ticks=" << body.snapshot().tick << " phase=" << idlePhaseName(body.snapshot().idle.phase)
+            << " max_foot_position_m=" << maxPosition << " max_foot_angle_rad=" << maxAngle << " max_sole_gap_m=" << maxGap
+            << " pending_commands=" << body.pendingCommands() << " command_history=" << body.commandHistorySize() << '\n';
+    }
 }
 int main(int argc,char** argv)
 {
@@ -40,10 +138,12 @@ int main(int argc,char** argv)
         std::optional<glm::quat> retargetOrientation;
         std::optional<unsigned> spatialSample;
         std::uint64_t retargetTick=0,cancelTick=0,action=0;
+        std::uint64_t readyAt=0,resumeAt=0;
         ReachTarget reachTarget;
         int effectorOffset=0;
         RootPose root;
         bool eyes=true, multiDemo=false, interactionDemo=false, supportDemo=false, stanceDemo=false, preparationDemo=false, explicitTicks=false;
+        bool idle=false, readySphere=false;
         std::optional<bool> collisionDemo;
         std::filesystem::path source=std::filesystem::path{JULIA_ASSET_DIR}/"models/Raphtalia_prepared.fbx", output;
         for (int i=1;i<argc;++i)
@@ -52,9 +152,11 @@ int main(int argc,char** argv)
             if (argument=="--help")
             {
                 std::cout << "julia_body_sim [--ticks N] [--clip INDEX] [--elbow RADIANS] [--no-eyes] [--model PATH] [--output CSV]\n"
+                    << "  --idle [--idle-ready-at TICK] [--idle-resume-at TICK] (planted Raphtalia Idle)\n"
                     << "  --support-demo (explicit alignment, four small root moves; default 12000 ticks)\n"
                     << "  --stance-reach-demo (align, Reach, Retarget/Cancel, root move, new Reach; 12000 ticks)\n"
                     << "  --stance-preparation-demo (align, Reach handoff, ReadyToGrasp, checked exit, independent Reach)\n"
+                    << "  --ready-sphere-demo (three left-hand grasp, carry and release cycles from Idle Ready)\n"
                     << "  --interaction-demo (one sphere; grasp, move, release; --right optional)\n  --reach X Y Z [--right] [--effector wrist|palm|grip] [--world] [--root X Y Z YAW_RADIANS]\n"
                     << "  --orientation W X Y Z (PositionAndOrientation); --position-only; --spatial-demo 0|1|2\n"
                     << "  --tolerance METRES --angular-tolerance RADIANS; --retarget-orientation W X Y Z\n"
@@ -68,6 +170,8 @@ int main(int argc,char** argv)
                 return 0;
             }
             if (argument=="--support-demo") { supportDemo=true; continue; }
+            if (argument=="--idle") { idle=true; continue; }
+            if (argument=="--ready-sphere-demo") { readySphere=true; continue; }
             if (argument=="--stance-reach-demo") { stanceDemo=true; continue; }
             if (argument=="--stance-preparation-demo") { preparationDemo=true; continue; }
             if (argument=="--interaction-demo") { interactionDemo=true; continue; }
@@ -106,6 +210,8 @@ int main(int argc,char** argv)
             if (i+1>=argc) throw std::invalid_argument("Missing option value");
             const std::string_view value{argv[++i]};
             if (argument=="--ticks") { ticks=number<std::uint64_t>(value); explicitTicks=true; }
+            else if (argument=="--idle-ready-at") readyAt=number<std::uint64_t>(value);
+            else if (argument=="--idle-resume-at") resumeAt=number<std::uint64_t>(value);
             else if (argument=="--spatial-demo") spatialSample=number<unsigned>(value);
             else if (argument=="--tolerance") reachTarget.tolerance=number<float>(value);
             else if (argument=="--angular-tolerance") reachTarget.angularTolerance=number<float>(value);
@@ -142,10 +248,24 @@ int main(int argc,char** argv)
             }
             else throw std::invalid_argument("Unknown option");
         }
+        if (!idle && (readyAt || resumeAt)) throw std::invalid_argument("Idle transition ticks require --idle");
+        if ((idle || readySphere) && ((idle && readySphere) || preparationDemo || stanceDemo || supportDemo || interactionDemo || collisionDemo ||
+            spatialSample || reachPosition || retargetPosition || retargetOrientation || cancelTick || retargetTick || clip || elbow))
+            throw std::invalid_argument("Select one Idle or Ready sphere scenario");
+        if (readySphere && (reachTarget.arm!=ArmSide::Left || root.position!=glm::vec3{0} || root.rotation!=glm::quat{1,0,0,0}))
+            throw std::invalid_argument("The Ready sphere demo uses the left hand and default root");
         const auto asset=model_import::ModelImporter::loadFromFile(source);
         const auto profile=raphtaliaBodyProfile();
         const bool calibrated=validateBodyProfile(profile,*asset).empty();
         BodyInstance body(1,asset,calibrated ? &profile:nullptr,eyes);
+        if (readySphere) {
+            if (!calibrated) throw std::invalid_argument("Ready sphere demo requires Raphtalia");
+            return runReadySphere(body,explicitTicks ? ticks:app::ReadySphereDemo::TickLimit,output);
+        }
+        if (idle) {
+            runIdle(body,root,ticks,readyAt,resumeAt,output);
+            return 0;
+        }
         if (preparationDemo) {
             if (!calibrated) throw std::invalid_argument("Preparation demo requires Raphtalia");
             if (!explicitTicks) ticks=8000;

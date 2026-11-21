@@ -21,6 +21,8 @@ namespace julia::embodiment
         // Point in imported model scene coordinates, before fit/model transform.
         // Both eyes use one distant direction (no artificial convergence).
         void setTargetPoint(const glm::vec3& point);
+        // Resource-space direction from the eyes towards an orthographic camera.
+        void setTargetDirection(const glm::vec3& direction);
         void clearTargetPoint();
         bool hasTargetPoint() const { return targeted_; }
         static bool authoredEyes(const AnimationClip* clip);
@@ -45,7 +47,7 @@ namespace julia::embodiment
         };
         const model::ModelAsset& model_;
         render::EyeBehavior behavior_{};
-        bool available_ = false, enabled_ = false, targeted_ = false;
+        bool available_ = false, enabled_ = false, targeted_ = false, directional_ = false;
         std::array<std::uint32_t, 2> eyes_{};
         std::uint32_t head_ = 0;
         std::vector<Lid> lids_;

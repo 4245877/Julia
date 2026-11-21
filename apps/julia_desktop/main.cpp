@@ -11,6 +11,7 @@
 #include "EyeVerification.hpp"
 #include "CameraInput.hpp"
 #include "BodyDiagnostics.hpp"
+#include "../common/ReadySphereDemo.hpp"
 #include "julia/render_opengl/EyePoseLayer.hpp"
 
 #include <glm/glm.hpp>
@@ -103,6 +104,9 @@ namespace
         julia::runtime::FixedStepScheduler* scheduler = nullptr;
         const julia::embodiment::BodyDisplay* bodyDisplay = nullptr;
         julia::desktop::BodyDiagnostics* bodyDiagnostics = nullptr;
+        const julia::app::ReadySphereDemo* readySphere = nullptr;
+        std::uint64_t cancelInteractionCommand = 0;
+        std::string cancelInteractionError;
         const julia::render_opengl::GLModel* model = nullptr;
         julia::render_opengl::CameraConfig cameraConfig{};
         julia::desktop::CameraInput cameraInput;
@@ -142,6 +146,18 @@ namespace
         void applyCamera() const
         {
             if (renderer && orbitCamera) renderer->setCamera(activeCamera());
+        }
+
+        void updateIdleView() const
+        {
+            const auto view = activeCamera();
+            const auto& binding = body->control()->binding();
+            // fitModel maps the imported resource to the renderer. Simulation
+            // world uses the calibrated metric frame, before the moving root.
+            const auto worldFromViewer = binding.profile().bodyFromResource * glm::inverse(fitModel);
+            const bool parallel = view.orthographicHeight > 0;
+            const auto camera = parallel ? glm::vec4{view.position - view.target,0} : glm::vec4{view.position,1};
+            body->setIdleView(julia::embodiment::IdleView{glm::vec3{worldFromViewer * camera},parallel});
         }
     };
 
@@ -307,7 +323,24 @@ namespace
             if (key == GLFW_KEY_PAUSE)
             { state->scheduler->setPaused(!state->scheduler->paused()); body.collapseHistory(); return; }
             if (key == GLFW_KEY_F6) { queue(ResetBody{}); return; }
-            if (state->bodyDiagnostics && state->bodyDiagnostics->key(key,mods)) return;
+            const auto idlePhase = body.snapshot().idle.phase;
+            if (idlePhase != IdlePhase::Disabled)
+            {
+                if (key == GLFW_KEY_SPACE) {
+                    if (state->readySphere && !state->readySphere->done() && !state->readySphere->failed()) return;
+                    queue(SetIdleStance{idlePhase != IdlePhase::Ready && idlePhase != IdlePhase::Settling});
+                    return;
+                }
+                if (key==GLFW_KEY_DELETE && (mods&GLFW_MOD_CONTROL) && body.snapshot().interaction.action) {
+                    state->cancelInteractionCommand=body.enqueue(CancelInteraction{body.snapshot().interaction.action}).id;
+                    return;
+                }
+                if (key != GLFW_KEY_F && key != GLFW_KEY_B && key != GLFW_KEY_F5 && key != GLFW_KEY_H &&
+                    key != GLFW_KEY_K && key != GLFW_KEY_U && key != GLFW_KEY_I &&
+                    key != GLFW_KEY_LEFT_BRACKET && key != GLFW_KEY_RIGHT_BRACKET) return;
+            }
+            if (state->bodyDiagnostics && (idlePhase == IdlePhase::Disabled || key == GLFW_KEY_F5) &&
+                state->bodyDiagnostics->key(key,mods)) return;
             if (key == GLFW_KEY_SPACE) queue(ClipCommand{ClipOperation::TogglePlay});
             else if (key == GLFW_KEY_X || key == GLFW_KEY_R)
             { queue(EyeCommand{EyeOperation::Enable,{0,0,0}}); queue(ClipCommand{ClipOperation::Stop}); }
@@ -787,6 +820,13 @@ namespace
 
 int main(int argc, char** argv)
 {
+    const bool readySphereVerification = argc > 1 && std::string_view{argv[1]} == "--verify-ready-sphere";
+    const std::string_view readySphereRate=readySphereVerification && argc==4 ? argv[3]:"mixed";
+    if (readySphereVerification && ((argc!=3 && argc!=4) ||
+        (readySphereRate!="30" && readySphereRate!="144" && readySphereRate!="mixed"))) {
+        std::cerr << "Usage: julia_desktop --verify-ready-sphere output_directory [30|144|mixed]\n";
+        return 2;
+    }
     const bool supportVerification = argc > 1 && std::string_view{argv[1]} == "--verify-support";
     const bool stanceVerification = argc > 1 && std::string_view{argv[1]} == "--verify-stance-reach";
     const bool preparationVerification = argc > 1 && std::string_view{argv[1]} == "--verify-stance-preparation";
@@ -797,8 +837,8 @@ int main(int argc, char** argv)
     const bool detourVerification = argc > 1 && std::string_view{argv[1]} == "--verify-detour";
     const bool collisionVerification = argc > 1 && std::string_view{argv[1]} == "--verify-collision";
     const bool reachVerification = argc > 1 && std::string_view{argv[1]} == "--verify-ik";
-    const bool bodyVerification = preparationVerification || stanceVerification || supportVerification || interactionVerification || spatialVerification || rankedVerification || multiIKVerification || detourVerification || collisionVerification || reachVerification || (argc > 1 && std::string_view{argv[1]} == "--verify-body");
-    if (bodyVerification && argc != 3) { std::cerr << "Usage: julia_desktop --verify-body output_directory\n"; return 2; }
+    const bool bodyVerification = readySphereVerification || preparationVerification || stanceVerification || supportVerification || interactionVerification || spatialVerification || rankedVerification || multiIKVerification || detourVerification || collisionVerification || reachVerification || (argc > 1 && std::string_view{argv[1]} == "--verify-body");
+    if (bodyVerification && !readySphereVerification && argc != 3) { std::cerr << "Usage: julia_desktop --verify-body output_directory\n"; return 2; }
     const bool verification = argc > 1 && std::string_view{argv[1]} == "--verify";
     const bool animationVerification = argc > 1 &&
         (std::string_view{argv[1]} == "--verify-animations" || std::string_view{argv[1]} == "--review-animations");
@@ -829,12 +869,15 @@ int main(int argc, char** argv)
     std::optional<int> requestedHeight;
     bool persist = !verification && !animationVerification && !eyeVerification && !displayVerification && !bodyVerification;
     bool suppliedModel = false;
+    bool idle = false, readySphereDemo = false;
     for (int i = 1; i < argc && !verification && !animationVerification && !eyeVerification && !displayVerification && !bodyVerification; ++i)
     {
         const std::string_view arg{argv[i]};
         if (arg == "--desktop") requestedMode = julia::desktop::DisplayMode::DesktopAvatar;
         else if (arg == "--window") requestedMode = julia::desktop::DisplayMode::FullWindow;
         else if (arg == "--no-eyes") noEyes = true;
+        else if (arg == "--idle") idle = true;
+        else if (arg == "--ready-sphere-demo") readySphereDemo = true;
         else if (arg == "--topmost") requestedTopmost = true;
         else if (arg == "--no-topmost") requestedTopmost = false;
         else if (arg == "--no-save") persist = false;
@@ -858,7 +901,10 @@ int main(int argc, char** argv)
         else if (arg == "--help")
         {
             std::cout << "Julia [--desktop|--window] [--topmost|--no-topmost] [--avatar-height 180..720]\n"
-                << "      [--settings path] [--no-save] [--no-eyes] [model.fbx]\n"
+                << "      [--settings path] [--no-save] [--no-eyes] [--idle|--ready-sphere-demo] [model.fbx]\n"
+                << "--idle enables planted Idle on Raphtalia. Space transitions to/from Ready; Pause freezes simulation.\n"
+                << "--ready-sphere-demo runs three left-hand grasp, carry and release cycles from Idle Ready.\n"
+                << "--verify-ready-sphere output_directory [30|144|mixed] records replay and close-ups.\n"
                 << "F10 switches display mode; F9 toggles desktop always-on-top.\n"
                 << "Right-click the desktop character for Full Window, size, topmost and Exit.\n";
             return 0;
@@ -870,6 +916,7 @@ int main(int argc, char** argv)
         }
         else { modelPath = argv[i]; suppliedModel = true; }
     }
+    if (idle && readySphereDemo) { std::cerr << "Select --idle or --ready-sphere-demo\n"; return 2; }
     auto displaySettings = verification || animationVerification || eyeVerification || displayVerification || bodyVerification
         ? julia::desktop::DisplaySettings{} : julia::desktop::loadDisplaySettings(settingsPath);
     if (requestedMode) displaySettings.mode = *requestedMode;
@@ -1013,7 +1060,10 @@ int main(int argc, char** argv)
         std::cout << "Procedural eyes: " << (eyes.available() ? "ready (188 baked eyelid bones)" : "unavailable for this rig") << '\n';
         if (bodyIssues.empty())
         {
-            if (!legacyVerification) bodyDiagnostics=std::make_unique<julia::desktop::BodyDiagnostics>(body);
+            if (!legacyVerification) {
+                bodyDiagnostics=std::make_unique<julia::desktop::BodyDiagnostics>(body);
+                bodyDiagnostics->overlay=!idle && !readySphereDemo;
+            }
         }
         else
         {
@@ -1061,6 +1111,12 @@ int main(int argc, char** argv)
             << avatarCamera.waistHeight() << ", height " << avatarCamera.frameHeight()
             << (waistNode ? ", rig anchor " + model.nodes()[*waistNode].name : ", bounds fallback") << '\n';
 
+        std::optional<julia::app::ReadySphereDemo> readySphere;
+        if (readySphereDemo) {
+            if (!bodyControl) throw std::runtime_error("--ready-sphere-demo requires calibrated Raphtalia");
+            readySphere.emplace();
+            std::cout << "Ready sphere: three left-hand cycles. Pause freezes simulation; Ctrl+Delete cancels the current interaction.\n";
+        }
         WindowState windowState{};
         windowState.renderer = &renderer;
         windowState.orbitCamera = &orbitCamera;
@@ -1075,6 +1131,7 @@ int main(int argc, char** argv)
         windowState.scheduler = &scheduler;
         windowState.bodyDisplay = legacyVerification ? nullptr:&bodyDisplay;
         windowState.bodyDiagnostics = bodyDiagnostics.get();
+        windowState.readySphere = readySphere ? &*readySphere:nullptr;
         windowState.model = &model;
         glfwGetCursorPos(window, &windowState.cursorX, &windowState.cursorY);
         windowState.inputContext.focused = hidden || glfwGetWindowAttrib(window, GLFW_FOCUSED) != 0;
@@ -1094,6 +1151,18 @@ int main(int argc, char** argv)
         glfwGetFramebufferSize(window, &framebufferWidth, &framebufferHeight);
         framebufferSizeCallback(window, framebufferWidth, framebufferHeight);
 
+        if (idle)
+        {
+            if (!bodyControl) throw std::runtime_error("--idle requires calibrated Raphtalia");
+            windowState.updateIdleView();
+            body.enqueue(julia::embodiment::StartIdle{});
+            body.step();
+            if (body.snapshot().idle.phase != julia::embodiment::IdlePhase::Resuming)
+                throw std::runtime_error(body.results().front().reason.empty() ?
+                    "Idle stance failed its first simulation tick" : body.results().front().reason);
+            bodyDisplay = body.display(1);
+            std::cout << "Idle: Space settles/resumes, Pause freezes simulation, F5 shows the foot anchors.\n";
+        }
         windowState.applyCamera();
 
         std::cout
@@ -1115,7 +1184,13 @@ int main(int argc, char** argv)
         std::cout << "Support: F2 then Ctrl+J demo; Ctrl+H enable, Ctrl+H align; Alt+Z/C,V/N,O/P root +/-5 mm; Ctrl+Backspace cancel; Ctrl+Shift+H disable after rest.\n";
         std::cout << "Preparation: F2 then Ctrl+K demo (Reach handoff, open hand, ReadyToGrasp, checked exit); Ctrl+Delete cancel; Ctrl+Shift+K finish preparation.\n";
         keyCallback(window, GLFW_KEY_F1, 0, GLFW_PRESS, 0);
-        if (bodyVerification)
+        if (readySphereVerification)
+        {
+            if (!bodyDiagnostics) throw std::runtime_error("Ready sphere verification requires calibrated Raphtalia");
+            julia::desktop::verifyDesktopReadySphere(window,renderer,model,body,*bodyDiagnostics,fitModel,argv[2],readySphereRate);
+            glfwSetWindowShouldClose(window,GLFW_TRUE);
+        }
+        else if (bodyVerification)
         {
             const auto verify=preparationVerification ? julia::desktop::verifyDesktopStancePreparation:stanceVerification ? julia::desktop::verifyDesktopStanceReach:supportVerification ? julia::desktop::verifyDesktopSupport:interactionVerification ? julia::desktop::verifyDesktopInteraction:spatialVerification ? julia::desktop::verifyDesktopSpatial:rankedVerification ? julia::desktop::verifyDesktopRanked:multiIKVerification ? julia::desktop::verifyDesktopMultiIK:detourVerification ? julia::desktop::verifyDesktopDetour:collisionVerification ? julia::desktop::verifyDesktopCollision:
                 reachVerification ? julia::desktop::verifyDesktopReach:julia::desktop::verifyDesktopBody;
@@ -1234,8 +1309,26 @@ int main(int argc, char** argv)
             // A long OS pause must not turn held keys into a large jump.
             processInput(window, deltaSeconds <= 0.25 ? deltaSeconds : 0.0);
             if (!display.avatar()) orbitCamera.update(deltaSeconds);
+            if ((!readySphere || readySphere->done()) && body.snapshot().idle.phase != julia::embodiment::IdlePhase::Disabled)
+                windowState.updateIdleView();
             const auto suspendCount=scheduler.diagnostics().suspendedFrames;
-            scheduler.advance(deltaSeconds,[&] { if (bodyDiagnostics) bodyDiagnostics->updateInteractionDemo(); body.step(); });
+            scheduler.advance(deltaSeconds,[&] {
+                if (readySphere) {
+                    const bool failed=readySphere->failed();
+                    const bool done=readySphere->done();
+                    readySphere->drive(body);
+                    if (!failed && readySphere->failed()) std::cerr << "Ready sphere: " << readySphere->reason() << '\n';
+                    if (!done && readySphere->done()) std::cout << "Ready sphere: " << readySphere->completed()
+                        << " cycles completed at tick " << body.snapshot().tick << ", returned to Idle\n";
+                }
+                if (bodyDiagnostics) bodyDiagnostics->updateInteractionDemo();
+                body.step();
+                if (windowState.cancelInteractionCommand) for (const auto& command:body.results()) {
+                    if (command.id!=windowState.cancelInteractionCommand) continue;
+                    windowState.cancelInteractionCommand=0;
+                    windowState.cancelInteractionError=command.reason;
+                }
+            });
             if (scheduler.diagnostics().suspendedFrames!=suspendCount) body.collapseHistory();
             bodyDisplay=body.display(scheduler.paused() ? 1:scheduler.alpha());
             windowState.applyCamera();
@@ -1264,17 +1357,34 @@ int main(int argc, char** argv)
                 constexpr const char* states[]{"stopped/bind", "playing", "paused", "finished"};
                 std::ostringstream title;
                 title << "JULIA | ";
-                if (bodyDiagnostics && bodyControl && bodyControl->enabled()) title << bodyDiagnostics->title() << " | ";
-                title << (player.clip() ? player.clip()->name : "no clips")
-                    << " | " << states[static_cast<int>(player.state())] << ' '
-                    << std::fixed << std::setprecision(2) << player.timeSeconds() << '/'
-                    << (player.clip() ? player.clip()->durationSeconds() : 0.0) << " s | loop "
-                    << (player.looping() ? "on" : "off") << " | " << std::setprecision(0)
+                const auto idlePhase=body.snapshot().idle.phase;
+                if (idlePhase != julia::embodiment::IdlePhase::Disabled) {
+                    using namespace julia::embodiment;
+                    const auto& s=body.snapshot();
+                    title << idlePhaseName(idlePhase) << " / " << supportPhaseName(s.support.phase) << " | ";
+                    if (readySphere) title << "Cycles " << readySphere->completed() << '/' << julia::app::ReadySphereDemo::CycleCount << " | ";
+                    if (s.object) title << interactionPhaseName(s.interaction.phase) << ' ' << s.interaction.result
+                        << " | Sphere " << (s.object->state==ObjectState::Attached ? "Attached":"Free") << " | ";
+                    if (s.object && !windowState.cancelInteractionError.empty()) title << windowState.cancelInteractionError << " | ";
+                    if (readySphere && readySphere->failed()) title << readySphere->reason() << " | ";
+                    else if (s.interaction.result=="ReleaseBlocked") title << s.interaction.reason << " | ";
+                    else if (!readySphere || readySphere->done()) title << "Space Ready/Idle | ";
+                }
+                else {
+                    if (bodyDiagnostics && bodyControl && bodyControl->enabled()) title << bodyDiagnostics->title() << " | ";
+                    title << (player.clip() ? player.clip()->name : "no clips")
+                        << " | " << states[static_cast<int>(player.state())] << ' '
+                        << std::fixed << std::setprecision(2) << player.timeSeconds() << '/'
+                        << (player.clip() ? player.clip()->durationSeconds() : 0.0) << " s | loop "
+                        << (player.looping() ? "on" : "off") << " | ";
+                }
+                title << std::fixed << std::setprecision(0)
                     << titleFrames / (now - titleTime) << " FPS | eyes " << (eyes.enabled() ? "on" : "off")
                     << " blink " << eyes.behavior().output().blinkLeft << '/' << eyes.behavior().output().blinkRight
                     << " | tick " << body.snapshot().tick << " dropped " << scheduler.diagnostics().discardedSeconds
-                    << " s overload " << scheduler.diagnostics().overloadFrames << (scheduler.paused() ? " SIM PAUSED":"")
-                    << " | RMB orbit MMB pan Wheel zoom F face B reset | PgUp/Dn Space X";
+                    << " s overload " << scheduler.diagnostics().overloadFrames << (scheduler.paused() ? " SIM PAUSED":"");
+                if (idlePhase == julia::embodiment::IdlePhase::Disabled)
+                    title << " | RMB orbit MMB pan Wheel zoom F face B reset | PgUp/Dn Space X";
                 glfwSetWindowTitle(window, title.str().c_str());
                 titleFrames = 0;
                 titleTime = now;

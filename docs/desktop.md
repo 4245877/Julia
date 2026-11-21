@@ -63,6 +63,44 @@ DPI и панель задач учитываются автоматически
 ЛКМ зарезервирована для взаимодействия и не двигает камеру.
 В Desktop Avatar камера автоматическая; ракурс Full Window сохраняется при F10.
 
+## Idle Рафталии
+
+```powershell
+.\julia_desktop\julia_desktop.exe --idle --window --no-save
+.\julia_desktop\julia_desktop.exe --idle --desktop --no-save
+```
+
+В Idle Рафталия дышит, меняет положение таза и плеч и следит за камерой.
+Пробел переключает цель между Idle и Ready. Переход занимает 1,2 с, повторное
+нажатие меняет направление из текущего движения. Pause останавливает тики,
+F5 показывает опоры в Full Window, F6 сбрасывает тело и завершает режим Idle.
+Взгляд следует за перспективной камерой в Full Window и направлен вдоль
+линии обзора в ортографическом Desktop Avatar.
+
+Тот же расчёт доступен без окна. В CSV записываются фаза, координаты суставов,
+взгляд, моргание и погрешности обеих опор.
+
+```powershell
+.\build\vs-release\apps\julia_body_sim\julia_body_sim.exe --idle --ticks 1200 --idle-ready-at 275 --idle-resume-at 510 --output build/idle-run.csv
+```
+
+`--ready-sphere-demo` запускает три цикла захвата, переноса и отпускания сферы
+левой рукой. Цикл начинается в Idle, ждёт Ready и Holding, ведёт руку по
+результатам команд ядра и возвращается в Idle после проверенного отхода.
+Камера свободна, взгляд сценария направлен вперёд для воспроизводимости.
+В заголовке видны фаза, число завершённых циклов и состояние сферы.
+Pause приостанавливает симуляцию, Ctrl+Delete отменяет текущее взаимодействие.
+
+```powershell
+.\julia_desktop\julia_desktop.exe --window --no-save --ready-sphere-demo
+.\build\vs-release\apps\julia_body_sim\julia_body_sim.exe --ready-sphere-demo --output build/ready-sphere.csv
+.\julia_desktop\julia_desktop.exe --verify-ready-sphere build/ready-sphere-gpu mixed
+```
+
+Режим проверки OpenGL принимает `30`, `144` или `mixed` и записывает потиковую
+трассу `ready-sphere.csv` и кадр переноса. В режиме `mixed` дополнительно
+сохраняются крупные планы захвата, отпускания и снимки стойки.
+
 ## Сборка и автоматические проверки
 
 ```powershell

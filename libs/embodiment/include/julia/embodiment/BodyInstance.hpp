@@ -7,6 +7,7 @@
 #include "julia/embodiment/EyePoseLayer.hpp"
 #include "julia/runtime/FixedStepScheduler.hpp"
 #include <memory>
+#include <optional>
 #include <unordered_set>
 #include <variant>
 
@@ -20,6 +21,18 @@ namespace julia::embodiment
     struct SetDirectMode { bool enabled; };
     struct ResetBody {};
     struct SetRoot { RootPose pose; };
+    struct StartIdle {};
+    struct SetIdleStance { bool ready; };
+    enum class IdlePhase { Disabled, Resuming, Idle, Settling, Ready, Fault };
+    const char* idlePhaseName(IdlePhase phase);
+    struct IdleObservation
+    {
+        IdlePhase phase = IdlePhase::Disabled;
+        double phaseSeconds = 0;
+    };
+    // Simulation world coordinates. Orthographic views supply a direction towards
+    // the camera, perspective views supply the camera position in metres.
+    struct IdleView { glm::vec3 value{0}; bool directional = false; };
     // Changes are rejected during reach/interaction ownership. nullptr disables the
     // external environment; a live interactive object retains its own checked scene.
     struct SetCollisionScene { std::shared_ptr<const world::CollisionScene> scene; CollisionSettings settings; };
@@ -31,8 +44,9 @@ namespace julia::embodiment
     struct EyeCommand { EyeOperation operation; glm::vec3 value{0}; };
     using BodyOperation = std::variant<SetCoordinate, ResetCoordinates, SetDirectMode, ResetBody,
         SetRoot, ClipCommand, EyeCommand, StartReach, RetargetReach, CancelReach, SetCollisionScene,
-        CreateInteractionSphere,DeleteInteractionObject,GraspObject,PrepareGrasp,FinishGraspPreparation,MoveHeldObject,ReleaseObject,CancelInteraction,SetHandClosure,
-        SetSupportSurface,EnableSupport,AlignSupport,MoveSupportRoot,CancelSupportMotion,DisableSupport>;
+        CreateInteractionSphere,DeleteInteractionObject,GraspObject,PrepareGrasp,ConfirmGrasp,FinishGraspPreparation,MoveHeldObject,ReleaseObject,CancelInteraction,SetHandClosure,
+        SetSupportSurface,EnableSupport,AlignSupport,MoveSupportRoot,CancelSupportMotion,DisableSupport,
+        StartIdle,SetIdleStance>;
     struct BodyCommand
     {
         std::uint64_t id, target, tick, epoch;
@@ -67,12 +81,13 @@ namespace julia::embodiment
         std::array<ReachObservation,2> reaches;
         std::array<ReachGeometryObservation,2> reachGeometry;
         std::array<ArmOwner,2> armOwners{};
-        ReachObservation preparationReach; // Internal Reach; source remains in reaches[].
+        ReachObservation preparationReach; // Internal Reach after PrepareGrasp; source remains in reaches[].
         ReachGeometryObservation preparationGeometry;
         std::array<HandState,2> hands{};
         std::optional<InteractiveObject> object;
         InteractionObservation interaction;
         SupportObservation support;
+        IdleObservation idle;
         std::shared_ptr<const world::CollisionScene> collisionScene;
         CollisionSettings collisionSettings;
         PathCheck pathCheck; // Most recent proposed path, including rejected replacements.
@@ -107,15 +122,19 @@ namespace julia::embodiment
     };
     // Single writer; all exposed state is const. Asset is held alive, binding is owned.
     // Noncopyable: internal component references/pointers always address this instance.
+    class BodyIdle;
     class BodyInstance
     {
     public:
         BodyInstance(BodyId id, std::shared_ptr<const model::ModelAsset> asset,
             const BodyProfile* profile = nullptr, bool eyesEnabled = true);
+        ~BodyInstance();
         BodyInstance(const BodyInstance&) = delete;
         BodyInstance& operator=(const BodyInstance&) = delete;
         BodyCommandResult submit(BodyCommand command);
         BodyCommandResult enqueue(BodyOperation operation); // Local input: next tick, monotonically assigned ID.
+        // Latest input for the next tick. Replaces a single value without a queued command.
+        void setIdleView(std::optional<IdleView> view);
         void step();
         void collapseHistory();
         BodyDisplay display(double alpha) const; // No simulation mutation, including target gaze.
@@ -139,10 +158,12 @@ namespace julia::embodiment
         std::unique_ptr<ArmReach> reach_;
         std::unique_ptr<HandInteraction> interaction_;
         std::unique_ptr<LegSupport> support_;
+        std::unique_ptr<BodyIdle> idle_;
+        std::optional<IdleView> idleView_;
         EyePoseLayer eyes_;
         AnimationPlayer player_;
         RootPose root_;
-        bool initialEyes_, discontinuity_ = false;
+        bool initialEyes_, discontinuity_ = false, idleViewApplied_ = false;
         std::uint64_t tick_ = 0, epoch_ = 0, nextId_ = 1;
         std::vector<BodyCommand> commands_;
         std::unordered_set<std::uint64_t> seen_;
@@ -177,10 +198,12 @@ namespace julia::embodiment
         std::shared_ptr<const ReachValidationContext> validationContext(std::size_t side) const;
         std::shared_ptr<const ReachValidationContext> makeValidationContext(std::size_t side,CollisionContext collision) const;
         PathCheck interactionRest(ArmSide side,CollisionContext collision) const;
-        bool preparationValid() const;
+        bool interactionStanceValid() const;
         bool frozenMatches(const ReachValidationContext& context,std::size_t side) const;
         bool supportReady() const;
         bool contextMatches(std::size_t side) const;
+        void commitIdlePose();
+        void applyIdleView();
         void capture();
         void invalidatePath(const char* reason);
         void rebuildCollision();

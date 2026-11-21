@@ -109,6 +109,13 @@ namespace julia::embodiment
             throw std::invalid_argument("Non-finite gaze target");
         target_ = point;
         targeted_ = true;
+        directional_ = false;
+    }
+
+    void EyePoseLayer::setTargetDirection(const glm::vec3& direction)
+    {
+        setTargetPoint(direction);
+        directional_ = true;
     }
 
     void EyePoseLayer::clearTargetPoint()
@@ -141,7 +148,7 @@ namespace julia::embodiment
             animation::computeGlobalTransforms(model_.skeleton(), locals, globals_);
             const auto headDelta = globals_[head_] * glm::inverse(model_.nodes()[head_].globalBindTransform);
             const auto center = glm::vec3{headDelta * glm::vec4{eyeCenter_,1}};
-            const auto direction = glm::inverse(glm::mat3{headDelta}) * (target_ - center);
+            const auto direction = glm::inverse(glm::mat3{headDelta}) * (directional_ ? target_ : target_ - center);
             glm::vec2 desired{0};
             // A target behind/at the head safely returns forward, never flips.
             if (direction.z > 1e-5f)

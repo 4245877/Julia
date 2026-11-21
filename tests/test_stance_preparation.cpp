@@ -335,7 +335,7 @@ namespace
                 c.coordinate(JointId::LeftElbow,0),c.coordinate(JointId::LeftWrist,0),c.coordinate(JointId::LeftWrist,1)};
             return checkArmPath(c,0,std::span{&coordinates,1},glm::mat4{1},*scene(version,{*interaction.freeCollider()}),{},context);
         };
-        interaction.preparationValid=[] { return true; }; interaction.create({1,objectPose});
+        interaction.stanceValid=[] { return true; }; interaction.create({1,objectPose});
         auto prospective=interaction.collisionContext(); prospective.handEnvelopes[0]=true;
         auto opening=interaction.validateRest(ArmSide::Left,prospective); require(opening.status==PathStatus::Clear,"Fault fixture envelope");
         interaction.prepare(10,0,{interaction.object()->handle,ArmSide::Left,9,0},opening);

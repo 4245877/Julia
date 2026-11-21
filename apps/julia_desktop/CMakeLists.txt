@@ -14,6 +14,7 @@ add_executable(julia_desktop
     AnimationVerification.cpp
     EyeVerification.cpp
     BodyDiagnostics.cpp
+    ReadySphereVerification.cpp
 )
 
 # Keep the usual launch location while allowing isolated build trees to own their bundles.

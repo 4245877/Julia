@@ -58,7 +58,7 @@ namespace julia::embodiment
                 }
                 animation::Pose p(b.asset().skeleton()); c.apply(p.locals);
                 animation::computeGlobalTransforms(b.asset().skeleton(),p.locals,p.globals);
-                base=b.jointFrame(ids[0],p.globals)*glm::inverse(rotation(0,initial));
+                rebase(c,s,p.globals);
                 const auto a=definitions[0]->frameInBodyBind, k=definitions[1]->frameInBodyBind, f=definitions[2]->frameInBodyBind;
                 // Keep the current knee branch. At extension choose the calibrated
                 // bind half-plane; no alternate seeds can silently reverse the knee.
@@ -74,6 +74,12 @@ namespace julia::embodiment
                 radius=glm::length(glm::vec3{hipToKnee[3]})+glm::length(glm::vec3{kneeToAnkle[3]})+glm::length(glm::vec3{ankleToContact[3]});
                 float extent=0; for (const auto pnt:contact.points) extent=std::max(extent,glm::length(pnt));
                 radius+=extent+numericSlack;
+            }
+            void rebase(const DirectBodyControl& c,unsigned s,std::span<const glm::mat4> globals)
+            {
+                const auto q=coordinates(c,s);
+                std::copy(q.begin(),q.end(),initial.begin());
+                base=c.binding().jointFrame(legJoints(side(s))[0],globals)*glm::inverse(rotation(0,initial));
             }
             glm::mat4 rotation(unsigned j,const std::array<double,6>& q) const
             {
@@ -232,6 +238,17 @@ namespace julia::embodiment
         }
         return result;
     }
+    struct LegSupport::Tracking
+    {
+        std::array<LegChain,2> chains;
+        animation::Pose pose;
+        std::array<LegCoordinates,2> rest{};
+
+        Tracking(const DirectBodyControl& control,const std::array<SoleContact,2>& contacts)
+            : chains{LegChain{control,0,contacts[0]},LegChain{control,1,contacts[1]}},
+              pose(control.binding().asset().skeleton()) {}
+    };
+
     LegSupport::LegSupport(DirectBodyControl& c):control_(c),contacts_(calibrateSoleContacts(c.binding())) {}
     LegSupport::~LegSupport()=default;
     void LegSupport::beginTick()
@@ -248,29 +265,119 @@ namespace julia::embodiment
             observation_.result="SupportLost"; observation_.reason="Surface changed/deleted; finish saved segment against historical anchors, then rest";
         }
     }
-    void LegSupport::enable(const glm::mat4& root)
+    SupportObservation LegSupport::captureAnchors(const DirectBodyControl& control,const glm::mat4& root) const
     {
-        rigid(root);
-        if (!control_.enabled() || !motion_.empty() || job_ || (enabled() && !lost_) || !observation_.surface.available)
-            throw std::invalid_argument("Support enable requires idle direct pose and available surface; disable before recapture");
         auto proposed=observation_;
         proposed.enabled=true; proposed.phase=SupportPhase::Unaligned; proposed.kind=SupportKind::None;
         proposed.result="Unaligned"; proposed.reason.clear();
         proposed.cancellationPending=false; proposed.disablePending=false;
-        animation::Pose p(control_.binding().asset().skeleton()); control_.apply(p.locals);
-        animation::computeGlobalTransforms(control_.binding().asset().skeleton(),p.locals,p.globals);
+        const auto& binding=control.binding();
+        animation::Pose p(binding.asset().skeleton()); control.apply(p.locals);
+        animation::computeGlobalTransforms(binding.asset().skeleton(),p.locals,p.globals);
         for (unsigned s=0;s<2;++s) {
             auto& a=proposed.anchors[s]; a={}; a.surface=proposed.surface.id; a.version=proposed.surface.version; a.surfaceHeight=proposed.surface.height;
-            auto f=root*control_.binding().effectorFrame(sole(s),p.globals)*contacts_[s].soleFromContact;
+            auto f=root*binding.effectorFrame(sole(s),p.globals)*contacts_[s].soleFromContact;
             glm::vec3 z{f[2].x,0,f[2].z};
             if (glm::length(z)<.1f) throw std::invalid_argument("Sole forward projection degenerate");
             z=glm::normalize(z); f[0]=glm::vec4{glm::cross(glm::vec3{0,1,0},z),0}; f[1]={0,1,0,0}; f[2]=glm::vec4{z,0};
             f[3].y=observation_.surface.height; a.desiredWorld=f;
             a.surfaceFromSole=glm::translate(glm::mat4{1},glm::vec3{0,-observation_.surface.height,0})*f;
         }
-        observation_=std::move(proposed); lost_=false; origin_=glm::vec3{root[3]};
-        ++observation_.fkChecks; ++observation_.tickFkChecks;
-        measure(p.globals,root);
+        ++proposed.fkChecks; ++proposed.tickFkChecks;
+        measureFeet(proposed,binding,contacts_,p.globals,root);
+        return proposed;
+    }
+    void LegSupport::enable(const glm::mat4& root)
+    {
+        rigid(root);
+        if (!control_.enabled() || !motion_.empty() || job_ || (enabled() && !lost_) || !observation_.surface.available)
+            throw std::invalid_argument("Support enable requires idle direct pose and available surface; disable before recapture");
+        observation_=captureAnchors(control_,root);
+        lost_=false; origin_=glm::vec3{root[3]};
+    }
+
+    bool LegSupport::solveTracking(Tracking& tracking,DirectBodyControl& proposed,const glm::mat4& root,
+        SupportObservation& observation,unsigned iterations,bool settled)
+    {
+        const auto& binding=proposed.binding();
+        auto& pose=tracking.pose;
+        const auto fkChecksBefore=observation.tickFkChecks;
+        const auto evaluate=[&] {
+            proposed.apply(pose.locals);
+            animation::computeGlobalTransforms(binding.asset().skeleton(),pose.locals,pose.globals);
+            ++observation.tickFkChecks;
+        };
+        const auto bodyFromWorld=glm::inverse(root);
+        if (!settled) evaluate();
+        for (unsigned leg=0;leg<2;++leg) {
+            auto q=tracking.rest[leg];
+            if (!settled) {
+                auto& chain=tracking.chains[leg];
+                chain.evaluations=0;
+                chain.rebase(proposed,leg,pose.globals);
+                auto solved=chain.initial;
+                const auto goal=bodyFromWorld*observation.anchors[leg].desiredWorld;
+                const auto position=glm::vec3{goal[3]};
+                const auto orientation=glm::quat_cast(glm::mat3{goal});
+                auto error=pose_ik::poseError(chain,solved,position,orientation);
+                for (unsigned i=0;i<iterations && error>2e-7f;++i) {
+                    ++observation.tickIterations;
+                    if (!pose_ik::iteratePose(chain,position,orientation,solved,error)) break;
+                }
+                for (unsigned k=0;k<q.size();++k) q[k]=static_cast<float>(solved[k]);
+                observation.tickEvaluations+=chain.evaluations;
+            }
+            if (tracking_) {
+                const auto previous=coordinates(control_,leg);
+                for (unsigned k=0;k<q.size();++k)
+                    if (std::abs(q[k]-previous[k])>SupportJointSpeed*dt) return false;
+            }
+            write(proposed,leg,q);
+        }
+        evaluate();
+        measureFeet(observation,binding,contacts_,pose.globals,root);
+        // Keep accuracy at the ticks comfortably inside the display tolerances.
+        for (const auto& foot:observation.anchors)
+            if (foot.positionError>SupportPositionTolerance*.1f || foot.angularError>SupportAngularTolerance*.1f ||
+                foot.minGap<-SupportSurfaceTolerance*.1f || foot.maxGap>SupportSurfaceTolerance*.1f)
+                return false;
+        observation.fkChecks+=observation.tickFkChecks-fkChecksBefore;
+        observation.iterations+=observation.tickIterations;
+        observation.evaluations+=observation.tickEvaluations;
+        return true;
+    }
+
+    void LegSupport::plant(DirectBodyControl& proposed,const glm::mat4& captureRoot,const glm::mat4& stanceRoot)
+    {
+        rigid(captureRoot);
+        rigid(stanceRoot);
+        if (enabled() || !observation_.surface.available || !proposed.enabled())
+            throw std::invalid_argument("Planting requires a direct pose and an available, disabled support surface");
+        auto observation=captureAnchors(proposed,captureRoot);
+        auto tracking=std::make_unique<Tracking>(proposed,contacts_);
+        if (!solveTracking(*tracking,proposed,stanceRoot,observation,32,false))
+            throw std::invalid_argument("Idle stance could not plant both feet");
+        for (unsigned leg=0;leg<2;++leg) {
+            tracking->rest[leg]=coordinates(proposed,leg);
+            observation.anchors[leg].bound=true;
+        }
+        observation.kind=SupportKind::KinematicSupport;
+        observation.phase=SupportPhase::Holding;
+        observation.result="Succeeded";
+        origin_=glm::vec3{stanceRoot[3]};
+        observation_=std::move(observation);
+        tracking_=std::move(tracking);
+    }
+
+    bool LegSupport::track(DirectBodyControl& proposed,const glm::mat4& root,bool settled)
+    {
+        if (!tracking_ || !enabled() || lost_) return false;
+        auto observation=observation_;
+        if (!solveTracking(*tracking_,proposed,root,observation,4,settled)) return false;
+        observation.phase=settled ? SupportPhase::Holding:SupportPhase::Moving;
+        observation.result=settled ? "Succeeded":"Tracking";
+        observation_=std::move(observation);
+        return true;
     }
     void LegSupport::plan(std::uint64_t action,std::uint64_t epoch,const glm::mat4& root,std::optional<glm::vec3> position)
     {
@@ -317,7 +424,7 @@ namespace julia::embodiment
     }
     void LegSupport::interrupt(const char* reason)
     {
-        job_.reset(); motion_.clear(); cursor_=0; lost_=false; observation_.enabled=false;
+        job_.reset(); tracking_.reset(); motion_.clear(); cursor_=0; lost_=false; observation_.enabled=false;
         observation_.phase=SupportPhase::Disabled; observation_.kind=SupportKind::None;
         observation_.cancellationPending=observation_.disablePending=false;
         for (auto& a:observation_.anchors) a.bound=false;

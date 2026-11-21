@@ -5,6 +5,7 @@
 #include "julia/render_opengl/OpenGLRenderer.hpp"
 #include <filesystem>
 #include <optional>
+#include <string_view>
 #include "../common/InteractionDemo.hpp"
 #include "../common/SupportDemo.hpp"
 #include "../common/StanceReachDemo.hpp"
@@ -83,6 +84,9 @@ namespace julia::desktop
         const render_opengl::GLModel& model,embodiment::BodyInstance& body,
         BodyDiagnostics& diagnostics,const glm::mat4& fit,
         const std::filesystem::path& output,void (*input)(GLFWwindow*,int,int,int,int));
+    void verifyDesktopReadySphere(GLFWwindow* window,render_opengl::OpenGLRenderer& renderer,
+        const render_opengl::GLModel& model,embodiment::BodyInstance& body,BodyDiagnostics& diagnostics,
+        const glm::mat4& fit,const std::filesystem::path& output,std::string_view rate);
     void verifyDesktopInteraction(GLFWwindow* window,render_opengl::OpenGLRenderer& renderer,
         const render_opengl::GLModel& model,embodiment::BodyInstance& body,
         BodyDiagnostics& diagnostics,const glm::mat4& fit,

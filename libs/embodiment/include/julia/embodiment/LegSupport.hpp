@@ -88,6 +88,12 @@ namespace julia::embodiment
         void beginTick();
         void setSurface(SupportSurface surface);
         void enable(const glm::mat4& root);
+        // Capture sole anchors around the bind pose, then plant the proposed
+        // stance before exposing it. The caller commits the validated controls.
+        void plant(DirectBodyControl& proposed, const glm::mat4& captureRoot, const glm::mat4& stanceRoot);
+        // Track the same anchors from a nearby pose. Failure leaves the live
+        // controls and anchors untouched. Settled uses the original planted legs.
+        bool track(DirectBodyControl& proposed, const glm::mat4& root, bool settled);
         void plan(std::uint64_t action,std::uint64_t epoch,const glm::mat4& root,
             std::optional<glm::vec3> position); // nullopt = explicit alignment.
         void cancel(bool disable=false);
@@ -98,15 +104,20 @@ namespace julia::embodiment
             std::span<const glm::mat4> globals,const glm::mat4& root) const;
     private:
         struct Job;
+        struct Tracking;
         struct Sample { glm::vec3 root{0}; std::array<LegCoordinates,2> q{}; };
         DirectBodyControl& control_;
         std::array<SoleContact,2> contacts_;
         SupportObservation observation_;
         std::unique_ptr<Job> job_;
+        std::unique_ptr<Tracking> tracking_;
         std::vector<Sample> motion_;
         std::size_t cursor_=0;
         bool aligning_=false, lost_=false;
         glm::vec3 origin_{0};
         void fail(const char* reason);
+        SupportObservation captureAnchors(const DirectBodyControl& control, const glm::mat4& root) const;
+        bool solveTracking(Tracking& tracking, DirectBodyControl& proposed, const glm::mat4& root,
+            SupportObservation& observation, unsigned iterations, bool settled);
     };
 }

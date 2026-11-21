@@ -31,6 +31,7 @@ namespace julia::embodiment
     struct GraspObject { ObjectHandle object; ArmSide arm=ArmSide::Left; };
     // Explicit, one-shot handoff from a completed Reach in the same body/epoch.
     struct PrepareGrasp { ObjectHandle object; ArmSide arm; std::uint64_t reach, reachEpoch; };
+    struct ConfirmGrasp { ObjectHandle object; std::uint64_t action, epoch; };
     // Finish means checked separation and release of the arm, never attachment.
     struct FinishGraspPreparation { std::uint64_t action; };
     struct MoveHeldObject { ObjectHandle object; RigidPose targetWorld; };
@@ -77,8 +78,9 @@ namespace julia::embodiment
         const auto& joints() const { return joints_; }
         const auto& states() const { return states_; }
         void set(ArmSide arm,float closure,bool enabled=true);
+        void fadeOut(ArmSide arm);
         void advance();
-        void reset() { states_={}; from_={}; goal_={}; elapsed_={}; duration_={}; blendFrom_={}; }
+        void reset() { states_={}; from_={}; goal_={}; elapsed_={}; duration_={}; blendFrom_={}; blendGoal_={}; }
         bool ready(ArmSide arm) const;
         void apply(std::span<glm::mat4> locals) const { apply(locals,states_); }
         void apply(std::span<glm::mat4> locals,const std::array<HandState,2>& states) const;
@@ -87,7 +89,7 @@ namespace julia::embodiment
         std::vector<Joint> joints_;
         std::array<HandState,2> states_{};
         std::array<float,2> from_{},goal_{};
-        std::array<float,2> blendFrom_{};
+        std::array<float,2> blendFrom_{},blendGoal_{};
         std::array<unsigned,2> elapsed_{},duration_{};
     };
     // Single writer, owned by BodyInstance. All reach work uses the existing bounded jobs.
@@ -103,6 +105,7 @@ namespace julia::embodiment
         void erase(ObjectHandle handle);
         void grasp(std::uint64_t action,std::uint64_t epoch,const GraspObject& command,const glm::mat4& root);
         void prepare(std::uint64_t action,std::uint64_t epoch,const PrepareGrasp& command,PathCheck openingCheck);
+        void confirm(std::uint64_t action,const ConfirmGrasp& command);
         void finishPreparation(std::uint64_t action);
         void abandonPreparation(); // ResetBody only: explicit epoch discontinuity, Free pose retained.
         void move(std::uint64_t action,std::uint64_t epoch,const MoveHeldObject& command,const glm::mat4& root);
@@ -116,7 +119,7 @@ namespace julia::embodiment
         std::function<void()> geometryChanged;
         std::function<PathCheck(ArmSide,CollisionContext)> validateRest;
         std::function<void(ArmSide)> freezeReach;
-        std::function<bool()> preparationValid;
+        std::function<bool()> stanceValid;
         std::uint64_t geometryRevision() const { return geometryRevision_; }
     private:
         std::uint64_t owner_,generation_=0;
@@ -134,6 +137,7 @@ namespace julia::embodiment
         void phase(InteractionPhase phase,bool geometry=false);
         void startReach(const RigidPose& goal,const glm::mat4& root);
         void fail(const std::string& reason);
+        void retreatBlocked(const std::string& reason);
         bool restClear(CollisionContext context);
     };
 }
