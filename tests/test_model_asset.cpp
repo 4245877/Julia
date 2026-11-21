@@ -46,8 +46,8 @@ int main(int argc, char** argv)
             try { player.setEyeLayer(&foreign); } catch (const std::invalid_argument&) { rejected = true; }
             JULIA_CHECK(rejected);
         }
-        const auto output = argc > 1 ? std::filesystem::path{argv[1]} :
-            std::filesystem::path{JULIA_TEST_SOURCE_DIR} / "../build/diagnostics/stage2";
+        if (!julia_test::hasOutputDirectoryArgument(argc, argv)) return 2;
+        const std::filesystem::path output{argv[1]};
         std::filesystem::create_directories(output);
         std::ofstream(output / "cpu-import-snapshot.txt") << snapshot.str();
         std::ifstream reference(std::filesystem::path{JULIA_TEST_SOURCE_DIR} / "data/raphtalia_stage2_reference.txt");

@@ -259,7 +259,9 @@ int main(int argc,char** argv)
 {
     try
     {
-        const std::filesystem::path dir=argc>1?argv[1]:"build/diagnostics/stage7f/cpu"; std::filesystem::create_directories(dir);
+        if (!julia_test::hasOutputDirectoryArgument(argc, argv)) return 2;
+        const std::filesystem::path dir{argv[1]};
+        std::filesystem::create_directories(dir);
         std::ofstream report{dir/"support-observation.txt"}; report<<std::setprecision(17);
         analytic(report); fixtures(dir,report); report.flush();
         const auto asset=julia::model_import::ModelImporter::loadFromFile(std::filesystem::path{JULIA_TEST_ASSET_DIR}/"models/Raphtalia_prepared.fbx");

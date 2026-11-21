@@ -145,7 +145,9 @@ int main(int argc,char** argv)
 {
     try
     {
-        const auto dir=std::filesystem::path{argc>1?argv[1]:"build/diagnostics/stage7h/cpu"}; std::filesystem::create_directories(dir);
+        if (!julia_test::hasOutputDirectoryArgument(argc, argv)) return 2;
+        const std::filesystem::path dir{argv[1]};
+        std::filesystem::create_directories(dir);
         std::ofstream report{dir/"com-control.txt"}; report<<std::setprecision(17);
         const auto asset=julia::model_import::ModelImporter::loadFromFile(std::filesystem::path{JULIA_TEST_ASSET_DIR}/"models/Raphtalia_prepared.fbx"); const BodyRig rig{*asset};
         if(argc>2&&std::string{argv[2]}=="optimized") selected=BoundedSolver::Optimized7i;

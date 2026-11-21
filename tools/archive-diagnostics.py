@@ -9,7 +9,7 @@ import concurrent.futures
 import hashlib
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import re
 import stat
 import zipfile
@@ -19,6 +19,8 @@ DIAGNOSTICS = ROOT / 'build/diagnostics'
 ARCHIVES = ROOT / 'build/research-archive'
 SUFFIXES = {'.csv', '.ppm', '.pam', '.bin'}
 CHUNK = 1024 * 1024
+# Stage 7K's accepted evidence manifest contains these archive hashes.
+CERTIFIED_STAGES = {'stage7h', 'stage7i', 'stage7j', 'stage7k'}
 
 
 def checked(path, parent):
@@ -65,9 +67,40 @@ def digest(stream):
     return sha.hexdigest()
 
 
-def verify(archive):
+def archive_path(stage, part=None):
+    name = f'{stage}-{part}-raw.zip' if part else f'{stage}-raw.zip'
+    return checked(ARCHIVES / name, ARCHIVES)
+
+
+def archive_member_path(name):
+    path = PurePosixPath(name)
+    if not path.parts or path.is_absolute() or path.as_posix() != name or any(
+            part == '..' or part.rstrip(' .') != part or ':' in part or '\\' in part
+            for part in path.parts):
+        raise ValueError(f'Invalid archive path: {name}')
+
+
+def verify(archive, paths=None):
     with zipfile.ZipFile(archive) as source:
         manifest = json.loads(source.read('_manifest.json'))
+        originals, members = set(), {'_manifest.json'}
+        for item in manifest:
+            name = item['path']
+            stored = item.get('stored_path', name)
+            archive_member_path(name)
+            archive_member_path(stored)
+            if name in originals or '_manifest.json' in (name, stored):
+                raise ValueError(f'Duplicate or reserved archive path: {name}')
+            originals.add(name)
+            members.add(stored)
+        names = source.namelist()
+        if len(names) != len(members) or set(names) != members:
+            raise ValueError(f'Archive members do not match the index: {archive}')
+        if paths is not None:
+            missing = set(paths) - originals
+            if missing:
+                raise ValueError(f'Paths not in archive: {sorted(missing)}')
+            manifest = [item for item in manifest if item['path'] in paths]
         verified = {}
         for item in manifest:
             checked(DIAGNOSTICS / item['path'], DIAGNOSTICS)
@@ -83,12 +116,12 @@ def verify(archive):
     return manifest
 
 
-def pack(stage, prune):
+def pack(stage, prune, part=None):
     items = candidates(stage)
     if not items:
         return dict(stage=stage, files=0, original_bytes=0)
     ARCHIVES.mkdir(parents=True, exist_ok=True)
-    archive = checked(ARCHIVES / f'{stage}-raw.zip', ARCHIVES)
+    archive = archive_path(stage, part)
     if archive.exists():
         raise FileExistsError(archive)
     partial = checked(archive.with_suffix('.zip.partial'), ARCHIVES)
@@ -120,8 +153,10 @@ def pack(stage, prune):
         # Check the whole plan again before removing any original in this stage.
         for item in items:
             path = checked(DIAGNOSTICS / item['path'], DIAGNOSTICS)
+            with path.open('rb') as stream:
+                unchanged = digest(stream) == item['sha256']
             info = path.stat()
-            if info.st_size != item['size'] or info.st_mtime_ns != item['mtime_ns']:
+            if not unchanged or info.st_size != item['size'] or info.st_mtime_ns != item['mtime_ns']:
                 raise ValueError(f'Original changed; retained: {path}')
         for item in items:
             checked(DIAGNOSTICS / item['path'], DIAGNOSTICS).unlink()
@@ -137,23 +172,24 @@ def pack(stage, prune):
     return result
 
 
-def restore(stage):
-    archive = checked(ARCHIVES / f'{stage}-raw.zip', ARCHIVES)
-    manifest = verify(archive)
+def restore(stage, part=None, destination=None, paths=None):
+    archive = archive_path(stage, part)
+    manifest = verify(archive, paths)
+    target = checked(destination, ROOT) if destination is not None else DIAGNOSTICS
     # Refuse partial restoration over a changed dataset.
     for item in manifest:
-        path = checked(DIAGNOSTICS / item['path'], DIAGNOSTICS)
+        path = checked(target / item['path'], target)
         if path.exists():
             with path.open('rb') as stream:
                 if digest(stream) != item['sha256']:
                     raise FileExistsError(f'Existing file differs: {path}')
     with zipfile.ZipFile(archive) as source:
         for item in manifest:
-            path = checked(DIAGNOSTICS / item['path'], DIAGNOSTICS)
+            path = checked(target / item['path'], target)
             if path.exists():
                 continue
             path.parent.mkdir(parents=True, exist_ok=True)
-            partial = checked(path.with_name(path.name + '.restore-partial'), DIAGNOSTICS)
+            partial = checked(path.with_name(path.name + '.restore-partial'), target)
             with source.open(item.get('stored_path', item['path'])) as src, partial.open('xb') as dst:
                 while block := src.read(CHUNK):
                     dst.write(block)
@@ -167,9 +203,11 @@ def restore(stage):
     print(f'Restored {stage}: {len(manifest)} files')
 
 
-def compact(stage):
+def compact(stage, part=None):
     """Store exact duplicates once within a self-contained stage archive."""
-    archive = checked(ARCHIVES / f'{stage}-raw.zip', ARCHIVES)
+    if part is None and stage.lower() in CERTIFIED_STAGES:
+        raise ValueError(f'The accepted evidence requires this original ZIP: {stage}-raw.zip')
+    archive = archive_path(stage, part)
     metadata = json.loads(archive.with_suffix('.json').read_text(encoding='utf-8'))
     with archive.open('rb') as stream:
         if hashlib.file_digest(stream, 'sha256').hexdigest() != metadata['sha256']:
@@ -218,27 +256,34 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('action', choices=['plan', 'pack', 'verify', 'restore', 'compact'])
     parser.add_argument('--stage', action='append', help='Single directory name, e.g. stage7k; repeatable')
+    parser.add_argument('--part', help='Additional archive name, e.g. validation for stage7k-validation-raw.zip')
+    parser.add_argument('--destination', type=Path, help='Restore to a separate workspace directory')
+    parser.add_argument('--file', action='append', help='Restore only this indexed path relative to build/diagnostics')
     parser.add_argument('--prune', action='store_true', help='Remove originals only after full verification')
     parser.add_argument('--jobs', type=int, choices=range(1, 5), default=2)
     args = parser.parse_args()
     stages = args.stage or sorted(path.name for path in DIAGNOSTICS.iterdir() if path.is_dir())
     if any(not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]*', stage) for stage in stages):
         parser.error('stage must be a simple directory name (letters, digits, underscore, hyphen)')
+    if args.part and (not args.stage or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]*', args.part)):
+        parser.error('--part requires --stage and a simple name')
+    if (args.destination is not None or args.file) and args.action != 'restore':
+        parser.error('--destination and --file apply to restore')
     if args.action == 'plan':
         plan = [dict(stage=stage, files=len(items), bytes=sum(x['size'] for x in items))
                 for stage in stages if (items := candidates(stage))]
         print(json.dumps(plan, indent=2))
     elif args.action == 'pack':
         with concurrent.futures.ThreadPoolExecutor(max_workers=args.jobs) as pool:
-            list(pool.map(lambda stage: pack(stage, args.prune), stages))
+            list(pool.map(lambda stage: pack(stage, args.prune, args.part), stages))
     else:
         for stage in stages:
             if args.action == 'compact':
-                compact(stage)
+                compact(stage, args.part)
             elif args.action == 'restore':
-                restore(stage)
+                restore(stage, args.part, args.destination, set(args.file) if args.file else None)
             else:
-                print(f'{stage}: {len(verify(ARCHIVES / (stage + "-raw.zip")))} verified')
+                print(f'{stage}: {len(verify(archive_path(stage, args.part)))} verified')
 
 
 if __name__ == '__main__':

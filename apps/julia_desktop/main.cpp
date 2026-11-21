@@ -39,7 +39,7 @@
 
 namespace
 {
-    std::filesystem::path assetDirectory(const char* executable)
+    std::filesystem::path executableDirectory(const char* executable)
     {
         std::filesystem::path executablePath{executable};
 #ifdef _WIN32
@@ -48,10 +48,7 @@ namespace
         if (length > 0 && length < 32768)
             executablePath = std::filesystem::path{buffer};
 #endif
-        const auto bundledAssets = std::filesystem::absolute(executablePath)
-            .parent_path() / "assets";
-        return std::filesystem::is_directory(bundledAssets)
-            ? bundledAssets : std::filesystem::path{JULIA_ASSET_DIR};
+        return std::filesystem::absolute(executablePath).parent_path();
     }
 
     julia::render::CameraSubject cameraSubject(
@@ -821,8 +818,12 @@ int main(int argc, char** argv)
     }
     // Модель можно передать аргументом командной строки; иначе берётся
     // ассет по умолчанию из каталога ресурсов.
-    std::filesystem::path modelPath = assetDirectory(argv[0]) / "models" / "Raphtalia_prepared.fbx";
-    std::filesystem::path settingsPath = assetDirectory(argv[0]).parent_path() / "display.ini";
+    const auto executableDir = executableDirectory(argv[0]);
+    const auto bundledAssets = executableDir / "assets";
+    const auto assets = std::filesystem::is_directory(bundledAssets)
+        ? bundledAssets : std::filesystem::path{JULIA_ASSET_DIR};
+    std::filesystem::path modelPath = assets / "models" / "Raphtalia_prepared.fbx";
+    std::filesystem::path settingsPath = executableDir / "display.ini";
     std::optional<julia::desktop::DisplayMode> requestedMode;
     std::optional<bool> requestedTopmost;
     std::optional<int> requestedHeight;
@@ -956,7 +957,7 @@ int main(int argc, char** argv)
     try
     {
         julia::render_opengl::OpenGLRenderer renderer;
-        renderer.initialize(framebufferWidth, framebufferHeight, assetDirectory(argv[0]));
+        renderer.initialize(framebufferWidth, framebufferHeight, assets);
 
         std::cout << "Loading model: " << modelPath.string() << "\n";
 
@@ -966,7 +967,7 @@ int main(int argc, char** argv)
         const auto isBundledAsset = [&](const char* name) {
             std::error_code assetComparisonError;
             return std::filesystem::equivalent(modelPath,
-                assetDirectory(argv[0]) / "models" / name, assetComparisonError) ||
+                assets / "models" / name, assetComparisonError) ||
                 std::filesystem::equivalent(modelPath,
                     std::filesystem::path{JULIA_ASSET_DIR} / "models" / name,
                     assetComparisonError);

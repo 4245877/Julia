@@ -120,8 +120,8 @@ int main(int argc, char** argv)
 {
     try
     {
-        const auto directory = argc > 1 ? std::filesystem::path{argv[1]} :
-            std::filesystem::path{JULIA_TEST_SOURCE_DIR} / "../build/diagnostics/stage2/model_asset_import";
+        if (!julia_test::hasOutputDirectoryArgument(argc, argv)) return 2;
+        const std::filesystem::path directory{argv[1]};
         std::filesystem::create_directories(directory);
         fixtures(directory);
         std::cout << "CPU fixtures: owned raw/compressed/external images, UV1, reflection, instanced skin and default ticks verified\n";

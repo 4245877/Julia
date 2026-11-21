@@ -29,7 +29,7 @@ namespace bodybench
         unsigned feedbackOffTick=0;
         double yaw=0,initialShiftX=0,initialShiftZ=0,initialTilt=0,effortScale=1,contactTime=.01;
         std::string standEvent="none";
-        std::filesystem::path output="build/diagnostics/stage7d/interactive-body";
+        std::filesystem::path output;
     };
     inline Options parse(int argc,char** argv)
     {
@@ -94,6 +94,7 @@ namespace bodybench
         if(o.comPulses&&!isCom(o.scenario)&&!isLoad(o.scenario)&&o.scenario!=BodyCase::CoordShift) throw std::invalid_argument("Pulses require COM, load or coord-shift case");
         if(!stand&&(o.explicitController||!o.standFeedback||o.feedbackOffTick!=0||o.yaw!=0||o.initialShiftX!=0||o.initialShiftZ!=0||o.initialTilt!=0||o.effortScale!=1||o.contactTime!=.01||o.standEvent!="none")) throw std::invalid_argument("Stand parameters require a stand case");
         if(stand&&(!o.observer||o.servo)) throw std::invalid_argument("Stand requires observer and exclusive stand drive");
+        if(o.output.empty()) throw std::invalid_argument("Specify a destination with --output or --verify");
         return o;
     }
     inline Definition definition(const BodyRig& rig,BodyCase scenario,const Options& o)
@@ -224,7 +225,6 @@ namespace bodybench
             load.open(dir/"load-v1.csv"); loadCsvHeader(load);
             coordinated.open(dir/"coordinated-v1.csv"); coordinatedCsvHeader(coordinated);
             stand.open(dir/"stand-v1.csv"); standCsvHeader(stand);
-            if(!state||!joints||!contacts) throw std::runtime_error("Cannot create CSV");
             state<<"tick,epoch,time_s,world_steps,root_x_m,root_y_m,root_z_m,qw,qx,qy,qz,vx_world_m_s,vy_world_m_s,vz_world_m_s,wx_local_rad_s,wy_local_rad_s,wz_local_rad_s,com_x_m,com_y_m,com_z_m,px_kg_m_s,py_kg_m_s,pz_kg_m_s,Lx_kg_m2_s,Ly_kg_m2_s,Lz_kg_m2_s,kinetic_J,potential_J,contacts,peak_contacts,peak_normal_N,peak_penetration_m,solver_iterations,warnings,external_fx_N,external_fy_N,external_fz_N,mapping_us\n";
             joints<<"tick,epoch,coordinate,q_rad,v_rad_s,target_rad,calculated_Nm,applied_Nm,saturated_tick,limit_rad,peak_limit_rad\n";
             contacts<<"tick,epoch,geom1,geom2,link1,link2,distance_m,x_m,y_m,z_m,nx,ny,nz,normal_N,tangent1_N,tangent2_N\n";
@@ -235,6 +235,7 @@ namespace bodybench
             points.open(dir/"support-points-v1.csv"); contactPointsCsvHeader(points);
             substeps.open(dir/"dynamics-substeps-v1.csv"); dynamicsSubstepsCsvHeader(substeps);
             state<<std::setprecision(17); joints<<std::setprecision(17); contacts<<std::setprecision(17);
+            checkStreams();
         }
         void row(const BodyRenderSnapshot& view)
         {
@@ -259,12 +260,27 @@ namespace bodybench
                 if(c.force) contacts<<','<<c.force->x<<','<<c.force->y<<','<<c.force->z; else contacts<<",NA,NA,NA";
                 contacts<<'\n';
             }
-            if(!state||!joints||!contacts||!drive||!support||!dynamics||!regions||!points||!substeps||!com||!stand||!load||!coordinated) throw std::runtime_error("CSV write failed");
+            checkStreams();
+        }
+        void finish()
+        {
+            for(auto* stream:{&state,&joints,&contacts,&drive,&support,&dynamics,&regions,&points,
+                              &substeps,&stand,&com,&comSolver,&load,&coordinated}) stream->close();
+            checkStreams();
+        }
+    private:
+        void checkStreams() const
+        {
+            if(!state||!joints||!contacts||!drive||!support||!dynamics||!regions||!points||
+               !substeps||!stand||!com||!comSolver||!load||!coordinated)
+                throw std::runtime_error("Body diagnostics CSV write failed");
         }
     };
     inline void metadata(const std::filesystem::path& dir,const BodyRig& rig,const PhysicsWorld& world)
     {
         std::ofstream info{dir/"calibration.txt"}; writeBodyCalibration(info,rig,world);
         std::ofstream xml{dir/"model.xml"}; xml<<world.modelXml();
+        info.close(); xml.close();
+        if(!info||!xml) throw std::runtime_error("Body diagnostics metadata write failed");
     }
 }

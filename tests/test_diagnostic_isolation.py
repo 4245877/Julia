@@ -6,10 +6,11 @@ import os
 import subprocess
 import sys
 import time
+from unittest import mock
 
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]/'tools'))
-from diagnostic_isolation import OutputGuard, prepare, stop_children, tracked_popen
+from diagnostic_isolation import OutputGuard, prepare, run_ctest_suites, stop_children, tracked_popen
 
 
 def main():
@@ -36,7 +37,8 @@ def main():
         records[str(dest.name)] = prepare(root/'build/cpu-release', dest, root=Path(drive+root.as_posix()[2:]), source_text=historical)
         assert (dest/'CTestTestfile.cmake').read_text().count('/artifacts/stage5/cpu') == 1
     for label, text in [('zero', 'add_test([=[pure]=] "C:/Julia/build/cpu-release/tests/julia_test_core.exe")\n'),
-                        ('foreign', historical+'add_test([=[bad]=] "C:/Julia/build/cpu-release/tests/julia_test_core.exe" "C:/another/unsafe.csv")\n')]:
+                        ('foreign', historical+'add_test([=[bad]=] "C:/Julia/build/cpu-release/tests/julia_test_core.exe" "C:/another/unsafe.csv")\n'),
+                        ('foreign_exe', historical+'add_test([=[bad]=] "C:/Julia/build/cpu-release/tests/julia_test_core.exe" "C:/another/unsafe.exe")\n')]:
         try:
             prepare(root/'build/cpu-release', out/label, source_text=text)
         except RuntimeError as error:
@@ -69,6 +71,24 @@ def main():
     result = guard.finish()
     assert result['clean'] and result['observed_events'] > 0, result
     records['permitted_writer'] = dict(clean=True, events=result['observed_events'])
+    partial = out/'partial-suites'
+    suites = {name: partial/name for name in ('started', 'unavailable')}
+    for directory in suites.values():
+        directory.mkdir(parents=True)
+    child = None
+
+    def launch(_command, **kwargs):
+        nonlocal child
+        if child is not None:
+            raise FileNotFoundError('fixture: second suite could not start')
+        child = tracked_popen([sys.executable, '-B', '-c', 'import time; time.sleep(20)'], **kwargs)
+        return child
+
+    with mock.patch('diagnostic_isolation.tracked_popen', side_effect=launch):
+        result = run_ctest_suites(sys.executable, suites, partial, parallel=True)
+    assert result['isolation_clean'] and result['error'] and result['stopped_process_trees'], result
+    assert result['returncodes'] == {'started': 1, 'unavailable': None}, result
+    records['partial_suites'] = result
     (out/'certificate.json').write_text(json.dumps(dict(pass_all=True, checks=records), indent=2), encoding='utf-8')
     print('PASS: both drive cases, current/historical layouts, incomplete redirect rejection, actual hidden writer detection and scoped stop, clean writer')
 

@@ -285,7 +285,9 @@ int main(int argc,char** argv)
 {
     try
     {
-        const auto dir=std::filesystem::path{argc>1?argv[1]:"build/diagnostics/stage7e/cpu"}; std::filesystem::create_directories(dir);
+        if (!julia_test::hasOutputDirectoryArgument(argc, argv)) return 2;
+        const std::filesystem::path dir{argv[1]};
+        std::filesystem::create_directories(dir);
         const std::string mode=argc>2?argv[2]:"all";
         if(argc>3||(mode!="all"&&mode!="--performance-only"&&mode!="--fixtures-only")) throw std::invalid_argument("Expected output directory and optional --performance-only|--fixtures-only");
         std::ofstream report{dir/"contact-control.txt"}; report<<std::setprecision(17);

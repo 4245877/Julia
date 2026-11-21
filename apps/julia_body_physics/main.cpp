@@ -11,6 +11,7 @@ int main(int argc,char** argv)
         bodybench::Log log{o.output,o.substeps}; bodybench::metadata(o.output,rig,world);
         bodybench::reset(rig,world,o.scenario,o); log.row(bodybench::publish(rig,world.snapshot()));
         for(std::uint64_t n=0;n<o.ticks;++n) { bodybench::step(world,o.scenario,o); log.row(bodybench::publish(rig,world.snapshot())); }
+        log.finish();
         std::cout<<"PASS free body case="<<bodybench::bodyCaseName(o.scenario)<<" ticks="<<world.snapshot().tick<<" steps="<<world.snapshot().worldSteps
             <<" FK_m="<<parity.position<<" rotation="<<parity.rotationElement<<'\n'; return 0;
     }

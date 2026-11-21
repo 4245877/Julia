@@ -341,6 +341,7 @@ int main(int argc,char** argv)
                 glfwPollEvents();
                 if(input.reset)
                 {
+                    log->finish();
                     if(active!=input.scenario) { world=std::make_unique<PhysicsWorld>(bodybench::definition(rig,input.scenario,o)); active=input.scenario; }
                     bodybench::reset(rig,*world,active,o); scheduler=julia::runtime::FixedStepScheduler{}; input.world=world.get(); input.reset=false;
                     view=publish(rig,world->snapshot()); const auto dir=o.output/("reset_"+std::to_string(++experiment)+"_"+bodyCaseName(active));
@@ -389,6 +390,8 @@ int main(int argc,char** argv)
             report<<"case="<<bodyCaseName(active)<<" scheduler_hz="<<(o.verify?std::to_string(o.fps):"wall-clock")<<" ticks="<<world->snapshot().tick<<" steps="<<world->snapshot().worldSteps<<" renders="<<renders<<" captures="<<captures<<" mesh_changed_bytes="<<delta<<" GL_errors=0\n";
             stats(report,"render_submit_us",submission); stats(report,"GPU_elapsed_us",gpu); stats(report,"palette_upload_us",palette);
             report<<"query_synchronized=true callback_checks="<<(o.verify?"PASS":"not-run")<<" OS_input=not-tested\nPASS\n";
+            log->finish(); report.close();
+            if(!report) throw std::runtime_error("Body diagnostics GPU report write failed");
             std::cout<<"PASS desktop body ticks="<<world->snapshot().tick<<'\n';
         }
         glfwDestroyWindow(window); glfwTerminate(); return 0;

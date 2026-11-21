@@ -2,6 +2,7 @@
 import contextlib
 import importlib.util
 import io
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -59,6 +60,37 @@ class ArchiveTests(unittest.TestCase):
                 archive.pack('sample', True)
         self.assertEqual((self.stage/'one.csv').read_bytes(), self.original)
         self.assertTrue((self.stage/'two.csv').exists())
+
+    def test_prune_rechecks_bytes_when_size_and_mtime_match(self):
+        path = self.stage/'two.csv'
+        verify = archive.verify
+
+        def replace_after_verify(archive_path):
+            records = verify(archive_path)
+            before = path.stat()
+            path.write_bytes(b'X' + self.original[1:])
+            os.utime(path, ns=(before.st_atime_ns, before.st_mtime_ns))
+            return records
+
+        with mock.patch.object(archive, 'verify', side_effect=replace_after_verify):
+            with self.assertRaisesRegex(ValueError, 'Original changed'):
+                archive.pack('sample', True)
+        self.assertEqual(path.read_bytes(), b'X' + self.original[1:])
+        self.assertEqual((self.stage/'one.csv').read_bytes(), self.original)
+
+    def test_separate_part_and_selected_restore_preserve_certified_zip(self):
+        archive.pack('sample', False)
+        base = archive.archive_path('sample').read_bytes()
+        with mock.patch.object(archive, 'CERTIFIED_STAGES', {'sample'}):
+            with self.assertRaisesRegex(ValueError, 'accepted evidence'):
+                archive.compact('sample')
+            archive.pack('sample', False, 'later')
+            archive.compact('sample', 'later')
+        self.assertEqual(archive.archive_path('sample').read_bytes(), base)
+        selected = self.root/'probe'
+        archive.restore('sample', 'later', selected, {'sample/two.csv'})
+        self.assertEqual((selected/'sample/two.csv').read_bytes(), self.original)
+        self.assertFalse((selected/'sample/one.csv').exists())
 
     def test_restore_refuses_to_overwrite_changed_evidence(self):
         archive.pack('sample', True)

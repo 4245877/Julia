@@ -4,7 +4,8 @@ using namespace body_reach_test;
 int main(int argc,char** argv)
 {
     try {
-        const std::filesystem::path folder=argc>1 ? argv[1]:"build/diagnostics/stage6c/cpu";
+        if (!julia_test::hasOutputDirectoryArgument(argc, argv)) return 2;
+        const std::filesystem::path folder{argv[1]};
         std::filesystem::create_directories(folder); std::ofstream report(folder/"body_multik.txt"); report << std::setprecision(12);
         const auto asset=model_import::ModelImporter::loadFromFile(std::filesystem::path{JULIA_TEST_ASSET_DIR}/"models/Raphtalia_prepared.fbx");
         const auto profile=raphtaliaBodyProfile(); const BodyRigBinding binding(profile,*asset); auto f=fixture(binding);

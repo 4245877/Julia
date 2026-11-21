@@ -16,13 +16,17 @@ add_executable(julia_desktop
     BodyDiagnostics.cpp
 )
 
-# The only runnable application bundle, shared by all build configurations.
+# Keep the usual launch location while allowing isolated build trees to own their bundles.
+set(JULIA_DESKTOP_RUNTIME_DIR "${CMAKE_SOURCE_DIR}/julia_desktop"
+    CACHE PATH "Directory for the desktop executable, DLLs and assets")
+get_filename_component(julia_desktop_runtime_dir "${JULIA_DESKTOP_RUNTIME_DIR}"
+    ABSOLUTE BASE_DIR "${CMAKE_BINARY_DIR}")
 set_target_properties(julia_desktop PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/julia_desktop"
+    RUNTIME_OUTPUT_DIRECTORY "${julia_desktop_runtime_dir}"
 )
 foreach(config DEBUG RELEASE RELWITHDEBINFO MINSIZEREL)
     set_target_properties(julia_desktop PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY_${config} "${CMAKE_SOURCE_DIR}/julia_desktop"
+        RUNTIME_OUTPUT_DIRECTORY_${config} "${julia_desktop_runtime_dir}"
     )
 endforeach()
 
@@ -30,7 +34,7 @@ endforeach()
 add_custom_target(julia_desktop_assets ALL
     COMMAND ${CMAKE_COMMAND}
         "-DJULIA_ASSET_SOURCE=${CMAKE_SOURCE_DIR}/assets"
-        "-DJULIA_ASSET_DESTINATION=${CMAKE_SOURCE_DIR}/julia_desktop/assets"
+        "-DJULIA_ASSET_DESTINATION=${julia_desktop_runtime_dir}/assets"
         -P "${CMAKE_SOURCE_DIR}/cmake/JuliaRuntimeAssets.cmake"
     COMMENT "Updating JULIA runtime assets"
     VERBATIM

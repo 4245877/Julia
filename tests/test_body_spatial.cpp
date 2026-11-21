@@ -297,7 +297,9 @@ namespace
 int main(int argc,char** argv)
 {
     try {
-        const std::filesystem::path output=argc>1 ? argv[1]:"build/diagnostics/stage6e/cpu"; std::filesystem::create_directories(output);
+        if (!julia_test::hasOutputDirectoryArgument(argc, argv)) return 2;
+        const std::filesystem::path output{argv[1]};
+        std::filesystem::create_directories(output);
         std::ofstream out(output/"spatial.txt"); out << std::setprecision(12);
         const auto asset=model_import::ModelImporter::loadFromFile(std::filesystem::path{JULIA_TEST_ASSET_DIR}/"models/Raphtalia_prepared.fbx");
         const auto profile=raphtaliaBodyProfile(); math(); affine(out); reachable(asset,profile,out); invalidAndUnreachable(asset,profile,out);

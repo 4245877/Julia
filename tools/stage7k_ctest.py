@@ -11,14 +11,10 @@ redirect.json records the substitution counts. Suites run in parallel with --par
 from pathlib import Path
 import argparse
 import json
-import os
-import re
-import subprocess
 import sys
-import time
 
 sys.dont_write_bytecode = True
-from diagnostic_isolation import OutputGuard, ctest_executable, prepare, stop_children, tracked_popen, close_process_job
+from diagnostic_isolation import ctest_executable, prepare, run_ctest_suites
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -32,46 +28,22 @@ def main():
     parser.add_argument('--allowed-output-root', type=Path, help='Whole new validation directory, when called by a driver')
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=False)
-    ctest = ctest_executable(ROOT/'build/vs-release')
-    env = os.environ.copy(); env['PATH'] = str(Path(ctest).parent)+os.pathsep+env['PATH']
-    env['PYTHONDONTWRITEBYTECODE'] = '1'
-    redirect, work, results = {}, [], {}
-    start = time.perf_counter()
+    redirect, destinations = {}, {}
     for variant in ('vs-release', 'cpu-release', 'cpu-no-physics'):
         destination = args.output/variant
         destination.mkdir()
         redirect[variant] = prepare(Path('build')/variant, destination)
+        destinations[variant] = destination
     (args.output/'redirect.json').write_text(json.dumps(redirect, indent=2), encoding='utf-8')
     if args.prepare_only:
         return
-    guard = OutputGuard(args.allowed_output_root or args.output, args.output/'isolation.json').start()
-    stopped = []
-    try:
-        for variant in redirect:
-            destination = args.output/variant
-            log = (destination/'ctest.log').open('x', encoding='utf-8')
-            command = [ctest, '--test-dir', str(destination.resolve()), '--output-on-failure', *(['-R', args.regex] if args.regex else [])]
-            process = tracked_popen(command, stdout=log, stderr=subprocess.STDOUT, env=env)
-            work.append((variant, process, log))
-            if not args.parallel:
-                while process.poll() is None and not guard.violated:
-                    time.sleep(.1)
-                if guard.violated:
-                    stopped = stop_children([p for _, p, _ in work]); break
-                results[variant] = process.wait(); log.close()
-        while any(p.poll() is None for _, p, _ in work) and not guard.violated:
-            time.sleep(.1)
-        if guard.violated:
-            stopped += stop_children([p for _, p, _ in work])
-    finally:
-        for variant, process, log in work:
-            results[variant] = process.wait(); log.close()
-            close_process_job(process)
-        isolation = guard.finish()
-    (args.output/'process-results.json').write_text(json.dumps(dict(returncodes=results, wall_seconds=time.perf_counter()-start,
-        parallel=args.parallel, isolation_clean=isolation['clean'], stopped_process_trees=stopped), indent=2), encoding='utf-8')
-    print(results, flush=True)
-    if any(results.values()) or not isolation['clean']:
+    result = run_ctest_suites(ctest_executable(ROOT/'build/vs-release'), destinations, args.output,
+                              regex=args.regex, parallel=args.parallel, allowed_output=args.allowed_output_root)
+    (args.output/'process-results.json').write_text(json.dumps(result, indent=2), encoding='utf-8')
+    print(result['returncodes'], flush=True)
+    if result['error']:
+        print(result['error'], file=sys.stderr)
+    if any(code != 0 for code in result['returncodes'].values()) or not result['isolation_clean'] or result['error']:
         raise SystemExit(1)
 
 

@@ -13,11 +13,7 @@ namespace contact_bench
         std::uint64_t ticks=1920;
         bool verify=false,explicitTicks=false,feedback=true;
         double payload=0,offset=0,friction=.6,softness=.006;
-#if defined(JULIA_PHYSICS_ASSETS)
-        std::filesystem::path output=std::filesystem::path{JULIA_PHYSICS_ASSETS}.parent_path()/"build/diagnostics/stage7e/interactive";
-#else
-        std::filesystem::path output="build/diagnostics/stage7e/interactive";
-#endif
+        std::filesystem::path output;
     };
     inline Options parse(int argc,char** argv)
     {
@@ -57,6 +53,7 @@ namespace contact_bench
             (o.substeps!=8&&o.substeps!=16&&o.substeps!=32)||o.payload<0||o.payload>1||
             o.offset<-.01||o.offset>.02||o.friction<.01||o.friction>1||o.softness<.004||o.softness>.02)
             throw std::invalid_argument("Contact option outside experiment domain");
+        if(o.output.empty()) throw std::invalid_argument("Specify a destination with --output or --verify");
         return o;
     }
     inline Coordinates initial(unsigned pose)

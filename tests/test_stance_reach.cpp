@@ -290,7 +290,8 @@ namespace
 int main(int argc,char** argv)
 {
     try {
-        const auto output=argc>1 ? std::filesystem::path{argv[1]}:std::filesystem::path{"build/diagnostics/stage6h/cpu"};
+        if (!julia_test::hasOutputDirectoryArgument(argc, argv)) return 2;
+        const std::filesystem::path output{argv[1]};
         std::filesystem::create_directories(output); std::ofstream out(output/"stance-reach.txt"); out << std::setprecision(12);
         const auto asset=model_import::ModelImporter::loadFromFile(std::filesystem::path{JULIA_TEST_ASSET_DIR}/"models/Raphtalia_prepared.fbx"); const auto p=raphtaliaBodyProfile();
         const auto before=memory(); cycles(asset,p,out); lifecycle(asset,p,out); geometry(asset,p,out); replay(asset,p,out);

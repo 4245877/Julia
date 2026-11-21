@@ -9,6 +9,9 @@ $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio/Installer
 if (-not (Test-Path -LiteralPath $vswhere)) {
     throw 'Visual Studio C++ tools are required (vswhere.exe was not found).'
 }
+# VsDevCmd's helper scripts also invoke vswhere by name.
+$vsInstaller = Split-Path -Parent $vswhere
+if (($env:Path -split ';') -notcontains $vsInstaller) { $env:Path = "$vsInstaller;$env:Path" }
 $visualStudioPath = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
 if (-not $visualStudioPath) { throw 'Install the Visual Studio Desktop development with C++ workload.' }
 Import-Module (Join-Path $visualStudioPath 'Common7/Tools/Microsoft.VisualStudio.DevShell.dll')
@@ -28,13 +31,15 @@ try {
         $configureOptions += '--fresh'
         $buildOptions += '--clean-first'
     }
-    & cmake --preset "vs-$configurationName" "-DVCPKG_MANIFEST_INSTALL=$installManifest" @configureOptions
+    $desktopOutput = Join-Path $projectRoot 'julia_desktop'
+    & cmake --preset "vs-$configurationName" "-DVCPKG_MANIFEST_INSTALL=$installManifest" `
+        -DJULIA_BUILD_DESKTOP=ON -DJULIA_BUILD_TESTS=ON "-DJULIA_DESKTOP_RUNTIME_DIR=$desktopOutput" @configureOptions
     if ($LASTEXITCODE -ne 0) { throw 'CMake configuration failed.' }
     & cmake --build --preset "build-$configurationName" --parallel 4 @buildOptions
     if ($LASTEXITCODE -ne 0) { throw 'JULIA build failed.' }
     if (-not $SkipTests) {
         & (Join-Path $PSScriptRoot 'clean.ps1') -Configuration $Configuration -VerificationOnly
-        & ctest --preset "test-$configurationName"
+        & ctest --preset "test-$configurationName" --no-tests=error
         if ($LASTEXITCODE -ne 0) { throw 'JULIA verification failed.' }
         if (-not $KeepDiagnostics) {
             & (Join-Path $PSScriptRoot 'clean.ps1') -Configuration $Configuration -VerificationOnly

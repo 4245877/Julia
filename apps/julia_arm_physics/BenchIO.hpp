@@ -21,7 +21,7 @@ namespace bench
         bool verify=false, explicitTicks=false;
         bool servo=false, gravityCompensation=false;
         double massScale=1,payloadKg=0;
-        std::filesystem::path output="build/diagnostics/stage7d/interactive-arm";
+        std::filesystem::path output;
     };
     inline Options parse(int argc,char** argv)
     {
@@ -81,6 +81,7 @@ namespace bench
             throw std::invalid_argument("Spatial generates targets; use --case hold with --target");
         if(o.scenario==julia::physics::BenchCase::Retarget && (!o.servo||o.chain!=julia::physics::ArmChain::Full||o.target))
             throw std::invalid_argument("Retarget requires --chain full --drive servo or servo-gravity and generates its own targets");
+        if(o.output.empty()) throw std::invalid_argument("Specify a destination with --output or --verify");
         return o;
     }
     inline void reset(julia::physics::PhysicsWorld& world,julia::physics::BenchCase scenario,const Options& o)

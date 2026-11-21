@@ -61,10 +61,10 @@ def prepare(build, destination, root=ROOT, source_text=None):
             raise RuntimeError('Nested CTest directories require explicit isolated preparation')
         if not line.startswith('add_test('):
             continue
-        for token in re.findall(r'"([^"\n]*)"', line):
-            if not re.match(r'^[a-zA-Z]:[/\\]', token):
-                continue
-            if token.lower().endswith('.exe'):
+        # CMake's generated test name uses bracket syntax. The first quoted
+        # value is the program, even when a later output itself ends in .exe.
+        for token in re.findall(r'"([^"\n]*)"', line)[1:]:
+            if not re.match(r'^(?:[a-zA-Z]:[/\\]|[/\\]{2})', token):
                 continue
             arguments += 1
             if not within(token.replace('\\', '/'), destination):
@@ -86,6 +86,53 @@ def ctest_executable(build):
     if not match or not Path(match.group(1).strip()).is_file():
         raise RuntimeError(f'No absolute CTest executable in {build}')
     return match.group(1).strip()
+
+
+def run_ctest_suites(ctest, destinations, output, *, regex=None, parallel=False,
+                     allowed_output=None, jobs=1):
+    """Return a receipt even when one of the isolated suites cannot start."""
+    env = dict(os.environ, PYTHONDONTWRITEBYTECODE='1',
+               PATH=str(Path(ctest).parent) + os.pathsep + os.environ['PATH'])
+    results = dict.fromkeys(destinations)
+    processes, stopped = {}, []
+    error = None
+    isolation = None
+    guard = None
+    start = time.perf_counter()
+    try:
+        guard = OutputGuard(allowed_output or output, output/'isolation.json').start()
+        for label, destination in destinations.items():
+            if guard.violated:
+                break
+            destination = destination.resolve()
+            command = [ctest, '--test-dir', str(destination), '--output-on-failure',
+                       '--no-tests=error', '--output-junit', str(destination/'ctest.xml'),
+                       '--parallel', str(jobs)]
+            if regex:
+                command += ['-R', regex]
+            with (destination/'ctest.log').open('x', encoding='utf-8') as log:
+                process = tracked_popen(command, stdout=log, stderr=subprocess.STDOUT, env=env)
+            processes[label] = process
+            if not parallel:
+                while process.poll() is None and not guard.violated:
+                    time.sleep(.1)
+                if process.poll() is not None:
+                    close_process_job(process)
+        while any(p.poll() is None for p in processes.values()) and not guard.violated:
+            time.sleep(.1)
+    except (Exception, KeyboardInterrupt) as failure:
+        error = repr(failure)
+    finally:
+        if error is not None or (guard is not None and guard.violated):
+            stopped = stop_children(processes.values())
+        for label, process in processes.items():
+            results[label] = process.wait()
+            close_process_job(process)
+        if guard is not None:
+            isolation = guard.finish()
+    return dict(returncodes=results, wall_seconds=time.perf_counter()-start, parallel=parallel,
+                isolation_clean=isolation is not None and isolation['clean'],
+                stopped_process_trees=stopped, error=error)
 
 
 def inventory(root, allowed):

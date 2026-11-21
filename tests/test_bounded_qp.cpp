@@ -9,7 +9,9 @@
 using namespace julia::physics::qp;
 int main(int argc,char** argv)
 {
-    const auto path=std::filesystem::path{argc>1?argv[1]:"build/diagnostics/stage7h/qp"}; std::filesystem::create_directories(path);
+    if (!julia_test::hasOutputDirectoryArgument(argc, argv)) return 2;
+    const std::filesystem::path path{argv[1]};
+    std::filesystem::create_directories(path);
     std::ofstream log{path/"analytic.txt"};
     for(const auto implementation:{Implementation::Reference7h,Implementation::Optimized7i})
     {
