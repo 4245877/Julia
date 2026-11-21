@@ -48,6 +48,42 @@ def summarize(out, plan, results):
         return dict(steps=len(plan['steps']), all_returncode_zero=True, attempts=len(results), interrupted_attempts=len(interrupted),
                     retries=[dict(label=r['label'], attempt=r['attempt'], reason=r.get('retry_reason')) for r in results if r['attempt'] > 1])
     check('fixed_plan_processes', processes)
+    def isolation():
+        executed = [r for r in results if r.get('executed') and r.get('returncode') == 0]
+        reused = [r for r in results if r.get('status') == 'reused-success']
+        assert len(executed)+len(reused) == len(plan['steps'])
+        reports = [read(r['isolation_report']) for r in executed]
+        assert all(r['clean'] and not r['outside_events'] and not r['protected_inventory_changes'] and not r['monitoring_errors'] for r in reports)
+        suite = read(path['full-tests']/'isolation.json')
+        assert suite['clean']
+        from stage7k_final import digest
+        for r in reused:
+            reuse = r['reuse']
+            assert all(digest(p) == h for p, h in reuse['input_hashes'].items())
+            assert all(digest(i['path']) == i['sha256'] for i in read(reuse['artifacts_manifest']))
+        return dict(actual_write_audited_steps=len(executed), reused_complete_parity_steps=len(reused),
+                    suite_clean=True, observed_events=sum(r['observed_events'] for r in reports),
+                    protected_inventory_files=suite['protected_inventory_files'], outside_events=0,
+                    protected_inventory_changes=0, monitoring_errors=0,
+                    reused_policy='Inherited evidence is individually hashed; its original run predates the new write watcher')
+    check('diagnostic_output_isolation', isolation)
+    def accepted_integrity():
+        data = read(out/'accepted-evidence-check.json')
+        assert data['pass_all'] and all(x['payload_pass_all'] for x in data['stages'].values())
+        assert data['stages']['stage7i']['verified'] == 7298
+        assert data['stages']['stage7j']['verified'] == 8906
+        return data
+    check('accepted_evidence_preservation', accepted_integrity)
+    def preflight():
+        data = read(out/'isolation-preflight.json')
+        assert data['pass_all']
+        return data
+    check('isolation_drive_case_and_hidden_writer', preflight)
+    def equivalence():
+        data = read(out/'postprocess/rebuild-equivalence.json')
+        assert data['pass_all']
+        return data
+    check('unchanged_physical_result_equivalence', equivalence)
     def suites():
         counts = {}
         for variant in ('vs-release', 'cpu-release', 'cpu-no-physics'):
@@ -58,9 +94,11 @@ def summarize(out, plan, results):
         return counts
     check('full_suites', suites)
     def legacy_stage7h():
-        records = read(path['legacy-stage7h']/'comparison.json')
-        assert records
-        return dict(exact_csv_comparisons=len(records))
+        data = read(path['legacy-stage7h']/'comparison.json')
+        records = data['records'] if isinstance(data, dict) else data
+        assert records and (not isinstance(data, dict) or data['pass_all'])
+        return dict(exact_csv_comparisons=len(records), by_group=data.get('by_group') if isinstance(data, dict) else None,
+                    rows=data.get('rows') if isinstance(data, dict) else None)
     check('legacy_stage7h_histories', legacy_stage7h)
     def accepted():
         data = read(path['accepted-regression']/'comparison.json')
@@ -117,9 +155,16 @@ def summarize(out, plan, results):
         runs = {}
         for label in ('performance-1', 'performance-2'):
             result = analyze(path[label])
+            assert result['metadata']['warmup_ticks'] == 480
+            assert result['metadata']['measured_ticks'] == result['tick_us']['count'] >= 2400
             result['target_met'] = result['tick_us']['p95'] < 5000
             runs[label] = result
         assert all(r['target_met'] for r in runs.values())
+        perf = [r for r in results if r['kind'] == 'performance' and r.get('returncode') == 0]
+        assert [r['label'] for r in perf] == ['performance-1', 'performance-2']
+        assert perf[0]['completed_utc'] < perf[1]['utc']
+        assert all(r.get('executed') and r['isolation_clean'] and r['idle_gate']['passed'] and
+                   not r['performance_gate']['competing_native_or_build'] and not r['performance_gate']['other_python'] for r in perf)
         return runs
     check('performance', performance)
     def model():

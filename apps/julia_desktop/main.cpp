@@ -1285,7 +1285,8 @@ int main(int argc, char** argv)
             {
                 if (body.snapshot().tick!=116 || body.snapshot().epoch!=1 || body.pendingCommands()!=0)
                     throw std::runtime_error("Desktop fixed-step input/reset/pause integration failed");
-                const auto output=std::filesystem::path{JULIA_ASSET_DIR}.parent_path()/"build/diagnostics/stage4/desktop";
+                const auto output=argc>2 ? std::filesystem::path{argv[2]} :
+                    std::filesystem::temp_directory_path()/"Julia/verification/desktop_camera";
                 std::filesystem::create_directories(output);
                 std::ofstream report(output/"runtime.txt");
                 if (!report) throw std::runtime_error("Cannot write runtime diagnostic evidence");

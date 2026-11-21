@@ -1,5 +1,10 @@
 # Управляемый контакт одной руки: этап 7Д / stage7e
 
+> Исторический отчёт этапа. Состояние, планы, команды и числа тестов относятся
+> к указанной версии. Текущее состояние: [архитектура](architecture.md) и
+> [сборка/запуск](desktop.md). Большие трассы и кадры сжаты без потерь;
+> [восстановление данных и аудит](maintenance_audit.md).
+
 10 ноября 2026, `C:\Julia`, Windows x64, MSVC Release `/WX`, MuJoCo **3.3.7**.
 Этап завершён. [Карта окончательных доказательств](../build/diagnostics/stage7e/README.md) —
 `build/diagnostics/stage7e/`. C++20 исполняет физику и управление;
@@ -300,7 +305,7 @@ CPU/desktop-наборами. Soft-friction creep при малой нагруз
 ## Измеренные результаты
 
 Окончательные таблицы —
-[summary.csv](../build/diagnostics/stage7e/measurements-accepted/summary.csv),
+[summary.csv](../build/research-archive/stage7e-raw.zip) (`stage7e/measurements-accepted/summary.csv` внутри архива),
 [telemetry-audit.txt](../build/diagnostics/stage7e/measurements-accepted/telemetry-audit.txt) и
 [legacy-comparison.txt](../build/diagnostics/stage7e/measurements-accepted/legacy-comparison.txt).
 Сырые 40 вариантов — `accepted/cpu-release/artifacts/stage7e/cpu/`.
@@ -386,7 +391,7 @@ OS input **не подтверждён**: Computer Use launch завершилс
 
 Производительность — 10000 последовательных тиков на вариант, окончательные raw CSV —
 `accepted/cpu-release/artifacts/stage7e/cpu/performance-{0,1,2}.csv`,
-[сводка](../build/diagnostics/stage7e/accepted-audit/independent-1/performance.csv).
+[сводка](../build/research-archive/stage7e-raw.zip) (`stage7e/accepted-audit/independent-1/performance.csv` внутри архива).
 Измеряется весь world.step отдельно от import,
 CSV IO, pose publication и GPU. `contact_control_us` — Jacobian/controller без
 gravity scratch; `contact_us` — frames/point velocities, pair aggregation,

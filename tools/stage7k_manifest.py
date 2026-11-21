@@ -8,6 +8,7 @@ from pathlib import Path
 import argparse
 import hashlib
 import json
+import re
 
 
 def digest(path):
@@ -23,10 +24,20 @@ def runtime_paths(include_docs):
     paths = {Path(item['path']) for item in json.loads(old.read_text())}
     missing = [str(path) for path in paths if not path.is_file()]
     assert not missing, ('Accepted runtime files missing', missing)
-    for folder in ('libs/physics', 'apps/julia_body_physics', 'tests', 'tools'):
+    for folder in ('libs/physics', 'apps/julia_body_physics', 'apps/julia_desktop', 'julia_desktop/assets',
+                   'julia_desktop/shaders', 'tests', 'tools'):
         paths.update(path for path in Path(folder).rglob('*')
                      if path.is_file() and '__pycache__' not in path.parts)
     paths.add(Path('apps/julia_arm_physics/BenchHud.hpp'))
+    paths.update(Path('build/diagnostics/stage7k')/name for name in ('budget.json', 'criteria.txt', 'parameters.json'))
+    # Include every executable that CTest will actually launch, especially the general
+    # desktop runtime writer, which was absent from the original physical-only freeze.
+    for variant in ('cpu-no-physics', 'cpu-release', 'vs-release'):
+        text = (Path('build')/variant/'tests/CTestTestfile.cmake').read_text(encoding='utf-8')
+        for name in re.findall(r'"([A-Za-z]:/[^"\n]+\.exe)"', text):
+            executable = Path(name)
+            paths.add(executable.relative_to(Path.cwd()))
+            paths.update(p.relative_to(Path.cwd()) for p in executable.parent.glob('*.dll'))
     for variant in ('cpu-release', 'vs-release'):
         path = Path('build')/variant/'tests/julia_test_stage7k.exe'
         assert path.is_file(), path

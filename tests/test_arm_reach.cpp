@@ -54,9 +54,9 @@ namespace
         for (int k=0;k<6;++k) control.setCoordinate(arm[static_cast<std::size_t>(k<3 ? 0:k==3 ? 1:2)],
             static_cast<std::size_t>(k<3 ? k:k==3 ? 0:k-4),static_cast<float>(solution.coordinates[static_cast<std::size_t>(k)]));
     }
-    void solverCases(const BodyRigBinding& binding,std::ostream& report)
+    void solverCases(const BodyRigBinding& binding,std::ostream& report,const std::filesystem::path& output)
     {
-        std::ofstream csv(std::filesystem::path{JULIA_TEST_STAGE5_DIR}/"solver.csv");
+        std::ofstream csv(output/"solver.csv");
         csv << "side,effector,sample,error,reason,iterations,microseconds\n";
         float worst=0; unsigned count=0; double total=0,maximum=0;
         for (int side=0;side<2;++side)
@@ -138,10 +138,10 @@ namespace
             for (std::size_t n=0;n<b.asset().nodes().size();++n) if (b.asset().nodes()[n].name==follower.node.name)
                 JULIA_CHECK(p.locals[n]==s.pose.locals[n]);
     }
-    void actionCases(const std::shared_ptr<const model::ModelAsset>& asset,const BodyProfile& profile,std::ostream& report)
+    void actionCases(const std::shared_ptr<const model::ModelAsset>& asset,const BodyProfile& profile,std::ostream& report,const std::filesystem::path& output)
     {
         BodyRigBinding binding(profile,*asset); Measurements stats;
-        std::ofstream csv(std::filesystem::path{JULIA_TEST_STAGE5_DIR}/"motion.csv");
+        std::ofstream csv(output/"motion.csv");
         csv << "case,tick,action,state,goal_x,goal_y,goal_z,ref_x,ref_y,ref_z,actual_x,actual_y,actual_z,error\n";
         for (int side=0;side<2;++side)
         {
@@ -378,11 +378,11 @@ int main(int argc,char** argv)
     try
     {
         const auto output=argc>1 ? std::filesystem::path{argv[1]}:std::filesystem::path{JULIA_TEST_STAGE5_DIR};
-        std::filesystem::create_directories(output); std::filesystem::create_directories(JULIA_TEST_STAGE5_DIR);
+        std::filesystem::create_directories(output);
         std::ofstream report(output/"arm_reach.txt"); report << std::setprecision(9);
         const auto asset=model_import::ModelImporter::loadFromFile(std::filesystem::path{JULIA_TEST_ASSET_DIR}/"models/Raphtalia_prepared.fbx");
         const auto profile=raphtaliaBodyProfile(); const BodyRigBinding binding(profile,*asset);
-        solverCases(binding,report); actionCases(asset,profile,report); protocols(asset,profile,report); edgeCases(asset,profile,report); replay(asset,profile,report);
+        solverCases(binding,report,output); actionCases(asset,profile,report,output); protocols(asset,profile,report); edgeCases(asset,profile,report); replay(asset,profile,report);
         report << "failures=" << JULIA_TEST_RESULT() << '\n';
     }
     catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }

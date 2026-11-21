@@ -3,11 +3,12 @@
 ## Модули и ресурсы
 
 Корневой CMake подключает `core`, `diagnostics`, `events`, `runtime`, `render`, `animation`,
-`model`, `model_import`, `embodiment`,
-плагин `render_opengl`, desktop-приложение, тесты и необязательные инструменты.
+`model`, `model_import`, `world`, `embodiment`, опциональный `physics`,
+CPU-стенд `julia_body_sim`, плагин `render_opengl`, desktop, тесты и инструменты.
 Остальные каталоги `libs/` — заготовки расширения, не активные подсистемы.
 Core содержит типы/время/result, events — очередь и шину событий;
-diagnostics/runtime пока представлены interface-targets.
+`diagnostics` — interface-target; `runtime` содержит header-only `FixedStepScheduler`.
+`libs/CMakeLists.txt` и заготовки cognition/memory/voice не подключены корневым CMake.
 
 `ModelImporter` через Assimp создаёт самостоятельный CPU `ModelAsset`: геометрию,
 материалы, декодированные RGBA-изображения, скелет, skin bindings и клипы.
@@ -52,7 +53,8 @@ play/pause/stop, seek и loop. `EyeBehavior` задаёт фиксации, са
 и накладывает глаза/веки перед
 расчётом иерархии. Авторские eye-клипы имеют приоритет.
 Exact bind требует отключённого eye overlay. Crossfade, общий animation graph,
-morph/lip-sync и симуляция физики пока не реализованы.
+morph/lip-sync пока не реализованы. Физика существует в отдельных MuJoCo-стендах
+и ещё не подключена к `BodyInstance` основного приложения.
 
 `JULIA_BUILD_DESKTOP=OFF` исключает OpenGL-плагин, приложение и GPU-тесты из
 конфигурации. Проверки `pose_core` линкуются только с CPU-ядром. `pose_parity`
@@ -61,6 +63,55 @@ morph/lip-sync и симуляция физики пока не реализов
 `model_asset_import` проверяет владение и пограничные случаи на независимых fixtures.
 Планы, команды, результаты и ограничения:
 [body_core_stage1.md](body_core_stage1.md), [body_core_stage2.md](body_core_stage2.md).
+
+## Кинематическое тело и сцена
+
+`BodyProfile` / `BodyRigBinding` связывают семантические суставы, сегменты и
+эффекторы с визуальным ригом. Их IDs отличаются от индексов skin palette.
+Калибровка `raphtaliaBodyProfile()` и пределы — инженерные настройки;
+fingerprint проверяет совместимость рига.
+
+`BodyInstance` владеет состоянием, очередью tick-addressed команд, анимацией,
+глазами, direct control, IK, hand interaction и leg support. `step()` продвигает
+тело на 1/120 с, `snapshot()` возвращает завершённое состояние, `display(alpha)`
+строит интерполированное представление без изменения симуляции.
+`FixedStepScheduler` ограничивает catch-up восемью тиками, отбрасывает целые
+лишние тики и замораживает тело при минимизации или паузе ОС >0,5 с.
+
+Реализованы позиционная и пространственная IK одной руки, ограниченный поиск
+обхода/конфигураций, ранжирование, кинематический перенос тестового предмета,
+двухопорная кинематическая постановка и reach/grasp preparation из стойки.
+`world::CollisionScene` и `BodyCollision` используют приближённые формы.
+Проверки не гарантируют отсутствие пересечений всего меша/одежды и не заменяют
+физические контакты. Общий whole-body planner, ходьба и интеграция динамического
+тела в `BodyInstance` не реализованы.
+
+## Физика MuJoCo и область исследований
+
+`JULIA_BUILD_PHYSICS=ON` подключает MuJoCo 3.3.7 Windows x64 из
+`build/dependencies/mujoco-3.3.7` через импортированную DLL/implib.
+`julia_physics` содержит `PhysicsWorld`, наблюдения контактов, приводы и
+контроллеры; `julia_physics_rig` — генераторы руки, полного тела и подготовленной
+стойки. OpenGL не требуется для headless-стендов.
+
+`BodyRig`: 20 сегментов, 55 кг, свободный таз, 41 hinge;
+`nq=48`, `nv=47`, `nu=41`. Три кинематических угла таза представлены свободной
+ориентацией основания и не дублируются hinges. SI/Y-up; внешний тик 120 Гц,
+номинально 16 MuJoCo-подшагов (1920 Гц), четыре обновления контроллера (480 Гц).
+Визуальная поза физического стенда строится из измеренных координат.
+
+`StandVariant::Equality7g` и `BoundedSolver::Reference7h` остаются defaults.
+Bounded QP и `Optimized7i` выбираются явно. Есть COM/load-команды и opt-in
+`coordinatedCommands` для общей пары COM/alpha; согласованный режим требует
+bounded/optimized и исключает отдельные режимы. Управление выдаёт 41 суставной
+момент, без стабилизирующих root forces и записи q/v. Headless/desktop-стенды
+тела используют общий `BodyBenchIO`. Основной `julia_desktop` с MuJoCo не линкуется.
+
+Результаты относятся к инженерной модели, подготовленной позе, двум опорам,
+малому COM-смещению и малым возмущениям. Шаги, одноопорная стойка, физический
+хват, произвольное whole-body поведение и hard real-time не подтверждены.
+Историческая фиксированная проверка 7К завершена частично;
+подробности — в [отчёте 7К](body_core_stage7k.md).
 
 ## Рендерер
 
@@ -88,7 +139,8 @@ assignments; `Albedo.fbx` ссылается на отсутствующие в�
 ## Два режима окна
 
 `DisplayController` меняет оформление и геометрию одного GLFW-окна.
-`GLModel`, `AnimationPlayer`, `EyePoseLayer`, WGL-контекст и GPU-ресурсы общие.
+`GLModel`, `BodyInstance`, WGL-контекст и GPU-ресурсы общие.
+Ввод ставит команды в очередь тела; render и камера читают один `BodyDisplay`.
 `OrbitCamera` обслуживает Full Window; фон — непрозрачный sRGB `#808080`.
 `AvatarCamera` — фронтальная ортографическая камера по пояс с опорой на spine,
 fallback по габаритам и запасом над волосами/ушами. Движение spine в анимации

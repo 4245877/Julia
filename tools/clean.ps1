@@ -11,7 +11,10 @@ $buildPrefix = $buildRoot.TrimEnd('\') + '\'
 $configurations = if ($Configuration -eq 'All') { @('release', 'debug') } else { @($Configuration.ToLowerInvariant()) }
 $targets = @($configurations | ForEach-Object { Join-Path $buildRoot "vs-$_/verification" })
 if (-not $VerificationOnly) {
-    $targets += @('diagnostics', 'packages', 'anime-audit') | ForEach-Object { Join-Path $buildRoot $_ }
+    # Manual diagnostics contain unique research and baseline inputs. They are
+    # deliberately excluded, as are lossless research archives and SDKs.
+    $targets += @('cpu-release/verification', 'cpu-no-physics/verification', 'packages', 'anime-audit') |
+        ForEach-Object { Join-Path $buildRoot $_ }
 }
 
 foreach ($target in $targets) {

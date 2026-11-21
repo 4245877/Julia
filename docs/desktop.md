@@ -51,6 +51,11 @@ DPI и панель задач учитываются автоматически
 | Камера как цель взгляда | T |
 | Средний интервал blink | `[` / `]` |
 | Фиксированный seed поведения глаз | F8 |
+| Direct mode / полный reset тела | F2 / F6 |
+| Предыдущий / следующий сустав, координата, ±5° | Shift+F3 / F3, F4, `-` / `+` |
+| Reach/retarget выбранной руки в direct mode | F7; Shift+F7 — другая рука |
+| Кинематические сцены коллизий / обход | F11 / F12 |
+| Пауза всей симуляции тела | Pause |
 | Выход | Esc |
 
 ЛКМ зарезервирована для взаимодействия и не двигает камеру.
@@ -59,6 +64,7 @@ DPI и панель задач учитываются автоматически
 ## Сборка и автоматические проверки
 
 ```powershell
+.\tools\setup-physics.ps1                 # один раз: MuJoCo 3.3.7 с проверкой SHA-256
 .\tools\build.ps1                         # установка зависимостей при необходимости
 .\tools\build.ps1 -UseInstalledDependencies -Clean
 .\tools\build.ps1 -UseInstalledDependencies -Configuration Debug
@@ -77,22 +83,40 @@ cmake --build --preset build-release --clean-first --parallel 4
 ctest --preset test-release
 ```
 
-Все 17 наборов постоянные. Core/events проверяют базовые контракты;
+Список наборов определяется текущей конфигурацией: `ctest --preset test-release -N`.
+Core/events проверяют базовые контракты;
 orbit_camera и desktop_launch — математику и callbacks камеры;
 model_math/model_import — transforms, skinning, FBX/glTF и материалы;
 gpu_resources/shader_pipeline/opengl/outline_normals/toon_render — реальные
 GPU-ресурсы, GLSL, alpha, нормали и тени; animation/eye_behavior и desktop
 animation/eyes — sampling, playback и gaze/blink. Два display-набора проверяют
 DPI/layout, настройки, native hit testing и настоящее прозрачное окно.
+Также проверяются CPU-поза/импорт, `BodyInstance`, IK, геометрия, кинематические
+взаимодействия/опоры и, при включённой физике, MuJoCo, приводы, контакты,
+стойка, bounded QP, COM, нагрузка стоп и согласованные команды.
 Для GPU-проверок нужна доступная Windows-сессия с рабочим OpenGL-драйвером.
 
-CTest пишет в `build/<preset>/verification`, использует отдельные настройки
+CTest пишет в `build/<preset>/verification` (включая `artifacts/stage*`), использует отдельные настройки
 и не изменяет пользовательский `display.ini`. `build.ps1` очищает прежние кадры
 перед тестами, удаляет результаты успешного прогона и сохраняет их при ошибке.
 `-KeepDiagnostics` оставляет кадры для просмотра. Последний журнал CTest остаётся
 в `build/<preset>/Testing/Temporary/LastTest.log`.
 
 ## Ручная диагностика и очистка
+
+Физическое тело запускается отдельными исполняемыми файлами после обычной
+Release-сборки. Из корня проекта, с новым каталогом каждого опыта:
+
+```powershell
+.\build\vs-release\apps\julia_body_physics\julia_body_physics.exe --case drop --ticks 720 --output build/diagnostics/manual-drop-01
+.\build\vs-release\apps\julia_body_physics\julia_body_physics_desktop.exe --case stand --output build/diagnostics/manual-stand-01
+.\build\vs-release\apps\julia_body_physics\julia_body_physics.exe --case coord-shift --bounded-solver optimized --output build/diagnostics/manual-coord-01
+```
+
+Первый опыт проверяет падение свободного тела, второй показывает инженерную
+двухопорную стойку; третий включает исследовательские согласованные команды
+COM/нагрузки и исполняет 8400 тиков. Эти стенды не изменяют основной Desktop Avatar.
+Трассы могут занимать сотни мегабайт за опыт. [Границы модели](architecture.md).
 
 ```powershell
 .\julia_desktop\julia_desktop.exe --verify build/diagnostics/camera
@@ -109,8 +133,15 @@ CTest пишет в `build/<preset>/verification`, использует отде
 output-путь обязателен. `--review-animations` и `--review-eyes` выполняют
 те же проверки в видимом окне. Сохраняйте результаты ручных проверок в `build/`.
 
-`clean.ps1` удаляет только `build/vs-*/verification`, `build/diagnostics`,
-`build/packages` и старый `build/anime-audit`. Параметр `-Configuration Release`
-ограничивает выбор конфигурации; `-VerificationOnly` оставляет ручную диагностику
-и пакеты. Каталоги с symlink/junction сценарий удалять отказывается.
+`clean.ps1` удаляет `build/vs-*/verification`, CPU verification, `build/packages`
+и старый `build/anime-audit`. `-Configuration Release|Debug` выбирает VS-конфигурацию;
+`-VerificationOnly` очищает только её verification (при All — обе VS-конфигурации).
+Ручная диагностика и `build/research-archive` сохраняются: там есть уникальные
+инженерные данные. Каталоги с symlink/junction сценарий удалять отказывается.
 Не удаляйте `julia_desktop/display.ini`, исходные ресурсы и installed dependencies.
+
+Большие исторические CSV/PPM/PAM/BIN сохранены в ZIP без потерь. Например,
+`python tools/archive-diagnostics.py restore --stage stage7k` возвращает их
+на исходные пути, не перезаписывая отличающиеся файлы. Перед историческими
+evidence-проверками восстановите нужные этапы и используйте соответствующую
+версию исходников/бинарников. [Результат аудита](maintenance_audit.md).
