@@ -74,12 +74,26 @@ namespace julia::embodiment
         transitionStart_ = current_ = rest_;
     }
 
-    void BodyIdle::requestStance(bool ready, const DirectBodyControl& control, const RootPose& root)
+    void BodyIdle::requestStance(const SetIdleStance& command, const DirectBodyControl& control, const RootPose& root)
     {
+        const bool ready=command.ready;
         const auto phase = observation_.phase;
         if ((ready && (phase == IdlePhase::Settling || phase == IdlePhase::Ready)) ||
             (!ready && (phase == IdlePhase::Resuming || phase == IdlePhase::Idle)))
             return;
+        ready_=rest_;
+        if (ready && command.lookAt) {
+            const auto look=viewAngles({*command.lookAt,false},rest_.position);
+            // A small torso turn supports a larger head turn. All offsets end
+            // with the settling blend and become part of the checked stance.
+            for (std::size_t i=0;i<JointCount;++i) {
+                const float share=joints[i].lookShare;
+                if (share>0)
+                    ready_.joints[i]+=glm::radians(glm::vec3{1.85f*look.y,0,.58f*look.x})*share;
+                if (joints[i].id==JointId::Chest || joints[i].id==JointId::Thorax)
+                    ready_.joints[i]+=glm::radians(glm::vec3{.14f*look.y,0,.08f*look.x});
+            }
+        }
         transitionStart_.position = root.position;
         for (std::size_t i = 0; i < JointCount; ++i)
             transitionStart_.joints[i] = control.coordinates()[indices_[i]];
@@ -89,22 +103,21 @@ namespace julia::embodiment
         observation_.phase = ready ? IdlePhase::Settling : IdlePhase::Resuming;
     }
 
+    glm::vec2 BodyIdle::viewAngles(const IdleView& view,glm::vec3 rootPosition) const
+    {
+        const auto local=view.directional ? view.value:view.value-rootPosition;
+        const auto direction=glm::conjugate(root_.rotation)*local-(view.directional ? glm::vec3{0}:eyeCenter_);
+        const float length=glm::length(direction);
+        if (length<=1e-5f) return {0,0};
+        const auto degrees=glm::degrees(glm::vec2{std::atan2(direction.x,direction.z),
+            -std::atan2(direction.y,std::hypot(direction.x,direction.z))});
+        const float front=glm::smoothstep(-.12f,.63f,direction.z/length);
+        return glm::clamp(degrees,glm::vec2{-30,-14},glm::vec2{30,12})*front;
+    }
+
     void BodyIdle::followView(const std::optional<IdleView>& view)
     {
-        glm::vec2 target{0};
-        if (view)
-        {
-            const auto local = view->directional ? view->value : view->value - root_.position;
-            const auto direction = glm::conjugate(root_.rotation) * local - (view->directional ? glm::vec3{0} : eyeCenter_);
-            const float length = glm::length(direction);
-            if (length > 1e-5f)
-            {
-                const auto degrees = glm::degrees(glm::vec2{std::atan2(direction.x, direction.z),
-                    -std::atan2(direction.y, std::hypot(direction.x, direction.z))});
-                const float front = glm::smoothstep(-.12f, .63f, direction.z / length);
-                target = glm::clamp(degrees, glm::vec2{-30,-14}, glm::vec2{30,12}) * front;
-            }
-        }
+        const auto target=view ? viewAngles(*view,root_.position):glm::vec2{0};
         // Critically damped head tracking keeps velocity continuous when the viewport changes.
         constexpr float rate = 8;
         const float decay = std::exp(-rate * dt);
@@ -148,7 +161,7 @@ namespace julia::embodiment
         const bool settling = phase == IdlePhase::Settling;
         const double seconds = observation_.phaseSeconds + (settling ? 0 : runtime::BodyStepSeconds);
         followView(view);
-        auto next = settling ? rest_ : sample(seconds);
+        auto next = settling ? ready_ : sample(seconds);
         const bool transitioning = phase != IdlePhase::Idle;
         if (transitioning)
         {

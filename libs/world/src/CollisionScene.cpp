@@ -24,6 +24,7 @@ namespace julia::world
         // on each interval, so endpoints and its stationary point are sufficient.
         Clearance boxDistance(const Capsule& c, glm::dvec3 h)
         {
+            if (c.a==c.b) return result(c.a,glm::clamp(c.a,-h,h),c.radius,0);
             std::array<double,8> cuts{}; std::size_t count=2; cuts[1]=1;
             const auto d=c.b-c.a;
             for (int k=0;k<3;++k) if (std::abs(d[k])>1e-15)
@@ -47,6 +48,39 @@ namespace julia::world
                 sample(lo); sample(hi); if (aa>0) sample(std::clamp(-ab/aa,lo,hi));
             }
             return result(pa,pb,c.radius,0);
+        }
+        struct OrientedBox
+        {
+            glm::dvec3 center, halfExtent;
+            glm::dmat3 axes;
+
+            glm::dvec3 support(glm::dvec3 direction) const
+            {
+                auto point=center;
+                for (int k=0;k<3;++k)
+                    point+=axes[k]*(glm::dot(axes[k],direction)>=0 ? halfExtent[k]:-halfExtent[k]);
+                return point;
+            }
+        };
+
+        Clearance boxPair(const OrientedBox& a,const OrientedBox& b)
+        {
+            const auto offset=a.center-b.center;
+            double gap=-1e300;
+            glm::dvec3 normal{1,0,0};
+            const auto test=[&](glm::dvec3 axis) {
+                const double length=glm::length(axis);
+                if (length<1e-12) return; // Nearly parallel edges add no reliable axis.
+                axis/=length;
+                const double center=glm::dot(offset,axis);
+                const auto aProjection=glm::abs(glm::transpose(a.axes)*axis);
+                const auto bProjection=glm::abs(glm::transpose(b.axes)*axis);
+                const double separation=std::abs(center)-glm::dot(aProjection,a.halfExtent)-glm::dot(bProjection,b.halfExtent);
+                if (separation>gap) { gap=separation; normal=center>=0 ? axis:-axis; }
+            };
+            for (int k=0;k<3;++k) { test(a.axes[k]); test(b.axes[k]); }
+            for (int i=0;i<3;++i) for (int j=0;j<3;++j) test(glm::cross(a.axes[i],b.axes[j]));
+            return {gap,a.support(-normal),b.support(normal),normal};
         }
     }
     bool interacts(CollisionFilter a,CollisionFilter b)
@@ -92,5 +126,25 @@ namespace julia::world
         auto r=boxDistance({inv*(a.a-b.position),inv*(a.b-b.position),a.radius},std::get<Box>(b.shape).halfExtent);
         r.bodyPoint=b.position+b.rotation*r.bodyPoint; r.otherPoint=b.position+b.rotation*r.otherPoint; r.normal=b.rotation*r.normal;
         return r;
+    }
+    Clearance clearance(const SceneObject& a,const SceneObject& b)
+    {
+        if (const auto* sphere=std::get_if<Sphere>(&a.shape))
+            return clearance(Capsule{a.position,a.position,sphere->radius},b);
+
+        const OrientedBox box{a.position,std::get<Box>(a.shape).halfExtent,glm::mat3_cast(a.rotation)};
+        if (const auto* sphere=std::get_if<Sphere>(&b.shape))
+        {
+            const auto contact=clearance(Capsule{b.position,b.position,sphere->radius},a);
+            return {contact.gap,contact.otherPoint,contact.bodyPoint,-contact.normal};
+        }
+        if (std::holds_alternative<Plane>(b.shape))
+        {
+            const auto normal=b.rotation*glm::dvec3{0,1,0};
+            const auto corner=box.support(-normal);
+            const double gap=glm::dot(corner-b.position,normal);
+            return {gap,corner,corner-normal*gap,normal};
+        }
+        return boxPair(box,{b.position,std::get<Box>(b.shape).halfExtent,glm::mat3_cast(b.rotation)});
     }
 }

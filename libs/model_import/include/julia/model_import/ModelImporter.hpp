@@ -11,6 +11,8 @@ namespace julia::model_import
         // Connected, angle-weighted fans, retaining creases >= 45 degrees.
         // Runs after mesh transforms and weights; preserves authored UV/skin.
         bool rebuildSmoothNormals = false;
+        // Omit the prepared Raphtalia export's two gloves, authored as one mesh.
+        bool omitPreparedGloves = false;
     };
     class ModelImporter
     {

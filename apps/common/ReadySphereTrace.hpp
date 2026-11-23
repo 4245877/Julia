@@ -13,7 +13,7 @@ namespace julia::app
             << std::setprecision(17);
     }
 
-    inline void readySphereTrace(std::ostream& out,const embodiment::BodySnapshot& s)
+    inline std::uint64_t bodyPoseHash(const embodiment::BodySnapshot& s)
     {
         using namespace embodiment;
         std::uint64_t hash=14695981039346656037ull;
@@ -38,6 +38,14 @@ namespace julia::app
         add(i.contactHand); add(i.contactObject); add(i.geometryCurrent);
         const auto& o=s.object;
         if (o) { add(o->handle.id); vec(o->worldPose.rotation); matrix(o->effectorFromObject); }
+        return hash;
+    }
+
+    inline void readySphereTrace(std::ostream& out,const embodiment::BodySnapshot& s)
+    {
+        using namespace embodiment;
+        const auto& i=s.interaction;
+        const auto& o=s.object;
         const auto p=o ? o->worldPose.position:glm::vec3{0};
         out << s.tick << ',' << idlePhaseName(s.idle.phase) << ',' << s.idle.phaseSeconds << ',' << supportPhaseName(s.support.phase)
             << ',' << interactionPhaseName(i.phase) << ',' << i.action << ',' << i.result << ',' << static_cast<unsigned>(s.armOwners[0])
@@ -45,6 +53,6 @@ namespace julia::app
             << ',' << (o ? o->handle.generation:0) << ',' << (o ? o->owner:0) << ',' << p.x << ',' << p.y << ',' << p.z;
         for (const auto& a:s.support.anchors) out << ',' << a.positionError;
         for (const auto& a:s.support.anchors) out << ',' << std::max(-a.minGap,a.maxGap);
-        out << ',' << std::hex << hash << std::dec << '\n';
+        out << ',' << std::hex << bodyPoseHash(s) << std::dec << '\n';
     }
 }

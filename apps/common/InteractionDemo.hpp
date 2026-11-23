@@ -22,6 +22,20 @@ namespace julia::app
         return rigidPose(rigidMatrix({root.position,root.rotation})*
             binding.effectorFrame(left ? EffectorId::LeftGrip:EffectorId::RightGrip,p.globals));
     }
+
+    inline embodiment::RigidPose sphereLocalGrip(embodiment::ArmSide arm)
+    {
+        return {{arm==embodiment::ArmSide::Left ? .001f:-.001f,-.014f,-.009f}};
+    }
+
+    inline embodiment::RigidPose interactionSpherePose(const embodiment::BodyRigBinding& binding,
+        embodiment::ArmSide arm,unsigned sample,const embodiment::RootPose& root)
+    {
+        using namespace embodiment;
+        return rigidPose(rigidMatrix(interactionDemoPose(binding,arm,sample,root))*
+            glm::inverse(rigidMatrix(sphereLocalGrip(arm))));
+    }
+
     // Used by CLI, desktop and CPU tests. Every mutation is a public BodyCommand.
     class InteractionDemo
     {
@@ -33,7 +47,8 @@ namespace julia::app
         {
             using namespace embodiment;
             body.enqueue(SetDirectMode{true}); body.enqueue(SetRoot{root});
-            body.enqueue(CreateInteractionSphere{1,interactionDemoPose(body.control()->binding(),arm,sample,root)});
+            body.enqueue(CreateInteractionSphere{1,interactionSpherePose(body.control()->binding(),arm,sample,root),
+                .022f,sphereLocalGrip(arm)});
             stage=1;
         }
         void drive(embodiment::BodyInstance& body)
@@ -42,7 +57,7 @@ namespace julia::app
             const auto& s=body.snapshot(); if (!s.object) return;
             if (stage==1) { body.enqueue(GraspObject{s.object->handle,arm}); stage=2; }
             else if (stage==2 && s.interaction.phase==InteractionPhase::Holding) {
-                const auto target=interactionDemoPose(body.control()->binding(),arm,sample+1,root);
+                const auto target=interactionSpherePose(body.control()->binding(),arm,sample+1,root);
                 body.enqueue(MoveHeldObject{s.object->handle,target}); stage=3;
             } else if (stage==3 && s.interaction.phase==InteractionPhase::Holding && s.interaction.result=="Moved") {
                 body.enqueue(ReleaseObject{s.object->handle}); stage=4;

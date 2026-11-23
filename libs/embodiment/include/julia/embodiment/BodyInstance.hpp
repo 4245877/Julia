@@ -22,7 +22,7 @@ namespace julia::embodiment
     struct ResetBody {};
     struct SetRoot { RootPose pose; };
     struct StartIdle {};
-    struct SetIdleStance { bool ready; };
+    struct SetIdleStance { bool ready; std::optional<glm::vec3> lookAt={}; }; // World point captured for this Ready transition.
     enum class IdlePhase { Disabled, Resuming, Idle, Settling, Ready, Fault };
     const char* idlePhaseName(IdlePhase phase);
     struct IdleObservation
@@ -44,7 +44,7 @@ namespace julia::embodiment
     struct EyeCommand { EyeOperation operation; glm::vec3 value{0}; };
     using BodyOperation = std::variant<SetCoordinate, ResetCoordinates, SetDirectMode, ResetBody,
         SetRoot, ClipCommand, EyeCommand, StartReach, RetargetReach, CancelReach, SetCollisionScene,
-        CreateInteractionSphere,DeleteInteractionObject,GraspObject,PrepareGrasp,ConfirmGrasp,FinishGraspPreparation,MoveHeldObject,ReleaseObject,CancelInteraction,SetHandClosure,
+        CreateInteractionSphere,CreateInteractionBox,DeleteInteractionObject,GraspObject,PrepareGrasp,ConfirmGrasp,FinishGraspPreparation,MoveHeldObject,ReleaseObject,CancelInteraction,SetHandClosure,
         SetSupportSurface,EnableSupport,AlignSupport,MoveSupportRoot,CancelSupportMotion,DisableSupport,
         StartIdle,SetIdleStance>;
     struct BodyCommand
@@ -135,6 +135,8 @@ namespace julia::embodiment
         BodyCommandResult enqueue(BodyOperation operation); // Local input: next tick, monotonically assigned ID.
         // Latest input for the next tick. Replaces a single value without a queued command.
         void setIdleView(std::optional<IdleView> view);
+        // Overrides the camera for the eye layer only. The Ready stance stays frozen.
+        void setIdleFocus(std::optional<glm::vec3> point);
         void step();
         void collapseHistory();
         BodyDisplay display(double alpha) const; // No simulation mutation, including target gaze.
@@ -160,6 +162,7 @@ namespace julia::embodiment
         std::unique_ptr<LegSupport> support_;
         std::unique_ptr<BodyIdle> idle_;
         std::optional<IdleView> idleView_;
+        std::optional<glm::vec3> idleFocus_;
         EyePoseLayer eyes_;
         AnimationPlayer player_;
         RootPose root_;

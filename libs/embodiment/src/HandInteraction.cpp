@@ -10,6 +10,26 @@ namespace julia::embodiment
     namespace
     {
         constexpr std::uint64_t objectNamespace=1ull<<63;
+        // Absolute phalanx angles in the palm frame, calibrated on bare skin.
+        // Fingers meet the distal face; the thumb opposes
+        // along the adjacent side face.
+        constexpr float cubeBend[5][3]{
+            {1.385f,1.515f,2.580f}, {.685f,1.673f,2.943f}, {.680f,1.649f,2.620f},
+            {1.210f,2.601f,3.010f}, {1.131f,1.484f,1.548f}
+        };
+        constexpr float cubeSpread[5][3]{
+            {.216f,.218f,.224f}, {-.059f,-.059f,-.059f}, {.121f,.121f,.121f},
+            {-.330f,-.460f,-.364f}, {.160f,.566f,.772f}
+        };
+        // Calibrated against the 22 mm sphere throughout the closing stroke.
+        constexpr float sphereBend[5][3]{
+            {1.521f,1.918f,2.791f}, {.710f,1.760f,2.985f}, {.741f,1.884f,2.735f},
+            {1.158f,2.491f,2.980f}, {.658f,1.048f,1.626f}
+        };
+        constexpr float sphereSpread[5][3]{
+            {.154f,.130f,.122f}, {-.059f,-.058f,-.057f}, {.107f,.122f,.131f},
+            {-.306f,-.253f,-.244f}, {.157f,.268f,.377f}
+        };
         std::size_t index(ArmSide arm)
         { if (arm!=ArmSide::Left && arm!=ArmSide::Right) throw std::invalid_argument("Invalid hand"); return arm==ArmSide::Left ? 0:1; }
         EffectorId effector(ArmSide arm) { return arm==ArmSide::Left ? EffectorId::LeftGrip:EffectorId::RightGrip; }
@@ -29,6 +49,12 @@ namespace julia::embodiment
     }
     glm::mat4 rigidMatrix(const RigidPose& p) { return glm::translate(glm::mat4{1},p.position)*glm::mat4_cast(p.rotation); }
     RigidPose rigidPose(const glm::mat4& m) { return {glm::vec3{m[3]},normalizedReachOrientation(glm::quat_cast(glm::mat3{m}))}; }
+    world::SceneObject InteractiveObject::collider() const
+    {
+        world::SceneObject collider{objectNamespace|handle.id,worldPose.position,glm::normalize(glm::dquat{worldPose.rotation}),{},{}};
+        std::visit([&](auto volume) { collider.shape=volume; },shape);
+        return collider;
+    }
     const char* interactionPhaseName(InteractionPhase p)
     {
         switch(p) {
@@ -59,7 +85,7 @@ namespace julia::embodiment
             {
                 const std::array<const char*,5> names{"index","middle","ring","pinky","thumb"};
                 std::uint32_t parent=wristNode;
-                auto parentOpen=binding.profile().bodyFromResource*bind[parent],parentClosed=parentOpen;
+                auto parentOpen=binding.profile().bodyFromResource*bind[parent],parentClosed=parentOpen,parentCube=parentOpen;
                 for (unsigned phalanx=0;phalanx<3;++phalanx)
                 {
                     const auto prefix=std::string{"c_"}+names[finger]+std::to_string(phalanx+1)+(side==0 ? ".l_":".r_");
@@ -73,31 +99,35 @@ namespace julia::embodiment
                     const auto after=glm::inverse(frame)*global;
                     const float spread=finger==4 ? (side==0 ? -.65f:.65f):
                         (static_cast<float>(finger)-1.4f)*(side==0 ? .045f:-.045f);
-                    const auto target=[&](bool closed,const glm::mat4& parentGlobal)
+                    const auto target=[&](float bend,float opposition,const glm::mat4& parentGlobal)
                     {
-                        const float bend=closed ? (finger==4 ? .50f+static_cast<float>(phalanx)*.45f:
-                            std::array<float,3>{1.40f,2.65f,3.65f}[phalanx]):0;
-                        const float opposition=closed && finger==4 ? (side==0 ? 1.15f:-1.15f):spread;
                         auto f=palm*glm::rotate(glm::mat4{1},opposition,glm::vec3{0,0,1})*
                             glm::rotate(glm::mat4{1},bend,glm::vec3{1,0,0});
                         f[3]=parentGlobal*nodes[node].localTransform[3];
                         return f*after;
                     };
-                    const auto openGlobal=target(false,parentOpen),closedGlobal=target(true,parentClosed);
+                    const auto openGlobal=target(0,spread,parentOpen);
+                    const auto sideSign=side==0 ? 1.f:-1.f;
+                    const auto closedGlobal=target(sphereBend[finger][phalanx],
+                        sphereSpread[finger][phalanx]*sideSign,parentClosed);
+                    const auto cubeGlobal=target(cubeBend[finger][phalanx],
+                        cubeSpread[finger][phalanx]*sideSign,parentCube);
                     const auto rotation=[&](const glm::mat4& targetGlobal,const glm::mat4& parentGlobal)
                     { return normalizedReachOrientation(glm::quat_cast(glm::mat3{glm::inverse(before)*glm::inverse(parentGlobal)*targetGlobal*glm::inverse(after)})); };
-                    joints_.push_back({node,side,before,after,rotation(openGlobal,parentOpen),rotation(closedGlobal,parentClosed)});
-                    parent=node; parentOpen=openGlobal; parentClosed=closedGlobal;
+                    joints_.push_back({node,side,before,after,rotation(openGlobal,parentOpen),rotation(closedGlobal,parentClosed),
+                        rotation(cubeGlobal,parentCube)});
+                    parent=node; parentOpen=openGlobal; parentClosed=closedGlobal; parentCube=cubeGlobal;
                 }
             }
         }
     }
-    void HandLayer::set(ArmSide arm,float closure,bool enabled)
+    void HandLayer::set(ArmSide arm,float closure,bool enabled,std::optional<HandGrip> grip)
     {
         const auto s=index(arm);
         if (!std::isfinite(closure) || closure<0 || closure>1) throw std::invalid_argument("Hand closure outside [0,1]");
         if (!ready(arm)) throw std::invalid_argument("Hand trajectory active; wait for rest");
         if (!enabled) { states_[s]={}; from_[s]=goal_[s]=0; elapsed_[s]=duration_[s]=0; return; }
+        if (grip) states_[s].grip=*grip;
         blendFrom_[s]=states_[s].blend; blendGoal_[s]=1;
         states_[s].enabled=enabled; from_[s]=states_[s].closure; goal_[s]=closure; elapsed_[s]=0;
         // Quintic: |dc/dt| <= 1.875/s, |d2c/dt2| <= 5.78/s2 for a full stroke.
@@ -134,9 +164,13 @@ namespace julia::embodiment
         if (locals.size()!=nodeCount_) throw std::invalid_argument("Hand layer local buffer size mismatch");
         for (const auto& s:states) if (!std::isfinite(s.closure) || !std::isfinite(s.blend) ||
             s.closure<0 || s.closure>1 || s.blend<0 || s.blend>1) throw std::invalid_argument("Invalid hand layer state");
-        for (const auto& j:joints_) if (states[j.side].enabled && states[j.side].blend>0)
+        for (const auto& j:joints_) {
+            const auto& s=states[j.side];
+            if (!s.enabled || s.blend<=0) continue;
+            const auto closed=s.grip==HandGrip::Cube ? j.cubeClosed:j.closed;
             locals[j.node]=j.before*glm::mat4_cast(glm::slerp(glm::quat{1,0,0,0},
-                glm::slerp(j.open,j.closed,states[j.side].closure),states[j.side].blend))*j.after;
+                glm::slerp(j.open,closed,s.closure),s.blend))*j.after;
+        }
     }
     HandInteraction::HandInteraction(std::uint64_t owner,DirectBodyControl& control,ArmReach& reach)
         :hand(control.binding()),owner_(owner),control_(control),reach_(reach) {}
@@ -160,15 +194,38 @@ namespace julia::embodiment
             if (geometryChanged) geometryChanged();
         }
     }
-    void HandInteraction::create(const CreateInteractionSphere& c)
+    void HandInteraction::create(const CreateInteractionSphere& c,const world::CollisionScene* scene,double minimumGap)
+    {
+        createObject(c.id,c.pose,world::Sphere{c.radius},c.localGrip,scene,minimumGap);
+    }
+    void HandInteraction::create(const CreateInteractionBox& c,const world::CollisionScene* scene,double minimumGap)
+    {
+        createObject(c.id,c.pose,c.box,interactionCubeLocalGrip,scene,minimumGap);
+    }
+    void HandInteraction::createObject(std::uint64_t id,RigidPose pose,InteractionShape shape,RigidPose localGrip,
+        const world::CollisionScene* scene,double minimumGap)
     {
         if (object_ || locked() || reach_.anyActive()) throw std::invalid_argument("One object only; creation requires idle body");
-        if (!c.id || c.id>=objectNamespace || !std::isfinite(c.radius) || std::abs(c.radius-.022f)>1e-7f)
-            throw std::invalid_argument("Demo supports exactly one 22 mm radius sphere");
-        const auto p=checked(c.pose),g=checked(c.localGrip);
-        if (glm::length(g.position)>.005f) throw std::invalid_argument("Grip must be within 5 mm of sphere centre");
+        if (!id || id>=objectNamespace) throw std::invalid_argument("Invalid interactive object ID");
+        const auto p=checked(pose),g=checked(localGrip);
+        if (const auto* box=std::get_if<world::Box>(&shape)) {
+            if (box->halfExtent!=glm::dvec3{InteractionCubeHalfExtent})
+                throw std::invalid_argument("Cube dimensions outside the hand calibration");
+        } else {
+            const double radius=std::get<world::Sphere>(shape).radius;
+            if (!std::isfinite(radius) || std::abs(radius-.022f)>1e-7f)
+                throw std::invalid_argument("Demo supports exactly one 22 mm radius sphere");
+            if (glm::length(g.position)>radius) throw std::invalid_argument("Grip must lie inside the sphere");
+        }
         if (generation_==std::numeric_limits<std::uint64_t>::max()) throw std::overflow_error("Object generations exhausted");
-        object_=InteractiveObject{{c.id,++generation_},p,c.radius,g};
+        const InteractiveObject candidate{{id,generation_+1},p,shape,g};
+        if (scene) {
+            const auto collider=candidate.collider();
+            for (const auto& obstacle:scene->objects())
+                if (world::clearance(collider,obstacle).gap<=minimumGap)
+                    throw std::invalid_argument("Object overlaps environment");
+        }
+        object_=candidate; ++generation_;
         observation_={}; observation_.object=object_->handle; phase(InteractionPhase::Idle,true);
     }
     void HandInteraction::erase(ObjectHandle h)
@@ -189,6 +246,10 @@ namespace julia::embodiment
         ReachTarget t; t.arm=observation_.arm; t.effector=effector(t.arm); t.space=TargetSpace::World;
         t.task=ReachTask::PositionAndOrientation; t.position=goal.position; t.orientation=goal.rotation;
         t.strategy=MovementStrategy::AllowDetour; t.detour.maxConfigurations=1;
+        if (observation_.phase==InteractionPhase::Align && std::holds_alternative<world::Box>(object_->shape)) {
+            t.tolerance=.0007f;
+            t.angularTolerance=glm::radians(.3f);
+        }
         reachAction_=observation_.action;
         if (freezeReach) freezeReach(observation_.arm);
         reach_.start(reachAction_,observation_.epoch,t,root,false,reachAction_);
@@ -240,6 +301,8 @@ namespace julia::embodiment
     void HandInteraction::grasp(std::uint64_t action,std::uint64_t epoch,const GraspObject& c,const glm::mat4& root)
     {
         requireObject(c.object); (void)index(c.arm);
+        if (c.arm!=ArmSide::Left && std::holds_alternative<world::Box>(object_->shape))
+            throw std::invalid_argument("Cube grip is calibrated for the left hand");
         if (!control_.enabled() || locked() || reach_.anyActive() || !hand.ready(ArmSide::Left) || !hand.ready(ArmSide::Right)) throw std::invalid_argument("Grasp requires idle direct body and hand");
         observation_={}; observation_.action=action; observation_.epoch=epoch; observation_.object=c.object; observation_.arm=c.arm;
         cancelBeforeAttachment_=false;
@@ -247,13 +310,15 @@ namespace julia::embodiment
         pregrip_=rigidPose(rigidMatrix(grip_)*glm::translate(glm::mat4{1},glm::vec3{0,0,-.075f}));
         phase(InteractionPhase::Opening,true);
         if (!restClear(collisionContext())) { fail("Opening envelope intersects scene/body/object"); return; }
-        hand.set(c.arm,0);
+        hand.set(c.arm,0,true,std::holds_alternative<world::Box>(object_->shape) ? HandGrip::Cube:HandGrip::Sphere);
         (void)root;
     }
     void HandInteraction::move(std::uint64_t action,std::uint64_t epoch,const MoveHeldObject& c,const glm::mat4& root)
     {
         requireObject(c.object); const auto p=checked(c.targetWorld);
-        if (object_->state!=ObjectState::Attached || reach_.anyActive() || (observation_.phase!=InteractionPhase::Holding && observation_.phase!=InteractionPhase::Failed))
+        if (object_->state!=ObjectState::Attached || object_->owner!=owner_ || object_->arm!=observation_.arm ||
+            observation_.object!=c.object || observation_.epoch!=epoch || reach_.anyActive() ||
+            (observation_.phase!=InteractionPhase::Holding && observation_.phase!=InteractionPhase::Failed))
             throw std::invalid_argument("Move requires a stationary attached object");
         const auto goal=rigidPose(rigidMatrix(p)*glm::inverse(object_->effectorFromObject));
         const auto previous=observation_; const auto previousReachAction=reachAction_;
@@ -264,7 +329,8 @@ namespace julia::embodiment
     void HandInteraction::release(std::uint64_t action,std::uint64_t epoch,ObjectHandle h)
     {
         requireObject(h);
-        if (object_->state!=ObjectState::Attached || reach_.anyActive() || !hand.ready(observation_.arm) ||
+        if (object_->state!=ObjectState::Attached || object_->owner!=owner_ || object_->arm!=observation_.arm ||
+            observation_.object!=h || observation_.epoch!=epoch || reach_.anyActive() || !hand.ready(observation_.arm) ||
             (observation_.phase!=InteractionPhase::Holding && observation_.phase!=InteractionPhase::Failed))
             throw std::invalid_argument("Release requires a stationary attached object");
         observation_.action=action; observation_.epoch=epoch; observation_.result.clear(); observation_.reason.clear();
@@ -315,14 +381,13 @@ namespace julia::embodiment
             c.contactHand=observation_.arm==ArmSide::Left ? 3u:6u; c.contactObject=objectNamespace|object_->handle.id;
         }
         if (object_->state==ObjectState::Attached)
-            c.carried=CarriedSphere{objectNamespace|object_->handle.id,effector(object_->arm),object_->effectorFromObject,object_->radius};
+            c.carried=CarriedObject{objectNamespace|object_->handle.id,effector(object_->arm),object_->effectorFromObject,object_->shape};
         return c;
     }
     std::optional<world::SceneObject> HandInteraction::freeCollider() const
     {
         if (!object_ || object_->state==ObjectState::Attached) return {};
-        world::SceneObject c; c.id=objectNamespace|object_->handle.id; c.position=object_->worldPose.position;
-        c.rotation=object_->worldPose.rotation; c.shape=world::Sphere{object_->radius}; return c;
+        return object_->collider();
     }
     void HandInteraction::advance(std::span<const glm::mat4> globals,const glm::mat4& root)
     {
@@ -347,7 +412,8 @@ namespace julia::embodiment
             if (p==InteractionPhase::Handoff) {
                 if (handoffWait_) { handoffWait_=false; return; }
                 if (!restClear(collisionContext())) { fail("Opening envelope no longer clear"); return; }
-                phase(InteractionPhase::Opening); hand.set(observation_.arm,0);
+                phase(InteractionPhase::Opening);
+                hand.set(observation_.arm,0,true,std::holds_alternative<world::Box>(object_->shape) ? HandGrip::Cube:HandGrip::Sphere);
             } else if (p==InteractionPhase::Opening && hand.ready(observation_.arm)) {
                 phase(InteractionPhase::Approach); startReach(pregrip_,root);
             } else if (p==InteractionPhase::Approach || p==InteractionPhase::Align || p==InteractionPhase::Transport) {
@@ -358,7 +424,7 @@ namespace julia::embodiment
                 } else if (p==InteractionPhase::Align) {
                     if (observation_.preparation) {
                         if (!hand.ready(observation_.arm) || !hand.states()[s].enabled || hand.states()[s].closure!=0 ||
-                            hand.states()[s].blend!=1 || observation_.frameError>.002f || observation_.angularError>glm::radians(1.f) ||
+                            hand.states()[s].blend!=1 || observation_.frameError>r.target.tolerance || observation_.angularError>r.target.angularTolerance ||
                             !r.collisionChecked || object_->state!=ObjectState::Free || !restClear(collisionContext()))
                         { fail("ReadyToGrasp conditions not reached"); return; }
                         // Same geometry/contact policy as Align; no hidden context mutation.
@@ -370,16 +436,16 @@ namespace julia::embodiment
             } else if (p==InteractionPhase::Closing && hand.ready(observation_.arm)) {
                 // Timers/closure alone can NEVER attach. Recheck actual FK, settled reach,
                 // calibrated envelope against every unpermitted pair and object availability.
-                if (observation_.frameError>.002f || observation_.angularError>glm::radians(1.f) ||
+                if (observation_.frameError>r.target.tolerance || observation_.angularError>r.target.angularTolerance ||
                     r.action!=reachAction_ || r.epoch!=observation_.epoch || r.state!=ReachState::Succeeded || !r.collisionChecked ||
                     !hand.states()[s].enabled || hand.states()[s].blend!=1 || hand.states()[s].closure!=1 ||
                     object_->state!=ObjectState::Free || object_->owner || object_->handle!=observation_.object)
                 { fail("Attachment conditions not reached"); return; }
-                // The free sphere was checked against the body during Align. Verify
+                // The free object was checked against the body during Align. Verify
                 // the prospective payload against the environment too, before committing.
                 auto context=collisionContext();
-                context.carried=CarriedSphere{objectNamespace|object_->handle.id,effector(observation_.arm),
-                    glm::inverse(f)*rigidMatrix(object_->worldPose),object_->radius};
+                context.carried=CarriedObject{objectNamespace|object_->handle.id,effector(observation_.arm),
+                    glm::inverse(f)*rigidMatrix(object_->worldPose),object_->shape};
                 if (!restClear(context)) { fail("Attachment geometry rejected"); return; }
                 object_->effectorFromObject=context.carried->effectorFromObject;
                 object_->state=ObjectState::Attached; object_->owner=owner_; object_->arm=observation_.arm;

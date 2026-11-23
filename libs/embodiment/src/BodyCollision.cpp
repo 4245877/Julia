@@ -81,6 +81,7 @@ namespace julia::embodiment
         std::array<JointId,3> ids;
         std::vector<Pair> pairs;
         std::vector<BodyCollider> forms;
+        world::SceneObject payload;
         std::vector<Interval> stack;
         PathCheck out;
         Phase phase = Phase::Initial;
@@ -147,13 +148,25 @@ namespace julia::embodiment
                 const auto& c=*context.carried;
                 const auto e=findEffector(c.effector);
                 const auto effect=static_cast<unsigned>(c.effector);
+                double extent=0;
+                if (const auto* sphere=std::get_if<world::Sphere>(&c.shape)) {
+                    extent=sphere->radius;
+                    payload.shape=*sphere;
+                } else {
+                    const auto& box=std::get<world::Box>(c.shape);
+                    if (glm::any(glm::lessThanEqual(box.halfExtent,glm::dvec3{0})))
+                        throw std::invalid_argument("Invalid carried box extent");
+                    extent=glm::length(box.halfExtent);
+                    payload.shape=box;
+                }
+                payload.id=c.object;
                 if (e==profile.effectors.end() || effect<side*4 || effect>side*4+2 || !c.object ||
-                    context.contactHand!=side*3+3 || !std::isfinite(c.radius) || c.radius<=0 || c.radius>.05 ||
+                    context.contactHand!=side*3+3 || !std::isfinite(extent) || extent<=0 || extent>.05 ||
                     (context.contactObject && context.contactObject!=c.object) ||
                     glm::length(glm::vec3{c.effectorFromObject[3]})>1)
-                    throw std::invalid_argument("Invalid carried sphere");
+                    throw std::invalid_argument("Invalid carried object");
                 if (std::any_of(scene.objects().begin(),scene.objects().end(),[&](const auto& o) { return o.id==c.object; }))
-                    throw std::invalid_argument("Carried sphere also has a scene collider");
+                    throw std::invalid_argument("Carried object also has a scene collider");
                 const auto gramAttachment=glm::transpose(glm::mat3{c.effectorFromObject})*glm::mat3{c.effectorFromObject};
                 for (int a=0;a<4;++a) for (int b=0;b<4;++b)
                     if (!std::isfinite(c.effectorFromObject[a][b])) throw std::invalid_argument("Nonfinite attachment transform");
@@ -162,10 +175,10 @@ namespace julia::embodiment
                 if (glm::determinant(glm::mat3{c.effectorFromObject})<0 || std::abs(c.effectorFromObject[0][3])+
                     std::abs(c.effectorFromObject[1][3])+std::abs(c.effectorFromObject[2][3])+std::abs(c.effectorFromObject[3][3]-1)>1e-6f)
                     throw std::invalid_argument("Attachment must be proper affine rigid");
-                // Shoulder->elbow->wrist + wrist->effector + attachment offset + sphere support.
-                // Triangle inequality bounds any payload point under EACH of the six rotations.
+                // Bound every payload point under each joint rotation. For a
+                // box the final term reaches the farthest corner from its centre.
                 radius=std::max(radius,armLength+glm::length(glm::vec3{e->frameInBodyBind[3]-frame(ids[2])[3]})+
-                    glm::length(glm::vec3{c.effectorFromObject[3]})+c.radius+.000001);
+                    glm::length(glm::vec3{c.effectorFromObject[3]})+extent+.000001);
             }
             const auto checksSceneObject=[&](const world::SceneObject& o) {
                 return o.id==SupportFloorObject || (o.id & (1ull<<63)) || world::interacts(settings.bodyFilter,o.filter);
@@ -191,15 +204,15 @@ namespace julia::embodiment
             }
             if (context.carried)
             {
-                const auto payload=calibration.size()+context.fixedLowerForms.size();
+                const auto payloadIndex=calibration.size()+context.fixedLowerForms.size();
                 for (std::size_t j=0;j<scene.objects().size();++j)
-                    if (checksSceneObject(scene.objects()[j])) pairs.push_back({payload,j,true});
-                for (std::size_t j=0;j<payload;++j)
-                    if (j>=calibration.size() || calibration[j].id!=context.contactHand) pairs.push_back({payload,j,false});
+                    if (checksSceneObject(scene.objects()[j])) pairs.push_back({payloadIndex,j,true});
+                for (std::size_t j=0;j<payloadIndex;++j)
+                    if (j>=calibration.size() || calibration[j].id!=context.contactHand) pairs.push_back({payloadIndex,j,false});
             }
             out.dependencies=context.dependencies;
             out.status=PathStatus::NotChecked; out.detail="verification paused"; out.sceneVersion=scene.version(); out.trace.reserve(128);
-            forms.reserve(calibration.size()+context.fixedLowerForms.size()+(context.carried ? 1:0)); stack.reserve(settings.maxDepth+1);
+            forms.reserve(calibration.size()+context.fixedLowerForms.size()); stack.reserve(settings.maxDepth+1);
             out.scratchBytes=sizeof(Impl)+path.capacity()*sizeof(ArmCoordinates)+pose.locals.capacity()*sizeof(glm::mat4)+
                 pose.globals.capacity()*sizeof(glm::mat4)+pose.palette.capacity()*sizeof(glm::mat4)+out.trace.capacity()*sizeof(std::array<glm::vec3,3>)+
                 forms.capacity()*sizeof(BodyCollider)+pairs.capacity()*sizeof(Pair)+stack.capacity()*sizeof(Interval)+
@@ -229,8 +242,10 @@ namespace julia::embodiment
             if (context.carried)
             {
                 const auto& c=*context.carried;
-                const auto center=glm::dvec3{(world*binding.effectorFrame(c.effector,pose.globals)*c.effectorFromObject)[3]};
-                forms.push_back({10,side==0 ? SegmentId::LeftHand:SegmentId::RightHand,{center,center,c.radius}});
+                const auto frame=world*binding.effectorFrame(c.effector,pose.globals)*c.effectorFromObject;
+                payload.position=glm::dvec3{frame[3]};
+                if (std::holds_alternative<world::Box>(payload.shape))
+                    payload.rotation=glm::normalize(glm::quat_cast(glm::dmat3{frame}));
             }
             if (out.trace.size()<128 && lo-traceLastTick>=std::max(1.0,static_cast<double>(path.size())/120.0))
             {
@@ -240,6 +255,19 @@ namespace julia::embodiment
             }
             pair=0; gap=std::numeric_limits<double>::infinity(); contactNeedsSubdivision=false; evaluating=true;
             return true;
+        }
+        world::Clearance pairClearance(const Pair& p) const
+        {
+            if (p.first<forms.size()) {
+                const auto& a=forms[p.first].capsule;
+                return p.sceneObject ? world::clearance(a,scene.objects()[p.second]):world::clearance(a,forms[p.second].capsule);
+            }
+            if (p.sceneObject) return world::clearance(payload,scene.objects()[p.second]);
+            const auto& b=forms[p.second].capsule;
+            if (const auto* sphere=std::get_if<world::Sphere>(&payload.shape))
+                return world::clearance(world::Capsule{payload.position,payload.position,sphere->radius},b);
+            const auto contact=world::clearance(b,payload);
+            return {contact.gap,contact.otherPoint,contact.bodyPoint,-contact.normal};
         }
         void completePose()
         {
@@ -303,12 +331,13 @@ namespace julia::embodiment
                 if (pair==pairs.size()) { completePose(); continue; }
                 if (out.queries>=settings.maxQueries) { finish(PathStatus::Incomplete,"query budget exhausted"); break; }
                 if (out.queries-queryBegin>=maxQueries) break;
-                const auto& p=pairs[pair++]; const auto& a=forms[p.first];
-                // Spatially bounded allowance: the selected sphere must be within 12 cm
+                const auto& p=pairs[pair++];
+                const auto bodyForm=p.first<forms.size() ? forms[p.first].id:10u;
+                // Spatially bounded allowance: the selected object must be within 12 cm
                 // of this hand's grip. It cannot mask another form or scene object.
                 bool contactAllowedAtSample=false;
-                if (p.sceneObject && a.id==context.contactHand && scene.objects()[p.second].id==context.contactObject &&
-                    std::holds_alternative<world::Sphere>(scene.objects()[p.second].shape))
+                if (p.sceneObject && bodyForm==context.contactHand && scene.objects()[p.second].id==context.contactObject &&
+                    !std::holds_alternative<world::Plane>(scene.objects()[p.second].shape))
                 {
                     const auto e=side==0 ? EffectorId::LeftGrip:EffectorId::RightGrip;
                     const auto center=glm::dvec3{(world*binding.effectorFrame(e,pose.globals))[3]};
@@ -317,8 +346,7 @@ namespace julia::embodiment
                     if (distance+motion<=.12) { ++out.queries; continue; }
                     contactAllowedAtSample=distance<=.12;
                 }
-                const auto c=p.sceneObject ? world::clearance(a.capsule,scene.objects()[p.second]):
-                    world::clearance(a.capsule,forms[p.second].capsule);
+                const auto c=pairClearance(p);
                 ++out.queries;
                 if (contactAllowedAtSample) {
                     // This sample permits contact. Certify any part of the interval outside the allowance.
@@ -327,9 +355,9 @@ namespace julia::embodiment
                 }
                 if (c.gap<gap)
                 {
-                    gap=c.gap; out.contact=c; out.bodyForm=a.id;
+                    gap=c.gap; out.contact=c; out.bodyForm=bodyForm;
                     out.otherBodyForm=p.sceneObject ? 0:forms[p.second].id;
-                    out.object=p.sceneObject ? scene.objects()[p.second].id:(a.id==10 && context.carried ? context.carried->object:0);
+                    out.object=p.sceneObject ? scene.objects()[p.second].id:(bodyForm==10 ? payload.id:0);
                 }
             }
             out.microseconds+=std::chrono::duration<double,std::micro>(std::chrono::steady_clock::now()-begin).count();

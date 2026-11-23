@@ -103,6 +103,11 @@ namespace julia::embodiment
         }
         idleView_=view;
     }
+    void BodyInstance::setIdleFocus(std::optional<glm::vec3> point)
+    {
+        if (point && !finite(*point)) throw std::invalid_argument("Invalid Idle eye target");
+        idleFocus_=point;
+    }
     void BodyInstance::commitIdlePose()
     {
         const auto q=idle_->proposed().coordinates();
@@ -111,10 +116,11 @@ namespace julia::embodiment
     }
     void BodyInstance::applyIdleView()
     {
-        if (!idle_ || !idleView_) return;
+        if (!idle_ || (!idleView_ && !idleFocus_)) return;
+        const auto view=idleFocus_ ? IdleView{*idleFocus_,false}:*idleView_;
         const auto resourceFromWorld=glm::inverse(binding_->worldFromResource(matrix(root_)));
-        const auto target=glm::vec3{resourceFromWorld*glm::vec4{idleView_->value,idleView_->directional ? 0.0f:1.0f}};
-        if (idleView_->directional) eyes_.setTargetDirection(target);
+        const auto target=glm::vec3{resourceFromWorld*glm::vec4{view.value,view.directional ? 0.0f:1.0f}};
+        if (view.directional) eyes_.setTargetDirection(target);
         else eyes_.setTargetPoint(target);
         idleViewApplied_=true;
     }
@@ -161,7 +167,14 @@ namespace julia::embodiment
             if (interaction_->object()) add(interaction_->object()->handle.generation);
             if (collision.carried) {
                 add(collision.carried->object); add(static_cast<unsigned>(collision.carried->effector));
-                frame(collision.carried->effectorFromObject); add(std::bit_cast<std::uint64_t>(collision.carried->radius));
+                frame(collision.carried->effectorFromObject);
+                add(collision.carried->shape.index());
+                const auto metric=[&](double value) { add(std::bit_cast<std::uint64_t>(value)); };
+                if (const auto* sphere=std::get_if<world::Sphere>(&collision.carried->shape)) metric(sphere->radius);
+                else {
+                    const auto h=std::get<world::Box>(collision.carried->shape).halfExtent;
+                    for (int k=0;k<3;++k) metric(h[k]);
+                }
             }
             d.interactionRevision=interaction_->geometryRevision();
         }
@@ -238,7 +251,7 @@ namespace julia::embodiment
         if (i.epoch!=epoch_ || epoch_!=preparationBase_->collision.dependencies.epoch || environmentScene_!=preparationEnvironment_ ||
             i.arm!=preparationSource_->reach.target.arm || o.handle!=saved.handle || o.handle!=i.object ||
             o.localGrip.position!=saved.localGrip.position || o.localGrip.rotation!=saved.localGrip.rotation ||
-            o.radius!=saved.radius || !frozenMatches(*preparationBase_,s)) return false;
+            o.shape!=saved.shape || !frozenMatches(*preparationBase_,s)) return false;
         if (i.preparation)
             return o.state==ObjectState::Free && o.owner==0 && o.worldPose.position==saved.worldPose.position &&
                 o.worldPose.rotation==saved.worldPose.rotation;
@@ -324,8 +337,10 @@ namespace julia::embodiment
             d.colliders[s*3+2].capsule={glm::dvec3{f*glm::vec4{0,.025f,0,1}},glm::dvec3{f*glm::vec4{0,.160f,0,1}},.045};
         }
         if (d.object && d.object->state==ObjectState::Attached) {
-            const auto p=glm::dvec3{d.object->worldPose.position};
-            d.colliders.push_back({10,d.object->arm==ArmSide::Left ? SegmentId::LeftHand:SegmentId::RightHand,{p,p,d.object->radius}});
+            if (const auto* sphere=std::get_if<world::Sphere>(&d.object->shape)) {
+                const auto p=glm::dvec3{d.object->worldPose.position};
+                d.colliders.push_back({10,d.object->arm==ArmSide::Left ? SegmentId::LeftHand:SegmentId::RightHand,{p,p,sphere->radius}});
+            }
         }
     }
     BodyCommandStatus BodyInstance::apply(const BodyOperation& operation, std::uint64_t commandId)
@@ -350,10 +365,10 @@ namespace julia::embodiment
                 if ((reach_ && reach_->anyActive()) || (interaction_ && interaction_->locked()))
                     throw std::invalid_argument("Support conflicts with active Reach/HandInteraction/Attached object");
             if constexpr (std::is_same_v<T,SetSupportSurface> || std::is_same_v<T,DisableSupport> || std::is_same_v<T,CancelSupportMotion> ||
-                std::is_same_v<T,CreateInteractionSphere> || std::is_same_v<T,DeleteInteractionObject>)
+                std::is_same_v<T,CreateInteractionSphere> || std::is_same_v<T,CreateInteractionBox> || std::is_same_v<T,DeleteInteractionObject>)
                 if (interaction_ && interaction_->locked()) throw std::invalid_argument("Interaction owns support/scene/object");
             if constexpr (std::is_same_v<T,SetSupportSurface> || std::is_same_v<T,DisableSupport> || std::is_same_v<T,CancelSupportMotion> ||
-                std::is_same_v<T,CreateInteractionSphere> || std::is_same_v<T,DeleteInteractionObject>)
+                std::is_same_v<T,CreateInteractionSphere> || std::is_same_v<T,CreateInteractionBox> || std::is_same_v<T,DeleteInteractionObject>)
                 if (support_ && support_->enabled() && reach_ && reach_->anyActive())
                     throw std::invalid_argument("Fixed-stance Reach owns frozen support/scene; wait for arm segment completion");
             if constexpr (std::is_same_v<T,SetCoordinate> || std::is_same_v<T,GraspObject> ||
@@ -386,8 +401,9 @@ namespace julia::embodiment
                     throw std::invalid_argument("Active Idle controller required");
                 if (!value.ready && (reach_->anyActive() || interaction_->locked() || interaction_->object()))
                     throw std::invalid_argument("Idle resume requires resting arms and an empty scene");
+                if (value.lookAt && !finite(*value.lookAt)) throw std::invalid_argument("Invalid Ready look point");
                 const auto from=idle_->observation().phase;
-                idle_->requestStance(value.ready,*control_,root_);
+                idle_->requestStance(value,*control_,root_);
                 if (from==IdlePhase::Ready && idle_->observation().phase==IdlePhase::Resuming) {
                     interaction_->hand.fadeOut(ArmSide::Left);
                     interaction_->hand.fadeOut(ArmSide::Right);
@@ -461,7 +477,7 @@ namespace julia::embodiment
             else if constexpr (std::is_same_v<T, ResetBody>)
             {
                 if (support_) support_->interrupt("ResetBody: explicit discontinuity / epoch change");
-                idle_.reset(); idleView_.reset(); idleViewApplied_=false;
+                idle_.reset(); idleView_.reset(); idleFocus_.reset(); idleViewApplied_=false;
                 root_ = {};
                 if (reach_) reach_->reset();
                 if (interaction_ && interaction_->locked() && interaction_->observation().preparation) interaction_->abandonPreparation();
@@ -517,9 +533,7 @@ namespace julia::embodiment
                     for (const auto& object:value.scene->objects()) {
                         if (object.id & (1ull<<63)) throw std::invalid_argument("Scene uses reserved interactive object namespace");
                         if (interaction_ && interaction_->object()) {
-                            const auto& item=*interaction_->object();
-                            const world::Capsule sphere{item.worldPose.position,item.worldPose.position,item.radius};
-                            if (world::clearance(sphere,object).gap<=value.settings.margin+value.settings.numericSlack)
+                            if (world::clearance(interaction_->object()->collider(),object).gap<=value.settings.margin+value.settings.numericSlack)
                                 throw std::invalid_argument("Scene overlaps stationary interactive object");
                         }
                     }
@@ -546,6 +560,8 @@ namespace julia::embodiment
                     interaction_->object()->state!=ObjectState::Free || interaction_->object()->owner ||
                     !interaction_->hand.ready(ArmSide::Left) || !interaction_->hand.ready(ArmSide::Right))
                     throw std::invalid_argument("Preparation requires current Free object and idle hands");
+                if (value.arm!=ArmSide::Left && std::holds_alternative<world::Box>(interaction_->object()->shape))
+                    throw std::invalid_argument("Cube grip is calibrated for the left hand");
                 auto prospective=interaction_->collisionContext(); prospective.handEnvelopes[side]=true;
                 prospective.contactHand=0; prospective.contactObject=0;
                 auto check=interactionRest(value.arm,prospective);
@@ -574,22 +590,16 @@ namespace julia::embodiment
                     throw std::invalid_argument("ConfirmGrasp requires a current ReadyToGrasp geometry check");
                 interaction_->confirm(commandId,value);
             }
-            else if constexpr (std::is_same_v<T,CreateInteractionSphere> || std::is_same_v<T,DeleteInteractionObject> ||
+            else if constexpr (std::is_same_v<T,CreateInteractionSphere> || std::is_same_v<T,CreateInteractionBox> || std::is_same_v<T,DeleteInteractionObject> ||
                 std::is_same_v<T,GraspObject> || std::is_same_v<T,MoveHeldObject> || std::is_same_v<T,ReleaseObject> ||
                 std::is_same_v<T,CancelInteraction> || std::is_same_v<T,SetHandClosure> || std::is_same_v<T,FinishGraspPreparation>)
             {
                 if (!interaction_) throw std::invalid_argument("Hand profile unavailable for this rig");
-                if constexpr (std::is_same_v<T,CreateInteractionSphere>) {
-                    if (support_ && support_->enabled() && environmentObjects(environmentScene_,true,support_->observation().surface).size()>=64)
-                        throw std::invalid_argument("No scene slot for interactive object beside support floor");
-                    if (environmentScene_) {
-                        if (environmentScene_->objects().size()>=64) throw std::invalid_argument("No scene slot for interactive object");
-                        const world::Capsule sphere{value.pose.position,value.pose.position,value.radius};
-                        for (const auto& o:environmentScene_->objects())
-                            if ((o.id & (1ull<<63)) || world::clearance(sphere,o).gap<=collisionSettings_.margin+collisionSettings_.numericSlack)
-                                throw std::invalid_argument("Object overlaps environment or uses reserved object namespace");
-                    }
-                    interaction_->create(value);
+                if constexpr (std::is_same_v<T,CreateInteractionSphere> || std::is_same_v<T,CreateInteractionBox>) {
+                    if (collisionScene_ && collisionScene_->objects().size()>=64)
+                        throw std::invalid_argument("No scene slot for interactive object");
+                    const double gap=collisionSettings_.margin+collisionSettings_.numericSlack;
+                    interaction_->create(value,collisionScene_.get(),gap);
                 }
                 else if constexpr (std::is_same_v<T,DeleteInteractionObject>) interaction_->erase(value.object);
                 else if constexpr (std::is_same_v<T,GraspObject>) {
@@ -602,7 +612,7 @@ namespace julia::embodiment
                 else if constexpr (std::is_same_v<T,FinishGraspPreparation>) interaction_->finishPreparation(value.action);
                 else {
                     if (!control_->enabled() || reach_->anyActive()) throw std::invalid_argument("Hand diagnostics require idle direct mode");
-                    interaction_->hand.set(value.arm,value.closure,value.enabled);
+                    interaction_->hand.set(value.arm,value.closure,value.enabled,HandGrip::Sphere);
                 }
             }
             else if constexpr (std::is_same_v<T, CancelReach>)
@@ -680,7 +690,7 @@ namespace julia::embodiment
     {
         if (tick_ == std::numeric_limits<std::uint64_t>::max()) throw std::overflow_error("Body tick exhausted");
         previous_ = current_; ++tick_; results_.clear(); discontinuity_ = false;
-        if (idleViewApplied_ && !idleView_) {
+        if (idleViewApplied_ && !idleView_ && !idleFocus_) {
             eyes_.clearTargetPoint();
             idleViewApplied_=false;
         }

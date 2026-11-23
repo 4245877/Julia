@@ -1,5 +1,6 @@
 #include "../apps/common/ReadySphereDemo.hpp"
 #include "julia/model_import/ModelImporter.hpp"
+#include "hand_skin_audit.hpp"
 #include <chrono>
 #include <filesystem>
 #include <fstream>
@@ -134,6 +135,16 @@ namespace
     {
         app::ReadySphereDemo demo;
         Measurements m;
+        hand_skin_audit::Surface skin(b.asset());
+        float minimumGap=std::numeric_limits<float>::infinity();
+        unsigned skinSamples=0,skinIntersections=0;
+        const auto measureSkin=[&](const auto& frame) {
+            const auto sample=skin.measure(b,frame);
+            ++skinSamples;
+            if (sample.intersects) ++skinIntersections;
+            minimumGap=std::min(minimumGap,std::ranges::min(sample.vertexGaps));
+            return sample.vertexGaps;
+        };
         glm::vec3 initialSphere{0};
         while (b.snapshot().tick<app::ReadySphereDemo::TickLimit) {
             demo.drive(b);
@@ -164,6 +175,15 @@ namespace
                 m.planning.push_back(elapsed);
 
             m.checkAttachment(b,s);
+            if (s.object && s.hands[0].enabled) {
+                const auto gaps=measureSkin(s);
+                if (p.object && p.object->state==ObjectState::Free && s.object->state==ObjectState::Attached) {
+                    report << "grasp_tick=" << s.tick << " skin_gaps_m_index_middle_ring_pinky_thumb_palm=";
+                    for (float gap:gaps) report << ' ' << gap;
+                    report << '\n';
+                    require(*std::max_element(gaps.begin(),gaps.end()-1)<.006f,"Skin pads did not approach the sphere");
+                }
+            }
             if (s.object && p.object && s.object->handle==p.object->handle) {
                 const auto& a=*s.object; const auto& before=*p.object;
                 if (a.state!=before.state) {
@@ -192,6 +212,7 @@ namespace
                 const auto d=b.display(alpha);
                 m.checkFeet(d.support);
                 m.checkAttachment(b,d);
+                if (d.object && d.hands[0].enabled) measureSkin(d);
             }
         }
         require(demo.done(),"Shared replay failed: "+demo.reason());
@@ -203,7 +224,10 @@ namespace
             report << (k==0 ? "left":"right") << " foot_error_m=" << m.footError[k] << " angle_rad=" << m.footAngle[k] << " gap_m=" << m.gap[k] << '\n';
         report << "max_transition_jump_m=" << m.jump << " max_transition_jump_rad=" << m.jumpAngle
             << " max_attachment_error_m=" << m.attachmentError << " max_attachment_error_rad=" << m.attachmentAngle
-            << " first_resume_step_rad=" << m.resumeStep << '\n';
+            << " first_resume_step_rad=" << m.resumeStep << '\n'
+            << "min_sampled_skin_vertex_gap_m=" << minimumGap << " skin_triangle_samples=" << skinSamples
+            << " intersecting_samples=" << skinIntersections << '\n';
+        require(skinSamples>0 && minimumGap>0 && skinIntersections==0,"Visible hand skin entered the sphere");
         reportTiming(report,"reach_and_retreat_planning",m.planning);
         reportTiming(report,"transport_planning",m.transportPlanning);
         reportTiming(report,"transport_motion",m.transportMotion);
@@ -214,6 +238,11 @@ namespace
         constexpr auto rejected=BodyCommandStatus::Rejected;
         command(b,ResetBody{});
         startReady(b);
+        const auto scene=b.snapshot().collisionScene;
+        command(b,CreateInteractionSphere{1,{{2,.01f,0}}},rejected);
+        require(!b.snapshot().object && b.snapshot().collisionScene==scene &&
+            b.snapshot().support.phase==SupportPhase::Holding,"Rejected sphere creation changed floor/ownership");
+        report << "sphere_over_floor=Rejected radius_m=.022 center_y_m=.010 scene_unchanged=PASS\n";
         create(b);
         const auto stale=b.snapshot().object->handle;
         command(b,DeleteInteractionObject{stale});
@@ -263,6 +292,35 @@ namespace
         release(b);
         resume(b);
         report << "cancel_during_transport=CancelledHolding owner=HandInteraction sphere=Attached released_then_returned_to=Idle\n";
+    }
+
+    void demoRecovery(BodyInstance& b,std::ostream& report)
+    {
+        app::ReadySphereDemo demo;
+        const auto step=[&] { demo.drive(b); b.step(); };
+        const auto wait=[&](const auto& condition) {
+            for (unsigned k=0;k<2800 && !condition(b.snapshot());++k) step();
+            require(condition(b.snapshot()),"Sphere demo recovery timed out: "+demo.reason());
+        };
+        wait([](const auto& s) {
+            return s.interaction.phase==InteractionPhase::Transport && s.preparationReach.state==ReachState::Moving;
+        });
+        const auto held=*b.snapshot().object;
+        command(b,CancelInteraction{b.snapshot().interaction.action});
+        wait([&](const auto&) { return demo.failed(); });
+        const auto& s=b.snapshot();
+        require(demo.canRecover(s) && s.interaction.result=="CancelledHolding" && s.object &&
+            s.object->state==ObjectState::Attached && s.object->owner==b.id() &&
+            s.object->effectorFromObject==held.effectorFromObject && s.armOwners[0]==ArmOwner::HandInteraction &&
+            s.hands[0].closure==1 && s.support.phase==SupportPhase::Holding,
+            "Stopped sphere demo lost its grip or recovery");
+        demo.requestRecovery();
+        wait([](const auto& frame) { return frame.idle.phase==IdlePhase::Idle; });
+        require(!b.snapshot().object && !b.snapshot().hands[0].enabled && !demo.completed(),
+            "Sphere demo did not restore Idle after interruption");
+        wait([](const auto& frame) { return frame.interaction.result=="Grasped"; });
+        require(b.snapshot().object->handle.generation>held.handle.generation,"Sphere retry reused its previous object");
+        report << "demo_cancel_transport=CancelledHolding recover=Released+Idle retry_grasp=PASS\n";
     }
 
     void staleGeometry(BodyInstance& b,std::ostream& report)
@@ -326,8 +384,8 @@ namespace
         hand.soleContacts={std::pair{14u,SupportFloorObject},std::pair{17u,SupportFloorObject}};
         auto payload=hand;
         payload.contactHand=3; payload.contactObject=(1ull<<63)|1;
-        payload.carried=CarriedSphere{payload.contactObject,EffectorId::LeftWrist,
-            glm::translate(glm::mat4{1},wristOffset),.022};
+        payload.carried=CarriedObject{payload.contactObject,EffectorId::LeftWrist,
+            glm::translate(glm::mat4{1},wristOffset),world::Sphere{.022}};
         const std::array path{from,to};
         const auto check=[&](const world::CollisionScene& scene,std::span<const ArmCoordinates> route,CollisionContext context) {
             return checkArmPath(control,0,route,root,scene,{},std::move(context));
@@ -446,12 +504,16 @@ int main(int argc,char** argv)
         std::ofstream report(output/"ready-sphere.txt");
         if (!report) throw std::runtime_error("Cannot open Ready sphere report");
         report << std::setprecision(10);
-        const auto asset=model_import::ModelImporter::loadFromFile(std::filesystem::path{JULIA_TEST_ASSET_DIR}/"models/Raphtalia_prepared.fbx");
+        const auto asset=model_import::ModelImporter::loadFromFile(
+            std::filesystem::path{JULIA_TEST_ASSET_DIR}/"models/Raphtalia_prepared.fbx",
+            {.rebuildSmoothNormals=true,.omitPreparedGloves=true});
         const auto profile=raphtaliaBodyProfile();
         BodyInstance replay{1,asset,&profile}, cancel{2,asset,&profile}, sweep{3,asset,&profile};
         BodyInstance blockedMove{4,asset,&profile}, blockedExit{5,asset,&profile};
+        BodyInstance demoCancel{6,asset,&profile};
         cycles(replay,report);
         cancellations(cancel,report);
+        demoRecovery(demoCancel,report);
         staleGeometry(cancel,report);
         sweptCollision(sweep,report);
         blockedTransfer(blockedMove,report);

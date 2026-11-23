@@ -12,6 +12,8 @@
 #include "CameraInput.hpp"
 #include "BodyDiagnostics.hpp"
 #include "../common/ReadySphereDemo.hpp"
+#include "../common/ReadyCubeDemo.hpp"
+#include "ReadySceneVerification.hpp"
 #include "julia/render_opengl/EyePoseLayer.hpp"
 
 #include <glm/glm.hpp>
@@ -104,7 +106,8 @@ namespace
         julia::runtime::FixedStepScheduler* scheduler = nullptr;
         const julia::embodiment::BodyDisplay* bodyDisplay = nullptr;
         julia::desktop::BodyDiagnostics* bodyDiagnostics = nullptr;
-        const julia::app::ReadySphereDemo* readySphere = nullptr;
+        julia::app::ReadySphereDemo* readySphere = nullptr;
+        julia::app::ReadyCubeDemo* readyCube = nullptr;
         std::uint64_t cancelInteractionCommand = 0;
         std::string cancelInteractionError;
         const julia::render_opengl::GLModel* model = nullptr;
@@ -158,6 +161,32 @@ namespace
             const bool parallel = view.orthographicHeight > 0;
             const auto camera = parallel ? glm::vec4{view.position - view.target,0} : glm::vec4{view.position,1};
             body->setIdleView(julia::embodiment::IdleView{glm::vec3{worldFromViewer * camera},parallel});
+        }
+
+        bool drawBodyFrame(GLFWwindow* window,julia::render_opengl::AvatarSurface& surface,
+            const julia::embodiment::BodyDisplay& frame,float opacity,bool character=true,bool diagnostics=true) const
+        {
+            int width=0,height=0;
+            glfwGetFramebufferSize(window,&width,&height);
+            if (width<=0 || height<=0) return false;
+            if (display->avatar()) surface.begin(width,height);
+            else glBindFramebuffer(GL_FRAMEBUFFER,0);
+            renderer->beginFrame(display->avatar() ? glm::vec4{0}:glm::vec4{.21586f,.21586f,.21586f,1});
+            const auto transform=fitModel*body->resourceRoot(frame.root);
+            if (character) renderer->renderModel(*model,transform,frame.pose.palette);
+            if (frame.object) {
+                if (const auto* box=std::get_if<julia::world::Box>(&frame.object->shape)) {
+                    const auto fromWorld=fitModel*glm::inverse(body->control()->binding().profile().bodyFromResource);
+                    renderer->renderBox(fromWorld*julia::embodiment::rigidMatrix(frame.object->worldPose),glm::vec3{box->halfExtent},opacity);
+                }
+            }
+            if (diagnostics && bodyDiagnostics) bodyDiagnostics->draw(*renderer,transform,frame);
+            if (display->avatar()) {
+                const auto coverage=surface.resolveCoverage();
+                display->updateShape(coverage,width,height);
+                surface.present();
+            }
+            return true;
         }
     };
 
@@ -327,8 +356,19 @@ namespace
             if (idlePhase != IdlePhase::Disabled)
             {
                 if (key == GLFW_KEY_SPACE) {
+                    if (state->readyCube && !state->readyCube->done()) return;
                     if (state->readySphere && !state->readySphere->done() && !state->readySphere->failed()) return;
                     queue(SetIdleStance{idlePhase != IdlePhase::Ready && idlePhase != IdlePhase::Settling});
+                    return;
+                }
+                if (key==GLFW_KEY_ENTER) {
+                    if (state->readyCube && state->readyCube->canRecover(body.snapshot())) state->readyCube->requestRecovery();
+                    if (state->readySphere && state->readySphere->canRecover(body.snapshot())) state->readySphere->requestRecovery();
+                    return;
+                }
+                if (key==GLFW_KEY_DELETE && (mods&GLFW_MOD_CONTROL) && (state->readyCube || state->readySphere) &&
+                    body.snapshot().armOwners[0]==ArmOwner::Reach) {
+                    state->cancelInteractionCommand=body.enqueue(CancelReach{ArmSide::Left,body.snapshot().reaches[0].action}).id;
                     return;
                 }
                 if (key==GLFW_KEY_DELETE && (mods&GLFW_MOD_CONTROL) && body.snapshot().interaction.action) {
@@ -821,10 +861,11 @@ namespace
 int main(int argc, char** argv)
 {
     const bool readySphereVerification = argc > 1 && std::string_view{argv[1]} == "--verify-ready-sphere";
-    const std::string_view readySphereRate=readySphereVerification && argc==4 ? argv[3]:"mixed";
-    if (readySphereVerification && ((argc!=3 && argc!=4) ||
-        (readySphereRate!="30" && readySphereRate!="144" && readySphereRate!="mixed"))) {
-        std::cerr << "Usage: julia_desktop --verify-ready-sphere output_directory [30|144|mixed]\n";
+    const bool readyCubeVerification = argc > 1 && std::string_view{argv[1]} == "--verify-ready-cube";
+    const bool sceneVerification = readySphereVerification || readyCubeVerification;
+    const std::string_view sceneRate=sceneVerification && argc==4 ? argv[3]:"mixed";
+    if (sceneVerification && ((argc!=3 && argc!=4) || (sceneRate!="30" && sceneRate!="144" && sceneRate!="mixed"))) {
+        std::cerr << "Usage: julia_desktop " << argv[1] << " output_directory [30|144|mixed]\n";
         return 2;
     }
     const bool supportVerification = argc > 1 && std::string_view{argv[1]} == "--verify-support";
@@ -837,8 +878,8 @@ int main(int argc, char** argv)
     const bool detourVerification = argc > 1 && std::string_view{argv[1]} == "--verify-detour";
     const bool collisionVerification = argc > 1 && std::string_view{argv[1]} == "--verify-collision";
     const bool reachVerification = argc > 1 && std::string_view{argv[1]} == "--verify-ik";
-    const bool bodyVerification = readySphereVerification || preparationVerification || stanceVerification || supportVerification || interactionVerification || spatialVerification || rankedVerification || multiIKVerification || detourVerification || collisionVerification || reachVerification || (argc > 1 && std::string_view{argv[1]} == "--verify-body");
-    if (bodyVerification && !readySphereVerification && argc != 3) { std::cerr << "Usage: julia_desktop --verify-body output_directory\n"; return 2; }
+    const bool bodyVerification = sceneVerification || preparationVerification || stanceVerification || supportVerification || interactionVerification || spatialVerification || rankedVerification || multiIKVerification || detourVerification || collisionVerification || reachVerification || (argc > 1 && std::string_view{argv[1]} == "--verify-body");
+    if (bodyVerification && !sceneVerification && argc != 3) { std::cerr << "Usage: julia_desktop --verify-body output_directory\n"; return 2; }
     const bool verification = argc > 1 && std::string_view{argv[1]} == "--verify";
     const bool animationVerification = argc > 1 &&
         (std::string_view{argv[1]} == "--verify-animations" || std::string_view{argv[1]} == "--review-animations");
@@ -869,7 +910,7 @@ int main(int argc, char** argv)
     std::optional<int> requestedHeight;
     bool persist = !verification && !animationVerification && !eyeVerification && !displayVerification && !bodyVerification;
     bool suppliedModel = false;
-    bool idle = false, readySphereDemo = false;
+    bool idle = false, readySphereDemo = false, readyCubeDemo = false;
     for (int i = 1; i < argc && !verification && !animationVerification && !eyeVerification && !displayVerification && !bodyVerification; ++i)
     {
         const std::string_view arg{argv[i]};
@@ -878,6 +919,7 @@ int main(int argc, char** argv)
         else if (arg == "--no-eyes") noEyes = true;
         else if (arg == "--idle") idle = true;
         else if (arg == "--ready-sphere-demo") readySphereDemo = true;
+        else if (arg == "--ready-cube-demo") readyCubeDemo = true;
         else if (arg == "--topmost") requestedTopmost = true;
         else if (arg == "--no-topmost") requestedTopmost = false;
         else if (arg == "--no-save") persist = false;
@@ -901,10 +943,13 @@ int main(int argc, char** argv)
         else if (arg == "--help")
         {
             std::cout << "Julia [--desktop|--window] [--topmost|--no-topmost] [--avatar-height 180..720]\n"
-                << "      [--settings path] [--no-save] [--no-eyes] [--idle|--ready-sphere-demo] [model.fbx]\n"
+                << "      [--settings path] [--no-save] [--no-eyes] [--idle|--ready-sphere-demo|--ready-cube-demo] [model.fbx]\n"
                 << "--idle enables planted Idle on Raphtalia. Space transitions to/from Ready; Pause freezes simulation.\n"
                 << "--ready-sphere-demo runs three left-hand grasp, carry and release cycles from Idle Ready.\n"
+                << "--ready-cube-demo runs three cube inspections.\n"
+                << "During either Ready demo, Ctrl+Delete cancels the arm action. Enter recovers after a resting interruption.\n"
                 << "--verify-ready-sphere output_directory [30|144|mixed] records replay and close-ups.\n"
+                << "--verify-ready-cube output_directory [30|144|mixed] records replay and both display modes.\n"
                 << "F10 switches display mode; F9 toggles desktop always-on-top.\n"
                 << "Right-click the desktop character for Full Window, size, topmost and Exit.\n";
             return 0;
@@ -916,7 +961,7 @@ int main(int argc, char** argv)
         }
         else { modelPath = argv[i]; suppliedModel = true; }
     }
-    if (idle && readySphereDemo) { std::cerr << "Select --idle or --ready-sphere-demo\n"; return 2; }
+    if (static_cast<int>(idle)+readySphereDemo+readyCubeDemo>1) { std::cerr << "Select one scene\n"; return 2; }
     auto displaySettings = verification || animationVerification || eyeVerification || displayVerification || bodyVerification
         ? julia::desktop::DisplaySettings{} : julia::desktop::loadDisplaySettings(settingsPath);
     if (requestedMode) displaySettings.mode = *requestedMode;
@@ -1019,10 +1064,10 @@ int main(int argc, char** argv)
                     std::filesystem::path{JULIA_ASSET_DIR} / "models" / name,
                     assetComparisonError);
         };
-        const bool repairFacetedNormals = isBundledAsset("Raphtalia.fbx") ||
-            isBundledAsset("Raphtalia_prepared.fbx");
+        const bool prepared = isBundledAsset("Raphtalia_prepared.fbx");
+        const bool repairFacetedNormals = prepared || isBundledAsset("Raphtalia.fbx");
         auto asset = julia::model_import::ModelImporter::loadFromFile(modelPath,
-            {.rebuildSmoothNormals = repairFacetedNormals});
+            {.rebuildSmoothNormals = repairFacetedNormals, .omitPreparedGloves = prepared});
 
         auto model = julia::render_opengl::GLModelLoader::upload(asset);
 
@@ -1062,7 +1107,7 @@ int main(int argc, char** argv)
         {
             if (!legacyVerification) {
                 bodyDiagnostics=std::make_unique<julia::desktop::BodyDiagnostics>(body);
-                bodyDiagnostics->overlay=!idle && !readySphereDemo;
+                bodyDiagnostics->overlay=!idle && !readySphereDemo && !readyCubeDemo && !sceneVerification;
             }
         }
         else
@@ -1117,6 +1162,12 @@ int main(int argc, char** argv)
             readySphere.emplace();
             std::cout << "Ready sphere: three left-hand cycles. Pause freezes simulation; Ctrl+Delete cancels the current interaction.\n";
         }
+        std::optional<julia::app::ReadyCubeDemo> readyCube;
+        if (readyCubeDemo) {
+            if (!bodyControl) throw std::runtime_error("--ready-cube-demo requires calibrated Raphtalia");
+            readyCube.emplace();
+            std::cout << "Ready cube: three left-hand cycles. Pause freezes simulation. Ctrl+Delete cancels; Enter recovers a resting hold.\n";
+        }
         WindowState windowState{};
         windowState.renderer = &renderer;
         windowState.orbitCamera = &orbitCamera;
@@ -1132,6 +1183,7 @@ int main(int argc, char** argv)
         windowState.bodyDisplay = legacyVerification ? nullptr:&bodyDisplay;
         windowState.bodyDiagnostics = bodyDiagnostics.get();
         windowState.readySphere = readySphere ? &*readySphere:nullptr;
+        windowState.readyCube = readyCube ? &*readyCube:nullptr;
         windowState.model = &model;
         glfwGetCursorPos(window, &windowState.cursorX, &windowState.cursorY);
         windowState.inputContext.focused = hidden || glfwGetWindowAttrib(window, GLFW_FOCUSED) != 0;
@@ -1184,10 +1236,38 @@ int main(int argc, char** argv)
         std::cout << "Support: F2 then Ctrl+J demo; Ctrl+H enable, Ctrl+H align; Alt+Z/C,V/N,O/P root +/-5 mm; Ctrl+Backspace cancel; Ctrl+Shift+H disable after rest.\n";
         std::cout << "Preparation: F2 then Ctrl+K demo (Reach handoff, open hand, ReadyToGrasp, checked exit); Ctrl+Delete cancel; Ctrl+Shift+K finish preparation.\n";
         keyCallback(window, GLFW_KEY_F1, 0, GLFW_PRESS, 0);
-        if (readySphereVerification)
+        if (sceneVerification)
         {
-            if (!bodyDiagnostics) throw std::runtime_error("Ready sphere verification requires calibrated Raphtalia");
-            julia::desktop::verifyDesktopReadySphere(window,renderer,model,body,*bodyDiagnostics,fitModel,argv[2],readySphereRate);
+            if (!bodyControl) throw std::runtime_error("Ready verification requires calibrated Raphtalia");
+            const auto capture=[&](const julia::embodiment::BodyDisplay& frame,bool avatar,
+                std::optional<julia::desktop::SceneCloseUp> closeUp,float opacity,bool character) {
+                if (display.avatar()!=avatar) display.toggleMode();
+                if (display.avatar()!=avatar) throw std::runtime_error("Requested capture mode unavailable");
+                glfwPollEvents();
+                julia::desktop::SceneFrame image;
+                glfwGetFramebufferSize(window,&image.width,&image.height);
+                if (image.width<=0 || image.height<=0) throw std::runtime_error("Cannot capture scene frame");
+                renderer.resize(image.width,image.height);
+                bodyDisplay=frame;
+                auto camera=windowState.activeCamera();
+                if (closeUp) {
+                    const auto fromWorld=fitModel*glm::inverse(bodyControl->binding().profile().bodyFromResource);
+                    const auto p=closeUp->target;
+                    camera.target=glm::vec3{fromWorld*glm::vec4{p,1}};
+                    camera.position=glm::vec3{fromWorld*glm::vec4{p+closeUp->offset,1}};
+                    camera.nearPlane=.004f;
+                    camera.orthographicHeight=0;
+                }
+                renderer.setCamera(camera);
+                windowState.drawBodyFrame(window,avatarSurface,frame,opacity,character,readySphereVerification);
+                image.rgba.resize(static_cast<std::size_t>(image.width)*image.height*4);
+                glReadPixels(0,0,image.width,image.height,GL_RGBA,GL_UNSIGNED_BYTE,image.rgba.data());
+                if (glGetError()!=GL_NO_ERROR) throw std::runtime_error("Scene capture OpenGL error");
+                glfwSwapBuffers(window);
+                return image;
+            };
+            if (readyCubeVerification) julia::desktop::verifyDesktopReadyCube(body,argv[2],sceneRate,capture);
+            else julia::desktop::verifyDesktopReadySphere(body,argv[2],sceneRate,capture);
             glfwSetWindowShouldClose(window,GLFW_TRUE);
         }
         else if (bodyVerification)
@@ -1309,7 +1389,7 @@ int main(int argc, char** argv)
             // A long OS pause must not turn held keys into a large jump.
             processInput(window, deltaSeconds <= 0.25 ? deltaSeconds : 0.0);
             if (!display.avatar()) orbitCamera.update(deltaSeconds);
-            if ((!readySphere || readySphere->done()) && body.snapshot().idle.phase != julia::embodiment::IdlePhase::Disabled)
+            if (readyCube || ((!readySphere || readySphere->done()) && body.snapshot().idle.phase != julia::embodiment::IdlePhase::Disabled))
                 windowState.updateIdleView();
             const auto suspendCount=scheduler.diagnostics().suspendedFrames;
             scheduler.advance(deltaSeconds,[&] {
@@ -1319,7 +1399,16 @@ int main(int argc, char** argv)
                     readySphere->drive(body);
                     if (!failed && readySphere->failed()) std::cerr << "Ready sphere: " << readySphere->reason() << '\n';
                     if (!done && readySphere->done()) std::cout << "Ready sphere: " << readySphere->completed()
-                        << " cycles completed at tick " << body.snapshot().tick << ", returned to Idle\n";
+                        << " cycles completed at tick " << body.snapshot().tick << ", returned to Idle (" <<
+                        (display.avatar() ? "Desktop Avatar":"Full Window") << ")\n" << std::flush;
+                }
+                if (readyCube) {
+                    const bool failed=readyCube->failed(), done=readyCube->done();
+                    readyCube->drive(body);
+                    if (!failed && readyCube->failed()) std::cerr << "Ready cube: " << readyCube->reason() << '\n';
+                    if (!done && readyCube->done()) std::cout << "Ready cube: " << readyCube->completed()
+                        << " cycles completed at tick " << body.snapshot().tick << ", returned to Idle (" <<
+                        (display.avatar() ? "Desktop Avatar":"Full Window") << ")\n" << std::flush;
                 }
                 if (bodyDiagnostics) bodyDiagnostics->updateInteractionDemo();
                 body.step();
@@ -1333,24 +1422,8 @@ int main(int argc, char** argv)
             bodyDisplay=body.display(scheduler.paused() ? 1:scheduler.alpha());
             windowState.applyCamera();
 
-            glfwGetFramebufferSize(window, &framebufferWidth, &framebufferHeight);
-            if (framebufferWidth <= 0 || framebufferHeight <= 0) continue;
-            if (display.avatar()) avatarSurface.begin(framebufferWidth, framebufferHeight);
-            else glBindFramebuffer(GL_FRAMEBUFFER, 0);
-            renderer.beginFrame(display.avatar() ? glm::vec4{0} : glm::vec4{0.21586f,0.21586f,0.21586f,1});
-
-            glm::mat4 modelMatrix{1.0f};
-
-            modelMatrix = fitModel * body.resourceRoot(bodyDisplay.root);
-
-            renderer.renderModel(model, modelMatrix, bodyDisplay.pose.palette);
-            if (bodyDiagnostics) bodyDiagnostics->draw(renderer,modelMatrix,bodyDisplay);
-            if (display.avatar())
-            {
-                const auto coverage = avatarSurface.resolveCoverage();
-                display.updateShape(coverage, framebufferWidth, framebufferHeight);
-                avatarSurface.present();
-            }
+            const auto opacity=readyCube ? readyCube->opacity(bodyDisplay.time/julia::runtime::BodyStepSeconds):1.f;
+            if (!windowState.drawBodyFrame(window,avatarSurface,bodyDisplay,opacity)) continue;
             ++titleFrames;
             if (now - titleTime >= .25)
             {
@@ -1363,12 +1436,21 @@ int main(int argc, char** argv)
                     const auto& s=body.snapshot();
                     title << idlePhaseName(idlePhase) << " / " << supportPhaseName(s.support.phase) << " | ";
                     if (readySphere) title << "Cycles " << readySphere->completed() << '/' << julia::app::ReadySphereDemo::CycleCount << " | ";
+                    if (readyCube) title << "Cycles " << readyCube->completed() << '/' << julia::app::ReadyCubeDemo::CycleCount << " | ";
                     if (s.object) title << interactionPhaseName(s.interaction.phase) << ' ' << s.interaction.result
-                        << " | Sphere " << (s.object->state==ObjectState::Attached ? "Attached":"Free") << " | ";
+                        << (std::holds_alternative<julia::world::Box>(s.object->shape) ? " | Cube ":" | Sphere ")
+                        << (s.object->state==ObjectState::Attached ? "Attached":"Free") << " | ";
                     if (s.object && !windowState.cancelInteractionError.empty()) title << windowState.cancelInteractionError << " | ";
-                    if (readySphere && readySphere->failed()) title << readySphere->reason() << " | ";
+                    if (readySphere && readySphere->failed()) {
+                        title << readySphere->reason() << " | ";
+                        if (readySphere->canRecover(s)) title << "Enter recover | ";
+                    }
                     else if (s.interaction.result=="ReleaseBlocked") title << s.interaction.reason << " | ";
-                    else if (!readySphere || readySphere->done()) title << "Space Ready/Idle | ";
+                    else if (readyCube && readyCube->failed()) {
+                        title << readyCube->reason() << " | ";
+                        if (readyCube->canRecover(s)) title << "Enter recover | ";
+                    }
+                    else if ((!readySphere || readySphere->done()) && (!readyCube || readyCube->done())) title << "Space Ready/Idle | ";
                 }
                 else {
                     if (bodyDiagnostics && bodyControl && bodyControl->enabled()) title << bodyDiagnostics->title() << " | ";

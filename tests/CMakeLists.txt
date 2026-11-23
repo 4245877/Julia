@@ -169,6 +169,12 @@ target_link_libraries(julia_test_ready_sphere PRIVATE julia_model_import julia_e
 add_test(NAME ready_sphere COMMAND julia_test_ready_sphere "${CMAKE_BINARY_DIR}/verification/artifacts/ready-sphere/cpu")
 set_tests_properties(ready_sphere PROPERTIES TIMEOUT 90)
 
+add_executable(julia_test_ready_cube test_ready_cube.cpp)
+target_compile_definitions(julia_test_ready_cube PRIVATE JULIA_TEST_ASSET_DIR="${CMAKE_SOURCE_DIR}/assets")
+target_link_libraries(julia_test_ready_cube PRIVATE julia_model_import julia_embodiment julia::warnings)
+add_test(NAME ready_cube COMMAND julia_test_ready_cube "${CMAKE_BINARY_DIR}/verification/artifacts/ready-cube/cpu")
+set_tests_properties(ready_cube PROPERTIES TIMEOUT 90)
+
 if(JULIA_BUILD_PHYSICS)
     add_executable(julia_test_support_observation test_support_observation.cpp)
     target_compile_definitions(julia_test_support_observation PRIVATE JULIA_TEST_ASSET_DIR="${CMAKE_SOURCE_DIR}/assets")
@@ -404,3 +410,7 @@ set_tests_properties(desktop_stance_preparation PROPERTIES WORKING_DIRECTORY "${
 add_test(NAME desktop_ready_sphere COMMAND $<TARGET_FILE:julia_desktop>
     --verify-ready-sphere "${CMAKE_BINARY_DIR}/verification/artifacts/ready-sphere/gpu" mixed)
 set_tests_properties(desktop_ready_sphere PROPERTIES WORKING_DIRECTORY "${CMAKE_BINARY_DIR}" TIMEOUT 90 RUN_SERIAL TRUE)
+
+add_test(NAME desktop_ready_cube COMMAND $<TARGET_FILE:julia_desktop>
+    --verify-ready-cube "${CMAKE_BINARY_DIR}/verification/artifacts/ready-cube/gpu" mixed)
+set_tests_properties(desktop_ready_cube PROPERTIES WORKING_DIRECTORY "${CMAKE_BINARY_DIR}" TIMEOUT 90 RUN_SERIAL TRUE)

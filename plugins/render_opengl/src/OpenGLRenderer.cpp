@@ -304,6 +304,7 @@ namespace julia::render_opengl
 
     OpenGLRenderer::~OpenGLRenderer()
     {
+        if (boxVao_) glDeleteVertexArrays(1, &boxVao_);
         if (debugVao_) glDeleteVertexArrays(1, &debugVao_);
         if (debugBuffer_) glDeleteBuffers(1, &debugBuffer_);
         if (shadowFramebuffer_) glDeleteFramebuffers(1, &shadowFramebuffer_);
@@ -312,7 +313,74 @@ namespace julia::render_opengl
         if (boneBuffer_) glDeleteBuffers(1, &boneBuffer_);
     }
 
-    void OpenGLRenderer::renderDebugLines(std::span<const DebugLineVertex> vertices)
+    void OpenGLRenderer::renderBox(const glm::mat4& modelMatrix,const glm::vec3& halfExtent,float opacity)
+    {
+        if (!std::isfinite(opacity) || opacity<0 || opacity>1 || !finite(halfExtent) ||
+            glm::any(glm::lessThanEqual(halfExtent,glm::vec3{0})))
+            throw std::invalid_argument("Invalid box extent or opacity");
+        if (opacity==0) return;
+        if (!shader_.valid()) throw std::logic_error("Renderer is not initialized");
+        validateAffine(modelMatrix);
+        const DrawState saved;
+        if (!boxShader_.valid())
+        {
+            boxShader_.createFromSource(R"GLSL(#version 330 core
+                uniform mat4 model;
+                uniform mat4 vp;
+                uniform vec3 extent;
+                flat out vec3 normal;
+                out vec2 face;
+                const vec2 corners[6]=vec2[6](vec2(-1,-1),vec2(1,-1),vec2(1,1),
+                    vec2(-1,-1),vec2(1,1),vec2(-1,1));
+                void main() {
+                    int side=gl_VertexID/6;
+                    int axis=side/2;
+                    float sign=side%2==0 ? 1.0:-1.0;
+                    face=corners[gl_VertexID%6];
+                    vec3 p=vec3(0);
+                    p[(axis+1)%3]=face.x*sign;
+                    p[(axis+2)%3]=face.y;
+                    p[axis]=sign;
+                    normal=normalize(model[axis].xyz)*sign;
+                    gl_Position=vp*model*vec4(p*extent,1);
+                })GLSL",R"GLSL(#version 330 core
+                flat in vec3 normal;
+                in vec2 face;
+                uniform vec3 key;
+                uniform float opacity;
+                out vec4 frag;
+                void main() {
+                    float light=0.51+0.49*max(dot(normal,key),0.0);
+                    float edge=max(abs(face.x),abs(face.y));
+                    float line=1.0-smoothstep(0.016,0.035,abs(edge-0.88));
+                    vec3 color=vec3(0.046,0.43,0.40)*light+line*vec3(0.032,0.082,0.064);
+                    frag=vec4(color,opacity);
+                })GLSL");
+            glGenVertexArrays(1,&boxVao_);
+        }
+        boxShader_.bind();
+        boxShader_.setMat4("model",modelMatrix);
+        boxShader_.setMat4("vp",projection_*view_);
+        boxShader_.setVec3("extent",halfExtent);
+        boxShader_.setVec3("key",glm::normalize(style_.keyLightDirection));
+        boxShader_.setFloat("opacity",opacity);
+        glBindVertexArray(boxVao_);
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LESS);
+        glDepthMask(opacity==1 ? GL_TRUE:GL_FALSE);
+        glDisable(GL_POLYGON_OFFSET_FILL);
+        // The fade covers the nearest surface once. Foreground fingers keep
+        // their depth and the AvatarSurface receives source-over coverage.
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+        glFrontFace(GL_CCW);
+        DrawState::setEnabled(GL_BLEND,opacity<1);
+        glBlendEquationSeparate(GL_FUNC_ADD,GL_FUNC_ADD);
+        glBlendFuncSeparate(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA,GL_ONE,GL_ONE_MINUS_SRC_ALPHA);
+        glDrawArrays(GL_TRIANGLES,0,36);
+    }
+
+    void OpenGLRenderer::renderDebugLines(std::span<const DebugLineVertex> vertices,bool depthTest)
     {
         if (vertices.empty()) return;
         if (vertices.size()%2 || vertices.size()>static_cast<std::size_t>(std::numeric_limits<GLsizei>::max()))
@@ -333,7 +401,8 @@ namespace julia::render_opengl
         glEnableVertexAttribArray(0); glEnableVertexAttribArray(1);
         glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,sizeof(DebugLineVertex),nullptr);
         glVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,sizeof(DebugLineVertex),reinterpret_cast<const void*>(offsetof(DebugLineVertex,color)));
-        glDisable(GL_DEPTH_TEST); glDepthMask(GL_FALSE); glDisable(GL_BLEND); glDisable(GL_CULL_FACE);
+        if (depthTest) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
+        glDepthMask(GL_FALSE); glDisable(GL_BLEND); glDisable(GL_CULL_FACE);
         glDrawArrays(GL_LINES,0,static_cast<GLsizei>(vertices.size()));
     }
 

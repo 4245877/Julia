@@ -264,8 +264,8 @@ namespace
             ArmCoordinates sample{}; for (std::size_t k=0;k<6;++k) sample[k]=static_cast<float>(from[k]+(to[k]-from[k])*w);
             path.push_back(sample);
         }
-        CollisionContext payload; payload.contactHand=3; payload.carried=CarriedSphere{objectId,EffectorId::LeftGrip,
-            glm::translate(glm::mat4{1},glm::vec3{0,0,.12f}),.022};
+        CollisionContext payload; payload.contactHand=3; payload.carried=CarriedObject{objectId,EffectorId::LeftGrip,
+            glm::translate(glm::mat4{1},glm::vec3{0,0,.12f}),world::Sphere{.022}};
         // Large offset deliberately exercises the generic bound independently of the small demo grip.
         ArmCoordinates middle{}; for (std::size_t k=0;k<6;++k) middle[k]=(from[k]+to[k])*.5f;
         set(c,0,middle); const auto pm=pose(c);

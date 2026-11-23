@@ -72,12 +72,16 @@ namespace julia::render_opengl
             const glm::mat4& modelMatrix,
             std::span<const glm::mat4> boneMatrices = {}
         );
+        // Draw a convex inspection object against the opaque scene depth.
+        void renderBox(const glm::mat4& modelMatrix,const glm::vec3& halfExtent,float opacity);
         // Optional diagnostic overlay in display-world coordinates; pairs form lines.
-        void renderDebugLines(std::span<const DebugLineVertex> vertices);
+        void renderDebugLines(std::span<const DebugLineVertex> vertices,bool depthTest=false);
 
     private:
         GLShader shader_;
         GLShader debugShader_;
+        GLShader boxShader_;
+        GLuint boxVao_ = 0;
         GLuint debugVao_ = 0, debugBuffer_ = 0;
         GLuint boneBuffer_ = 0;
         GLuint boneTexture_ = 0;

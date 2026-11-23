@@ -84,9 +84,6 @@ namespace julia::desktop
         const render_opengl::GLModel& model,embodiment::BodyInstance& body,
         BodyDiagnostics& diagnostics,const glm::mat4& fit,
         const std::filesystem::path& output,void (*input)(GLFWwindow*,int,int,int,int));
-    void verifyDesktopReadySphere(GLFWwindow* window,render_opengl::OpenGLRenderer& renderer,
-        const render_opengl::GLModel& model,embodiment::BodyInstance& body,BodyDiagnostics& diagnostics,
-        const glm::mat4& fit,const std::filesystem::path& output,std::string_view rate);
     void verifyDesktopInteraction(GLFWwindow* window,render_opengl::OpenGLRenderer& renderer,
         const render_opengl::GLModel& model,embodiment::BodyInstance& body,
         BodyDiagnostics& diagnostics,const glm::mat4& fit,

@@ -60,12 +60,13 @@ namespace julia::embodiment
         std::vector<std::array<glm::vec3,3>> trace; // Bounded world-space upper/fore/hand centres.
     };
     void validateCollisionSettings(const CollisionSettings& settings);
-    struct CarriedSphere
+    using InteractionShape = std::variant<world::Sphere,world::Box>;
+    struct CarriedObject
     {
         std::uint64_t object=0;
         EffectorId effector=EffectorId::LeftGrip;
         glm::mat4 effectorFromObject{1};
-        double radius=.022;
+        InteractionShape shape=world::Sphere{.022};
     };
     // Frozen with each job/certificate. Only the named hand/object pair is exempt.
     struct CollisionContext
@@ -75,7 +76,7 @@ namespace julia::embodiment
         std::array<std::pair<std::uint32_t,std::uint64_t>,2> soleContacts{};
         std::uint32_t contactHand=0;
         std::uint64_t contactObject=0;
-        std::optional<CarriedSphere> carried;
+        std::optional<CarriedObject> carried;
         std::array<bool,2> handEnvelopes{};
     };
     // Immutable path/control/scene snapshot, resumable at individual pair queries.

@@ -1,6 +1,5 @@
 #include <glad/glad.h>
-#include <GLFW/glfw3.h>
-#include "BodyDiagnostics.hpp"
+#include "ReadySceneVerification.hpp"
 #include "../common/ReadySphereDemo.hpp"
 #include "../common/ReadySphereTrace.hpp"
 #include <cmath>
@@ -12,39 +11,6 @@ namespace julia::desktop
 
     namespace
     {
-        void captureSphere(GLFWwindow* window,render_opengl::OpenGLRenderer& renderer,
-            const render_opengl::GLModel& model,const BodyInstance& body,BodyDiagnostics& diagnostics,
-            const glm::mat4& fit,const BodyDisplay& display,const std::filesystem::path& output,
-            const glm::vec3& angle,bool close)
-        {
-            const auto fromWorld=fit*glm::inverse(body.control()->binding().profile().bodyFromResource);
-            const auto target=close ? display.object->worldPose.position:glm::vec3{0,.82f,0};
-            render_opengl::CameraConfig camera;
-            camera.target=glm::vec3{fromWorld*glm::vec4{target,1}};
-            camera.position=glm::vec3{fromWorld*glm::vec4{target+angle,1}};
-            camera.nearPlane=.004f;
-            renderer.setCamera(camera);
-            diagnostics.overlay=!close;
-            int width=0,height=0;
-            glfwGetFramebufferSize(window,&width,&height);
-            if (width<=0 || height<=0) throw std::runtime_error("Ready sphere capture requires a framebuffer");
-            renderer.resize(width,height);
-            const auto transform=fit*body.resourceRoot(display.root);
-            renderer.beginFrame();
-            renderer.renderModel(model,transform,display.pose.palette);
-            diagnostics.draw(renderer,transform,display);
-            const auto stride=static_cast<std::size_t>(width)*3;
-            std::vector<unsigned char> pixels(stride*height);
-            glPixelStorei(GL_PACK_ALIGNMENT,1);
-            glReadPixels(0,0,width,height,GL_RGB,GL_UNSIGNED_BYTE,pixels.data());
-            std::ofstream image(output,std::ios::binary);
-            image << "P6\n" << width << ' ' << height << "\n255\n";
-            for (int y=height-1;y>=0;--y)
-                image.write(reinterpret_cast<const char*>(pixels.data()+stride*y),static_cast<std::streamsize>(stride));
-            if (!image || glGetError()!=GL_NO_ERROR) throw std::runtime_error("Ready sphere GPU capture failed");
-            glfwSwapBuffers(window);
-        }
-
         const char* milestone(const BodySnapshot& s,const BodySnapshot& p)
         {
             if (s.idle.phase==IdlePhase::Ready && p.idle.phase!=IdlePhase::Ready) return "01-ready";
@@ -58,11 +24,37 @@ namespace julia::desktop
             if (s.idle.phase==IdlePhase::Idle && p.idle.phase==IdlePhase::Resuming && s.tick>144) return "09-idle";
             return nullptr;
         }
+
+        void checkSphereOcclusion(const CaptureSceneFrame& capture,const BodyDisplay& frame,
+            const glm::vec3& angle,bool avatar,std::ostream& report)
+        {
+            const SceneCloseUp closeUp{frame.object->worldPose.position,angle};
+            auto skin=frame;
+            skin.object.reset();
+            const auto hand=capture(skin,avatar,closeUp,1,true);
+            const auto sphere=capture(frame,avatar,closeUp,1,false);
+            const auto scene=capture(frame,avatar,closeUp,1,true);
+            if (hand.rgba.size()!=sphere.rgba.size() || scene.rgba.size()!=sphere.rgba.size())
+                throw std::runtime_error("Sphere depth check requires matching framebuffers");
+            const auto same=[&](const SceneFrame& a,const SceneFrame& b,std::size_t offset) {
+                for (std::size_t k=0;k<4;++k) if (std::abs(a.rgba[offset+k]-b.rgba[offset+k])>2) return false;
+                return true;
+            };
+            std::size_t visible=0,covered=0;
+            for (std::size_t i=0;i<sphere.rgba.size();i+=4) {
+                const auto* pixel=sphere.rgba.data()+i;
+                if (pixel[3]!=255 || pixel[0]<220 || pixel[0]-pixel[1]<70 || pixel[0]-pixel[2]<100) continue;
+                if (same(sphere,hand,i)) continue;
+                if (same(scene,sphere,i)) ++visible;
+                if (same(scene,hand,i)) ++covered;
+            }
+            report << (avatar ? "avatar":"window") << "_sphere_pixels_visible=" << visible << " occluded=" << covered << '\n';
+            if (!visible || !covered) throw std::runtime_error("Sphere wireframe did not respect hand occlusion");
+        }
     }
 
-    void verifyDesktopReadySphere(GLFWwindow* window,render_opengl::OpenGLRenderer& renderer,
-        const render_opengl::GLModel& model,BodyInstance& body,BodyDiagnostics& diagnostics,
-        const glm::mat4& fit,const std::filesystem::path& output,std::string_view rate)
+    void verifyDesktopReadySphere(BodyInstance& body,const std::filesystem::path& output,
+        std::string_view rate,const CaptureSceneFrame& capture)
     {
         std::filesystem::create_directories(output);
         std::ofstream trace(output/"ready-sphere.csv"), report(output/"desktop.txt");
@@ -71,12 +63,20 @@ namespace julia::desktop
         app::ReadySphereDemo demo;
         runtime::FixedStepScheduler scheduler;
         constexpr double varied[]{1./30,1./144,1./60,.011,.024};
+        constexpr glm::vec3 front{.24f,.10f,.30f},side{.35f,.09f,-.21f};
         std::size_t frames=0,sampledAttached=0;
         float footPosition=0,footAngle=0,footGap=0,attachedOffset=0;
         unsigned captures=0;
         bool capturedTransport=false;
         report << std::setprecision(10) << "process=julia_desktop\nframe_intervals=" << rate
             << "\nGL_RENDERER=" << glGetString(GL_RENDERER) << '\n';
+        const auto shot=[&](std::string_view name,const BodyDisplay& d,bool avatar=false,
+            std::optional<glm::vec3> angle={}) {
+            std::optional<SceneCloseUp> closeUp;
+            if (angle) closeUp=SceneCloseUp{d.object->worldPose.position,*angle};
+            saveSceneFrame(output/(std::string{name}+".pam"),capture(d,avatar,closeUp,1,true));
+            ++captures;
+        };
         while (!demo.done() && !demo.failed() && body.snapshot().tick<app::ReadySphereDemo::TickLimit) {
             const double dt=rate=="30" ? 1./30:rate=="144" ? 1./144:varied[frames%std::size(varied)];
             scheduler.advance(dt,[&] {
@@ -87,16 +87,17 @@ namespace julia::desktop
                 app::readySphereTrace(trace,s);
                 if (rate=="mixed" && demo.completed()==0) {
                     if (const auto* name=milestone(s,body.previousSnapshot())) {
-                        const bool close=s.object.has_value();
-                        const auto file=output/(std::string{name}+".ppm");
-                        captureSphere(window,renderer,model,body,diagnostics,fit,body.display(1),file,
-                            close ? glm::vec3{.29f,.14f,.33f}:glm::vec3{.1f,.2f,2.55f},close);
+                        const auto d=body.display(1);
+                        shot(name,d,false,s.object ? std::optional{front}:std::nullopt);
                         report << name << "_tick=" << s.tick << '\n';
-                        ++captures;
-                        if (std::string_view{name}=="04-grasped" || std::string_view{name}=="07-detached") {
-                            captureSphere(window,renderer,model,body,diagnostics,fit,body.display(1),
-                                output/(std::string{name}+"-side.ppm"),{.40f,.08f,-.22f},true);
-                            ++captures;
+                        const std::string_view stage=name;
+                        if (stage=="04-grasped" || stage=="05-moved" || stage=="06-opening" || stage=="07-detached") {
+                            shot(std::string{name}+"-side",d,false,side);
+                            if (stage!="07-detached") shot(std::string{name}+"-avatar",d,true);
+                        }
+                        if (stage=="04-grasped") {
+                            checkSphereOcclusion(capture,d,side,false,report);
+                            checkSphereOcclusion(capture,d,side,true,report);
                         }
                     }
                 }
@@ -123,18 +124,16 @@ namespace julia::desktop
                 const auto& actual=body.snapshot().object;
                 if (!capturedTransport && d.interaction.phase==InteractionPhase::Transport && before && actual &&
                     glm::length(actual->worldPose.position-before->worldPose.position)>.0004f) {
-                    captureSphere(window,renderer,model,body,diagnostics,fit,d,output/"transport-frame.ppm",{.30f,.14f,.34f},true);
+                    shot("transport-frame",d,false,front);
                     report << "transport_frame=" << frames << " from_tick=" << d.fromTick << " to_tick=" << d.toTick
                         << " alpha=" << scheduler.alpha() << '\n';
                     capturedTransport=true;
-                    ++captures;
                 }
             }
-            if (frames%60==0) glfwPollEvents();
         }
         const auto& s=body.snapshot();
         if (!demo.done()) throw std::runtime_error(demo.failed() ? demo.reason():"Ready sphere verification hit its tick limit");
-        if (scheduler.diagnostics().overloadFrames || !sampledAttached || !capturedTransport || (rate=="mixed" && captures!=12))
+        if (scheduler.diagnostics().overloadFrames || !sampledAttached || !capturedTransport || (rate=="mixed" && captures!=17))
             throw std::runtime_error("Incomplete Ready sphere desktop frame coverage");
         report << "cycles=" << demo.completed() << "\nticks=" << s.tick << "\nframes=" << frames
             << "\ncaptures=" << captures << "\nattached_frames=" << sampledAttached << "\nmax_attachment_error_m=" << attachedOffset

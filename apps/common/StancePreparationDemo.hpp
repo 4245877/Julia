@@ -37,9 +37,11 @@ namespace julia::app
             if (s.epoch!=epoch || (stage<8 && (o.phase==SupportPhase::Lost || o.result=="PlanRejected"))) { stage=0; return; }
             if (stage==1 && o.phase==SupportPhase::Unaligned) { b.enqueue(AlignSupport{}); stage=2; }
             else if (stage==2 && o.phase==SupportPhase::Holding) {
-                b.enqueue(CreateInteractionSphere{1,interactionDemoPose(b.control()->binding(),arm,0,s.root)}); stage=3;
+                b.enqueue(CreateInteractionSphere{1,interactionSpherePose(b.control()->binding(),arm,0,s.root),
+                    .022f,sphereLocalGrip(arm)}); stage=3;
             } else if (stage==3 && s.object) {
-                source=b.enqueue(StartReach{preparationPregrip(arm,s.object->worldPose)}).id; stage=4;
+                const auto grip=rigidPose(rigidMatrix(s.object->worldPose)*rigidMatrix(s.object->localGrip));
+                source=b.enqueue(StartReach{preparationPregrip(arm,grip)}).id; stage=4;
             } else if (stage==4 && r.state==ReachState::Succeeded) {
                 action=b.enqueue(PrepareGrasp{s.object->handle,arm,source,epoch}).id; stage=5;
             } else if (stage==5 && i.phase==InteractionPhase::ReadyToGrasp) { since=s.tick; stage=6; }

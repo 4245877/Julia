@@ -6,8 +6,8 @@
 #include "../common/SupportDemo.hpp"
 #include "../common/StanceReachDemo.hpp"
 #include "../common/StancePreparationDemo.hpp"
+#include "../common/ReadyCubeTrace.hpp"
 #include "../common/ReadySphereDemo.hpp"
-#include "../common/ReadySphereTrace.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 #include <algorithm>
 #include <charconv>
@@ -30,27 +30,34 @@ namespace
         return result;
     }
 
-    int runReadySphere(julia::embodiment::BodyInstance& body,std::uint64_t ticks,const std::filesystem::path& output)
+    template<class Demo>
+    int runReadyScene(julia::embodiment::BodyInstance& body,std::uint64_t ticks,const std::filesystem::path& output)
     {
         using namespace julia;
         using namespace julia::embodiment;
-        app::ReadySphereDemo demo;
+        constexpr bool cube=std::is_same_v<Demo,app::ReadyCubeDemo>;
+        Demo demo;
+        if constexpr (cube) body.setIdleView(app::readyCubeReplayView);
         std::ofstream trace;
         if (!output.empty()) {
             if (!output.parent_path().empty()) std::filesystem::create_directories(output.parent_path());
             trace.open(output);
-            if (!trace) throw std::runtime_error("Cannot open Ready sphere trace");
-            app::readySphereTraceHeader(trace);
+            if (!trace) throw std::runtime_error("Cannot open Ready scene trace");
+            if constexpr (cube) app::readyCubeTraceHeader(trace);
+            else app::readySphereTraceHeader(trace);
         }
         while (body.snapshot().tick<ticks) {
             demo.drive(body);
             if (demo.done() || demo.failed()) break;
             body.step();
-            if (trace.is_open()) app::readySphereTrace(trace,body.snapshot());
+            if (trace.is_open()) {
+                if constexpr (cube) app::readyCubeTrace(trace,body.snapshot(),demo);
+                else app::readySphereTrace(trace,body.snapshot());
+            }
         }
-        if (trace.is_open() && !(trace << std::flush)) throw std::runtime_error("Cannot write Ready sphere trace");
+        if (trace.is_open() && !(trace << std::flush)) throw std::runtime_error("Cannot write Ready scene trace");
         const auto& s=body.snapshot();
-        std::cout << "ready_sphere_cycles=" << demo.completed() << " ticks=" << s.tick << " idle=" << idlePhaseName(s.idle.phase)
+        std::cout << (cube ? "ready_cube_cycles=":"ready_sphere_cycles=") << demo.completed() << " ticks=" << s.tick << " idle=" << idlePhaseName(s.idle.phase)
             << " interaction=" << interactionPhaseName(s.interaction.phase) << " result=" << s.interaction.result
             << " object=" << (s.object ? (s.object->state==ObjectState::Attached ? "Attached":"Free"):"Absent");
         if (!demo.done()) std::cout << " reason=" << (demo.failed() ? demo.reason():"tick limit reached");
@@ -143,9 +150,10 @@ int main(int argc,char** argv)
         int effectorOffset=0;
         RootPose root;
         bool eyes=true, multiDemo=false, interactionDemo=false, supportDemo=false, stanceDemo=false, preparationDemo=false, explicitTicks=false;
-        bool idle=false, readySphere=false;
+        bool idle=false, readySphere=false, readyCube=false;
         std::optional<bool> collisionDemo;
-        std::filesystem::path source=std::filesystem::path{JULIA_ASSET_DIR}/"models/Raphtalia_prepared.fbx", output;
+        const auto preparedModel=std::filesystem::path{JULIA_ASSET_DIR}/"models/Raphtalia_prepared.fbx";
+        std::filesystem::path source=preparedModel, output;
         for (int i=1;i<argc;++i)
         {
             const std::string_view argument{argv[i]};
@@ -157,6 +165,7 @@ int main(int argc,char** argv)
                     << "  --stance-reach-demo (align, Reach, Retarget/Cancel, root move, new Reach; 12000 ticks)\n"
                     << "  --stance-preparation-demo (align, Reach handoff, ReadyToGrasp, checked exit, independent Reach)\n"
                     << "  --ready-sphere-demo (three left-hand grasp, carry and release cycles from Idle Ready)\n"
+                    << "  --ready-cube-demo (three left-hand cube inspection cycles from Idle)\n"
                     << "  --interaction-demo (one sphere; grasp, move, release; --right optional)\n  --reach X Y Z [--right] [--effector wrist|palm|grip] [--world] [--root X Y Z YAW_RADIANS]\n"
                     << "  --orientation W X Y Z (PositionAndOrientation); --position-only; --spatial-demo 0|1|2\n"
                     << "  --tolerance METRES --angular-tolerance RADIANS; --retarget-orientation W X Y Z\n"
@@ -172,6 +181,7 @@ int main(int argc,char** argv)
             if (argument=="--support-demo") { supportDemo=true; continue; }
             if (argument=="--idle") { idle=true; continue; }
             if (argument=="--ready-sphere-demo") { readySphere=true; continue; }
+            if (argument=="--ready-cube-demo") { readyCube=true; continue; }
             if (argument=="--stance-reach-demo") { stanceDemo=true; continue; }
             if (argument=="--stance-preparation-demo") { preparationDemo=true; continue; }
             if (argument=="--interaction-demo") { interactionDemo=true; continue; }
@@ -249,18 +259,23 @@ int main(int argc,char** argv)
             else throw std::invalid_argument("Unknown option");
         }
         if (!idle && (readyAt || resumeAt)) throw std::invalid_argument("Idle transition ticks require --idle");
-        if ((idle || readySphere) && ((idle && readySphere) || preparationDemo || stanceDemo || supportDemo || interactionDemo || collisionDemo ||
+        if ((idle || readySphere || readyCube) && (static_cast<int>(idle)+readySphere+readyCube>1 ||
+            preparationDemo || stanceDemo || supportDemo || interactionDemo || collisionDemo ||
             spatialSample || reachPosition || retargetPosition || retargetOrientation || cancelTick || retargetTick || clip || elbow))
-            throw std::invalid_argument("Select one Idle or Ready sphere scenario");
-        if (readySphere && (reachTarget.arm!=ArmSide::Left || root.position!=glm::vec3{0} || root.rotation!=glm::quat{1,0,0,0}))
-            throw std::invalid_argument("The Ready sphere demo uses the left hand and default root");
-        const auto asset=model_import::ModelImporter::loadFromFile(source);
+            throw std::invalid_argument("Select one scene");
+        if ((readySphere || readyCube) && (reachTarget.arm!=ArmSide::Left || root.position!=glm::vec3{0} || root.rotation!=glm::quat{1,0,0,0}))
+            throw std::invalid_argument("The Ready scenes use the left hand and default root");
+        std::error_code comparisonError;
+        const bool prepared=std::filesystem::equivalent(source,preparedModel,comparisonError);
+        const auto asset=model_import::ModelImporter::loadFromFile(source,
+            {.rebuildSmoothNormals=prepared,.omitPreparedGloves=prepared});
         const auto profile=raphtaliaBodyProfile();
         const bool calibrated=validateBodyProfile(profile,*asset).empty();
         BodyInstance body(1,asset,calibrated ? &profile:nullptr,eyes);
-        if (readySphere) {
-            if (!calibrated) throw std::invalid_argument("Ready sphere demo requires Raphtalia");
-            return runReadySphere(body,explicitTicks ? ticks:app::ReadySphereDemo::TickLimit,output);
+        if (readySphere || readyCube) {
+            if (!calibrated) throw std::invalid_argument("Ready scene requires Raphtalia");
+            if (readyCube) return runReadyScene<app::ReadyCubeDemo>(body,explicitTicks ? ticks:app::ReadyCubeDemo::TickLimit,output);
+            return runReadyScene<app::ReadySphereDemo>(body,explicitTicks ? ticks:app::ReadySphereDemo::TickLimit,output);
         }
         if (idle) {
             runIdle(body,root,ticks,readyAt,resumeAt,output);

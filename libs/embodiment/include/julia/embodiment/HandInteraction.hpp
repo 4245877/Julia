@@ -18,15 +18,19 @@ namespace julia::embodiment
     {
         ObjectHandle handle;
         RigidPose worldPose;
-        float radius=.022f;
+        InteractionShape shape=world::Sphere{.022f};
         RigidPose localGrip;
         ObjectState state=ObjectState::Free;
         std::uint64_t owner=0;
         ArmSide arm=ArmSide::Left;
         glm::mat4 effectorFromObject{1};
+        world::SceneObject collider() const;
     };
-    // Exactly one 44 mm sphere, one grip per hand. Not a general object database.
+    // One interactive object at a time.
     struct CreateInteractionSphere { std::uint64_t id; RigidPose pose; float radius=.022f; RigidPose localGrip; };
+    inline constexpr double InteractionCubeHalfExtent=.018;
+    inline const RigidPose interactionCubeLocalGrip{{.003f,-.017f,-.008f}};
+    struct CreateInteractionBox { std::uint64_t id; RigidPose pose; world::Box box{glm::dvec3{InteractionCubeHalfExtent}}; };
     struct DeleteInteractionObject { ObjectHandle object; };
     struct GraspObject { ObjectHandle object; ArmSide arm=ArmSide::Left; };
     // Explicit, one-shot handoff from a completed Reach in the same body/epoch.
@@ -42,7 +46,8 @@ namespace julia::embodiment
         ReleaseOpening, Retreat, Cancelling, Succeeded, Failed, Cancelled, ReleaseBlocked,
         Handoff, ReadyToGrasp, PreparationBlocked };
     const char* interactionPhaseName(InteractionPhase phase);
-    struct HandState { bool enabled=false; float closure=0, velocity=0, blend=0; };
+    enum class HandGrip { Sphere, Cube };
+    struct HandState { bool enabled=false; float closure=0, velocity=0, blend=0; HandGrip grip=HandGrip::Sphere; };
     struct InteractionObservation
     {
         std::uint64_t action=0, epoch=0;
@@ -72,12 +77,12 @@ namespace julia::embodiment
             std::uint32_t node;
             unsigned side;
             glm::mat4 before{1}, after{1};
-            glm::quat open{1,0,0,0}, closed{1,0,0,0};
+            glm::quat open{1,0,0,0}, closed{1,0,0,0}, cubeClosed{1,0,0,0};
         };
         explicit HandLayer(const BodyRigBinding& binding);
         const auto& joints() const { return joints_; }
         const auto& states() const { return states_; }
-        void set(ArmSide arm,float closure,bool enabled=true);
+        void set(ArmSide arm,float closure,bool enabled=true,std::optional<HandGrip> grip={});
         void fadeOut(ArmSide arm);
         void advance();
         void reset() { states_={}; from_={}; goal_={}; elapsed_={}; duration_={}; blendFrom_={}; blendGoal_={}; }
@@ -101,7 +106,8 @@ namespace julia::embodiment
         const auto& object() const { return object_; }
         const auto& observation() const { return observation_; }
         bool locked() const;
-        void create(const CreateInteractionSphere& command);
+        void create(const CreateInteractionSphere& command,const world::CollisionScene* scene=nullptr,double minimumGap=0);
+        void create(const CreateInteractionBox& command,const world::CollisionScene* scene,double minimumGap);
         void erase(ObjectHandle handle);
         void grasp(std::uint64_t action,std::uint64_t epoch,const GraspObject& command,const glm::mat4& root);
         void prepare(std::uint64_t action,std::uint64_t epoch,const PrepareGrasp& command,PathCheck openingCheck);
@@ -133,6 +139,8 @@ namespace julia::embodiment
         std::uint64_t reachAction_=0;
         std::uint64_t geometryRevision_=0;
         bool handoffWait_=false, finishingPreparation_=false;
+        void createObject(std::uint64_t id,RigidPose pose,InteractionShape shape,RigidPose localGrip,
+            const world::CollisionScene* scene,double minimumGap);
         void requireObject(ObjectHandle handle) const;
         void phase(InteractionPhase phase,bool geometry=false);
         void startReach(const RigidPose& goal,const glm::mat4& root);

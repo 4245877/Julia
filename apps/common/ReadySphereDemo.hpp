@@ -1,15 +1,16 @@
 #pragma once
+#include "ReadySceneRecovery.hpp"
 #include "StancePreparationDemo.hpp"
 #include <algorithm>
+#include <utility>
 
 namespace julia::app
 {
-    inline const embodiment::RigidPose readySphereLocalGrip{{.003f,0,.002f}};
+    inline const auto readySphereLocalGrip=sphereLocalGrip(embodiment::ArmSide::Left);
     inline embodiment::RigidPose readySpherePose(const embodiment::BodyInstance& body, unsigned sample)
     {
         using namespace embodiment;
-        const auto grip=interactionDemoPose(body.control()->binding(),ArmSide::Left,sample,body.snapshot().root);
-        return rigidPose(rigidMatrix(grip)*glm::inverse(rigidMatrix(readySphereLocalGrip)));
+        return interactionSpherePose(body.control()->binding(),ArmSide::Left,sample,body.snapshot().root);
     }
 
     class ReadySphereDemo
@@ -21,15 +22,29 @@ namespace julia::app
         bool failed() const { return stage_==Stage::Failed; }
         unsigned completed() const { return completed_; }
         const std::string& reason() const { return reason_; }
+        void requestRecovery() { recover_=true; }
+        bool canRecover(const embodiment::BodySnapshot& s) const
+        {
+            return failed() && canRecoverReadyScene(s,epoch_,handle_);
+        }
 
         // Called once before each simulation tick, while the previous results are available.
         void drive(embodiment::BodyInstance& body)
         {
             using namespace embodiment;
-            if (done() || failed()) return;
             const auto& s=body.snapshot();
             const auto& i=s.interaction;
             constexpr auto arm=ArmSide::Left;
+            if (done()) return;
+            if (failed()) {
+                if (!std::exchange(recover_,false) || !canRecover(s)) return;
+                recovering_=true;
+                startTick_=s.tick;
+                reason_.clear();
+                if (s.object->state==ObjectState::Attached) send(body,ReleaseObject{handle_},Stage::Released);
+                else send(body,DeleteInteractionObject{handle_},Stage::Deleted);
+                return;
+            }
             if (pending_) {
                 const auto result=std::find_if(body.results().begin(),body.results().end(),[&](const auto& r) {
                     return r.id==pending_ && r.epoch==epoch_;
@@ -44,6 +59,7 @@ namespace julia::app
                 if (s.epoch!=epoch_ || s.idle.phase==IdlePhase::Fault) { fail("Idle controller or body epoch changed"); return; }
                 if (s.tick-startTick_>=TickLimit) { fail("Ready sphere tick limit reached"); return; }
             }
+            if (i.cancellationPending) return;
             switch (stage_) {
             case Stage::Start:
                 epoch_=s.epoch;
@@ -103,7 +119,9 @@ namespace julia::app
                 break;
             case Stage::Resumed:
                 if (s.idle.phase==IdlePhase::Idle) {
-                    stage_=++completed_==CycleCount ? Stage::Done:Stage::Idle;
+                    if (!recovering_) ++completed_;
+                    recovering_=false;
+                    stage_=completed_==CycleCount ? Stage::Done:Stage::Idle;
                     idleUntil_=s.tick+60;
                 }
                 break;
@@ -117,6 +135,7 @@ namespace julia::app
         unsigned completed_=0;
         std::uint64_t pending_=0, action_=0, epoch_=0, startTick_=0, idleUntil_=0;
         embodiment::ObjectHandle handle_;
+        bool recover_=false, recovering_=false;
         std::string reason_;
 
         void send(embodiment::BodyInstance& body,embodiment::BodyOperation operation,Stage next)

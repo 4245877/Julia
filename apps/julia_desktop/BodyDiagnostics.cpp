@@ -262,17 +262,21 @@ namespace julia::desktop
             const auto origin=glm::vec3{f[3]};
             for (int k=0;k<3;++k) { glm::vec3 color{.05f}; color[k]=1; line(origin,origin+glm::vec3{f[k]}*length,color); }
         };
-        if (display.object) {
+        if (display.object && std::holds_alternative<world::Sphere>(display.object->shape)) {
             const auto worldToBody=glm::inverse(rigidMatrix({display.root.position,display.root.rotation}));
             const auto& o=*display.object;
-            if (display.interaction.preparation) axes(worldToBody*rigidMatrix(o.worldPose)*rigidMatrix(o.localGrip),.075f);
+            const auto radius=static_cast<float>(std::get<world::Sphere>(o.shape).radius);
             for (int axis=0;axis<3;++axis) for (int k=0;k<48;++k) {
                 glm::vec3 a{0},end{0}; const float t=k*6.28318530718f/48,u=(k+1)*6.28318530718f/48;
-                a[(axis+1)%3]=std::cos(t)*o.radius; a[(axis+2)%3]=std::sin(t)*o.radius;
-                end[(axis+1)%3]=std::cos(u)*o.radius; end[(axis+2)%3]=std::sin(u)*o.radius;
+                a[(axis+1)%3]=std::cos(t)*radius; a[(axis+2)%3]=std::sin(t)*radius;
+                end[(axis+1)%3]=std::cos(u)*radius; end[(axis+2)%3]=std::sin(u)*radius;
                 line(glm::vec3{worldToBody*glm::vec4{o.worldPose.position+o.worldPose.rotation*a,1}},
                     glm::vec3{worldToBody*glm::vec4{o.worldPose.position+o.worldPose.rotation*end,1}},{1,.2f,.05f});
             }
+            renderer.renderDebugLines(lines,true);
+            lines.clear();
+            if (overlay && display.interaction.preparation)
+                axes(worldToBody*rigidMatrix(o.worldPose)*rigidMatrix(o.localGrip),.075f);
         }
         if (!overlay || !display.direct) { renderer.renderDebugLines(lines); return; }
         if (display.support.enabled) {

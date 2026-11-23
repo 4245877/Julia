@@ -22,6 +22,7 @@
 #include <limits>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -45,6 +46,7 @@ namespace julia::model_import
             std::filesystem::path texturesDirectory;
             bool useLegacyMaterialTextureFallback = false;
             bool rebuildSmoothNormals = false;
+            bool omitPreparedGloves = false;
 
             std::unordered_map<std::string, std::shared_ptr<const Image>> textureCache;
         };
@@ -829,6 +831,9 @@ namespace julia::model_import
 
                 if ((mesh->mPrimitiveTypes & aiPrimitiveType_TRIANGLE) == 0 || mesh->mNumFaces == 0)
                     continue;
+                // The cuffs have their own nodes and meshes in this export.
+                if (context.omitPreparedGloves && std::string_view{mesh->mName.C_Str()} == "long_gloves_tex_glove_0")
+                    continue;
 
                 context.model.addMesh(
                     processMesh(scene, mesh, nodeTransform, context)
@@ -952,6 +957,7 @@ namespace julia::model_import
         context.texturesDirectory = path.parent_path().parent_path() / "textures";
         context.useLegacyMaterialTextureFallback = options.useLegacyMaterialTextureFallback;
         context.rebuildSmoothNormals = options.rebuildSmoothNormals;
+        context.omitPreparedGloves = options.omitPreparedGloves;
 
         registerNodes(scene->mRootNode, NoModelNode, context);
         processNode(scene, scene->mRootNode, context);

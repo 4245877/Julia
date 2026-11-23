@@ -9,8 +9,8 @@ namespace julia::world
     struct CollisionFilter { std::uint32_t category = 1, mask = ~0u; };
     bool interacts(CollisionFilter a, CollisionFilter b);
     struct Capsule { glm::dvec3 a{0}, b{0}; double radius = 0; };
-    struct Sphere { double radius = 0; };
-    struct Box { glm::dvec3 halfExtent{0}; };
+    struct Sphere { double radius = 0; bool operator==(const Sphere&) const = default; };
+    struct Box { glm::dvec3 halfExtent{0}; bool operator==(const Box&) const = default; };
     // Solid local half-space y <= 0; outward normal +Y.
     struct Plane {};
     struct SceneObject
@@ -40,4 +40,7 @@ namespace julia::world
     };
     Clearance clearance(const Capsule& a, const Capsule& b);
     Clearance clearance(const Capsule& a, const SceneObject& b);
+    // The first object is a sphere or oriented box. For two boxes gap is a
+    // signed separating-axis bound on distance, with support points as witnesses.
+    Clearance clearance(const SceneObject& a, const SceneObject& b);
 }
