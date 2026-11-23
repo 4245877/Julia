@@ -14,6 +14,7 @@
 #include "../common/ReadySphereDemo.hpp"
 #include "../common/ReadyCubeDemo.hpp"
 #include "ReadySceneVerification.hpp"
+#include "HandVerification.hpp"
 #include "julia/render_opengl/EyePoseLayer.hpp"
 
 #include <glm/glm.hpp>
@@ -359,6 +360,12 @@ namespace
                     if (state->readyCube && !state->readyCube->done()) return;
                     if (state->readySphere && !state->readySphere->done() && !state->readySphere->failed()) return;
                     queue(SetIdleStance{idlePhase != IdlePhase::Ready && idlePhase != IdlePhase::Settling});
+                    return;
+                }
+                if (key == GLFW_KEY_O && !state->readyCube && !state->readySphere) {
+                    // Empty hands: open both, or return them to the relaxed rest pose.
+                    const auto& hands = body.snapshot().hands;
+                    queue(SetIdleHands{!(hands[0].enabled && hands[1].enabled)});
                     return;
                 }
                 if (key==GLFW_KEY_ENTER) {
@@ -878,8 +885,9 @@ int main(int argc, char** argv)
     const bool detourVerification = argc > 1 && std::string_view{argv[1]} == "--verify-detour";
     const bool collisionVerification = argc > 1 && std::string_view{argv[1]} == "--verify-collision";
     const bool reachVerification = argc > 1 && std::string_view{argv[1]} == "--verify-ik";
-    const bool bodyVerification = sceneVerification || preparationVerification || stanceVerification || supportVerification || interactionVerification || spatialVerification || rankedVerification || multiIKVerification || detourVerification || collisionVerification || reachVerification || (argc > 1 && std::string_view{argv[1]} == "--verify-body");
-    if (bodyVerification && !sceneVerification && argc != 3) { std::cerr << "Usage: julia_desktop --verify-body output_directory\n"; return 2; }
+    const bool handVerification = argc > 1 && std::string_view{argv[1]} == "--verify-hands";
+    const bool bodyVerification = sceneVerification || handVerification || preparationVerification || stanceVerification || supportVerification || interactionVerification || spatialVerification || rankedVerification || multiIKVerification || detourVerification || collisionVerification || reachVerification || (argc > 1 && std::string_view{argv[1]} == "--verify-body");
+    if (bodyVerification && !sceneVerification && argc != 3 && !(handVerification && argc == 4)) { std::cerr << "Usage: julia_desktop --verify-body output_directory\n"; return 2; }
     const bool verification = argc > 1 && std::string_view{argv[1]} == "--verify";
     const bool animationVerification = argc > 1 &&
         (std::string_view{argv[1]} == "--verify-animations" || std::string_view{argv[1]} == "--review-animations");
@@ -944,7 +952,7 @@ int main(int argc, char** argv)
         {
             std::cout << "Julia [--desktop|--window] [--topmost|--no-topmost] [--avatar-height 180..720]\n"
                 << "      [--settings path] [--no-save] [--no-eyes] [--idle|--ready-sphere-demo|--ready-cube-demo] [model.fbx]\n"
-                << "--idle enables planted Idle on Raphtalia. Space transitions to/from Ready; Pause freezes simulation.\n"
+                << "--idle enables planted Idle on Raphtalia. Space transitions to/from Ready; O opens/relaxes both hands; Pause freezes simulation.\n"
                 << "--ready-sphere-demo runs three left-hand grasp, carry and release cycles from Idle Ready.\n"
                 << "--ready-cube-demo runs three cube inspections.\n"
                 << "During either Ready demo, Ctrl+Delete cancels the arm action. Enter recovers after a resting interruption.\n"
@@ -1213,7 +1221,7 @@ int main(int argc, char** argv)
                 throw std::runtime_error(body.results().front().reason.empty() ?
                     "Idle stance failed its first simulation tick" : body.results().front().reason);
             bodyDisplay = body.display(1);
-            std::cout << "Idle: Space settles/resumes, Pause freezes simulation, F5 shows the foot anchors.\n";
+            std::cout << "Idle: Space settles/resumes, O opens/relaxes both hands, Pause freezes simulation, F5 shows the foot anchors.\n";
         }
         windowState.applyCamera();
 
@@ -1268,6 +1276,48 @@ int main(int argc, char** argv)
             };
             if (readyCubeVerification) julia::desktop::verifyDesktopReadyCube(body,argv[2],sceneRate,capture);
             else julia::desktop::verifyDesktopReadySphere(body,argv[2],sceneRate,capture);
+            glfwSetWindowShouldClose(window,GLFW_TRUE);
+        }
+        else if (handVerification)
+        {
+            if (!bodyControl) throw std::runtime_error("Hand verification requires calibrated Raphtalia");
+            const auto fromWorld=fitModel*glm::inverse(bodyControl->binding().profile().bodyFromResource);
+            const auto capture=[&](const julia::embodiment::BodyDisplay& frame,bool avatar,
+                const julia::desktop::HandCamera* closeUp,std::span<const julia::desktop::HandLine> overlay) {
+                if (display.avatar()!=avatar) display.toggleMode();
+                if (display.avatar()!=avatar) throw std::runtime_error("Requested capture mode unavailable");
+                glfwPollEvents();
+                julia::desktop::SceneFrame image;
+                glfwGetFramebufferSize(window,&image.width,&image.height);
+                if (image.width<=0 || image.height<=0) throw std::runtime_error("Cannot capture hand frame");
+                renderer.resize(image.width,image.height);
+                bodyDisplay=frame;
+                auto camera=windowState.activeCamera();
+                if (closeUp) {
+                    camera.target=glm::vec3{fromWorld*glm::vec4{closeUp->target,1}};
+                    camera.position=glm::vec3{fromWorld*glm::vec4{closeUp->eye,1}};
+                    camera.up=glm::normalize(glm::vec3{fromWorld*glm::vec4{closeUp->up,0}});
+                    camera.fovDegrees=closeUp->fovDegrees;
+                    camera.nearPlane=.004f;
+                    camera.orthographicHeight=0;
+                }
+                renderer.setCamera(camera);
+                windowState.drawBodyFrame(window,avatarSurface,frame,1,true,false);
+                if (!overlay.empty()) {
+                    std::vector<julia::render_opengl::DebugLineVertex> lines;
+                    for (const auto& l:overlay) {
+                        lines.push_back({glm::vec3{fromWorld*glm::vec4{l.a,1}},l.color});
+                        lines.push_back({glm::vec3{fromWorld*glm::vec4{l.b,1}},l.color});
+                    }
+                    renderer.renderDebugLines(lines,false);
+                }
+                image.rgba.resize(static_cast<std::size_t>(image.width)*image.height*4);
+                glReadPixels(0,0,image.width,image.height,GL_RGBA,GL_UNSIGNED_BYTE,image.rgba.data());
+                if (glGetError()!=GL_NO_ERROR) throw std::runtime_error("Hand capture OpenGL error");
+                glfwSwapBuffers(window);
+                return image;
+            };
+            julia::desktop::verifyDesktopHands(body,argv[2],capture,argc == 4 ? std::filesystem::path{argv[3]} : std::filesystem::path{});
             glfwSetWindowShouldClose(window,GLFW_TRUE);
         }
         else if (bodyVerification)

@@ -30,6 +30,18 @@ namespace julia::embodiment
             {.154f,.130f,.122f}, {-.059f,-.058f,-.057f}, {.107f,.122f,.131f},
             {-.306f,-.253f,-.244f}, {.157f,.268f,.377f}
         };
+        // Thumb pad directions in the hand frame (radial, distal, palmar), measured on the
+        // modelled skin as the thickest tissue around each phalanx. They fix the thumb's own
+        // flexion plane, which differs from the plane of the four fingers.
+        constexpr glm::vec3 thumbMcpPad{-.60f,0,.80f}, thumbIpPad{-.70f,0,.71f};
+        constexpr float thumbTipLength=.012f; // IP centre to the pad of the tip, body metres
+        glm::vec3 unit(const glm::vec3& v) { return glm::normalize(v); }
+        glm::vec3 perpendicular(const glm::vec3& v,const glm::vec3& axis) { return glm::normalize(v-glm::dot(v,axis)*axis); }
+        float signedAngle(const glm::vec3& from,const glm::vec3& to,const glm::vec3& axis)
+        {
+            const auto u=perpendicular(from,axis), v=perpendicular(to,axis);
+            return std::atan2(glm::dot(glm::cross(u,v),axis),glm::dot(u,v));
+        }
         std::size_t index(ArmSide arm)
         { if (arm!=ArmSide::Left && arm!=ArmSide::Right) throw std::invalid_argument("Invalid hand"); return arm==ArmSide::Left ? 0:1; }
         EffectorId effector(ArmSide arm) { return arm==ArmSide::Left ? EffectorId::LeftGrip:EffectorId::RightGrip; }
@@ -69,11 +81,46 @@ namespace julia::embodiment
         case InteractionPhase::PreparationBlocked:return "PreparationBlocked";
         } return "Invalid";
     }
+    HandPose relaxedHandPose()
+    {
+        // Resting cascade: flexion grows from index to little finger; the thumb rests
+        // slightly palmar and pronated, its pad towards the index finger.
+        const auto r=[](float degrees) { return glm::radians(degrees); };
+        HandPose p;
+        p.fingers={FingerAngles{r(12),r(-3.5f),r(22),r(10)},FingerAngles{r(16),r(-5.5f),r(28),r(12)},
+            FingerAngles{r(20),r(-8),r(33),r(13)},FingerAngles{r(24),r(-11.5f),r(36),r(14)}};
+        p.thumb={r(12),r(-5),r(35),r(10),r(14)};
+        return p;
+    }
+    HandPose openHandPose()
+    {
+        // Extended, softly fanned fingers; thumb abducted away from the index finger.
+        const auto r=[](float degrees) { return glm::radians(degrees); };
+        HandPose p;
+        p.fingers={FingerAngles{r(2),r(6),r(4),r(2)},FingerAngles{r(2),r(-3),r(4),r(2)},
+            FingerAngles{r(3),r(-11),r(5),r(3)},FingerAngles{r(3),r(-19),r(5),r(3)}};
+        p.thumb={r(10),r(30),r(-5),r(0),r(-5)};
+        return p;
+    }
+    HandPose oppositionHandPose()
+    {
+        // Opposition onset: CMC palmar abduction and axial pronation turn the thumb nail from
+        // radial-dorsal to palmar and aim the pad at the index tip. This is 45 % of the way to
+        // tip contact (palmar abduction 60, pronation 120); beyond about half way the thenar
+        // skin folds into the palm with linear blend skinning on this mesh.
+        const auto r=[](float degrees) { return glm::radians(degrees); };
+        HandPose p;
+        p.fingers={FingerAngles{r(23),r(2),r(29),r(13)},FingerAngles{r(24),r(-4),r(30),r(14)},
+            FingerAngles{r(25),r(-10),r(32),r(14)},FingerAngles{r(26),r(-16),r(32),r(14)}};
+        p.thumb={r(32),r(14),r(51),r(0),r(0)};
+        return p;
+    }
     HandLayer::HandLayer(const BodyRigBinding& binding)
     {
         const auto& nodes=binding.asset().nodes();
         nodeCount_=nodes.size();
         const auto& skeleton=binding.asset().skeleton();
+        const auto& bodyFromResource=binding.profile().bodyFromResource;
         std::vector<glm::mat4> bind;
         for (const auto& node:skeleton.nodes()) bind.push_back(node.globalBindTransform);
         for (unsigned side=0;side<2;++side)
@@ -81,11 +128,12 @@ namespace julia::embodiment
             const auto wrist=side==0 ? JointId::LeftWrist:JointId::RightWrist;
             const auto wristNode=binding.jointNode(wrist);
             const auto palm=binding.jointFrame(wrist,bind);
+            std::array<std::array<glm::vec3,3>,5> head{}, axis{};
             for (unsigned finger=0;finger<5;++finger)
             {
                 const std::array<const char*,5> names{"index","middle","ring","pinky","thumb"};
                 std::uint32_t parent=wristNode;
-                auto parentOpen=binding.profile().bodyFromResource*bind[parent],parentClosed=parentOpen,parentCube=parentOpen;
+                auto parentClosed=bodyFromResource*bind[parent],parentCube=parentClosed,parentAperture=parentClosed;
                 for (unsigned phalanx=0;phalanx<3;++phalanx)
                 {
                     const auto prefix=std::string{"c_"}+names[finger]+std::to_string(phalanx+1)+(side==0 ? ".l_":".r_");
@@ -93,12 +141,13 @@ namespace julia::embodiment
                     for (std::uint32_t n=0;n<nodes.size();++n) if (nodes[n].name.starts_with(prefix))
                     { if (node!=animation::NoNode) throw std::invalid_argument("Ambiguous finger node"); node=n; }
                     if (node==animation::NoNode || nodes[node].parent!=parent) throw std::invalid_argument("Unsupported finger chain");
-                    const auto global=binding.profile().bodyFromResource*bind[node];
+                    const auto global=bodyFromResource*bind[node];
                     const auto frame=proper(global);
-                    const auto before=glm::inverse(binding.profile().bodyFromResource*bind[parent])*frame;
+                    const auto before=glm::inverse(bodyFromResource*bind[parent])*frame;
                     const auto after=glm::inverse(frame)*global;
-                    const float spread=finger==4 ? (side==0 ? -.65f:.65f):
-                        (static_cast<float>(finger)-1.4f)*(side==0 ? .045f:-.045f);
+                    head[finger][phalanx]=glm::vec3{global[3]}; axis[finger][phalanx]=unit(glm::vec3{global[1]});
+                    // Grasp shapes: absolute phalanx orientations in the profile wrist frame,
+                    // unchanged from the calibrated cube and sphere holds.
                     const auto target=[&](float bend,float opposition,const glm::mat4& parentGlobal)
                     {
                         auto f=palm*glm::rotate(glm::mat4{1},opposition,glm::vec3{0,0,1})*
@@ -106,19 +155,88 @@ namespace julia::embodiment
                         f[3]=parentGlobal*nodes[node].localTransform[3];
                         return f*after;
                     };
-                    const auto openGlobal=target(0,spread,parentOpen);
                     const auto sideSign=side==0 ? 1.f:-1.f;
+                    const float apertureSpread=finger==4 ? -.65f*sideSign:(static_cast<float>(finger)-1.4f)*.045f*sideSign;
+                    const auto apertureGlobal=target(0,apertureSpread,parentAperture);
                     const auto closedGlobal=target(sphereBend[finger][phalanx],
                         sphereSpread[finger][phalanx]*sideSign,parentClosed);
                     const auto cubeGlobal=target(cubeBend[finger][phalanx],
                         cubeSpread[finger][phalanx]*sideSign,parentCube);
                     const auto rotation=[&](const glm::mat4& targetGlobal,const glm::mat4& parentGlobal)
                     { return normalizedReachOrientation(glm::quat_cast(glm::mat3{glm::inverse(before)*glm::inverse(parentGlobal)*targetGlobal*glm::inverse(after)})); };
-                    joints_.push_back({node,side,before,after,rotation(openGlobal,parentOpen),rotation(closedGlobal,parentClosed),
-                        rotation(cubeGlobal,parentCube)});
-                    parent=node; parentOpen=openGlobal; parentClosed=closedGlobal; parentCube=cubeGlobal;
+                    Joint joint{node,side,finger,phalanx,before,after};
+                    joint.frame=glm::normalize(glm::quat_cast(glm::mat3{frame}));
+                    joint.graspAperture=rotation(apertureGlobal,parentAperture);
+                    joint.closed=rotation(closedGlobal,parentClosed); joint.cubeClosed=rotation(cubeGlobal,parentCube);
+                    joints_.push_back(joint);
+                    parent=node; parentAperture=apertureGlobal; parentClosed=closedGlobal; parentCube=cubeGlobal;
                 }
             }
+            // Anatomical frame from the bind skeleton. Flexion axes are perpendicular to each
+            // proximal phalanx and the palm normal. The strongly curled left-hand fingers lie in
+            // these planes within 1.5 degrees; the nearly straight right hand defines no plane.
+            auto& a=anatomy_[side];
+            a.distal=unit(glm::vec3{palm[1]}); a.palmar=-unit(glm::vec3{palm[2]});
+            a.radial=side==0 ? unit(glm::vec3{palm[0]}):-unit(glm::vec3{palm[0]});
+            a.spread=unit(glm::cross(a.distal,a.radial));
+            for (unsigned f=0;f<4;++f) {
+                const auto v1=unit(head[f][1]-head[f][0]), v2=unit(head[f][2]-head[f][1]), v3=axis[f][2];
+                a.flexion[f]=unit(glm::cross(v1,a.palmar));
+                a.bind.fingers[f]={std::asin(std::clamp(glm::dot(v1,a.palmar),-1.f,1.f)),
+                    std::atan2(glm::dot(v1,a.radial),glm::dot(v1,a.distal)),
+                    signedAngle(v1,v2,a.flexion[f]),signedAngle(v2,v3,a.flexion[f])};
+            }
+            const auto handVector=[&](const glm::vec3& v) { return unit(v.x*a.radial+v.y*a.distal+v.z*a.palmar); };
+            const auto metacarpal=unit(head[4][1]-head[4][0]), proximal=unit(head[4][2]-head[4][1]), distal=axis[4][2];
+            a.thumbPalmar=unit(glm::cross(metacarpal,a.palmar));
+            a.thumbRadial=a.spread;
+            // Axial rotation about the whole thumb ray (CMC to tip): the modelled MCP is deviated
+            // towards the index, so a turn about the short metacarpal alone would swing the tip.
+            // Positive pronation turns the nail from radial towards palmar and the pad towards the fingers.
+            const auto ray=unit(head[4][2]+distal*thumbTipLength-head[4][0]);
+            const auto radialAcross=perpendicular(a.radial,ray);
+            a.thumbAxial=glm::dot(glm::cross(ray,radialAcross),a.palmar)>0 ? ray:-ray;
+            a.thumbMcp=unit(glm::cross(proximal,perpendicular(handVector(thumbMcpPad),proximal)));
+            a.thumbIp=unit(glm::cross(distal,perpendicular(handVector(thumbIpPad),distal)));
+            a.bind.thumb={0,0,0,signedAngle(metacarpal,proximal,a.thumbMcp),signedAngle(proximal,distal,a.thumbIp)};
+        }
+        const auto relaxed=relaxedHandPose(), open=openHandPose();
+        for (unsigned side=0;side<2;++side) {
+            const auto rest=rotations(side,relaxed), wide=rotations(side,open);
+            for (std::size_t k=0;k<15;++k) { joints_[side*15+k].rest=rest[k]; joints_[side*15+k].open=wide[k]; }
+        }
+    }
+    std::array<glm::quat,15> HandLayer::rotations(unsigned side,const HandPose& pose) const
+    {
+        const auto& a=anatomy_.at(side);
+        const auto turn=[](float angle,const glm::vec3& axis) { return glm::angleAxis(angle,axis); };
+        // Rotations about each joint centre in body space, bind configuration.
+        std::array<glm::quat,15> body{};
+        for (unsigned f=0;f<4;++f) {
+            const auto& t=pose.fingers[f]; const auto& b=a.bind.fingers[f];
+            body[f*3]=turn(t.mcpSpread-b.mcpSpread,a.spread)*turn(t.mcpFlexion-b.mcpFlexion,a.flexion[f]);
+            body[f*3+1]=turn(t.pipFlexion-b.pipFlexion,a.flexion[f]);
+            body[f*3+2]=turn(t.dipFlexion-b.dipFlexion,a.flexion[f]);
+        }
+        const auto& t=pose.thumb; const auto& b=a.bind.thumb;
+        body[12]=turn(t.radialAbduction-b.radialAbduction,a.thumbRadial)*turn(t.palmarAbduction-b.palmarAbduction,a.thumbPalmar)*
+            turn(t.pronation-b.pronation,a.thumbAxial);
+        body[13]=turn(t.mcpFlexion-b.mcpFlexion,a.thumbMcp);
+        body[14]=turn(t.ipFlexion-b.ipFlexion,a.thumbIp);
+        std::array<glm::quat,15> local{};
+        for (std::size_t k=0;k<15;++k) {
+            const auto& frame=joints_.at(side*15+k).frame;
+            local[k]=normalizedReachOrientation(glm::conjugate(frame)*body[k]*frame);
+        }
+        return local;
+    }
+    void HandLayer::applyPose(std::span<glm::mat4> locals,unsigned side,const HandPose& pose) const
+    {
+        if (locals.size()!=nodeCount_) throw std::invalid_argument("Hand layer local buffer size mismatch");
+        const auto q=rotations(side,pose);
+        for (std::size_t k=0;k<15;++k) {
+            const auto& j=joints_[side*15+k];
+            locals[j.node]=j.before*glm::mat4_cast(q[k])*j.after;
         }
     }
     void HandLayer::set(ArmSide arm,float closure,bool enabled,std::optional<HandGrip> grip)
@@ -126,7 +244,7 @@ namespace julia::embodiment
         const auto s=index(arm);
         if (!std::isfinite(closure) || closure<0 || closure>1) throw std::invalid_argument("Hand closure outside [0,1]");
         if (!ready(arm)) throw std::invalid_argument("Hand trajectory active; wait for rest");
-        if (!enabled) { states_[s]={}; from_[s]=goal_[s]=0; elapsed_[s]=duration_[s]=0; return; }
+        if (!enabled) { states_[s]=HandState{.relaxed=states_[s].relaxed}; from_[s]=goal_[s]=0; elapsed_[s]=duration_[s]=0; return; }
         if (grip) states_[s].grip=*grip;
         blendFrom_[s]=states_[s].blend; blendGoal_[s]=1;
         states_[s].enabled=enabled; from_[s]=states_[s].closure; goal_[s]=closure; elapsed_[s]=0;
@@ -154,7 +272,7 @@ namespace julia::embodiment
             states_[s].velocity=(states_[s].closure-old)*120;
         } else {
             states_[s].velocity=0;
-            if (blendGoal_[s]==0) states_[s]={};
+            if (blendGoal_[s]==0) states_[s]=HandState{.relaxed=states_[s].relaxed};
         }
     }
     bool HandLayer::ready(ArmSide arm) const
@@ -166,10 +284,19 @@ namespace julia::embodiment
             s.closure<0 || s.closure>1 || s.blend<0 || s.blend>1) throw std::invalid_argument("Invalid hand layer state");
         for (const auto& j:joints_) {
             const auto& s=states[j.side];
-            if (!s.enabled || s.blend<=0) continue;
+            const auto rest=s.relaxed ? j.rest:glm::quat{1,0,0,0};
+            if (!s.enabled || s.blend<=0) {
+                if (s.relaxed) locals[j.node]=j.before*glm::mat4_cast(rest)*j.after;
+                continue;
+            }
             const auto closed=s.grip==HandGrip::Cube ? j.cubeClosed:j.closed;
-            locals[j.node]=j.before*glm::mat4_cast(glm::slerp(glm::quat{1,0,0,0},
-                glm::slerp(j.open,closed,s.closure),s.blend))*j.after;
+            // Quintic stage weights keep closing C2-smooth; from ApertureEnd the stroke visits
+            // exactly the calibrated aperture-to-hold path.
+            const auto stage=[](float from,float to,float x) {
+                const float u=std::clamp((x-from)/(to-from),0.f,1.f); return u*u*u*(10+u*(-15+6*u)); };
+            const auto aperture=glm::slerp(j.open,j.graspAperture,stage(0,ApertureEnd,s.closure));
+            const auto shaped=glm::slerp(aperture,closed,stage(StrokeStart,1,s.closure));
+            locals[j.node]=j.before*glm::mat4_cast(glm::slerp(rest,shaped,s.blend))*j.after;
         }
     }
     HandInteraction::HandInteraction(std::uint64_t owner,DirectBodyControl& control,ArmReach& reach)

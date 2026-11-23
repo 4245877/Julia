@@ -22,8 +22,8 @@ Git LFS и выполните команды ниже.
 ```
 
 Для демонстрации Idle запустите `.\julia_desktop\julia_desktop.exe --idle --window --no-save`.
-Пробел переводит Рафталию в стойку Ready и возвращает в Idle. F10 переключает
-Full Window и Desktop Avatar.
+Пробел переводит Рафталию в стойку Ready и возвращает в Idle, O раскрывает
+и расслабляет кисти. F10 переключает Full Window и Desktop Avatar.
 
 В этом рабочем дереве зависимости уже установлены. Для локальной сборки
 используйте `.\tools\build.ps1 -UseInstalledDependencies`. Запуск EXE без

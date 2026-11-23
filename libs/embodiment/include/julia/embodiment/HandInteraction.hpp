@@ -47,7 +47,18 @@ namespace julia::embodiment
         Handoff, ReadyToGrasp, PreparationBlocked };
     const char* interactionPhaseName(InteractionPhase phase);
     enum class HandGrip { Sphere, Cube };
-    struct HandState { bool enabled=false; float closure=0, velocity=0, blend=0; HandGrip grip=HandGrip::Sphere; };
+    // Rest is the calibrated relaxed pose when relaxed, otherwise the exact bind pose.
+    struct HandState { bool enabled=false; float closure=0, velocity=0, blend=0; HandGrip grip=HandGrip::Sphere; bool relaxed=false; };
+    // Anatomical joint angles of one hand, radians. Finger flexion is positive towards the
+    // palm, spread towards the thumb, both measured in the hand frame. Thumb CMC angles are
+    // relative to the modelled thumb; MCP/IP flexion turns the tip towards the thumb pad.
+    struct FingerAngles { float mcpFlexion=0, mcpSpread=0, pipFlexion=0, dipFlexion=0; };
+    struct ThumbAngles { float palmarAbduction=0, radialAbduction=0, pronation=0, mcpFlexion=0, ipFlexion=0; };
+    struct HandPose { std::array<FingerAngles,4> fingers{}; ThumbAngles thumb{}; }; // index, middle, ring, pinky
+    // Calibrated targets shared by both hands through mirror symmetry.
+    HandPose relaxedHandPose();    // Idle rest
+    HandPose openHandPose();       // Empty-hand opening and grasp preparation
+    HandPose oppositionHandPose(); // Pre-pinch: the thumb pad turned towards the index pad
     struct InteractionObservation
     {
         std::uint64_t action=0, epoch=0;
@@ -75,16 +86,38 @@ namespace julia::embodiment
         struct Joint
         {
             std::uint32_t node;
-            unsigned side;
+            unsigned side, finger, phalanx; // finger 0..4 index..thumb; phalanx 0..2 from the palm
             glm::mat4 before{1}, after{1};
-            glm::quat open{1,0,0,0}, closed{1,0,0,0}, cubeClosed{1,0,0,0};
+            glm::quat frame{1,0,0,0}; // Bind orientation of the joint frame, body metres.
+            glm::quat open{1,0,0,0}, closed{1,0,0,0}, cubeClosed{1,0,0,0}, rest{1,0,0,0};
+            // Aperture of the calibrated cube/sphere holds. Closing passes through it so the
+            // contact part of the stroke keeps the verified path to the closed shapes.
+            glm::quat graspAperture{1,0,0,0};
+        };
+        // Closure fractions: the aperture is reached by ApertureEnd, the hold stroke starts at StrokeStart.
+        static constexpr float ApertureEnd=.6f, StrokeStart=.15f;
+        // Calibrated anatomy of one hand in the bind pose, unit axes in body space.
+        // The profile wrist frame keeps its historical axes; its +Z points to the back
+        // of the hand on this rig, so palmar is -Z.
+        struct Anatomy
+        {
+            glm::vec3 distal{0}, palmar{0}, radial{0}, spread{0};
+            std::array<glm::vec3,4> flexion{}; // shared by MCP, PIP and DIP of each finger
+            glm::vec3 thumbPalmar{0}, thumbRadial{0}, thumbAxial{0}, thumbMcp{0}, thumbIp{0};
+            HandPose bind; // modelled angles; thumb CMC angles are zero by definition
         };
         explicit HandLayer(const BodyRigBinding& binding);
         const auto& joints() const { return joints_; }
         const auto& states() const { return states_; }
+        const Anatomy& anatomy(unsigned side) const { return anatomy_.at(side); }
+        // Local rotations of the 15 joints of one side, in joints() order, reproducing the pose.
+        std::array<glm::quat,15> rotations(unsigned side,const HandPose& pose) const;
+        void applyPose(std::span<glm::mat4> locals,unsigned side,const HandPose& pose) const;
         void set(ArmSide arm,float closure,bool enabled=true,std::optional<HandGrip> grip={});
         void fadeOut(ArmSide arm);
         void advance();
+        // Idle owns the relaxed rest pose; reset returns both hands to the exact bind pose.
+        void setRelaxed(bool relaxed) { for (auto& s:states_) s.relaxed=relaxed; }
         void reset() { states_={}; from_={}; goal_={}; elapsed_={}; duration_={}; blendFrom_={}; blendGoal_={}; }
         bool ready(ArmSide arm) const;
         void apply(std::span<glm::mat4> locals) const { apply(locals,states_); }
@@ -92,6 +125,7 @@ namespace julia::embodiment
     private:
         std::size_t nodeCount_=0;
         std::vector<Joint> joints_;
+        std::array<Anatomy,2> anatomy_{};
         std::array<HandState,2> states_{};
         std::array<float,2> from_{},goal_{};
         std::array<float,2> blendFrom_{},blendGoal_{};

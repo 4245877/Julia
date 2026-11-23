@@ -175,6 +175,12 @@ target_link_libraries(julia_test_ready_cube PRIVATE julia_model_import julia_emb
 add_test(NAME ready_cube COMMAND julia_test_ready_cube "${CMAKE_BINARY_DIR}/verification/artifacts/ready-cube/cpu")
 set_tests_properties(ready_cube PROPERTIES TIMEOUT 90)
 
+add_executable(julia_test_hand_calibration test_hand_calibration.cpp)
+target_compile_definitions(julia_test_hand_calibration PRIVATE JULIA_TEST_ASSET_DIR="${CMAKE_SOURCE_DIR}/assets")
+target_link_libraries(julia_test_hand_calibration PRIVATE julia_model_import julia_embodiment julia::warnings)
+add_test(NAME hand_calibration COMMAND julia_test_hand_calibration "${CMAKE_BINARY_DIR}/verification/artifacts/hand-calibration/cpu")
+set_tests_properties(hand_calibration PROPERTIES TIMEOUT 120)
+
 if(JULIA_BUILD_PHYSICS)
     add_executable(julia_test_support_observation test_support_observation.cpp)
     target_compile_definitions(julia_test_support_observation PRIVATE JULIA_TEST_ASSET_DIR="${CMAKE_SOURCE_DIR}/assets")

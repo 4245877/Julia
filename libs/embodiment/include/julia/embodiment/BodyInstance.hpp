@@ -23,6 +23,8 @@ namespace julia::embodiment
     struct SetRoot { RootPose pose; };
     struct StartIdle {};
     struct SetIdleStance { bool ready; std::optional<glm::vec3> lookAt={}; }; // World point captured for this Ready transition.
+    // Empty hands during moving Idle: open both hands, or return them to the relaxed rest pose.
+    struct SetIdleHands { bool open; };
     enum class IdlePhase { Disabled, Resuming, Idle, Settling, Ready, Fault };
     const char* idlePhaseName(IdlePhase phase);
     struct IdleObservation
@@ -46,7 +48,7 @@ namespace julia::embodiment
         SetRoot, ClipCommand, EyeCommand, StartReach, RetargetReach, CancelReach, SetCollisionScene,
         CreateInteractionSphere,CreateInteractionBox,DeleteInteractionObject,GraspObject,PrepareGrasp,ConfirmGrasp,FinishGraspPreparation,MoveHeldObject,ReleaseObject,CancelInteraction,SetHandClosure,
         SetSupportSurface,EnableSupport,AlignSupport,MoveSupportRoot,CancelSupportMotion,DisableSupport,
-        StartIdle,SetIdleStance>;
+        StartIdle,SetIdleStance,SetIdleHands>;
     struct BodyCommand
     {
         std::uint64_t id, target, tick, epoch;

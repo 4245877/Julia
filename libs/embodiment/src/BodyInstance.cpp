@@ -390,6 +390,8 @@ namespace julia::embodiment
                 support_->plant(mode->proposed(),matrix(root_),matrix(mode->root()));
                 idle_=std::move(mode);
                 control_->setEnabled(true);
+                // The application rest pose of both hands; the bind pose remains for skinning.
+                interaction_->hand.setRelaxed(true);
                 commitIdlePose();
                 rebuildCollision();
                 invalidatePath("Idle stance planted");
@@ -410,6 +412,21 @@ namespace julia::embodiment
                 }
                 if (idle_->observation().phase==IdlePhase::Resuming)
                     invalidatePath("Idle motion resumed");
+            }
+            else if constexpr (std::is_same_v<T,SetIdleHands>)
+            {
+                const auto phase=idle_ ? idle_->observation().phase:IdlePhase::Disabled;
+                if (phase!=IdlePhase::Idle && phase!=IdlePhase::Resuming)
+                    throw std::invalid_argument("Idle hands require moving Idle");
+                if (reach_->anyActive() || interaction_->locked() || interaction_->object())
+                    throw std::invalid_argument("Idle hands require resting arms and an empty scene");
+                auto& hand=interaction_->hand;
+                if (!hand.ready(ArmSide::Left) || !hand.ready(ArmSide::Right))
+                    throw std::invalid_argument("Hand trajectory active; wait for rest");
+                for (const auto arm:{ArmSide::Left,ArmSide::Right}) {
+                    if (value.open) hand.set(arm,0,true,HandGrip::Sphere);
+                    else hand.fadeOut(arm);
+                }
             }
             else if constexpr (std::is_same_v<T,SetSupportSurface> || std::is_same_v<T,EnableSupport> || std::is_same_v<T,AlignSupport> ||
                 std::is_same_v<T,MoveSupportRoot> || std::is_same_v<T,CancelSupportMotion> || std::is_same_v<T,DisableSupport>)
