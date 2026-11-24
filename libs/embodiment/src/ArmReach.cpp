@@ -30,7 +30,8 @@ namespace julia::embodiment
                 !std::isfinite(t.angularTolerance) || t.angularTolerance<.001745329f || t.angularTolerance>.17453293f)
                 throw std::invalid_argument("Invalid reach task/angular tolerance (0.1 to 10 degrees required)");
             (void)normalizedReachOrientation(t.orientation);
-            const bool effector = s == 0 ? t.effector == EffectorId::LeftWrist || t.effector == EffectorId::LeftPalm || t.effector == EffectorId::LeftGrip :
+            const bool effector = s == 0 ? t.effector == EffectorId::LeftWrist || t.effector == EffectorId::LeftPalm ||
+                t.effector == EffectorId::LeftGrip || t.effector == EffectorId::LeftSphereGrip :
                 t.effector == EffectorId::RightWrist || t.effector == EffectorId::RightPalm || t.effector == EffectorId::RightGrip;
             const auto weight=[](double v) { return std::isfinite(v) && v>=0 && v<=1000; };
             if ((t.selection!=RouteSelection::FirstValid && t.selection!=RouteSelection::Ranked) ||

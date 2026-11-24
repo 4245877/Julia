@@ -46,11 +46,11 @@ namespace julia::embodiment
             auto handFrame=frame(wrist);
             const auto distal=glm::normalize(glm::vec3{0.5904711485f,1.9114799499f,0.3594261408f}-wrist);
             const auto across=glm::vec3{0.5705143213f,1.9227365255f,0.3914998770f}-glm::vec3{0.6101165414f,1.9113278389f,0.2895886898f};
-            const auto palm=side*glm::normalize(glm::cross(across,distal));
-            handFrame[0]=glm::vec4{glm::cross(distal,palm),0};
-            handFrame[1]=glm::vec4{distal,0}; handFrame[2]=glm::vec4{palm,0};
+            const auto dorsal=side*glm::normalize(glm::cross(across,distal));
+            handFrame[0]=glm::vec4{glm::cross(distal,dorsal),0};
+            handFrame[1]=glm::vec4{distal,0}; handFrame[2]=glm::vec4{dorsal,0};
             add(JointId::LeftWrist,SegmentId::LeftHand,"LeftWrist",{"hand.l_0160","forearm_stretch.l_0159"},handFrame,{"c_middle1.l_0170","hand.l_0160"},
-                {dof("palm_flexion",{1,0,0},-25,30,"fingers towards calibrated palm +Z"),
+                {dof("palm_flexion",{1,0,0},-25,30,"fingers towards the back of the hand"),
                   dof("radial_deviation",{0,0,-side},-15,15,"fingers towards thumb side")});
             p.followers.push_back({JointId::LeftShoulder,{"arm_twist.l_0177","arm_stretch.l_0158"},{1,1,.5f}});
             p.followers.push_back({JointId::LeftElbow,{"forearm_twist.l_0176","forearm_stretch.l_0159"},{1,1,1}});
@@ -59,8 +59,16 @@ namespace julia::embodiment
             palmFrame[3]=glm::vec4{point(wrist+(glm::vec3{0.5904711485f,1.9114799499f,0.3594261408f}-wrist)*.55f),1};
             p.effectors.push_back({EffectorId::LeftPalm,"LeftPalm",{"hand.l_0160","forearm_stretch.l_0159"},palmFrame});
             auto gripFrame=palmFrame;
-            gripFrame[3]+=glm::vec4{palm*.025f,0}; // Engineering grasp centre, 25 mm off palm.
+            gripFrame[3]+=glm::vec4{dorsal*.025f,0}; // Legacy grip used by the cube.
             p.effectors.push_back({EffectorId::LeftGrip,"LeftGrip",{"hand.l_0160","forearm_stretch.l_0159"},gripFrame});
+            // Centre of the 44 mm sphere at left pad contact, in wrist coordinates.
+            // +Y is distal, +Z faces the palm, and +X completes the proper frame.
+            auto sphereFrame=handFrame;
+            sphereFrame[0]=-handFrame[0];
+            sphereFrame[2]=-handFrame[2];
+            sphereFrame[3]=handFrame*glm::vec4{.00019f,.10116f,-.04185f,1};
+            p.effectors.push_back({EffectorId::LeftSphereGrip,"LeftSphereGrip",
+                {"hand.l_0160","forearm_stretch.l_0159"},sphereFrame});
         }
         {
             constexpr float side=-1.0f;

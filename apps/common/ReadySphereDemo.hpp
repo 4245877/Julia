@@ -6,11 +6,11 @@
 
 namespace julia::app
 {
-    inline const auto readySphereLocalGrip=sphereLocalGrip(embodiment::ArmSide::Left);
+    inline constexpr embodiment::RigidPose readySphereLocalGrip{};
     inline embodiment::RigidPose readySpherePose(const embodiment::BodyInstance& body, unsigned sample)
     {
         using namespace embodiment;
-        return interactionSpherePose(body.control()->binding(),ArmSide::Left,sample,body.snapshot().root);
+        return interactionDemoPose(body.control()->binding(),ArmSide::Left,sample,body.snapshot().root,SphereGrasp::LeftPalmar);
     }
 
     class ReadySphereDemo
@@ -74,13 +74,12 @@ namespace julia::app
                 break;
             case Stage::Ready:
                 if (s.idle.phase==IdlePhase::Ready && s.support.phase==SupportPhase::Holding)
-                    send(body,CreateInteractionSphere{1,readySpherePose(body,0),.022f,readySphereLocalGrip},Stage::Created);
+                    send(body,CreateInteractionSphere{1,readySpherePose(body,0),.022f,readySphereLocalGrip,SphereGrasp::LeftPalmar},Stage::Created);
                 break;
             case Stage::Created:
                 if (!s.object || s.object->state!=ObjectState::Free) { fail("Expected a Free sphere"); break; }
                 handle_=s.object->handle;
-                send(body,StartReach{preparationPregrip(arm,
-                    rigidPose(rigidMatrix(s.object->worldPose)*rigidMatrix(s.object->localGrip)))},Stage::Reached);
+                send(body,StartReach{graspPregripTarget(arm,*s.object)},Stage::Reached);
                 break;
             case Stage::Reached: {
                 const auto& r=s.reaches[0];

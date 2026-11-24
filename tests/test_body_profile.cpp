@@ -123,7 +123,7 @@ int main(int argc,char** argv)
         control.setEnabled(true); player.update(0);
         JULIA_CHECK(std::equal(bindLocals.begin(),bindLocals.end(),player.localTransforms().begin()));
         JULIA_CHECK(std::equal(bindPalette.begin(),bindPalette.end(),player.palette().begin()));
-        JULIA_CHECK(profile.joints.size()==20 && profile.effectors.size()==8 && profile.followers.size()==8);
+        JULIA_CHECK(profile.joints.size()==20 && profile.effectors.size()==9 && profile.followers.size()==8);
         std::ofstream points(output/"checkpoints.csv"); points << "name,x_m,y_m,z_m,det\n" << std::setprecision(9);
         for (const auto& e:profile.effectors)
         {
@@ -137,6 +137,9 @@ int main(int argc,char** argv)
         JULIA_CHECK(glm::distance(glm::vec3{binding.effectorFrame(EffectorId::RightWrist,player.globalTransforms())[3]},glm::vec3{-.2788304f,.8676412f,-.0648794f})<2e-5f);
         JULIA_CHECK(glm::distance(glm::vec3{binding.effectorFrame(EffectorId::LeftPalm,player.globalTransforms())[2]},glm::vec3{.8044152f,.5377885f,.2523881f})<2e-5f);
         JULIA_CHECK(glm::distance(glm::vec3{binding.effectorFrame(EffectorId::RightPalm,player.globalTransforms())[2]},glm::vec3{-.7352896f,.4246825f,.5281988f})<2e-5f);
+        const auto leftWrist=binding.effectorFrame(EffectorId::LeftWrist,player.globalTransforms());
+        const auto leftSphere=glm::inverse(leftWrist)*binding.effectorFrame(EffectorId::LeftSphereGrip,player.globalTransforms());
+        JULIA_CHECK(glm::dot(glm::vec3{leftSphere[2]},glm::vec3{0,0,-1})>.9999f && leftSphere[3].z<-.025f);
         JULIA_CHECK(glm::distance(glm::vec3{binding.effectorFrame(EffectorId::LeftSole,player.globalTransforms())[2]},glm::vec3{.3924938f,0,.9197546f})<2e-5f);
         JULIA_CHECK(glm::distance(glm::vec3{binding.effectorFrame(EffectorId::RightSole,player.globalTransforms())[2]},glm::vec3{-.1621108f,0,.9867726f})<2e-5f);
         for (const auto side:{0,1})

@@ -1,5 +1,6 @@
 #include "../apps/common/ReadySphereDemo.hpp"
 #include "julia/model_import/ModelImporter.hpp"
+#include "hand_pose_audit.hpp"
 #include "hand_skin_audit.hpp"
 #include <chrono>
 #include <filesystem>
@@ -36,7 +37,7 @@ namespace
 
     glm::mat4 rootMatrix(const RootPose& r) { return rigidMatrix({r.position,r.rotation}); }
     template<class PoseState> glm::mat4 grip(const BodyInstance& b,const PoseState& s)
-    { return rootMatrix(s.root)*b.control()->binding().effectorFrame(EffectorId::LeftGrip,s.pose.globals); }
+    { return rootMatrix(s.root)*b.control()->binding().effectorFrame(s.object->gripEffector(arm),s.pose.globals); }
 
     float rotationError(glm::quat a,glm::quat b)
     { return static_cast<float>(glm::length(orientationResidual(a,b))); }
@@ -53,7 +54,7 @@ namespace
     {
         const auto& o=*b.snapshot().object;
         const auto handle=o.handle;
-        const auto source=command(b,StartReach{app::preparationPregrip(arm,rigidPose(rigidMatrix(o.worldPose)*rigidMatrix(o.localGrip)))});
+        const auto source=command(b,StartReach{graspPregripTarget(arm,o)});
         until(b,[](const auto& s) { return s.reaches[0].state==ReachState::Succeeded; });
         command(b,PrepareGrasp{handle,arm,source,b.snapshot().epoch});
         until(b,[](const auto& s) { return s.interaction.phase==InteractionPhase::ReadyToGrasp; });
@@ -63,7 +64,7 @@ namespace
     }
 
     void create(BodyInstance& b)
-    { command(b,CreateInteractionSphere{1,app::readySpherePose(b,0),.022f,app::readySphereLocalGrip}); }
+    { command(b,CreateInteractionSphere{1,app::readySpherePose(b,0),.022f,app::readySphereLocalGrip,SphereGrasp::LeftPalmar}); }
 
     void grasp(BodyInstance& b)
     {
@@ -95,7 +96,7 @@ namespace
         std::array<float,2> footError{},footAngle{},gap{};
         float jump=0,jumpAngle=0,attachmentError=0,attachmentAngle=0,resumeStep=0;
         unsigned attached=0,released=0,resumed=0;
-        std::vector<double> planning,transportPlanning,transportMotion;
+        std::vector<double> planning,fingerPlanning,transportPlanning,transportMotion;
 
         void checkFeet(const SupportObservation& s)
         {
@@ -135,14 +136,25 @@ namespace
     {
         app::ReadySphereDemo demo;
         Measurements m;
+        HandLayer hand(b.control()->binding());
         hand_skin_audit::Surface skin(b.asset());
+        hand_pose_audit::Skin self(b.asset());
         float minimumGap=std::numeric_limits<float>::infinity();
-        unsigned skinSamples=0,skinIntersections=0;
-        const auto measureSkin=[&](const auto& frame) {
+        unsigned skinSamples=0,skinIntersections=0,selfSamples=0,selfPairs=0,folds=0,staggered=0;
+        double fingerSpeed=0,fingerAcceleration=0;
+        std::array<glm::dvec3,15> fingerVelocity{};
+        const auto measureSkin=[&](const auto& frame,bool selfCheck) {
             const auto sample=skin.measure(b,frame);
             ++skinSamples;
             if (sample.intersects) ++skinIntersections;
             minimumGap=std::min(minimumGap,std::ranges::min(sample.vertexGaps));
+            if (selfCheck) {
+                self.pose(frame.pose.palette);
+                const auto measured=self.measure()[0];
+                selfPairs=std::max(selfPairs,measured.interRegion());
+                folds=std::max(folds,measured.fingerFolds);
+                ++selfSamples;
+            }
             return sample.vertexGaps;
         };
         glm::vec3 initialSphere{0};
@@ -153,6 +165,16 @@ namespace
             b.step();
             const auto elapsed=std::chrono::duration<double,std::micro>(std::chrono::steady_clock::now()-start).count();
             const auto& s=b.snapshot(); const auto& p=b.previousSnapshot();
+            for (const auto& j:hand.joints()) if (j.side==0) {
+                const auto rotation=[&](const BodySnapshot& f) {
+                    return glm::normalize(glm::quat_cast(glm::mat3{glm::inverse(j.before)*f.pose.locals[j.node]*glm::inverse(j.after)}));
+                };
+                const auto v=orientationResidual(rotation(s),rotation(p))/runtime::BodyStepSeconds;
+                auto& before=fingerVelocity[j.finger*3+j.phalanx];
+                fingerSpeed=std::max(fingerSpeed,glm::length(v));
+                fingerAcceleration=std::max(fingerAcceleration,glm::length(v-before)/runtime::BodyStepSeconds);
+                before=v;
+            }
             if (s.tick==1) for (std::size_t k=0;k<2;++k) m.desired[k]=s.support.anchors[k].desiredWorld;
             m.checkFeet(s.support);
             if (s.idle.phase==IdlePhase::Ready) {
@@ -170,19 +192,42 @@ namespace
             }
             const bool transport=s.interaction.phase==InteractionPhase::Transport || p.interaction.phase==InteractionPhase::Transport;
             const bool internalPlanning=s.preparationReach.state==ReachState::Planning || p.preparationReach.state==ReachState::Planning;
+            if (s.interaction.phase==InteractionPhase::Closing && !s.hands[0].articulated)
+                m.fingerPlanning.push_back(elapsed);
             if (transport) (internalPlanning ? m.transportPlanning:m.transportMotion).push_back(elapsed);
             else if (internalPlanning || s.reaches[0].state==ReachState::Planning || p.reaches[0].state==ReachState::Planning)
                 m.planning.push_back(elapsed);
 
             m.checkAttachment(b,s);
+            if (s.interaction.phase==InteractionPhase::Closing && s.hands[0].articulated && p.hands[0].articulated) {
+                const auto& current=s.hands[0].articulated->fingers;
+                const auto& previous=p.hands[0].articulated->fingers;
+                if (s.hands[0].closure>.9f && current[0].pipFlexion==previous[0].pipFlexion &&
+                    current[2].pipFlexion>previous[2].pipFlexion) ++staggered;
+            }
+            const bool selfCheck=demo.completed()==0 && (s.tick%12==0 || s.interaction.phase!=p.interaction.phase);
             if (s.object && s.hands[0].enabled) {
-                const auto gaps=measureSkin(s);
+                const auto gaps=measureSkin(s,selfCheck);
                 if (p.object && p.object->state==ObjectState::Free && s.object->state==ObjectState::Attached) {
                     report << "grasp_tick=" << s.tick << " skin_gaps_m_index_middle_ring_pinky_thumb_palm=";
                     for (float gap:gaps) report << ' ' << gap;
                     report << '\n';
-                    require(*std::max_element(gaps.begin(),gaps.end()-1)<.006f,"Skin pads did not approach the sphere");
+                    const auto palm=rootMatrix(s.root)*b.control()->binding().effectorFrame(EffectorId::LeftPalm,s.pose.globals);
+                    const auto center=glm::vec3{glm::inverse(palm)*glm::vec4{s.object->worldPose.position,1}};
+                    require(center.z<-.025f && s.interaction.sphereContacts && s.interaction.sphereContacts->supporting,
+                        "Sphere attached without opposed palmar contacts");
+                    const auto& contact=*s.interaction.sphereContacts;
+                    report << "center_in_palm_m=" << center.x << ',' << center.y << ',' << center.z
+                        << " opposition_cos=" << contact.thumbOpposition << " pad_gap_m/facing_cos=";
+                    for (const auto& pad:contact.pads) report << ' ' << pad.gap << '/' << pad.facing;
+                    report << '\n';
+                    for (unsigned digit:{0u,1u,2u,4u})
+                        require(contact.pads[digit].supported && gaps[digit]<.0013f,"Supporting skin pad has a gap or faces away");
+                    require(!contact.pads[3].supported,"Little finger unexpectedly reported load-bearing contact");
                 }
+                if (s.interaction.phase==InteractionPhase::ReleaseOpening && s.object->state==ObjectState::Attached)
+                    require(s.interaction.sphereContacts && s.interaction.sphereContacts->supporting,
+                        "Sphere still attached after loss of support");
             }
             if (s.object && p.object && s.object->handle==p.object->handle) {
                 const auto& a=*s.object; const auto& before=*p.object;
@@ -194,6 +239,16 @@ namespace
                         ++m.released;
                         require(a.owner==0 && s.armOwners[0]==ArmOwner::HandInteraction &&
                             glm::length(a.worldPose.position-initialSphere)>.08f,"Sphere was not transferred and released at target");
+                        require(s.interaction.phase==InteractionPhase::ReleaseOpening && s.hands[0].closure>.5f &&
+                            p.interaction.sphereContacts && p.interaction.sphereContacts->supporting &&
+                            s.interaction.sphereContacts && !s.interaction.sphereContacts->supporting,
+                            "Sphere release did not follow the loss of opposed contact");
+                        const auto collider=a.collider().id;
+                        require(std::ranges::find(s.collisionScene->objects(),collider,&world::SceneObject::id)!=s.collisionScene->objects().end(),
+                            "Free sphere collider missing after detach");
+                        report << "detach_tick=" << s.tick << " closure=" << s.hands[0].closure << " gap_m=";
+                        for (const auto& pad:s.interaction.sphereContacts->pads) report << ' ' << pad.gap;
+                        report << '\n';
                     }
                 } else if (a.state==ObjectState::Attached) require(a.effectorFromObject==before.effectorFromObject,"Attachment frame drifted");
                 else require(a.worldPose.position==before.worldPose.position && a.worldPose.rotation==before.worldPose.rotation,"Free sphere moved");
@@ -212,7 +267,7 @@ namespace
                 const auto d=b.display(alpha);
                 m.checkFeet(d.support);
                 m.checkAttachment(b,d);
-                if (d.object && d.hands[0].enabled) measureSkin(d);
+                if (d.object && d.hands[0].enabled) measureSkin(d,selfCheck);
             }
         }
         require(demo.done(),"Shared replay failed: "+demo.reason());
@@ -226,11 +281,57 @@ namespace
             << " max_attachment_error_m=" << m.attachmentError << " max_attachment_error_rad=" << m.attachmentAngle
             << " first_resume_step_rad=" << m.resumeStep << '\n'
             << "min_sampled_skin_vertex_gap_m=" << minimumGap << " skin_triangle_samples=" << skinSamples
-            << " intersecting_samples=" << skinIntersections << '\n';
+            << " intersecting_samples=" << skinIntersections << '\n'
+            << "self_samples=" << selfSamples << " max_inter_region_pairs=" << selfPairs << " max_folds=" << folds << '\n'
+            << "finger_speed_rad_s=" << fingerSpeed << " finger_acceleration_rad_s2=" << fingerAcceleration
+            << " index_still_ring_closing_samples=" << staggered << '\n';
         require(skinSamples>0 && minimumGap>0 && skinIntersections==0,"Visible hand skin entered the sphere");
+        require(selfSamples>0 && selfPairs==0 && folds==0,"Visible hand skin intersects itself");
+        require(fingerSpeed<3.2 && fingerAcceleration<13,"Finger movement exceeded the anatomical stroke bounds");
+        require(staggered>0,"Supporting digits did not stop independently");
         reportTiming(report,"reach_and_retreat_planning",m.planning);
+        reportTiming(report,"finger_planning",m.fingerPlanning);
         reportTiming(report,"transport_planning",m.transportPlanning);
         reportTiming(report,"transport_motion",m.transportMotion);
+    }
+
+    void missingContacts(BodyInstance& b,std::ostream& report)
+    {
+        startReady(b);
+        const auto target=app::readySpherePose(b,0);
+        const RigidPose local{{0,0,-.017f}};
+        const auto pose=rigidPose(rigidMatrix(target)*glm::inverse(rigidMatrix(local)));
+        command(b,CreateInteractionSphere{1,pose,.022f,local,SphereGrasp::LeftPalmar});
+        command(b,prepare(b));
+        until(b,[](const auto& s) { return s.interaction.phase==InteractionPhase::PreparationBlocked; });
+        const auto& s=b.snapshot();
+        require(s.interaction.reason.starts_with("Cannot form opposed sphere pad contacts") &&
+            s.hands[0].closure==0 && s.object && s.object->state==ObjectState::Free && !s.object->owner &&
+            s.armOwners[0]==ArmOwner::GraspPreparation && s.object->worldPose.position==pose.position,
+            "Missing contacts changed the pose or attached the sphere");
+        command(b,CancelInteraction{s.interaction.action});
+        until(b,[](const auto& f) { return f.interaction.phase==InteractionPhase::Cancelled; });
+        resume(b);
+        report << "out_of_pad_range=PreparationBlocked sphere=Free cancel_then_idle=PASS\n";
+
+        command(b,SetIdleStance{true});
+        until(b,[](const auto& f) { return f.idle.phase==IdlePhase::Ready; });
+        create(b);
+        const auto action=command(b,prepare(b));
+        require(b.snapshot().interaction.phase==InteractionPhase::Closing && b.snapshot().hands[0].closure==0,
+            "Hand moved before its contact plan was ready");
+        command(b,CancelInteraction{action});
+        until(b,[](const auto& f) {
+            require(f.object->state==ObjectState::Free && !f.hands[0].articulated,"Cancelled contact plan reached the hand");
+            return f.interaction.phase==InteractionPhase::Cancelled;
+        });
+        resume(b);
+        command(b,SetIdleStance{true});
+        until(b,[](const auto& f) { return f.idle.phase==IdlePhase::Ready; });
+        grasp(b);
+        release(b);
+        resume(b);
+        report << "cancel_during_contact_planning=Cancelled sphere=Free retry_grasp=PASS\n";
     }
 
     void cancellations(BodyInstance& b,std::ostream& report)
@@ -470,7 +571,7 @@ namespace
         grasp(b);
         const auto object=*b.snapshot().object;
         const ArmCoordinates q{1.1f,.65f,0,.15f,.50f,.20f};
-        const auto target=rigidPose(effectorAt(b,q,EffectorId::LeftGrip)*object.effectorFromObject);
+        const auto target=rigidPose(effectorAt(b,q,object.gripEffector(arm))*object.effectorFromObject);
         command(b,MoveHeldObject{object.handle,target});
         until(b,[](const auto& s) { return s.interaction.result=="Moved"; });
         const auto held=b.snapshot().object->worldPose;
@@ -486,7 +587,7 @@ namespace
         command(b,SetIdleStance{false},BodyCommandStatus::Rejected);
         // Explicit recovery from a blocked retreat removes the Free object before moving the arm again.
         command(b,DeleteInteractionObject{object.handle});
-        auto away=app::preparationPregrip(arm,app::interactionDemoPose(b.control()->binding(),arm,3,b.snapshot().root));
+        auto away=graspPregripTarget(arm,{.worldPose=app::readySpherePose(b,3),.sphereGrasp=SphereGrasp::LeftPalmar});
         command(b,StartReach{away});
         until(b,[](const auto& settled) { return settled.reaches[0].state==ReachState::Succeeded; });
         command(b,SetIdleStance{false});
@@ -511,10 +612,12 @@ int main(int argc,char** argv)
         BodyInstance replay{1,asset,&profile}, cancel{2,asset,&profile}, sweep{3,asset,&profile};
         BodyInstance blockedMove{4,asset,&profile}, blockedExit{5,asset,&profile};
         BodyInstance demoCancel{6,asset,&profile};
+        BodyInstance unreachablePads{7,asset,&profile};
         cycles(replay,report);
         cancellations(cancel,report);
         demoRecovery(demoCancel,report);
         staleGeometry(cancel,report);
+        missingContacts(unreachablePads,report);
         sweptCollision(sweep,report);
         blockedTransfer(blockedMove,report);
         blockedRetreat(blockedExit,report);

@@ -7,7 +7,8 @@
 namespace julia::app
 {
     inline embodiment::RigidPose interactionDemoPose(const embodiment::BodyRigBinding& binding,
-        embodiment::ArmSide arm,unsigned sample=0,const embodiment::RootPose& root={})
+        embodiment::ArmSide arm,unsigned sample=0,const embodiment::RootPose& root={},
+        embodiment::SphereGrasp sphereGrasp=embodiment::SphereGrasp::Legacy)
     {
         using namespace embodiment;
         DirectBodyControl source(binding); source.setEnabled(true);
@@ -19,8 +20,9 @@ namespace julia::app
         source.setCoordinate(left ? JointId::LeftWrist:JointId::RightWrist,0,.12f);
         animation::Pose p(binding.asset().skeleton()); source.apply(p.locals);
         animation::computeGlobalTransforms(binding.asset().skeleton(),p.locals,p.globals);
-        return rigidPose(rigidMatrix({root.position,root.rotation})*
-            binding.effectorFrame(left ? EffectorId::LeftGrip:EffectorId::RightGrip,p.globals));
+        const auto effector=left && sphereGrasp==SphereGrasp::LeftPalmar ? EffectorId::LeftSphereGrip:
+            left ? EffectorId::LeftGrip:EffectorId::RightGrip;
+        return rigidPose(rigidMatrix({root.position,root.rotation})*binding.effectorFrame(effector,p.globals));
     }
 
     inline embodiment::RigidPose sphereLocalGrip(embodiment::ArmSide arm)

@@ -18,7 +18,7 @@ namespace julia::embodiment
         RightClavicle, RightUpperArm, RightForearm, RightHand,
         LeftThigh, LeftShank, LeftFoot, RightThigh, RightShank, RightFoot };
     enum class EffectorId { LeftWrist, LeftPalm, LeftGrip, LeftSole,
-        RightWrist, RightPalm, RightGrip, RightSole };
+        RightWrist, RightPalm, RightGrip, RightSole, LeftSphereGrip };
 
     struct NodeLink { std::string name, parentName; };
     struct JointCoordinate

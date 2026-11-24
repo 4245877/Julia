@@ -1,4 +1,4 @@
-#include "julia/embodiment/HandInteraction.hpp"
+#include "HandSphereContact.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 #include <algorithm>
 #include <cmath>
@@ -58,9 +58,38 @@ namespace julia::embodiment
             if (glm::length(p.position)>100) throw std::invalid_argument("Object pose outside 100 metre range");
             p.rotation=normalizedReachOrientation(p.rotation); return p;
         }
+        float ease(float t) { return t*t*t*(10+t*(-15+6*t)); }
+        FingerAngles mixAngles(const FingerAngles& a,const FingerAngles& b,float t)
+        {
+            return {glm::mix(a.mcpFlexion,b.mcpFlexion,t),glm::mix(a.mcpSpread,b.mcpSpread,t),
+                glm::mix(a.pipFlexion,b.pipFlexion,t),glm::mix(a.dipFlexion,b.dipFlexion,t)};
+        }
+        ThumbAngles mixAngles(const ThumbAngles& a,const ThumbAngles& b,float t)
+        {
+            return {glm::mix(a.palmarAbduction,b.palmarAbduction,t),glm::mix(a.radialAbduction,b.radialAbduction,t),
+                glm::mix(a.pronation,b.pronation,t),glm::mix(a.mcpFlexion,b.mcpFlexion,t),glm::mix(a.ipFlexion,b.ipFlexion,t)};
+        }
+        RigidPose offsetFromGrip(const glm::mat4& frame,SphereGrasp grasp)
+        {
+            const float offset=grasp==SphereGrasp::LeftPalmar ? .060f:.075f;
+            return rigidPose(frame*glm::translate(glm::mat4{1},glm::vec3{0,0,-offset}));
+        }
     }
     glm::mat4 rigidMatrix(const RigidPose& p) { return glm::translate(glm::mat4{1},p.position)*glm::mat4_cast(p.rotation); }
     RigidPose rigidPose(const glm::mat4& m) { return {glm::vec3{m[3]},normalizedReachOrientation(glm::quat_cast(glm::mat3{m}))}; }
+    EffectorId InteractiveObject::gripEffector(ArmSide side) const
+    {
+        return side==ArmSide::Left && sphereGrasp==SphereGrasp::LeftPalmar ? EffectorId::LeftSphereGrip:effector(side);
+    }
+    ReachTarget graspPregripTarget(ArmSide arm,const InteractiveObject& object)
+    {
+        const auto p=offsetFromGrip(rigidMatrix(object.worldPose)*rigidMatrix(object.localGrip),object.sphereGrasp);
+        ReachTarget target;
+        target.arm=arm; target.effector=object.gripEffector(arm); target.space=TargetSpace::World;
+        target.task=ReachTask::PositionAndOrientation; target.position=p.position; target.orientation=p.rotation;
+        target.strategy=MovementStrategy::AllowDetour;
+        return target;
+    }
     world::SceneObject InteractiveObject::collider() const
     {
         world::SceneObject collider{objectNamespace|handle.id,worldPose.position,glm::normalize(glm::dquat{worldPose.rotation}),{},{}};
@@ -114,6 +143,22 @@ namespace julia::embodiment
             FingerAngles{r(25),r(-10),r(32),r(14)},FingerAngles{r(26),r(-16),r(32),r(14)}};
         p.thumb={r(32),r(14),r(51),r(0),r(0)};
         return p;
+    }
+    HandPose mixHandPose(const HandPose& from,const HandPose& to,float weight)
+    {
+        HandPose pose;
+        for (std::size_t d=0;d<pose.fingers.size();++d) pose.fingers[d]=mixAngles(from.fingers[d],to.fingers[d],weight);
+        pose.thumb=mixAngles(from.thumb,to.thumb,weight);
+        return pose;
+    }
+    HandPose SphereHandStroke::sample(float progress) const
+    {
+        const auto open=openHandPose();
+        const auto weight=[&](std::size_t d) { return ease(std::clamp(progress/stopTime[d],0.f,1.f)); };
+        HandPose pose;
+        for (std::size_t d=0;d<pose.fingers.size();++d) pose.fingers[d]=mixAngles(open.fingers[d],closed.fingers[d],weight(d));
+        pose.thumb=mixAngles(open.thumb,closed.thumb,weight(4));
+        return pose;
     }
     HandLayer::HandLayer(const BodyRigBinding& binding)
     {
@@ -244,6 +289,7 @@ namespace julia::embodiment
         const auto s=index(arm);
         if (!std::isfinite(closure) || closure<0 || closure>1) throw std::invalid_argument("Hand closure outside [0,1]");
         if (!ready(arm)) throw std::invalid_argument("Hand trajectory active; wait for rest");
+        if (s==0 && (grip || !enabled)) { sphereStroke_.reset(); states_[s].articulated.reset(); }
         if (!enabled) { states_[s]=HandState{.relaxed=states_[s].relaxed}; from_[s]=goal_[s]=0; elapsed_[s]=duration_[s]=0; return; }
         if (grip) states_[s].grip=*grip;
         blendFrom_[s]=states_[s].blend; blendGoal_[s]=1;
@@ -251,6 +297,13 @@ namespace julia::embodiment
         // Quintic: |dc/dt| <= 1.875/s, |d2c/dt2| <= 5.78/s2 for a full stroke.
         // One second for every stroke is conservative even for partial travel.
         duration_[s]=from_[s]==closure && states_[s].blend==1 ? 0:120;
+    }
+    void HandLayer::closeAroundSphere(SphereHandStroke stroke)
+    {
+        if (!states_[0].enabled || states_[0].closure!=0 || states_[0].blend!=1)
+            throw std::logic_error("Sphere closing requires the calibrated open hand");
+        set(ArmSide::Left,1);
+        sphereStroke_=std::move(stroke);
     }
     void HandLayer::fadeOut(ArmSide arm)
     {
@@ -270,9 +323,13 @@ namespace julia::embodiment
             states_[s].closure=static_cast<float>(from_[s]+(goal_[s]-from_[s])*weight);
             states_[s].blend=static_cast<float>(blendFrom_[s]+(blendGoal_[s]-blendFrom_[s])*weight);
             states_[s].velocity=(states_[s].closure-old)*120;
+            if (s==0 && sphereStroke_) states_[s].articulated=sphereStroke_->sample(glm::mix(from_[s],goal_[s],static_cast<float>(t)));
         } else {
             states_[s].velocity=0;
-            if (blendGoal_[s]==0) states_[s]=HandState{.relaxed=states_[s].relaxed};
+            if (blendGoal_[s]==0) {
+                states_[s]=HandState{.relaxed=states_[s].relaxed};
+                if (s==0) sphereStroke_.reset();
+            }
         }
     }
     bool HandLayer::ready(ArmSide arm) const
@@ -282,11 +339,18 @@ namespace julia::embodiment
         if (locals.size()!=nodeCount_) throw std::invalid_argument("Hand layer local buffer size mismatch");
         for (const auto& s:states) if (!std::isfinite(s.closure) || !std::isfinite(s.blend) ||
             s.closure<0 || s.closure>1 || s.blend<0 || s.blend>1) throw std::invalid_argument("Invalid hand layer state");
+        std::optional<std::array<glm::quat,15>> articulated;
+        if (states[0].articulated) articulated=rotations(0,*states[0].articulated);
         for (const auto& j:joints_) {
             const auto& s=states[j.side];
             const auto rest=s.relaxed ? j.rest:glm::quat{1,0,0,0};
             if (!s.enabled || s.blend<=0) {
                 if (s.relaxed) locals[j.node]=j.before*glm::mat4_cast(rest)*j.after;
+                continue;
+            }
+            if (j.side==0 && articulated) {
+                const auto q=(*articulated)[j.finger*3+j.phalanx];
+                locals[j.node]=j.before*glm::mat4_cast(glm::slerp(rest,q,s.blend))*j.after;
                 continue;
             }
             const auto closed=s.grip==HandGrip::Cube ? j.cubeClosed:j.closed;
@@ -301,6 +365,7 @@ namespace julia::embodiment
     }
     HandInteraction::HandInteraction(std::uint64_t owner,DirectBodyControl& control,ArmReach& reach)
         :hand(control.binding()),owner_(owner),control_(control),reach_(reach) {}
+    HandInteraction::~HandInteraction()=default;
     bool HandInteraction::locked() const
     {
         if (object_ && object_->state==ObjectState::Attached) return true;
@@ -314,6 +379,8 @@ namespace julia::embodiment
     void HandInteraction::phase(InteractionPhase p,bool geometry)
     {
         observation_.phase=p;
+        if (p!=InteractionPhase::Closing && sphereContact_) sphereContact_->cancelPlan();
+        if (p==InteractionPhase::Retreat) observation_.sphereContacts.reset();
         if (geometry) {
             contactAllowed_=p==InteractionPhase::Align || p==InteractionPhase::Closing || p==InteractionPhase::Holding ||
                 p==InteractionPhase::Transport || p==InteractionPhase::ReleaseOpening || p==InteractionPhase::Retreat || p==InteractionPhase::ReadyToGrasp;
@@ -323,17 +390,19 @@ namespace julia::embodiment
     }
     void HandInteraction::create(const CreateInteractionSphere& c,const world::CollisionScene* scene,double minimumGap)
     {
-        createObject(c.id,c.pose,world::Sphere{c.radius},c.localGrip,scene,minimumGap);
+        createObject(c.id,c.pose,world::Sphere{c.radius},c.localGrip,c.grasp,scene,minimumGap);
     }
     void HandInteraction::create(const CreateInteractionBox& c,const world::CollisionScene* scene,double minimumGap)
     {
-        createObject(c.id,c.pose,c.box,interactionCubeLocalGrip,scene,minimumGap);
+        createObject(c.id,c.pose,c.box,interactionCubeLocalGrip,SphereGrasp::Legacy,scene,minimumGap);
     }
     void HandInteraction::createObject(std::uint64_t id,RigidPose pose,InteractionShape shape,RigidPose localGrip,
-        const world::CollisionScene* scene,double minimumGap)
+        SphereGrasp sphereGrasp,const world::CollisionScene* scene,double minimumGap)
     {
         if (object_ || locked() || reach_.anyActive()) throw std::invalid_argument("One object only; creation requires idle body");
         if (!id || id>=objectNamespace) throw std::invalid_argument("Invalid interactive object ID");
+        if (sphereGrasp!=SphereGrasp::Legacy && sphereGrasp!=SphereGrasp::LeftPalmar)
+            throw std::invalid_argument("Invalid sphere grasp calibration");
         const auto p=checked(pose),g=checked(localGrip);
         if (const auto* box=std::get_if<world::Box>(&shape)) {
             if (box->halfExtent!=glm::dvec3{InteractionCubeHalfExtent})
@@ -345,12 +414,18 @@ namespace julia::embodiment
             if (glm::length(g.position)>radius) throw std::invalid_argument("Grip must lie inside the sphere");
         }
         if (generation_==std::numeric_limits<std::uint64_t>::max()) throw std::overflow_error("Object generations exhausted");
-        const InteractiveObject candidate{{id,generation_+1},p,shape,g};
+        const InteractiveObject candidate{.handle={id,generation_+1},.worldPose=p,.shape=shape,.localGrip=g,.sphereGrasp=sphereGrasp};
         if (scene) {
             const auto collider=candidate.collider();
             for (const auto& obstacle:scene->objects())
                 if (world::clearance(collider,obstacle).gap<=minimumGap)
                     throw std::invalid_argument("Object overlaps environment");
+        }
+        if (sphereGrasp==SphereGrasp::LeftPalmar && !sphereContact_) {
+            const auto& binding=control_.binding();
+            if (std::ranges::none_of(binding.profile().effectors,[](const auto& e) { return e.id==EffectorId::LeftSphereGrip; }))
+                throw std::invalid_argument("Left palmar grip frame unavailable");
+            sphereContact_=std::make_unique<HandSphereContact>(binding,hand);
         }
         object_=candidate; ++generation_;
         observation_={}; observation_.object=object_->handle; phase(InteractionPhase::Idle,true);
@@ -370,10 +445,11 @@ namespace julia::embodiment
     }
     void HandInteraction::startReach(const RigidPose& goal,const glm::mat4& root)
     {
-        ReachTarget t; t.arm=observation_.arm; t.effector=effector(t.arm); t.space=TargetSpace::World;
+        ReachTarget t; t.arm=observation_.arm; t.effector=object_->gripEffector(t.arm); t.space=TargetSpace::World;
         t.task=ReachTask::PositionAndOrientation; t.position=goal.position; t.orientation=goal.rotation;
         t.strategy=MovementStrategy::AllowDetour; t.detour.maxConfigurations=1;
-        if (observation_.phase==InteractionPhase::Align && std::holds_alternative<world::Box>(object_->shape)) {
+        if (observation_.phase==InteractionPhase::Align &&
+            (object_->sphereGrasp==SphereGrasp::LeftPalmar || std::holds_alternative<world::Box>(object_->shape))) {
             t.tolerance=.0007f;
             t.angularTolerance=glm::radians(.3f);
         }
@@ -392,7 +468,7 @@ namespace julia::embodiment
         observation_.phaseCheckMicroseconds=observation_.geometryCheck.microseconds;
         observation_.phaseCheckScratchBytes=observation_.geometryCheck.scratchBytes;
         grip_=rigidPose(rigidMatrix(object_->worldPose)*rigidMatrix(object_->localGrip));
-        pregrip_=rigidPose(rigidMatrix(grip_)*glm::translate(glm::mat4{1},glm::vec3{0,0,-.075f}));
+        pregrip_=offsetFromGrip(rigidMatrix(grip_),object_->sphereGrasp);
         cancelBeforeAttachment_=true; finishingPreparation_=false; handoffWait_=true;
         phase(InteractionPhase::Handoff,true);
     }
@@ -407,7 +483,8 @@ namespace julia::embodiment
         const auto& state=hand.states()[index(observation_.arm)];
         if (!hand.ready(observation_.arm) || !state.enabled || state.closure!=0 || state.blend!=1)
             throw std::invalid_argument("Confirmation requires a fully open, stationary hand");
-        hand.set(observation_.arm,1);
+        closingStarted_=object_->sphereGrasp!=SphereGrasp::LeftPalmar;
+        if (closingStarted_) hand.set(observation_.arm,1);
         observation_.action=action;
         observation_.result.clear(); observation_.reason.clear();
         phase(InteractionPhase::Closing); // Same envelope and allowed pair as ReadyToGrasp.
@@ -430,11 +507,13 @@ namespace julia::embodiment
         requireObject(c.object); (void)index(c.arm);
         if (c.arm!=ArmSide::Left && std::holds_alternative<world::Box>(object_->shape))
             throw std::invalid_argument("Cube grip is calibrated for the left hand");
+        if (c.arm!=ArmSide::Left && object_->sphereGrasp==SphereGrasp::LeftPalmar)
+            throw std::invalid_argument("Palmar sphere grip is calibrated for the left hand");
         if (!control_.enabled() || locked() || reach_.anyActive() || !hand.ready(ArmSide::Left) || !hand.ready(ArmSide::Right)) throw std::invalid_argument("Grasp requires idle direct body and hand");
         observation_={}; observation_.action=action; observation_.epoch=epoch; observation_.object=c.object; observation_.arm=c.arm;
         cancelBeforeAttachment_=false;
         grip_=rigidPose(rigidMatrix(object_->worldPose)*rigidMatrix(object_->localGrip));
-        pregrip_=rigidPose(rigidMatrix(grip_)*glm::translate(glm::mat4{1},glm::vec3{0,0,-.075f}));
+        pregrip_=offsetFromGrip(rigidMatrix(grip_),object_->sphereGrasp);
         phase(InteractionPhase::Opening,true);
         if (!restClear(collisionContext())) { fail("Opening envelope intersects scene/body/object"); return; }
         hand.set(c.arm,0,true,std::holds_alternative<world::Box>(object_->shape) ? HandGrip::Cube:HandGrip::Sphere);
@@ -508,7 +587,10 @@ namespace julia::embodiment
             c.contactHand=observation_.arm==ArmSide::Left ? 3u:6u; c.contactObject=objectNamespace|object_->handle.id;
         }
         if (object_->state==ObjectState::Attached)
-            c.carried=CarriedObject{objectNamespace|object_->handle.id,effector(object_->arm),object_->effectorFromObject,object_->shape};
+            c.carried=CarriedObject{objectNamespace|object_->handle.id,object_->gripEffector(object_->arm),
+                object_->effectorFromObject,object_->shape};
+        else if (c.contactObject && object_->sphereGrasp==SphereGrasp::LeftPalmar)
+            c.openHand=sphereContact_->openSurface();
         return c;
     }
     std::optional<world::SceneObject> HandInteraction::freeCollider() const
@@ -519,7 +601,11 @@ namespace julia::embodiment
     void HandInteraction::advance(std::span<const glm::mat4> globals,const glm::mat4& root)
     {
         if (!object_) return;
-        const auto s=index(observation_.arm); const auto f=root*control_.binding().effectorFrame(effector(observation_.arm),globals);
+        const auto s=index(observation_.arm);
+        const auto id=object_->gripEffector(observation_.arm);
+        const bool palmarSphere=id==EffectorId::LeftSphereGrip;
+        const auto& binding=control_.binding();
+        const auto f=root*binding.effectorFrame(id,globals);
         if (object_->state==ObjectState::Attached) object_->worldPose=rigidPose(f*object_->effectorFromObject);
         observation_.hold=object_->state==ObjectState::Attached ? HoldType::AssistedAttachment:HoldType::None;
         const auto goal=rigidMatrix(object_->worldPose)*rigidMatrix(object_->localGrip);
@@ -535,6 +621,15 @@ namespace julia::embodiment
                 else if (p!=InteractionPhase::PreparationBlocked && p!=InteractionPhase::Failed)
                     fail("Interaction support/object/frozen geometry changed");
                 return;
+            }
+            glm::vec3 sphereCenter{0};
+            float sphereRadius=0;
+            if (palmarSphere && (p==InteractionPhase::Closing || p==InteractionPhase::ReleaseOpening ||
+                (p==InteractionPhase::Align && r.state==ReachState::Succeeded))) {
+                const auto wrist=root*binding.jointFrame(JointId::LeftWrist,globals);
+                sphereCenter=glm::vec3{glm::inverse(wrist)*glm::vec4{object_->worldPose.position,1}};
+                sphereRadius=static_cast<float>(std::get<world::Sphere>(object_->shape).radius);
+                observation_.sphereContacts=sphereContact_->measure(globals,sphereCenter,sphereRadius,p==InteractionPhase::ReleaseOpening);
             }
             if (p==InteractionPhase::Handoff) {
                 if (handoffWait_) { handoffWait_=false; return; }
@@ -556,11 +651,22 @@ namespace julia::embodiment
                         { fail("ReadyToGrasp conditions not reached"); return; }
                         // Same geometry/contact policy as Align; no hidden context mutation.
                         observation_.result="ReadyToGrasp"; phase(InteractionPhase::ReadyToGrasp);
-                    } else { hand.set(observation_.arm,1); phase(InteractionPhase::Closing); }
+                    } else {
+                        closingStarted_=!palmarSphere;
+                        if (closingStarted_) hand.set(observation_.arm,1);
+                        phase(InteractionPhase::Closing);
+                    }
                 } else {
                     observation_.result="Moved"; phase(InteractionPhase::Holding);
                 }
             } else if (p==InteractionPhase::Closing && hand.ready(observation_.arm)) {
+                if (!closingStarted_) {
+                    if (const auto stroke=sphereContact_->advancePlan(sphereCenter,sphereRadius)) {
+                        hand.closeAroundSphere(*stroke);
+                        closingStarted_=true;
+                    }
+                    return;
+                }
                 // Timers/closure alone can NEVER attach. Recheck actual FK, settled reach,
                 // calibrated envelope against every unpermitted pair and object availability.
                 if (observation_.frameError>r.target.tolerance || observation_.angularError>r.target.angularTolerance ||
@@ -568,10 +674,14 @@ namespace julia::embodiment
                     !hand.states()[s].enabled || hand.states()[s].blend!=1 || hand.states()[s].closure!=1 ||
                     object_->state!=ObjectState::Free || object_->owner || object_->handle!=observation_.object)
                 { fail("Attachment conditions not reached"); return; }
+                if (palmarSphere && !observation_.sphereContacts->supporting) {
+                    fail("Left hand lost opposed sphere pad contacts before attachment"); return;
+                }
                 // The free object was checked against the body during Align. Verify
                 // the prospective payload against the environment too, before committing.
                 auto context=collisionContext();
-                context.carried=CarriedObject{objectNamespace|object_->handle.id,effector(observation_.arm),
+                context.openHand.reset();
+                context.carried=CarriedObject{objectNamespace|object_->handle.id,id,
                     glm::inverse(f)*rigidMatrix(object_->worldPose),object_->shape};
                 if (!restClear(context)) { fail("Attachment geometry rejected"); return; }
                 object_->effectorFromObject=context.carried->effectorFromObject;
@@ -580,13 +690,20 @@ namespace julia::embodiment
                 cancelBeforeAttachment_=false;
                 observation_.hold=HoldType::AssistedAttachment; observation_.result="Grasped";
                 phase(InteractionPhase::Holding,true);
-            } else if (p==InteractionPhase::ReleaseOpening && hand.ready(observation_.arm)) {
-                // Pose above is the actual current pose; no snap to the ideal grip.
-                object_->state=ObjectState::Free; object_->owner=0; observation_.hold=HoldType::None;
-                const auto retreat=rigidPose(f*glm::translate(glm::mat4{1},glm::vec3{0,0,-.075f}));
+            } else if (p==InteractionPhase::ReleaseOpening) {
+                const bool open=hand.ready(observation_.arm);
+                const bool detach=palmarSphere ? !observation_.sphereContacts->supporting:open;
+                if (object_->state==ObjectState::Attached && detach) {
+                    // Keep the actual pose and publish its free collider immediately.
+                    object_->state=ObjectState::Free; object_->owner=0; observation_.hold=HoldType::None;
+                    if (!open) phase(InteractionPhase::ReleaseOpening,true);
+                }
+                if (!open || object_->state==ObjectState::Attached) return;
+                const auto retreat=offsetFromGrip(f,object_->sphereGrasp);
                 phase(InteractionPhase::Retreat,true); startReach(retreat,root);
             } else if (p==InteractionPhase::Retreat && !active(r.state)) {
                 auto context=collisionContext(); context.contactHand=0; context.contactObject=0;
+                context.openHand.reset();
                 if (r.action!=reachAction_ || r.epoch!=observation_.epoch || r.state!=ReachState::Succeeded) {
                     retreatBlocked(reachReasonName(r.reason)); return;
                 }
@@ -601,6 +718,7 @@ namespace julia::embodiment
                 } else {
                     if (hand.states()[s].closure>0) { hand.set(observation_.arm,0); return; }
                     auto context=collisionContext(); context.contactHand=0; context.contactObject=0;
+                    context.openHand.reset();
                     if (restClear(context)) {
                         observation_.result=finishingPreparation_ ? "Prepared":"Cancelled"; observation_.cancellationPending=false;
                         phase(finishingPreparation_ ? InteractionPhase::Succeeded:InteractionPhase::Cancelled,true); return;

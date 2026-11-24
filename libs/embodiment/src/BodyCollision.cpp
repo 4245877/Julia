@@ -1,4 +1,5 @@
 #include "julia/embodiment/BodyCollision.hpp"
+#include "HandSphereContact.hpp"
 #include "julia/animation/Pose.hpp"
 #include <algorithm>
 #include <chrono>
@@ -127,6 +128,13 @@ namespace julia::embodiment
             if (context.contactHand && context.contactHand!=side*3+3)
                 throw std::invalid_argument("Contact permission belongs to a different hand");
             if (context.contactObject && !context.contactHand) throw std::invalid_argument("Contact object requires named hand");
+            if (context.openHand) {
+                const auto target=std::ranges::find(scene.objects(),context.contactObject,&world::SceneObject::id);
+                if (side!=0 || context.carried || target==scene.objects().end() ||
+                    !std::holds_alternative<world::Sphere>(target->shape))
+                    throw std::invalid_argument("Open hand surface requires the selected free sphere");
+                radius=std::max(radius,armLength+context.openHand->radius()+.000001);
+            }
             if (context.fixedLowerForms.size()>7) throw std::invalid_argument("Fixed stance supports up to seven lower forms");
             for (const auto& permission:context.soleContacts) if (permission.first &&
                 ((permission.first!=14 && permission.first!=17) || permission.second!=SupportFloorObject))
@@ -160,7 +168,8 @@ namespace julia::embodiment
                     payload.shape=box;
                 }
                 payload.id=c.object;
-                if (e==profile.effectors.end() || effect<side*4 || effect>side*4+2 || !c.object ||
+                const bool onArm=(effect>=side*4 && effect<=side*4+2) || (side==0 && c.effector==EffectorId::LeftSphereGrip);
+                if (e==profile.effectors.end() || !onArm || !c.object ||
                     context.contactHand!=side*3+3 || !std::isfinite(extent) || extent<=0 || extent>.05 ||
                     (context.contactObject && context.contactObject!=c.object) ||
                     glm::length(glm::vec3{c.effectorFromObject[3]})>1)
@@ -259,6 +268,18 @@ namespace julia::embodiment
         world::Clearance pairClearance(const Pair& p) const
         {
             if (p.first<forms.size()) {
+                if (context.openHand && p.sceneObject && forms[p.first].id==context.contactHand &&
+                    scene.objects()[p.second].id==context.contactObject) {
+                    const auto& sphere=scene.objects()[p.second];
+                    const auto wrist=world*binding.jointFrame(JointId::LeftWrist,pose.globals);
+                    const auto center=glm::vec3{glm::inverse(wrist)*glm::vec4{glm::vec3{sphere.position},1}};
+                    const auto nearest=context.openHand->closestPoint(center);
+                    const auto point=glm::dvec3{wrist*glm::vec4{nearest,1}};
+                    const auto delta=point-sphere.position;
+                    const double distance=glm::length(delta), r=std::get<world::Sphere>(sphere.shape).radius;
+                    const auto normal=distance>0 ? delta/distance:glm::dvec3{1,0,0};
+                    return {distance-r,point,sphere.position+r*normal,normal};
+                }
                 const auto& a=forms[p.first].capsule;
                 return p.sceneObject ? world::clearance(a,scene.objects()[p.second]):world::clearance(a,forms[p.second].capsule);
             }
@@ -336,7 +357,7 @@ namespace julia::embodiment
                 // Spatially bounded allowance: the selected object must be within 12 cm
                 // of this hand's grip. It cannot mask another form or scene object.
                 bool contactAllowedAtSample=false;
-                if (p.sceneObject && bodyForm==context.contactHand && scene.objects()[p.second].id==context.contactObject &&
+                if (!context.openHand && p.sceneObject && bodyForm==context.contactHand && scene.objects()[p.second].id==context.contactObject &&
                     !std::holds_alternative<world::Plane>(scene.objects()[p.second].shape))
                 {
                     const auto e=side==0 ? EffectorId::LeftGrip:EffectorId::RightGrip;

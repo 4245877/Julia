@@ -68,6 +68,7 @@ namespace julia::embodiment
         glm::mat4 effectorFromObject{1};
         InteractionShape shape=world::Sphere{.022};
     };
+    class OpenHandSurface;
     // Frozen with each job/certificate. Only the named hand/object pair is exempt.
     struct CollisionContext
     {
@@ -78,6 +79,8 @@ namespace julia::embodiment
         std::uint64_t contactObject=0;
         std::optional<CarriedObject> carried;
         std::array<bool,2> handEnvelopes{};
+        // Frozen open skin for the named palmar hand/sphere pair during arm travel.
+        std::shared_ptr<const OpenHandSurface> openHand;
     };
     // Immutable path/control/scene snapshot, resumable at individual pair queries.
     // The calibration binding and its asset must outlive this job. No body mutation.

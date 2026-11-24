@@ -9,7 +9,8 @@ namespace julia::app
     inline void readySphereTraceHeader(std::ostream& out)
     {
         out << "tick,idle,idle_seconds,support,interaction,action,result,left_owner,object_state,generation,object_owner,"
-            "x_m,y_m,z_m,left_foot_error_m,right_foot_error_m,left_sole_gap_m,right_sole_gap_m,state_hash\n"
+            "x_m,y_m,z_m,left_foot_error_m,right_foot_error_m,left_sole_gap_m,right_sole_gap_m,state_hash,"
+            "closure,index_gap_m,middle_gap_m,ring_gap_m,pinky_gap_m,thumb_gap_m,opposed_support,skin_gap_m\n"
             << std::setprecision(17);
     }
 
@@ -53,6 +54,11 @@ namespace julia::app
             << ',' << (o ? o->handle.generation:0) << ',' << (o ? o->owner:0) << ',' << p.x << ',' << p.y << ',' << p.z;
         for (const auto& a:s.support.anchors) out << ',' << a.positionError;
         for (const auto& a:s.support.anchors) out << ',' << std::max(-a.minGap,a.maxGap);
-        out << ',' << std::hex << bodyPoseHash(s) << std::dec << '\n';
+        out << ',' << std::hex << bodyPoseHash(s) << std::dec << ',' << s.hands[0].closure;
+        if (i.sphereContacts) {
+            for (const auto& pad:i.sphereContacts->pads) out << ',' << pad.gap;
+            out << ',' << i.sphereContacts->supporting << ',' << i.sphereContacts->skinGap;
+        } else out << ",,,,,,,";
+        out << '\n';
     }
 }

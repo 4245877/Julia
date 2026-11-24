@@ -164,6 +164,7 @@ namespace julia::embodiment
             const auto collision=prospective ? *prospective:interaction_->collisionContext();
             for (const auto envelope:collision.handEnvelopes) add(envelope);
             add(collision.contactHand); add(collision.contactObject);
+            if (collision.openHand) d.contactPolicyVersion=3;
             if (interaction_->object()) add(interaction_->object()->handle.generation);
             if (collision.carried) {
                 add(collision.carried->object); add(static_cast<unsigned>(collision.carried->effector));
@@ -251,7 +252,7 @@ namespace julia::embodiment
         if (i.epoch!=epoch_ || epoch_!=preparationBase_->collision.dependencies.epoch || environmentScene_!=preparationEnvironment_ ||
             i.arm!=preparationSource_->reach.target.arm || o.handle!=saved.handle || o.handle!=i.object ||
             o.localGrip.position!=saved.localGrip.position || o.localGrip.rotation!=saved.localGrip.rotation ||
-            o.shape!=saved.shape || !frozenMatches(*preparationBase_,s)) return false;
+            o.shape!=saved.shape || o.sphereGrasp!=saved.sphereGrasp || !frozenMatches(*preparationBase_,s)) return false;
         if (i.preparation)
             return o.state==ObjectState::Free && o.owner==0 && o.worldPose.position==saved.worldPose.position &&
                 o.worldPose.rotation==saved.worldPose.rotation;
@@ -312,11 +313,11 @@ namespace julia::embodiment
         display.object=selected.object;
         if (display.object && display.object->state==ObjectState::Attached) {
             const auto& o=*display.object;
-            const auto e=o.arm==ArmSide::Left ? EffectorId::LeftGrip:EffectorId::RightGrip;
+            const auto e=o.gripEffector(o.arm);
             display.object->worldPose=rigidPose(matrix(display.root)*binding_->effectorFrame(e,display.pose.globals)*o.effectorFromObject);
         }
         if (display.object && display.interaction.action) {
-            const auto e=display.interaction.arm==ArmSide::Left ? EffectorId::LeftGrip:EffectorId::RightGrip;
+            const auto e=display.object->gripEffector(display.interaction.arm);
             const auto f=matrix(display.root)*binding_->effectorFrame(e,display.pose.globals);
             const auto goal=rigidMatrix(display.object->worldPose)*rigidMatrix(display.object->localGrip);
             display.interaction.frameError=glm::length(glm::vec3{goal[3]-f[3]});
@@ -579,6 +580,8 @@ namespace julia::embodiment
                     throw std::invalid_argument("Preparation requires current Free object and idle hands");
                 if (value.arm!=ArmSide::Left && std::holds_alternative<world::Box>(interaction_->object()->shape))
                     throw std::invalid_argument("Cube grip is calibrated for the left hand");
+                if (value.arm!=ArmSide::Left && interaction_->object()->sphereGrasp==SphereGrasp::LeftPalmar)
+                    throw std::invalid_argument("Palmar sphere grip is calibrated for the left hand");
                 auto prospective=interaction_->collisionContext(); prospective.handEnvelopes[side]=true;
                 prospective.contactHand=0; prospective.contactObject=0;
                 auto check=interactionRest(value.arm,prospective);
@@ -867,7 +870,11 @@ namespace julia::embodiment
         if (interaction_ && current_.direct) {
             for (std::size_t k=0;k<2;++k) {
                 result.hands[k].closure=glm::mix(previous_.hands[k].closure,current_.hands[k].closure,weight);
-                result.hands[k].blend=glm::mix(previous_.hands[k].blend,current_.hands[k].blend,weight); }
+                result.hands[k].blend=glm::mix(previous_.hands[k].blend,current_.hands[k].blend,weight);
+                const auto& a=previous_.hands[k].articulated;
+                const auto& b=current_.hands[k].articulated;
+                if (a || b) result.hands[k].articulated=mixHandPose(a.value_or(openHandPose()),b.value_or(openHandPose()),weight);
+            }
             interaction_->hand.apply(result.pose.locals,result.hands);
         }
         const render::EyeBehaviorOutput output{glm::mix(previous_.eyes.gazeDegrees,current_.eyes.gazeDegrees,weight),

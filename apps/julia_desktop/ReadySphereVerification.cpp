@@ -14,12 +14,16 @@ namespace julia::desktop
         const char* milestone(const BodySnapshot& s,const BodySnapshot& p)
         {
             if (s.idle.phase==IdlePhase::Ready && p.idle.phase!=IdlePhase::Ready) return "01-ready";
+            if (s.interaction.phase==InteractionPhase::Align && p.interaction.frameError>.030f &&
+                s.interaction.frameError<=.030f) return "02-approaching";
             if (s.interaction.phase==InteractionPhase::ReadyToGrasp && p.interaction.phase!=s.interaction.phase) return "02-open";
             if (s.interaction.phase==InteractionPhase::Closing && p.hands[0].closure<.5f && s.hands[0].closure>=.5f) return "03-closing";
             if (s.interaction.result=="Grasped" && p.interaction.result!="Grasped") return "04-grasped";
             if (s.interaction.result=="Moved" && p.interaction.result!="Moved") return "05-moved";
+            if (s.interaction.phase==InteractionPhase::ReleaseOpening && p.object && p.object->state==ObjectState::Attached &&
+                s.object && s.object->state==ObjectState::Free) return "06-detached";
             if (s.interaction.phase==InteractionPhase::ReleaseOpening && p.hands[0].closure>.5f && s.hands[0].closure<=.5f) return "06-opening";
-            if (s.interaction.phase==InteractionPhase::Retreat && p.interaction.phase!=s.interaction.phase) return "07-detached";
+            if (s.interaction.phase==InteractionPhase::Retreat && p.interaction.phase!=s.interaction.phase) return "07-retreat";
             if (s.interaction.result=="Released" && p.interaction.result!="Released") return "08-retreated";
             if (s.idle.phase==IdlePhase::Idle && p.idle.phase==IdlePhase::Resuming && s.tick>144) return "09-idle";
             return nullptr;
@@ -63,7 +67,8 @@ namespace julia::desktop
         app::ReadySphereDemo demo;
         runtime::FixedStepScheduler scheduler;
         constexpr double varied[]{1./30,1./144,1./60,.011,.024};
-        constexpr glm::vec3 front{.24f,.10f,.30f},side{.35f,.09f,-.21f};
+        glm::vec3 front{0},side{0};
+        bool framed=false;
         std::size_t frames=0,sampledAttached=0;
         float footPosition=0,footAngle=0,footGap=0,attachedOffset=0;
         unsigned captures=0;
@@ -85,15 +90,24 @@ namespace julia::desktop
                 body.step();
                 const auto& s=body.snapshot();
                 app::readySphereTrace(trace,s);
+                if (!framed && s.object) {
+                    // Use the free sphere's grip axes to choose the views, then keep
+                    // those world directions for approach, transport and release.
+                    const auto rotation=s.object->worldPose.rotation;
+                    front=rotation*glm::vec3{.065f,.11f,.24f};
+                    side=rotation*glm::vec3{-.225f,.050f,.150f};
+                    framed=true;
+                }
                 if (rate=="mixed" && demo.completed()==0) {
                     if (const auto* name=milestone(s,body.previousSnapshot())) {
                         const auto d=body.display(1);
                         shot(name,d,false,s.object ? std::optional{front}:std::nullopt);
                         report << name << "_tick=" << s.tick << '\n';
                         const std::string_view stage=name;
-                        if (stage=="04-grasped" || stage=="05-moved" || stage=="06-opening" || stage=="07-detached") {
+                        if (stage=="02-approaching" || stage=="02-open" || stage=="03-closing" || stage=="04-grasped" ||
+                            stage=="05-moved" || stage=="06-detached" || stage=="06-opening") {
                             shot(std::string{name}+"-side",d,false,side);
-                            if (stage!="07-detached") shot(std::string{name}+"-avatar",d,true);
+                            shot(std::string{name}+"-avatar",d,true,front);
                         }
                         if (stage=="04-grasped") {
                             checkSphereOcclusion(capture,d,side,false,report);
@@ -114,7 +128,7 @@ namespace julia::desktop
             }
             if (d.object && d.object->state==ObjectState::Attached) {
                 const auto wrist=rigidMatrix({d.root.position,d.root.rotation})*
-                    body.control()->binding().effectorFrame(EffectorId::LeftGrip,d.pose.globals);
+                    body.control()->binding().effectorFrame(d.object->gripEffector(ArmSide::Left),d.pose.globals);
                 const auto center=glm::vec3{(wrist*d.object->effectorFromObject)[3]};
                 const float residual=glm::length(d.object->worldPose.position-center);
                 if (residual>1e-6f) throw std::runtime_error("Desktop sphere diverged from interpolated grip");
@@ -133,7 +147,7 @@ namespace julia::desktop
         }
         const auto& s=body.snapshot();
         if (!demo.done()) throw std::runtime_error(demo.failed() ? demo.reason():"Ready sphere verification hit its tick limit");
-        if (scheduler.diagnostics().overloadFrames || !sampledAttached || !capturedTransport || (rate=="mixed" && captures!=17))
+        if (scheduler.diagnostics().overloadFrames || !sampledAttached || !capturedTransport || (rate=="mixed" && captures!=26))
             throw std::runtime_error("Incomplete Ready sphere desktop frame coverage");
         report << "cycles=" << demo.completed() << "\nticks=" << s.tick << "\nframes=" << frames
             << "\ncaptures=" << captures << "\nattached_frames=" << sampledAttached << "\nmax_attachment_error_m=" << attachedOffset

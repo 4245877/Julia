@@ -14,6 +14,8 @@ namespace julia::embodiment
     };
     enum class ObjectState { Free, Attached };
     enum class HoldType { None, AssistedAttachment };
+    // Explicit calibration of the object frame supplied by CreateInteractionSphere.
+    enum class SphereGrasp { Legacy, LeftPalmar };
     struct InteractiveObject
     {
         ObjectHandle handle;
@@ -24,10 +26,16 @@ namespace julia::embodiment
         std::uint64_t owner=0;
         ArmSide arm=ArmSide::Left;
         glm::mat4 effectorFromObject{1};
+        SphereGrasp sphereGrasp=SphereGrasp::Legacy;
+        EffectorId gripEffector(ArmSide side) const;
         world::SceneObject collider() const;
     };
+    ReachTarget graspPregripTarget(ArmSide arm,const InteractiveObject& object);
     // One interactive object at a time.
-    struct CreateInteractionSphere { std::uint64_t id; RigidPose pose; float radius=.022f; RigidPose localGrip; };
+    struct CreateInteractionSphere {
+        std::uint64_t id; RigidPose pose; float radius=.022f; RigidPose localGrip;
+        SphereGrasp grasp=SphereGrasp::Legacy;
+    };
     inline constexpr double InteractionCubeHalfExtent=.018;
     inline const RigidPose interactionCubeLocalGrip{{.003f,-.017f,-.008f}};
     struct CreateInteractionBox { std::uint64_t id; RigidPose pose; world::Box box{glm::dvec3{InteractionCubeHalfExtent}}; };
@@ -47,18 +55,34 @@ namespace julia::embodiment
         Handoff, ReadyToGrasp, PreparationBlocked };
     const char* interactionPhaseName(InteractionPhase phase);
     enum class HandGrip { Sphere, Cube };
-    // Rest is the calibrated relaxed pose when relaxed, otherwise the exact bind pose.
-    struct HandState { bool enabled=false; float closure=0, velocity=0, blend=0; HandGrip grip=HandGrip::Sphere; bool relaxed=false; };
     // Anatomical joint angles of one hand, radians. Finger flexion is positive towards the
     // palm, spread towards the thumb, both measured in the hand frame. Thumb CMC angles are
     // relative to the modelled thumb; MCP/IP flexion turns the tip towards the thumb pad.
     struct FingerAngles { float mcpFlexion=0, mcpSpread=0, pipFlexion=0, dipFlexion=0; };
     struct ThumbAngles { float palmarAbduction=0, radialAbduction=0, pronation=0, mcpFlexion=0, ipFlexion=0; };
     struct HandPose { std::array<FingerAngles,4> fingers{}; ThumbAngles thumb{}; }; // index, middle, ring, pinky
+    HandPose mixHandPose(const HandPose& from,const HandPose& to,float weight);
+    // Rest is the calibrated relaxed pose when relaxed, otherwise the exact bind pose.
+    struct HandState {
+        bool enabled=false; float closure=0, velocity=0, blend=0; HandGrip grip=HandGrip::Sphere; bool relaxed=false;
+        std::optional<HandPose> articulated;
+    };
     // Calibrated targets shared by both hands through mirror symmetry.
     HandPose relaxedHandPose();    // Idle rest
     HandPose openHandPose();       // Empty-hand opening and grasp preparation
     HandPose oppositionHandPose(); // Pre-pinch: the thumb pad turned towards the index pad
+    struct SpherePadContact
+    {
+        float gap=0, facing=0;
+        glm::vec3 point{0}; // In the left wrist frame, metres.
+        bool supported=false;
+    };
+    struct SphereContacts
+    {
+        std::array<SpherePadContact,5> pads;
+        float skinGap=0, thumbOpposition=0;
+        bool supporting=false;
+    };
     struct InteractionObservation
     {
         std::uint64_t action=0, epoch=0;
@@ -79,6 +103,13 @@ namespace julia::embodiment
         std::uint32_t contactHand=0;
         std::uint64_t contactObject=0;
         PathCheck geometryCheck; // Latest phase check; historical until dependenciesMatch.
+        std::optional<SphereContacts> sphereContacts;
+    };
+    struct SphereHandStroke
+    {
+        HandPose closed;
+        std::array<float,5> stopTime; // Each digit eases to rest at this fraction of the closing interval.
+        HandPose sample(float progress) const;
     };
     class HandLayer
     {
@@ -118,7 +149,8 @@ namespace julia::embodiment
         void advance();
         // Idle owns the relaxed rest pose; reset returns both hands to the exact bind pose.
         void setRelaxed(bool relaxed) { for (auto& s:states_) s.relaxed=relaxed; }
-        void reset() { states_={}; from_={}; goal_={}; elapsed_={}; duration_={}; blendFrom_={}; blendGoal_={}; }
+        void reset() { states_={}; from_={}; goal_={}; elapsed_={}; duration_={}; blendFrom_={}; blendGoal_={}; sphereStroke_.reset(); }
+        void closeAroundSphere(SphereHandStroke stroke);
         bool ready(ArmSide arm) const;
         void apply(std::span<glm::mat4> locals) const { apply(locals,states_); }
         void apply(std::span<glm::mat4> locals,const std::array<HandState,2>& states) const;
@@ -130,12 +162,15 @@ namespace julia::embodiment
         std::array<float,2> from_{},goal_{};
         std::array<float,2> blendFrom_{},blendGoal_{};
         std::array<unsigned,2> elapsed_{},duration_{};
+        std::optional<SphereHandStroke> sphereStroke_;
     };
+    class HandSphereContact;
     // Single writer, owned by BodyInstance. All reach work uses the existing bounded jobs.
     class HandInteraction
     {
     public:
         HandInteraction(std::uint64_t owner,DirectBodyControl& control,ArmReach& reach);
+        ~HandInteraction();
         HandLayer hand;
         const auto& object() const { return object_; }
         const auto& observation() const { return observation_; }
@@ -173,8 +208,10 @@ namespace julia::embodiment
         std::uint64_t reachAction_=0;
         std::uint64_t geometryRevision_=0;
         bool handoffWait_=false, finishingPreparation_=false;
+        std::unique_ptr<HandSphereContact> sphereContact_;
+        bool closingStarted_=false;
         void createObject(std::uint64_t id,RigidPose pose,InteractionShape shape,RigidPose localGrip,
-            const world::CollisionScene* scene,double minimumGap);
+            SphereGrasp sphereGrasp,const world::CollisionScene* scene,double minimumGap);
         void requireObject(ObjectHandle handle) const;
         void phase(InteractionPhase phase,bool geometry=false);
         void startReach(const RigidPose& goal,const glm::mat4& root);
